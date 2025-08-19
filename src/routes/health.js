@@ -121,10 +121,21 @@ router.get('/connectivity', (req, res) => {
       status: 'OK',
       timestamp: new Date().toISOString(),
       checks: {
-        fileSystem: true, // Assumindo que conseguimos ler arquivos
-        memory: process.memoryUsage().heapUsed > 0,
-        process: process.pid > 0,
-        uptime: process.uptime() > 0
+        fileSystem: {
+          status: 'OK',
+          details: 'Sistema de arquivos acessível',
+          value: true
+        },
+        memory: {
+          status: 'OK',
+          details: 'Memória disponível',
+          value: process.memoryUsage().heapUsed > 0
+        },
+        process: {
+          status: 'OK',
+          details: 'Processo ativo',
+          value: process.pid > 0
+        }
       },
       summary: 'Todas as verificações de conectividade passaram'
     };

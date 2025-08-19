@@ -60,9 +60,6 @@ module.exports = {
   // Verbose
   verbose: true,
   
-  // Força saída colorida
-  forceColor: true,
-  
   // Configurações específicas para Node.js
   globals: {
     'ts-jest': {
@@ -75,9 +72,6 @@ module.exports = {
   
   // Extensões de arquivo
   moduleFileExtensions: ['js', 'json'],
-  
-  // Módulos
-  moduleNameMapping: {},
   
   // Configurações de ambiente
   testEnvironmentOptions: {
