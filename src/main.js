@@ -55,6 +55,9 @@ app.use(morgan('combined', {
   }
 }));
 
+// Middleware para servir arquivos estáticos da interface web
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Middleware de request logging
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path} - ${req.ip}`, {
@@ -80,14 +83,14 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Rota raiz
+// Rota raiz - Interface web
 app.get('/', (req, res) => {
-  res.json({
-    message: 'DePara API - Sistema de Conversão e Mapeamento de Dados',
-    version: require('../package.json').version,
-    documentation: '/api/docs',
-    health: '/health'
-  });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Rota para a interface web (fallback)
+app.get('/ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Middleware de tratamento de erros
@@ -116,6 +119,7 @@ const server = app.listen(PORT, () => {
   ║              Sistema de Conversão de Dados                   ║
   ╠══════════════════════════════════════════════════════════════╣
   ║  🌐 URL: http://localhost:${PORT}                           ║
+  ║  🖥️  Interface Web: http://localhost:${PORT}/ui              ║
   ║  📚 Docs: http://localhost:${PORT}/api/docs                 ║
   ║  ❤️  Health: http://localhost:${PORT}/health                 ║
   ║  🔧 Ambiente: ${NODE_ENV}                                   ║

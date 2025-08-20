@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DePara - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="material-icons">data_object</span>
+                <h1>DePara</h1>
+            </div>
+            <nav class="nav">
+                <button class="nav-btn active" data-tab="dashboard">
+                    <span class="material-icons">dashboard</span>
+                    Dashboard
+                </button>
+                <button class="nav-btn" data-tab="folders">
+                    <span class="material-icons">folder</span>
+                    Pastas
+                </button>
+                <button class="nav-btn" data-tab="conversion">
+                    <span class="material-icons">transform</span>
+                    Conversão
+                </button>
+                <button class="nav-btn" data-tab="mapping">
+                    <span class="material-icons">map</span>
+                    Mapeamento
+                </button>
+                <button class="nav-btn" data-tab="settings">
+                    <span class="material-icons">settings</span>
+                    Configurações
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="dashboard-grid">
+                <!-- Status Card -->
+                <div class="card status-card">
+                    <div class="card-header">
+                        <h3>Status do Sistema</h3>
+                        <span class="status-indicator online"></span>
+                    </div>
+                    <div class="card-content">
+                        <div class="status-item">
+                            <span class="material-icons">memory</span>
+                            <div>
+                                <span class="label">Memória</span>
+                                <span class="value" id="memory-usage">--</span>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <span class="material-icons">storage</span>
+                            <div>
+                                <span class="label">Disco</span>
+                                <span class="value" id="disk-usage">--</span>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <span class="material-icons">thermostat</span>
+                            <div>
+                                <span class="label">Temperatura</span>
+                                <span class="value" id="cpu-temp">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Card -->
+                <div class="card actions-card">
+                    <div class="card-header">
+                        <h3>Ações Rápidas</h3>
+                    </div>
+                    <div class="card-content">
+                        <button class="action-btn" onclick="openFolderConfig()">
+                            <span class="material-icons">add_folder</span>
+                            Nova Pasta
+                        </button>
+                        <button class="action-btn" onclick="openConversion()">
+                            <span class="material-icons">file_upload</span>
+                            Converter Arquivo
+                        </button>
+                        <button class="action-btn" onclick="openMapping()">
+                            <span class="material-icons">schema</span>
+                            Criar Mapeamento
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Card -->
+                <div class="card activity-card">
+                    <div class="card-header">
+                        <h3>Atividade Recente</h3>
+                    </div>
+                    <div class="card-content">
+                        <div id="recent-activity" class="activity-list">
+                            <div class="activity-item">
+                                <span class="material-icons">info</span>
+                                <span>Nenhuma atividade recente</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Folders Tab -->
+        <div id="folders" class="tab-content">
+            <div class="folders-container">
+                <div class="folders-header">
+                    <h2>Configuração de Pastas</h2>
+                    <button class="btn btn-primary" onclick="openFolderConfig()">
+                        <span class="material-icons">add</span>
+                        Nova Pasta
+                    </button>
+                </div>
+                
+                <div class="folders-grid" id="folders-grid">
+                    <!-- Pastas serão carregadas dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversion Tab -->
+        <div id="conversion" class="tab-content">
+            <div class="conversion-container">
+                <h2>Conversão de Dados</h2>
+                <div class="conversion-form">
+                    <div class="form-group">
+                        <label>Formato de Origem</label>
+                        <select id="source-format">
+                            <option value="csv">CSV</option>
+                            <option value="json">JSON</option>
+                            <option value="xml">XML</option>
+                            <option value="yaml">YAML</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Formato de Destino</label>
+                        <select id="target-format">
+                            <option value="json">JSON</option>
+                            <option value="csv">CSV</option>
+                            <option value="xml">XML</option>
+                            <option value="yaml">YAML</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Arquivo ou Dados</label>
+                        <textarea id="conversion-data" placeholder="Cole seus dados aqui ou arraste um arquivo..."></textarea>
+                        <input type="file" id="file-input" accept=".csv,.json,.xml,.yaml,.txt" style="display: none;">
+                        <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">
+                            <span class="material-icons">upload_file</span>
+                            Escolher Arquivo
+                        </button>
+                    </div>
+                    <button class="btn btn-primary" onclick="convertData()">
+                        <span class="material-icons">transform</span>
+                        Converter
+                    </button>
+                </div>
+                <div id="conversion-result" class="conversion-result" style="display: none;">
+                    <!-- Resultado da conversão será exibido aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Mapping Tab -->
+        <div id="mapping" class="tab-content">
+            <div class="mapping-container">
+                <h2>Mapeamento de Campos</h2>
+                <div class="mapping-form">
+                    <div class="form-group">
+                        <label>Campos de Origem</label>
+                        <input type="text" id="source-fields" placeholder="nome,idade,email (separados por vírgula)">
+                    </div>
+                    <div class="form-group">
+                        <label>Campos de Destino</label>
+                        <input type="text" id="target-fields" placeholder="name,age,email (separados por vírgula)">
+                    </div>
+                    <div class="form-group">
+                        <label>Dados de Exemplo (opcional)</label>
+                        <textarea id="mapping-data" placeholder='[{"nome": "João", "idade": 25, "email": "joao@email.com"}]'></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateMapping()">
+                        <span class="material-icons">auto_fix_high</span>
+                        Gerar Mapeamento
+                    </button>
+                </div>
+                <div id="mapping-result" class="mapping-result" style="display: none;">
+                    <!-- Resultado do mapeamento será exibido aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="settings-container">
+                <h2>Configurações do Sistema</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>Porta da Aplicação</label>
+                        <input type="number" id="app-port" value="3000" min="1024" max="65535">
+                    </div>
+                    <div class="form-group">
+                        <label>Nível de Log</label>
+                        <select id="log-level">
+                            <option value="error">Erro</option>
+                            <option value="warn">Aviso</option>
+                            <option value="info" selected>Informação</option>
+                            <option value="debug">Debug</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ambiente</label>
+                        <select id="environment">
+                            <option value="development">Desenvolvimento</option>
+                            <option value="production" selected>Produção</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Diretório de Logs</label>
+                        <input type="text" id="log-directory" value="logs/">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSettings()">
+                        <span class="material-icons">save</span>
+                        Salvar Configurações
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="folder-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Configurar Nova Pasta</h3>
+                <button class="modal-close" onclick="closeFolderModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome da Pasta</label>
+                    <input type="text" id="folder-name" placeholder="Ex: Dados_Entrada">
+                </div>
+                <div class="form-group">
+                    <label>Caminho da Pasta</label>
+                    <input type="text" id="folder-path" placeholder="/home/yo/dados/entrada">
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Monitoramento</label>
+                    <select id="folder-type">
+                        <option value="input">Pasta de Entrada</option>
+                        <option value="output">Pasta de Saída</option>
+                        <option value="temp">Pasta Temporária</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Formato de Arquivo</label>
+                    <select id="folder-format">
+                        <option value="auto">Detectar Automaticamente</option>
+                        <option value="csv">CSV</option>
+                        <option value="json">JSON</option>
+                        <option value="xml">XML</option>
+                        <option value="yaml">YAML</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Processar Automaticamente</label>
+                    <input type="checkbox" id="auto-process" checked>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeFolderModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveFolder()">Salvar Pasta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

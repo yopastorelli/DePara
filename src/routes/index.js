@@ -14,6 +14,7 @@ const healthRoutes = require('./health');
 const convertRoutes = require('./convert');
 const mapRoutes = require('./map');
 const statusRoutes = require('./status');
+const folderRoutes = require('./folders');
 
 // Middleware de logging para todas as rotas
 router.use((req, res, next) => {
@@ -89,6 +90,7 @@ router.use('/health', healthRoutes);
 router.use('/convert', convertRoutes);
 router.use('/map', mapRoutes);
 router.use('/status', statusRoutes);
+router.use('/folders', folderRoutes);
 
 // Rota padrão da API
 router.get('/', (req, res) => {
