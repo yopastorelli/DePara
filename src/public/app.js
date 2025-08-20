@@ -51,6 +51,41 @@ class DeParaUI {
                 this.handleFileUpload(file);
             }
         });
+
+        // NOVOS EVENT LISTENERS PARA CONFIGURAÇÃO DE PASTAS
+        this.setupFolderConfigListeners();
+    }
+
+    setupFolderConfigListeners() {
+        // Controle de exibição dos campos de frequência
+        const autoProcessCheckbox = document.getElementById('auto-process');
+        const frequencyGroup = document.getElementById('frequency-group');
+        
+        if (autoProcessCheckbox && frequencyGroup) {
+            autoProcessCheckbox.addEventListener('change', (e) => {
+                frequencyGroup.style.display = e.target.checked ? 'block' : 'none';
+            });
+        }
+
+        // Controle de exibição do campo cron personalizado
+        const processingFrequency = document.getElementById('processing-frequency');
+        const cronGroup = document.getElementById('cron-group');
+        
+        if (processingFrequency && cronGroup) {
+            processingFrequency.addEventListener('change', (e) => {
+                cronGroup.style.display = e.target.value === 'custom' ? 'block' : 'none';
+            });
+        }
+
+        // Controle de exibição das extensões permitidas
+        const processingRules = document.getElementById('processing-rules');
+        const extensionGroup = document.getElementById('extension-group');
+        
+        if (processingRules && extensionGroup) {
+            processingRules.addEventListener('change', (e) => {
+                extensionGroup.style.display = e.target.value === 'extension' ? 'block' : 'none';
+            });
+        }
     }
 
     switchTab(tabName) {
@@ -217,6 +252,38 @@ class DeParaUI {
         document.getElementById('auto-process').checked = true;
     }
 
+    resetFolderModal() {
+        document.getElementById('folder-name').value = '';
+        document.getElementById('folder-path').value = '';
+        document.getElementById('folder-type').value = 'input';
+        document.getElementById('folder-format').value = 'auto';
+        document.getElementById('auto-process').checked = true;
+        
+        // RESETAR NOVOS CAMPOS
+        document.getElementById('processing-frequency').value = 'realtime';
+        document.getElementById('cron-expression').value = '';
+        document.getElementById('processing-rules').value = 'all';
+        document.getElementById('allowed-extensions').value = '';
+        
+        // Resetar transformações
+        document.getElementById('transform-uppercase').checked = false;
+        document.getElementById('transform-lowercase').checked = false;
+        document.getElementById('transform-trim').checked = false;
+        document.getElementById('transform-validate').checked = false;
+        
+        // Resetar configurações de saída
+        document.getElementById('output-backup').checked = false;
+        document.getElementById('output-log').checked = false;
+        document.getElementById('output-notify').checked = false;
+        
+        // Ocultar campos condicionais
+        document.getElementById('frequency-group').style.display = 'none';
+        document.getElementById('cron-group').style.display = 'none';
+        document.getElementById('extension-group').style.display = 'none';
+        
+        this.editingFolderId = null;
+    }
+
     async saveFolder() {
         const name = document.getElementById('folder-name').value.trim();
         const path = document.getElementById('folder-path').value.trim();
@@ -229,13 +296,59 @@ class DeParaUI {
             return;
         }
 
+        // NOVOS CAMPOS DE CONFIGURAÇÃO
+        const processingFrequency = document.getElementById('processing-frequency').value;
+        const cronExpression = document.getElementById('cron-expression').value.trim();
+        const processingRules = document.getElementById('processing-rules').value;
+        const allowedExtensions = document.getElementById('allowed-extensions').value.trim();
+        
+        // Transformações
+        const transformUppercase = document.getElementById('transform-uppercase').checked;
+        const transformLowercase = document.getElementById('transform-lowercase').checked;
+        const transformTrim = document.getElementById('transform-trim').checked;
+        const transformValidate = document.getElementById('transform-validate').checked;
+        
+        // Configurações de saída
+        const outputBackup = document.getElementById('output-backup').checked;
+        const outputLog = document.getElementById('output-log').checked;
+        const outputNotify = document.getElementById('output-notify').checked;
+
+        // Validações adicionais
+        if (autoProcess && processingFrequency === 'custom' && !cronExpression) {
+            this.showToast('Expressão cron é obrigatória para frequência personalizada', 'warning');
+            return;
+        }
+
+        if (processingRules === 'extension' && !allowedExtensions) {
+            this.showToast('Especifique as extensões permitidas', 'warning');
+            return;
+        }
+
         try {
             const folderData = {
                 name,
                 path,
                 type,
                 format,
-                autoProcess
+                autoProcess,
+                // NOVAS CONFIGURAÇÕES
+                processing: {
+                    frequency: processingFrequency,
+                    cronExpression: processingFrequency === 'custom' ? cronExpression : null,
+                    rules: processingRules,
+                    allowedExtensions: processingRules === 'extension' ? allowedExtensions.split(',').map(ext => ext.trim()) : [],
+                    transformations: {
+                        uppercase: transformUppercase,
+                        lowercase: transformLowercase,
+                        trim: transformTrim,
+                        validate: transformValidate
+                    },
+                    output: {
+                        backup: outputBackup,
+                        log: outputLog,
+                        notify: outputNotify
+                    }
+                }
             };
 
             const response = await fetch('/api/folders', {
@@ -276,9 +389,68 @@ class DeParaUI {
         document.getElementById('folder-format').value = folder.format;
         document.getElementById('auto-process').checked = folder.autoProcess;
 
+        // CARREGAR NOVOS CAMPOS DE CONFIGURAÇÃO
+        if (folder.processing) {
+            const processing = folder.processing;
+            
+            // Frequência
+            if (processing.frequency) {
+                document.getElementById('processing-frequency').value = processing.frequency;
+                this.toggleFrequencyFields(processing.frequency);
+            }
+            
+            // Cron personalizado
+            if (processing.cronExpression) {
+                document.getElementById('cron-expression').value = processing.cronExpression;
+            }
+            
+            // Regras de processamento
+            if (processing.rules) {
+                document.getElementById('processing-rules').value = processing.rules;
+                this.toggleProcessingRulesFields(processing.rules);
+            }
+            
+            // Extensões permitidas
+            if (processing.allowedExtensions && processing.allowedExtensions.length > 0) {
+                document.getElementById('allowed-extensions').value = processing.allowedExtensions.join(', ');
+            }
+            
+            // Transformações
+            if (processing.transformations) {
+                const transforms = processing.transformations;
+                document.getElementById('transform-uppercase').checked = transforms.uppercase || false;
+                document.getElementById('transform-lowercase').checked = transforms.lowercase || false;
+                document.getElementById('transform-trim').checked = transforms.trim || false;
+                document.getElementById('transform-validate').checked = transforms.validate || false;
+            }
+            
+            // Configurações de saída
+            if (processing.output) {
+                const output = processing.output;
+                document.getElementById('output-backup').checked = output.backup || false;
+                document.getElementById('output-log').checked = output.log || false;
+                document.getElementById('output-notify').checked = output.notify || false;
+            }
+        }
+
         document.getElementById('folder-modal').style.display = 'flex';
         // Store the folder being edited
         this.editingFolderId = id;
+    }
+
+    // NOVOS MÉTODOS AUXILIARES
+    toggleFrequencyFields(frequency) {
+        const cronGroup = document.getElementById('cron-group');
+        if (cronGroup) {
+            cronGroup.style.display = frequency === 'custom' ? 'block' : 'none';
+        }
+    }
+
+    toggleProcessingRulesFields(rules) {
+        const extensionGroup = document.getElementById('extension-group');
+        if (extensionGroup) {
+            extensionGroup.style.display = rules === 'extension' ? 'block' : 'none';
+        }
     }
 
     async deleteFolder(id) {

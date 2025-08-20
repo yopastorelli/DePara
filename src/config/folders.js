@@ -67,6 +67,24 @@ class FolderManager {
                 format: 'auto',
                 autoProcess: true,
                 enabled: true,
+                // NOVAS CONFIGURAÇÕES DE PROCESSAMENTO
+                processing: {
+                    frequency: 'realtime',
+                    cronExpression: null,
+                    rules: 'all',
+                    allowedExtensions: [],
+                    transformations: {
+                        uppercase: false,
+                        lowercase: false,
+                        trim: true,
+                        validate: true
+                    },
+                    output: {
+                        backup: true,
+                        log: true,
+                        notify: false
+                    }
+                },
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             },
@@ -78,6 +96,24 @@ class FolderManager {
                 format: 'json',
                 autoProcess: false,
                 enabled: true,
+                // NOVAS CONFIGURAÇÕES DE PROCESSAMENTO
+                processing: {
+                    frequency: 'daily',
+                    cronExpression: null,
+                    rules: 'all',
+                    allowedExtensions: ['json', 'csv'],
+                    transformations: {
+                        uppercase: false,
+                        lowercase: false,
+                        trim: true,
+                        validate: false
+                    },
+                    output: {
+                        backup: false,
+                        log: true,
+                        notify: false
+                    }
+                },
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             },
@@ -89,6 +125,24 @@ class FolderManager {
                 format: 'auto',
                 autoProcess: false,
                 enabled: true,
+                // NOVAS CONFIGURAÇÕES DE PROCESSAMENTO
+                processing: {
+                    frequency: '1hour',
+                    cronExpression: null,
+                    rules: 'modified',
+                    allowedExtensions: [],
+                    transformations: {
+                        uppercase: false,
+                        lowercase: false,
+                        trim: false,
+                        validate: false
+                    },
+                    output: {
+                        backup: false,
+                        log: false,
+                        notify: false
+                    }
+                },
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             }
@@ -106,9 +160,56 @@ class FolderManager {
     }
 
     async addFolder(folderData) {
+        // VALIDAÇÃO DOS NOVOS CAMPOS
+        if (folderData.autoProcess && folderData.processing) {
+            const processing = folderData.processing;
+            
+            // Validar frequência
+            if (processing.frequency === 'custom' && !processing.cronExpression) {
+                throw new Error('Expressão cron é obrigatória para frequência personalizada');
+            }
+            
+            // Validar regras de extensão
+            if (processing.rules === 'extension' && (!processing.allowedExtensions || processing.allowedExtensions.length === 0)) {
+                throw new Error('Extensões permitidas são obrigatórias para regra de extensão');
+            }
+            
+            // Validar transformações conflitantes
+            if (processing.transformations) {
+                const transforms = processing.transformations;
+                if (transforms.uppercase && transforms.lowercase) {
+                    throw new Error('Não é possível aplicar maiúsculas e minúsculas simultaneamente');
+                }
+            }
+        }
+
+        // CONFIGURAÇÃO PADRÃO DOS CAMPOS DE PROCESSAMENTO
+        const defaultProcessing = {
+            frequency: 'realtime',
+            cronExpression: null,
+            rules: 'all',
+            allowedExtensions: [],
+            transformations: {
+                uppercase: false,
+                lowercase: false,
+                trim: true,
+                validate: true
+            },
+            output: {
+                backup: true,
+                log: true,
+                notify: false
+            }
+        };
+
         const folder = {
             id: `folder-${Date.now()}`,
             ...folderData,
+            // Mesclar configurações de processamento com padrões
+            processing: {
+                ...defaultProcessing,
+                ...(folderData.processing || {})
+            },
             enabled: true,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -123,7 +224,7 @@ class FolderManager {
         await this.saveFolders();
         this.startWatchingFolder(folder);
         
-        logger.info(`Pasta adicionada: ${folder.name} (${folder.path})`);
+        logger.info(`Pasta adicionada: ${folder.name} (${folder.path}) com configurações de processamento`);
         return folder;
     }
 

@@ -281,6 +281,80 @@
                     <label>Processar Automaticamente</label>
                     <input type="checkbox" id="auto-process" checked>
                 </div>
+                
+                <!-- NOVOS CAMPOS PARA FREQUÊNCIA E REGRAS -->
+                <div class="form-group" id="frequency-group" style="display: none;">
+                    <label>Frequência de Processamento</label>
+                    <select id="processing-frequency">
+                        <option value="realtime">Tempo Real (Monitoramento Contínuo)</option>
+                        <option value="1min">A cada 1 minuto</option>
+                        <option value="5min">A cada 5 minutos</option>
+                        <option value="15min">A cada 15 minutos</option>
+                        <option value="30min">A cada 30 minutos</option>
+                        <option value="1hour">A cada 1 hora</option>
+                        <option value="6hours">A cada 6 horas</option>
+                        <option value="12hours">A cada 12 horas</option>
+                        <option value="daily">Diário (00:00)</option>
+                        <option value="weekly">Semanal (Domingo 00:00)</option>
+                        <option value="monthly">Mensal (1º dia 00:00)</option>
+                        <option value="custom">Personalizado (Cron)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="cron-group" style="display: none;">
+                    <label>Expressão Cron Personalizada</label>
+                    <input type="text" id="cron-expression" placeholder="*/5 * * * * (a cada 5 minutos)">
+                    <small class="form-help">Formato: minuto hora dia mês dia_semana</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>Regras de Processamento</label>
+                    <select id="processing-rules">
+                        <option value="all">Processar Todos os Arquivos</option>
+                        <option value="new">Apenas Arquivos Novos</option>
+                        <option value="modified">Apenas Arquivos Modificados</option>
+                        <option value="size">Por Tamanho (maior que 1MB)</option>
+                        <option value="extension">Por Extensão Específica</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="extension-group" style="display: none;">
+                    <label>Extensões Permitidas</label>
+                    <input type="text" id="allowed-extensions" placeholder="csv,json,xml (separadas por vírgula)">
+                </div>
+                
+                <div class="form-group">
+                    <label>Transformações Aplicadas</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="transform-uppercase"> Converter para Maiúsculas
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="transform-lowercase"> Converter para Minúsculas
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="transform-trim"> Remover Espaços em Branco
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="transform-validate"> Validar Dados
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Configurações de Saída</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="output-backup"> Criar Backup Original
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="output-log"> Gerar Log de Processamento
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="output-notify"> Notificar Conclusão
+                        </label>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeFolderModal()">Cancelar</button>
