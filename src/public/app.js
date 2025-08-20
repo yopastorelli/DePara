@@ -7,6 +7,7 @@ class DeParaUI {
         this.currentTab = 'dashboard';
         this.folders = [];
         this.settings = {};
+        this.currentWizardStep = 1;
         this.init();
     }
 
@@ -16,6 +17,241 @@ class DeParaUI {
         this.loadFolders();
         this.startMonitoring();
         this.showToast('DePara iniciado com sucesso!', 'success');
+        
+        // Verificar se é primeira visita
+        if (!localStorage.getItem('depara-onboarding-completed')) {
+            setTimeout(() => this.showOnboarding(), 1000);
+        }
+    }
+
+    // NOVO: Sistema de Onboarding
+    showOnboarding() {
+        document.getElementById('onboarding-overlay').style.display = 'flex';
+    }
+
+    skipOnboarding() {
+        document.getElementById('onboarding-overlay').style.display = 'none';
+        localStorage.setItem('depara-onboarding-completed', 'true');
+    }
+
+    startOnboarding() {
+        document.getElementById('onboarding-overlay').style.display = 'none';
+        localStorage.setItem('depara-onboarding-completed', 'true');
+        this.openFolderConfig();
+    }
+
+    // NOVO: Sistema de Wizard
+    nextStep() {
+        if (this.currentWizardStep < 4) {
+            if (this.validateCurrentStep()) {
+                this.currentWizardStep++;
+                this.updateWizardStep();
+            }
+        }
+    }
+
+    previousStep() {
+        if (this.currentWizardStep > 1) {
+            this.currentWizardStep--;
+            this.updateWizardStep();
+        }
+    }
+
+    updateWizardStep() {
+        // Ocultar todas as etapas
+        document.querySelectorAll('.wizard-step').forEach(step => {
+            step.classList.remove('active');
+        });
+
+        // Mostrar etapa atual
+        document.querySelector(`[data-step="${this.currentWizardStep}"]`).classList.add('active');
+
+        // Atualizar indicadores
+        document.querySelectorAll('.step-dot').forEach((dot, index) => {
+            dot.classList.remove('active', 'completed');
+            if (index + 1 === this.currentWizardStep) {
+                dot.classList.add('active');
+            } else if (index + 1 < this.currentWizardStep) {
+                dot.classList.add('completed');
+            }
+        });
+
+        // Atualizar botões de navegação
+        const prevBtn = document.getElementById('prev-step');
+        const nextBtn = document.getElementById('next-step');
+        const saveBtn = document.getElementById('save-step');
+
+        prevBtn.style.display = this.currentWizardStep > 1 ? 'flex' : 'none';
+        nextBtn.style.display = this.currentWizardStep < 4 ? 'flex' : 'none';
+        saveBtn.style.display = this.currentWizardStep === 4 ? 'flex' : 'none';
+
+        // Atualizar resumo na última etapa
+        if (this.currentWizardStep === 4) {
+            this.updateConfigSummary();
+        }
+    }
+
+    validateCurrentStep() {
+        let isValid = true;
+        const currentStep = document.querySelector(`[data-step="${this.currentWizardStep}"]`);
+
+        // Validar campos obrigatórios da etapa atual
+        const requiredFields = currentStep.querySelectorAll('input[required], select[required]');
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                this.showFieldError(field, 'Este campo é obrigatório');
+                isValid = false;
+            } else {
+                this.clearFieldError(field);
+            }
+        });
+
+        // Validações específicas por etapa
+        switch (this.currentWizardStep) {
+            case 1:
+                isValid = this.validateBasicInfo() && isValid;
+                break;
+            case 2:
+                isValid = this.validateProcessingOptions() && isValid;
+                break;
+            case 3:
+                isValid = this.validateRulesAndTransformations() && isValid;
+                break;
+        }
+
+        return isValid;
+    }
+
+    validateBasicInfo() {
+        let isValid = true;
+        const name = document.getElementById('folder-name');
+        const path = document.getElementById('folder-path');
+
+        if (name.value.trim().length < 3) {
+            this.showFieldError(name, 'Nome deve ter pelo menos 3 caracteres');
+            isValid = false;
+        }
+
+        if (path.value.trim().length < 5) {
+            this.showFieldError(path, 'Caminho deve ser válido');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    validateProcessingOptions() {
+        let isValid = true;
+        const autoProcess = document.getElementById('auto-process');
+        const frequency = document.getElementById('processing-frequency');
+        const cronExpression = document.getElementById('cron-expression');
+
+        if (autoProcess.checked && frequency.value === 'custom' && !cronExpression.value.trim()) {
+            this.showFieldError(cronExpression, 'Expressão cron é obrigatória para frequência personalizada');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    validateRulesAndTransformations() {
+        let isValid = true;
+        const rules = document.getElementById('processing-rules');
+        const extensions = document.getElementById('allowed-extensions');
+
+        if (rules.value === 'extension' && !extensions.value.trim()) {
+            this.showFieldError(extensions, 'Especifique as extensões permitidas');
+            isValid = false;
+        }
+
+        // Validar conflito de case
+        const uppercase = document.getElementById('transform-uppercase');
+        const lowercase = document.getElementById('transform-lowercase');
+
+        if (uppercase.checked && lowercase.checked) {
+            this.showToast('Não é possível aplicar maiúsculas e minúsculas simultaneamente', 'warning');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    showFieldError(field, message) {
+        const validationDiv = field.parentNode.querySelector('.validation-message');
+        if (validationDiv) {
+            validationDiv.textContent = message;
+            validationDiv.className = 'validation-message error';
+        }
+        field.style.borderColor = '#e74c3c';
+    }
+
+    clearFieldError(field) {
+        const validationDiv = field.parentNode.querySelector('.validation-message');
+        if (validationDiv) {
+            validationDiv.textContent = '';
+            validationDiv.className = 'validation-message';
+        }
+        field.style.borderColor = 'rgba(102, 126, 234, 0.2)';
+    }
+
+    updateConfigSummary() {
+        const summary = document.getElementById('config-summary');
+        const name = document.getElementById('folder-name').value;
+        const path = document.getElementById('folder-path').value;
+        const type = document.getElementById('folder-type').value;
+        const format = document.getElementById('folder-format').value;
+        const autoProcess = document.getElementById('auto-process').checked;
+        const frequency = document.getElementById('processing-frequency').value;
+
+        summary.innerHTML = `
+            <h5>📋 Resumo da Configuração</h5>
+            <ul>
+                <li><strong>Nome:</strong> ${name}</li>
+                <li><strong>Caminho:</strong> ${path}</li>
+                <li><strong>Tipo:</strong> ${this.getTypeLabel(type)}</li>
+                <li><strong>Formato:</strong> ${this.getFormatLabel(format)}</li>
+                <li><strong>Processamento:</strong> ${autoProcess ? 'Automático' : 'Manual'}</li>
+                ${autoProcess ? `<li><strong>Frequência:</strong> ${this.getFrequencyLabel(frequency)}</li>` : ''}
+            </ul>
+        `;
+    }
+
+    getTypeLabel(type) {
+        const labels = {
+            'input': '📥 Pasta de Entrada',
+            'output': '📤 Pasta de Saída',
+            'temp': '🗂️ Pasta Temporária'
+        };
+        return labels[type] || type;
+    }
+
+    getFormatLabel(format) {
+        const labels = {
+            'auto': '🔍 Detecção Automática',
+            'csv': '📊 CSV',
+            'json': '📋 JSON',
+            'xml': '📄 XML',
+            'yaml': '⚙️ YAML'
+        };
+        return labels[format] || format;
+    }
+
+    getFrequencyLabel(frequency) {
+        const labels = {
+            'realtime': '⚡ Tempo Real',
+            '1min': '⏱️ A cada 1 minuto',
+            '5min': '⏱️ A cada 5 minutos',
+            '15min': '⏱️ A cada 15 minutos',
+            '30min': '⏱️ A cada 30 minutos',
+            '1hour': '⏰ A cada 1 hora',
+            '6hours': '⏰ A cada 6 horas',
+            '12hours': '⏰ A cada 12 horas',
+            'daily': '📅 Diário',
+            'weekly': '📅 Semanal',
+            'monthly': '📅 Mensal',
+            'custom': '⚙️ Personalizado'
+        };
+        return labels[frequency] || frequency;
     }
 
     setupEventListeners() {
@@ -57,13 +293,13 @@ class DeParaUI {
     }
 
     setupFolderConfigListeners() {
-        // Controle de exibição dos campos de frequência
+        // Controle de exibição das opções de processamento
         const autoProcessCheckbox = document.getElementById('auto-process');
-        const frequencyGroup = document.getElementById('frequency-group');
+        const processingOptions = document.getElementById('processing-options');
         
-        if (autoProcessCheckbox && frequencyGroup) {
+        if (autoProcessCheckbox && processingOptions) {
             autoProcessCheckbox.addEventListener('change', (e) => {
-                frequencyGroup.style.display = e.target.checked ? 'block' : 'none';
+                processingOptions.style.display = e.target.checked ? 'block' : 'none';
             });
         }
 
@@ -85,6 +321,27 @@ class DeParaUI {
             processingRules.addEventListener('change', (e) => {
                 extensionGroup.style.display = e.target.value === 'extension' ? 'block' : 'none';
             });
+        }
+
+        // Atualizar ajuda do tipo de pasta
+        const folderType = document.getElementById('folder-type');
+        if (folderType) {
+            folderType.addEventListener('change', () => this.updateTypeHelp());
+        }
+    }
+
+    updateTypeHelp() {
+        const typeSelect = document.getElementById('folder-type');
+        const typeHelp = document.getElementById('type-help');
+        
+        if (typeSelect && typeHelp) {
+            const type = typeSelect.value;
+            const helpTexts = {
+                'input': '📥 Pasta onde arquivos chegam para processamento automático',
+                'output': '📤 Pasta onde arquivos processados são salvos',
+                'temp': '🗂️ Pasta temporária para arquivos em processamento'
+            };
+            typeHelp.textContent = helpTexts[type] || helpTexts['input'];
         }
     }
 
@@ -236,30 +493,25 @@ class DeParaUI {
 
     openFolderConfig() {
         document.getElementById('folder-modal').style.display = 'flex';
+        this.currentWizardStep = 1;
+        this.updateWizardStep();
         document.getElementById('folder-name').focus();
     }
 
     closeFolderModal() {
         document.getElementById('folder-modal').style.display = 'none';
-        this.clearFolderForm();
-    }
-
-    clearFolderForm() {
-        document.getElementById('folder-name').value = '';
-        document.getElementById('folder-path').value = '';
-        document.getElementById('folder-type').value = 'input';
-        document.getElementById('folder-format').value = 'auto';
-        document.getElementById('auto-process').checked = true;
+        this.resetFolderModal();
     }
 
     resetFolderModal() {
+        // Resetar campos básicos
         document.getElementById('folder-name').value = '';
         document.getElementById('folder-path').value = '';
         document.getElementById('folder-type').value = 'input';
         document.getElementById('folder-format').value = 'auto';
         document.getElementById('auto-process').checked = true;
         
-        // RESETAR NOVOS CAMPOS
+        // Resetar campos de processamento
         document.getElementById('processing-frequency').value = 'realtime';
         document.getElementById('cron-expression').value = '';
         document.getElementById('processing-rules').value = 'all';
@@ -268,18 +520,28 @@ class DeParaUI {
         // Resetar transformações
         document.getElementById('transform-uppercase').checked = false;
         document.getElementById('transform-lowercase').checked = false;
-        document.getElementById('transform-trim').checked = false;
-        document.getElementById('transform-validate').checked = false;
+        document.getElementById('transform-trim').checked = true;
+        document.getElementById('transform-validate').checked = true;
         
         // Resetar configurações de saída
-        document.getElementById('output-backup').checked = false;
-        document.getElementById('output-log').checked = false;
+        document.getElementById('output-backup').checked = true;
+        document.getElementById('output-log').checked = true;
         document.getElementById('output-notify').checked = false;
         
-        // Ocultar campos condicionais
-        document.getElementById('frequency-group').style.display = 'none';
-        document.getElementById('cron-group').style.display = 'none';
-        document.getElementById('extension-group').style.display = 'none';
+        // Resetar wizard
+        this.currentWizardStep = 1;
+        this.updateWizardStep();
+        
+        // Limpar validações
+        document.querySelectorAll('.validation-message').forEach(msg => {
+            msg.textContent = '';
+            msg.className = 'validation-message';
+        });
+        
+        // Resetar bordas dos campos
+        document.querySelectorAll('input, select').forEach(field => {
+            field.style.borderColor = 'rgba(102, 126, 234, 0.2)';
+        });
         
         this.editingFolderId = null;
     }
@@ -695,6 +957,99 @@ function closeFolderModal() {
 
 function saveFolder() {
     ui.saveFolder();
+}
+
+// NOVAS FUNÇÕES PARA WIZARD E ONBOARDING
+function showOnboarding() {
+    ui.showOnboarding();
+}
+
+function skipOnboarding() {
+    ui.skipOnboarding();
+}
+
+function startOnboarding() {
+    ui.startOnboarding();
+}
+
+function nextStep() {
+    ui.nextStep();
+}
+
+function previousStep() {
+    ui.previousStep();
+}
+
+// NOVAS FUNÇÕES AUXILIARES
+function toggleProcessingOptions() {
+    const autoProcess = document.getElementById('auto-process');
+    const processingOptions = document.getElementById('processing-options');
+    
+    if (processingOptions) {
+        processingOptions.style.display = autoProcess.checked ? 'block' : 'none';
+    }
+}
+
+function toggleCronField() {
+    const frequency = document.getElementById('processing-frequency');
+    const cronGroup = document.getElementById('cron-group');
+    
+    if (cronGroup) {
+        cronGroup.style.display = frequency.value === 'custom' ? 'block' : 'none';
+    }
+}
+
+function toggleExtensionField() {
+    const rules = document.getElementById('processing-rules');
+    const extensionGroup = document.getElementById('extension-group');
+    
+    if (extensionGroup) {
+        extensionGroup.style.display = rules.value === 'extension' ? 'block' : 'none';
+    }
+}
+
+function toggleCaseConflict() {
+    const uppercase = document.getElementById('transform-uppercase');
+    const lowercase = document.getElementById('transform-lowercase');
+    
+    if (uppercase.checked && lowercase.checked) {
+        // Desmarcar o outro para evitar conflito
+        if (event.target === uppercase) {
+            lowercase.checked = false;
+        } else {
+            uppercase.checked = false;
+        }
+    }
+}
+
+function validateField(field, type) {
+    const validationDiv = field.parentNode.querySelector('.validation-message');
+    
+    if (!validationDiv) return;
+    
+    let isValid = true;
+    let message = '';
+    
+    switch (type) {
+        case 'name':
+            if (field.value.trim().length < 3) {
+                isValid = false;
+                message = 'Nome deve ter pelo menos 3 caracteres';
+            }
+            break;
+        case 'path':
+            if (field.value.trim().length < 5) {
+                isValid = false;
+                message = 'Caminho deve ser válido';
+            }
+            break;
+    }
+    
+    if (isValid) {
+        ui.clearFieldError(field);
+    } else {
+        ui.showFieldError(field, message);
+    }
 }
 
 function openConversion() {
