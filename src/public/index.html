@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DePara - Dashboard</title>
+    <title>DePara - Sistema de Conversão e Mapeamento de Dados</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
@@ -21,9 +21,13 @@
                     <span class="material-icons">dashboard</span>
                     Dashboard
                 </button>
+                <button class="nav-btn" data-tab="workflows">
+                    <span class="material-icons">workflow</span>
+                    Fluxos de Trabalho
+                </button>
                 <button class="nav-btn" data-tab="folders">
                     <span class="material-icons">folder</span>
-                    Pastas
+                    Gerenciar Pastas
                 </button>
                 <button class="nav-btn" data-tab="conversion">
                     <span class="material-icons">transform</span>
@@ -38,29 +42,28 @@
                     Configurações
                 </button>
             </nav>
-            <!-- NOVO: Botão de Ajuda -->
             <button class="help-btn" onclick="showOnboarding()" title="Ajuda e Tutorial">
                 <span class="material-icons">help</span>
             </button>
         </div>
     </header>
 
-    <!-- NOVO: Sistema de Onboarding -->
+    <!-- Sistema de Onboarding -->
     <div id="onboarding-overlay" class="onboarding-overlay" style="display: none;">
         <div class="onboarding-content">
             <div class="onboarding-header">
                 <h2>Bem-vindo ao DePara! 🎉</h2>
-                <p>Vamos configurar sua primeira pasta em 3 passos simples</p>
+                <p>Vamos configurar seu primeiro fluxo de trabalho em 4 passos simples</p>
             </div>
             
             <div class="onboarding-steps">
                 <div class="step active" data-step="1">
                     <div class="step-number">1</div>
                     <div class="step-content">
-                        <h3>Nome e Localização</h3>
-                        <p>Dê um nome para sua pasta e escolha onde ela está no computador</p>
+                        <h3>Pastas de Origem e Destino</h3>
+                        <p>Defina de onde vêm os arquivos e para onde devem ir</p>
                         <div class="step-example">
-                            <strong>Exemplo:</strong> "Dados_Entrada" em "/home/usuario/dados"
+                            <strong>Exemplo:</strong> De "/dados/entrada" para "/dados/processados"
                         </div>
                     </div>
                 </div>
@@ -68,10 +71,10 @@
                 <div class="step" data-step="2">
                     <div class="step-number">2</div>
                     <div class="step-content">
-                        <h3>Tipo e Formato</h3>
-                        <p>Defina se é pasta de entrada, saída ou temporária e o formato dos arquivos</p>
+                        <h3>Ação e Frequência</h3>
+                        <p>Escolha se quer mover, copiar e com que frequência</p>
                         <div class="step-example">
-                            <strong>Exemplo:</strong> Pasta de entrada que aceita arquivos CSV
+                            <strong>Exemplo:</strong> Copiar arquivos a cada 5 minutos
                         </div>
                     </div>
                 </div>
@@ -79,10 +82,21 @@
                 <div class="step" data-step="3">
                     <div class="step-number">3</div>
                     <div class="step-content">
-                        <h3>Processamento Automático</h3>
-                        <p>Configure como e quando processar os arquivos automaticamente</p>
+                        <h3>Filtros e Transformações</h3>
+                        <p>Configure quais arquivos processar e como transformá-los</p>
                         <div class="step-example">
-                            <strong>Exemplo:</strong> Processar a cada 5 minutos quando novos arquivos chegarem
+                            <strong>Exemplo:</strong> Apenas arquivos CSV com validação
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Limpeza e Manutenção</h3>
+                        <p>Configure limpeza automática e backup</p>
+                        <div class="step-example">
+                            <strong>Exemplo:</strong> Mover arquivos antigos para lixeira semanalmente
                         </div>
                     </div>
                 </div>
@@ -137,17 +151,17 @@
                         <h3>Ações Rápidas</h3>
                     </div>
                     <div class="card-content">
-                        <button class="action-btn" onclick="openFolderConfig()">
-                            <span class="material-icons">add_folder</span>
-                            Nova Pasta
+                        <button class="action-btn" onclick="openWorkflowConfig()">
+                            <span class="material-icons">add_workflow</span>
+                            Novo Fluxo de Trabalho
+                        </button>
+                        <button class="action-btn" onclick="openFolderManager()">
+                            <span class="material-icons">folder_shared</span>
+                            Gerenciar Pastas
                         </button>
                         <button class="action-btn" onclick="openConversion()">
                             <span class="material-icons">file_upload</span>
                             Converter Arquivo
-                        </button>
-                        <button class="action-btn" onclick="openMapping()">
-                            <span class="material-icons">schema</span>
-                            Criar Mapeamento
                         </button>
                     </div>
                 </div>
@@ -169,12 +183,31 @@
             </div>
         </div>
 
-        <!-- Folders Tab -->
+        <!-- Workflows Tab - NOVA ABA PRINCIPAL -->
+        <div id="workflows" class="tab-content">
+            <div class="workflows-container">
+                <div class="workflows-header">
+                    <h2>Fluxos de Trabalho</h2>
+                    <p>Configure como os arquivos fluem entre pastas automaticamente</p>
+                    <button class="btn btn-primary" onclick="openWorkflowConfig()">
+                        <span class="material-icons">add</span>
+                        Novo Fluxo
+                    </button>
+                </div>
+                
+                <div class="workflows-grid" id="workflows-grid">
+                    <!-- Fluxos serão carregados dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Folders Tab - GERENCIAMENTO DE PASTAS -->
         <div id="folders" class="tab-content">
             <div class="folders-container">
                 <div class="folders-header">
-                    <h2>Configuração de Pastas</h2>
-                    <button class="btn btn-primary" onclick="openFolderConfig()">
+                    <h2>Gerenciamento de Pastas</h2>
+                    <p>Configure pastas de origem, destino e temporárias</p>
+                    <button class="btn btn-primary" onclick="openFolderManager()">
                         <span class="material-icons">add</span>
                         Nova Pasta
                     </button>
@@ -295,139 +328,151 @@
         </div>
     </main>
 
-    <!-- Modals -->
-    <div id="folder-modal" class="modal" style="display: none;">
+    <!-- Modal de Configuração de Fluxo de Trabalho -->
+    <div id="workflow-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Configurar Nova Pasta</h3>
-                <button class="modal-close" onclick="closeFolderModal()">
+                <h3>Configurar Novo Fluxo de Trabalho</h3>
+                <button class="modal-close" onclick="closeWorkflowModal()">
                     <span class="material-icons">close</span>
                 </button>
             </div>
             
-            <!-- NOVO: Wizard de Configuração em Etapas -->
             <div class="modal-body">
-                <!-- Etapa 1: Informações Básicas -->
+                <!-- Etapa 1: Configuração Básica -->
                 <div class="wizard-step active" data-step="1">
                     <h4 class="step-title">
-                        <span class="material-icons">folder</span>
-                        Informações Básicas
+                        <span class="material-icons">workflow</span>
+                        Configuração Básica
                     </h4>
                     
                     <div class="form-group">
-                        <label>Nome da Pasta</label>
-                        <input type="text" id="folder-name" placeholder="Ex: Dados_Entrada" 
-                               oninput="validateField(this, 'name')">
-                        <small class="form-help">Nome descritivo para identificar a pasta</small>
+                        <label>Nome do Fluxo</label>
+                        <input type="text" id="workflow-name" placeholder="Ex: Processamento de Dados CSV" 
+                               oninput="validateField(this, 'name')" required>
+                        <small class="form-help">Nome descritivo para identificar o fluxo</small>
                         <div class="validation-message" id="name-validation"></div>
                     </div>
                     
                     <div class="form-group">
-                        <label>Caminho da Pasta</label>
-                        <input type="text" id="folder-path" placeholder="/home/yo/dados/entrada" 
-                               oninput="validateField(this, 'path')">
-                        <small class="form-help">Caminho completo onde a pasta está localizada</small>
-                        <div class="validation-message" id="path-validation"></div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Tipo de Monitoramento</label>
-                            <select id="folder-type" onchange="updateTypeHelp()">
-                                <option value="input">📥 Pasta de Entrada</option>
-                                <option value="output">📤 Pasta de Saída</option>
-                                <option value="temp">🗂️ Pasta Temporária</option>
-                            </select>
-                            <small class="form-help" id="type-help">Pasta onde arquivos chegam para processamento</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Formato de Arquivo</label>
-                            <select id="folder-format">
-                                <option value="auto">🔍 Detectar Automaticamente</option>
-                                <option value="csv">📊 CSV</option>
-                                <option value="json">📋 JSON</option>
-                                <option value="xml">📄 XML</option>
-                                <option value="yaml">⚙️ YAML</option>
-                            </select>
-                            <small class="form-help">Formato dos arquivos que serão processados</small>
-                        </div>
+                        <label>Descrição</label>
+                        <textarea id="workflow-description" placeholder="Descreva o que este fluxo faz..." rows="3"></textarea>
+                        <small class="form-help">Descrição opcional do fluxo de trabalho</small>
                     </div>
                 </div>
                 
-                <!-- Etapa 2: Processamento Automático -->
+                <!-- Etapa 2: Pastas de Origem e Destino -->
                 <div class="wizard-step" data-step="2">
                     <h4 class="step-title">
-                        <span class="material-icons">auto_fix_high</span>
-                        Processamento Automático
+                        <span class="material-icons">folder_shared</span>
+                        Pastas de Origem e Destino
                     </h4>
                     
                     <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="auto-process" onchange="toggleProcessingOptions()">
-                            <span>Processar arquivos automaticamente</span>
-                        </label>
-                        <small class="form-help">Quando ativado, arquivos são processados assim que chegam</small>
+                        <label>Pasta de Origem</label>
+                        <select id="source-folder" onchange="updateSourceFolderInfo()" required>
+                            <option value="">Selecione uma pasta de origem</option>
+                            <!-- Opções serão carregadas dinamicamente -->
+                        </select>
+                        <small class="form-help" id="source-folder-help">Pasta onde os arquivos estão localizados</small>
                     </div>
                     
-                    <div id="processing-options" style="display: none;">
-                        <div class="form-group">
-                            <label>Frequência de Processamento</label>
-                            <select id="processing-frequency" onchange="toggleCronField()">
-                                <option value="realtime">⚡ Tempo Real (Imediato)</option>
-                                <option value="1min">⏱️ A cada 1 minuto</option>
-                                <option value="5min">⏱️ A cada 5 minutos</option>
-                                <option value="15min">⏱️ A cada 15 minutos</option>
-                                <option value="30min">⏱️ A cada 30 minutos</option>
-                                <option value="1hour">⏰ A cada 1 hora</option>
-                                <option value="6hours">⏰ A cada 6 horas</option>
-                                <option value="12hours">⏰ A cada 12 horas</option>
-                                <option value="daily">📅 Diário (00:00)</option>
-                                <option value="weekly">📅 Semanal (Domingo 00:00)</option>
-                                <option value="monthly">📅 Mensal (1º dia 00:00)</option>
-                                <option value="custom">⚙️ Personalizado (Cron)</option>
-                            </select>
-                            <small class="form-help">Com que frequência verificar e processar arquivos</small>
-                        </div>
-                        
-                        <div class="form-group" id="cron-group" style="display: none;">
-                            <label>Expressão Cron Personalizada</label>
-                            <input type="text" id="cron-expression" placeholder="*/5 * * * * (a cada 5 minutos)">
-                            <small class="form-help">
-                                <strong>Formato:</strong> minuto hora dia mês dia_semana<br>
-                                <strong>Exemplos:</strong> */5 * * * * (5min) | 0 */2 * * * (2h) | 0 0 * * 0 (semanal)
-                            </small>
-                        </div>
+                    <div class="form-group">
+                        <label>Pasta de Destino</label>
+                        <select id="target-folder" onchange="updateTargetFolderInfo()" required>
+                            <option value="">Selecione uma pasta de destino</option>
+                            <!-- Opções serão carregadas dinamicamente -->
+                        </select>
+                        <small class="form-help" id="target-folder-help">Pasta para onde os arquivos serão enviados</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Ação com Arquivos</label>
+                        <select id="file-action" onchange="updateActionHelp()" required>
+                            <option value="copy">📋 Copiar (manter original)</option>
+                            <option value="move">📤 Mover (remover original)</option>
+                            <option value="copy_and_clean">🧹 Copiar e Limpar Original</option>
+                        </select>
+                        <small class="form-help" id="action-help">O que fazer com os arquivos originais</small>
                     </div>
                 </div>
                 
-                <!-- Etapa 3: Regras e Transformações -->
+                <!-- Etapa 3: Frequência e Agendamento -->
                 <div class="wizard-step" data-step="3">
                     <h4 class="step-title">
-                        <span class="material-icons">tune</span>
-                        Regras e Transformações
+                        <span class="material-icons">schedule</span>
+                        Frequência e Agendamento
                     </h4>
                     
                     <div class="form-group">
-                        <label>Regras de Processamento</label>
-                        <select id="processing-rules" onchange="toggleExtensionField()">
-                            <option value="all">✅ Processar Todos os Arquivos</option>
+                        <label>Frequência de Execução</label>
+                        <select id="execution-frequency" onchange="toggleCronField()" required>
+                            <option value="realtime">⚡ Tempo Real (Imediato)</option>
+                            <option value="1min">⏱️ A cada 1 minuto</option>
+                            <option value="5min">⏱️ A cada 5 minutos</option>
+                            <option value="15min">⏱️ A cada 15 minutos</option>
+                            <option value="30min">⏱️ A cada 30 minutos</option>
+                            <option value="1hour">⏰ A cada 1 hora</option>
+                            <option value="6hours">⏰ A cada 6 horas</option>
+                            <option value="12hours">⏰ A cada 12 horas</option>
+                            <option value="daily">📅 Diário (00:00)</option>
+                            <option value="weekly">📅 Semanal (Domingo 00:00)</option>
+                            <option value="monthly">📅 Mensal (1º dia 00:00)</option>
+                            <option value="custom">⚙️ Personalizado (Cron)</option>
+                        </select>
+                        <small class="form-help">Com que frequência executar o fluxo</small>
+                    </div>
+                    
+                    <div class="form-group" id="cron-group" style="display: none;">
+                        <label>Expressão Cron Personalizada</label>
+                        <input type="text" id="cron-expression" placeholder="*/5 * * * * (a cada 5 minutos)">
+                        <small class="form-help">
+                            <strong>Formato:</strong> minuto hora dia mês dia_semana<br>
+                            <strong>Exemplos:</strong> */5 * * * * (5min) | 0 */2 * * * (2h) | 0 0 * * 0 (semanal)
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Etapa 4: Filtros e Transformações -->
+                <div class="wizard-step" data-step="4">
+                    <h4 class="step-title">
+                        <span class="material-icons">filter_list</span>
+                        Filtros e Transformações
+                    </h4>
+                    
+                    <div class="form-group">
+                        <label>Tipo de Filtro</label>
+                        <select id="filter-type" onchange="toggleFilterOptions()" required>
+                            <option value="all">✅ Todos os Arquivos</option>
                             <option value="new">🆕 Apenas Arquivos Novos</option>
                             <option value="modified">📝 Apenas Arquivos Modificados</option>
-                            <option value="size">📏 Por Tamanho (maior que 1MB)</option>
                             <option value="extension">🔍 Por Extensão Específica</option>
+                            <option value="size">📏 Por Tamanho</option>
+                            <option value="age">⏰ Por Idade do Arquivo</option>
                         </select>
                         <small class="form-help">Quais arquivos devem ser processados</small>
                     </div>
                     
-                    <div class="form-group" id="extension-group" style="display: none;">
+                    <div class="form-group" id="extension-filter" style="display: none;">
                         <label>Extensões Permitidas</label>
                         <input type="text" id="allowed-extensions" placeholder="csv,json,xml (separadas por vírgula)">
-                        <small class="form-help">Liste as extensões de arquivo que devem ser processadas</small>
+                        <small class="form-help">Liste as extensões que devem ser processadas</small>
+                    </div>
+                    
+                    <div class="form-group" id="size-filter" style="display: none;">
+                        <label>Tamanho Mínimo (MB)</label>
+                        <input type="number" id="min-size" placeholder="0" min="0" step="0.1">
+                        <small class="form-help">Arquivos menores que este valor serão ignorados</small>
+                    </div>
+                    
+                    <div class="form-group" id="age-filter" style="display: none;">
+                        <label>Idade Mínima (horas)</label>
+                        <input type="number" id="min-age" placeholder="0" min="0" step="0.1">
+                        <small class="form-help">Arquivos mais novos que este valor serão ignorados</small>
                     </div>
                     
                     <div class="form-group">
-                        <label>Transformações Aplicadas</label>
+                        <label>Transformações</label>
                         <div class="checkbox-group">
                             <label class="checkbox-item">
                                 <input type="checkbox" id="transform-trim" checked>
@@ -450,45 +495,108 @@
                     </div>
                 </div>
                 
-                <!-- Etapa 4: Configurações de Saída -->
-                <div class="wizard-step" data-step="4">
+                <!-- Etapa 5: Limpeza e Manutenção -->
+                <div class="wizard-step" data-step="5">
                     <h4 class="step-title">
-                        <span class="material-icons">output</span>
-                        Configurações de Saída
+                        <span class="material-icons">cleaning_services</span>
+                        Limpeza e Manutenção
                     </h4>
+                    
+                    <div class="form-group">
+                        <label>Limpeza Automática</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="auto-cleanup" onchange="toggleCleanupOptions()">
+                                <span>🗑️ Ativar limpeza automática</span>
+                            </label>
+                        </div>
+                        <small class="form-help">Mover arquivos antigos para lixeira automaticamente</small>
+                    </div>
+                    
+                    <div id="cleanup-options" style="display: none;">
+                        <div class="form-group">
+                            <label>Frequência de Limpeza</label>
+                            <select id="cleanup-frequency">
+                                <option value="daily">📅 Diário</option>
+                                <option value="weekly">📅 Semanal</option>
+                                <option value="monthly">📅 Mensal</option>
+                                <option value="custom">⚙️ Personalizado</option>
+                            </select>
+                            <small class="form-help">Com que frequência executar a limpeza</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Idade Máxima dos Arquivos (dias)</label>
+                            <input type="number" id="max-file-age" placeholder="30" min="1" value="30">
+                            <small class="form-help">Arquivos mais antigos que este valor serão movidos para lixeira</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Pasta de Lixeira</label>
+                            <select id="trash-folder">
+                                <option value="system">🗑️ Lixeira do Sistema</option>
+                                <option value="custom">📁 Pasta Personalizada</option>
+                            </select>
+                            <small class="form-help">Onde mover os arquivos antigos</small>
+                        </div>
+                        
+                        <div class="form-group" id="custom-trash" style="display: none;">
+                            <label>Caminho da Pasta de Lixeira</label>
+                            <input type="text" id="custom-trash-path" placeholder="/home/usuario/lixeira">
+                            <small class="form-help">Caminho completo para a pasta de lixeira personalizada</small>
+                        </div>
+                    </div>
                     
                     <div class="form-group">
                         <label>Opções de Processamento</label>
                         <div class="checkbox-group">
                             <label class="checkbox-item">
-                                <input type="checkbox" id="output-backup" checked>
-                                <span>💾 Criar Backup Original</span>
+                                <input type="checkbox" id="create-backup" checked>
+                                <span>💾 Criar Backup Antes de Processar</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" id="output-log" checked>
-                                <span>📝 Gerar Log de Processamento</span>
+                                <input type="checkbox" id="generate-logs" checked>
+                                <span>📝 Gerar Logs de Processamento</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" id="output-notify">
+                                <input type="checkbox" id="notify-completion">
                                 <span>🔔 Notificar Conclusão</span>
                             </label>
                         </div>
                         <small class="form-help">Ações adicionais durante o processamento</small>
                     </div>
+                </div>
+                
+                <!-- Etapa 6: Resumo e Confirmação -->
+                <div class="wizard-step" data-step="6">
+                    <h4 class="step-title">
+                        <span class="material-icons">preview</span>
+                        Resumo e Confirmação
+                    </h4>
                     
                     <div class="form-group">
-                        <label>Resumo da Configuração</label>
-                        <div id="config-summary" class="config-summary">
+                        <label>Resumo do Fluxo de Trabalho</label>
+                        <div id="workflow-summary" class="workflow-summary">
                             <!-- Resumo será preenchido dinamicamente -->
                         </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Status do Fluxo</label>
+                        <select id="workflow-status">
+                            <option value="active">🟢 Ativo (executar imediatamente)</option>
+                            <option value="paused">⏸️ Pausado (não executar)</option>
+                            <option value="draft">📝 Rascunho (salvar para edição posterior)</option>
+                        </select>
+                        <small class="form-help">Estado inicial do fluxo de trabalho</small>
                     </div>
                 </div>
             </div>
             
-            <!-- NOVO: Navegação do Wizard -->
+            <!-- Navegação do Wizard -->
             <div class="modal-footer">
                 <div class="wizard-navigation">
-                    <button class="btn btn-secondary" id="prev-step" onclick="previousStep()" style="display: none;">
+                    <button class="btn btn-secondary" id="prev-step" onclick="previousWorkflowStep()" style="display: none;">
                         <span class="material-icons">arrow_back</span>
                         Anterior
                     </button>
@@ -498,20 +606,85 @@
                         <span class="step-dot" data-step="2"></span>
                         <span class="step-dot" data-step="3"></span>
                         <span class="step-dot" data-step="4"></span>
+                        <span class="step-dot" data-step="5"></span>
+                        <span class="step-dot" data-step="6"></span>
                     </div>
                     
-                    <button class="btn btn-primary" id="next-step" onclick="nextStep()">
+                    <button class="btn btn-primary" id="next-step" onclick="nextWorkflowStep()">
                         Próximo
                         <span class="material-icons">arrow_forward</span>
                     </button>
                     
-                    <button class="btn btn-success" id="save-step" onclick="saveFolder()" style="display: none;">
+                    <button class="btn btn-success" id="save-step" onclick="saveWorkflow()" style="display: none;">
                         <span class="material-icons">save</span>
-                        Salvar Pasta
+                        Salvar Fluxo
                     </button>
                 </div>
                 
-                <button class="btn btn-secondary" onclick="closeFolderModal()">Cancelar</button>
+                <button class="btn btn-secondary" onclick="closeWorkflowModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Gerenciamento de Pastas -->
+    <div id="folder-manager-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Gerenciar Pastas</h3>
+                <button class="modal-close" onclick="closeFolderManagerModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome da Pasta</label>
+                    <input type="text" id="folder-name" placeholder="Ex: Dados_Entrada" required>
+                    <small class="form-help">Nome descritivo para identificar a pasta</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>Caminho da Pasta</label>
+                    <input type="text" id="folder-path" placeholder="/home/usuario/dados/entrada" required>
+                    <small class="form-help">Caminho completo onde a pasta está localizada</small>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Pasta</label>
+                        <select id="folder-type" onchange="updateFolderTypeHelp()">
+                            <option value="source">📥 Pasta de Origem</option>
+                            <option value="target">📤 Pasta de Destino</option>
+                            <option value="temp">🗂️ Pasta Temporária</option>
+                            <option value="trash">🗑️ Pasta de Lixeira</option>
+                        </select>
+                        <small class="form-help" id="folder-type-help">Função da pasta no sistema</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Formato de Arquivo</label>
+                        <select id="folder-format">
+                            <option value="auto">🔍 Detectar Automaticamente</option>
+                            <option value="csv">📊 CSV</option>
+                            <option value="json">📋 JSON</option>
+                            <option value="xml">📄 XML</option>
+                            <option value="yaml">⚙️ YAML</option>
+                            <option value="any">📁 Qualquer Formato</option>
+                        </select>
+                        <small class="form-help">Formato dos arquivos que serão processados</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea id="folder-description" placeholder="Descreva o propósito desta pasta..." rows="3"></textarea>
+                    <small class="form-help">Descrição opcional da pasta</small>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeFolderManagerModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveFolder()">Salvar Pasta</button>
             </div>
         </div>
     </div>

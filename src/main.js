@@ -58,6 +58,9 @@ app.use(morgan('combined', {
 // Middleware para servir arquivos estáticos da interface web
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Servir arquivos estáticos para a interface web
+app.use('/ui', express.static(path.join(__dirname, 'public')));
+
 // Middleware de request logging
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path} - ${req.ip}`, {
@@ -83,14 +86,26 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Rota raiz - Interface web
+// Rota raiz para API
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.json({
+        message: 'DePara API - Sistema de Conversão e Mapeamento de Dados',
+        version: '1.0.0',
+        endpoints: {
+            health: '/api/health',
+            status: '/api/status',
+            convert: '/api/convert',
+            map: '/api/map',
+            folders: '/api/folders',
+            ui: '/ui'
+        },
+        documentation: '/api/docs'
+    });
 });
 
-// Rota para a interface web (fallback)
+// Rota para a interface web
 app.get('/ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Middleware de tratamento de erros
@@ -107,25 +122,10 @@ app.use('*', (req, res) => {
 
 // Inicializar servidor
 const server = app.listen(PORT, () => {
-  logger.info(`🚀 Servidor DePara iniciado com sucesso!`, {
-    port: PORT,
-    environment: NODE_ENV,
-    timestamp: new Date().toISOString()
-  });
-  
-  console.log(`
-  ╔══════════════════════════════════════════════════════════════╗
-  ║                    DePara API                                ║
-  ║              Sistema de Conversão de Dados                   ║
-  ╠══════════════════════════════════════════════════════════════╣
-  ║  🌐 URL: http://localhost:${PORT}                           ║
-  ║  🖥️  Interface Web: http://localhost:${PORT}/ui              ║
-  ║  📚 Docs: http://localhost:${PORT}/api/docs                 ║
-  ║  ❤️  Health: http://localhost:${PORT}/health                 ║
-  ║  🔧 Ambiente: ${NODE_ENV}                                   ║
-  ║  📅 Iniciado em: ${new Date().toLocaleString('pt-BR')}      ║
-  ╚══════════════════════════════════════════════════════════════╝
-  `);
+  logger.info(`🚀 Servidor DePara iniciado na porta ${PORT}`);
+  logger.info(`📊 API disponível em: http://localhost:${PORT}`);
+  logger.info(`🌐 Interface web disponível em: http://localhost:${PORT}/ui`);
+  logger.info(`📚 Documentação da API: http://localhost:${PORT}/api/docs`);
 });
 
 // Tratamento de erros não capturados

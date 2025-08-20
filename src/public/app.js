@@ -1,13 +1,14 @@
 // DePara Web Interface - JavaScript
 // @author yopastorelli
-// @version 1.0.0
+// @version 2.0.0
 
 class DeParaUI {
     constructor() {
         this.currentTab = 'dashboard';
+        this.workflows = [];
         this.folders = [];
         this.settings = {};
-        this.currentWizardStep = 1;
+        this.currentWorkflowStep = 1;
         this.init();
     }
 
@@ -15,16 +16,16 @@ class DeParaUI {
         this.setupEventListeners();
         this.loadSettings();
         this.loadFolders();
+        this.loadWorkflows();
         this.startMonitoring();
         this.showToast('DePara iniciado com sucesso!', 'success');
         
-        // Verificar se é primeira visita
         if (!localStorage.getItem('depara-onboarding-completed')) {
             setTimeout(() => this.showOnboarding(), 1000);
         }
     }
 
-    // NOVO: Sistema de Onboarding
+    // Sistema de Onboarding
     showOnboarding() {
         document.getElementById('onboarding-overlay').style.display = 'flex';
     }
@@ -37,65 +38,116 @@ class DeParaUI {
     startOnboarding() {
         document.getElementById('onboarding-overlay').style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
-        this.openFolderConfig();
+        this.openWorkflowConfig();
     }
 
-    // NOVO: Sistema de Wizard
-    nextStep() {
-        if (this.currentWizardStep < 4) {
-            if (this.validateCurrentStep()) {
-                this.currentWizardStep++;
-                this.updateWizardStep();
+    // Sistema de Workflows
+    openWorkflowConfig() {
+        document.getElementById('workflow-modal').style.display = 'flex';
+        this.currentWorkflowStep = 1;
+        this.updateWorkflowStep();
+        document.getElementById('workflow-name').focus();
+    }
+
+    closeWorkflowModal() {
+        document.getElementById('workflow-modal').style.display = 'none';
+        this.resetWorkflowModal();
+    }
+
+    resetWorkflowModal() {
+        document.getElementById('workflow-name').value = '';
+        document.getElementById('workflow-description').value = '';
+        document.getElementById('source-folder').value = '';
+        document.getElementById('target-folder').value = '';
+        document.getElementById('file-action').value = 'copy';
+        document.getElementById('execution-frequency').value = 'realtime';
+        document.getElementById('cron-expression').value = '';
+        document.getElementById('filter-type').value = 'all';
+        document.getElementById('allowed-extensions').value = '';
+        document.getElementById('min-size').value = '';
+        document.getElementById('min-age').value = '';
+        document.getElementById('transform-uppercase').checked = false;
+        document.getElementById('transform-lowercase').checked = false;
+        document.getElementById('transform-trim').checked = true;
+        document.getElementById('transform-validate').checked = true;
+        document.getElementById('auto-cleanup').checked = false;
+        document.getElementById('cleanup-frequency').value = 'weekly';
+        document.getElementById('max-file-age').value = '30';
+        document.getElementById('trash-folder').value = 'system';
+        document.getElementById('custom-trash-path').value = '';
+        document.getElementById('create-backup').checked = true;
+        document.getElementById('generate-logs').checked = true;
+        document.getElementById('notify-completion').checked = false;
+        document.getElementById('workflow-status').value = 'active';
+        
+        this.currentWorkflowStep = 1;
+        this.updateWorkflowStep();
+        this.hideAllConditionalFields();
+    }
+
+    hideAllConditionalFields() {
+        document.getElementById('cron-group').style.display = 'none';
+        document.getElementById('extension-filter').style.display = 'none';
+        document.getElementById('size-filter').style.display = 'none';
+        document.getElementById('age-filter').style.display = 'none';
+        document.getElementById('cleanup-options').style.display = 'none';
+        document.getElementById('custom-trash').style.display = 'none';
+    }
+
+    // Sistema de Wizard para Workflows
+    nextWorkflowStep() {
+        if (this.currentWorkflowStep < 6) {
+            if (this.validateCurrentWorkflowStep()) {
+                this.currentWorkflowStep++;
+                this.updateWorkflowStep();
             }
         }
     }
 
-    previousStep() {
-        if (this.currentWizardStep > 1) {
-            this.currentWizardStep--;
-            this.updateWizardStep();
+    previousWorkflowStep() {
+        if (this.currentWorkflowStep > 1) {
+            this.currentWorkflowStep--;
+            this.updateWorkflowStep();
         }
     }
 
-    updateWizardStep() {
-        // Ocultar todas as etapas
+    updateWorkflowStep() {
         document.querySelectorAll('.wizard-step').forEach(step => {
             step.classList.remove('active');
         });
 
-        // Mostrar etapa atual
-        document.querySelector(`[data-step="${this.currentWizardStep}"]`).classList.add('active');
+        document.querySelector(`[data-step="${this.currentWorkflowStep}"]`).classList.add('active');
 
-        // Atualizar indicadores
         document.querySelectorAll('.step-dot').forEach((dot, index) => {
             dot.classList.remove('active', 'completed');
-            if (index + 1 === this.currentWizardStep) {
+            if (index + 1 === this.currentWorkflowStep) {
                 dot.classList.add('active');
-            } else if (index + 1 < this.currentWizardStep) {
+            } else if (index + 1 < this.currentWorkflowStep) {
                 dot.classList.add('completed');
             }
         });
 
-        // Atualizar botões de navegação
         const prevBtn = document.getElementById('prev-step');
         const nextBtn = document.getElementById('next-step');
         const saveBtn = document.getElementById('save-step');
 
-        prevBtn.style.display = this.currentWizardStep > 1 ? 'flex' : 'none';
-        nextBtn.style.display = this.currentWizardStep < 4 ? 'flex' : 'none';
-        saveBtn.style.display = this.currentWizardStep === 4 ? 'flex' : 'none';
+        prevBtn.style.display = this.currentWorkflowStep > 1 ? 'flex' : 'none';
+        nextBtn.style.display = this.currentWorkflowStep < 6 ? 'flex' : 'none';
+        saveBtn.style.display = this.currentWorkflowStep === 6 ? 'flex' : 'none';
 
-        // Atualizar resumo na última etapa
-        if (this.currentWizardStep === 4) {
-            this.updateConfigSummary();
+        if (this.currentWorkflowStep === 6) {
+            this.updateWorkflowSummary();
+        }
+
+        if (this.currentWorkflowStep === 2) {
+            this.populateFolderSelects();
         }
     }
 
-    validateCurrentStep() {
+    validateCurrentWorkflowStep() {
         let isValid = true;
-        const currentStep = document.querySelector(`[data-step="${this.currentWizardStep}"]`);
+        const currentStep = document.querySelector(`[data-step="${this.currentWorkflowStep}"]`);
 
-        // Validar campos obrigatórios da etapa atual
         const requiredFields = currentStep.querySelectorAll('input[required], select[required]');
         requiredFields.forEach(field => {
             if (!field.value.trim()) {
@@ -106,47 +158,58 @@ class DeParaUI {
             }
         });
 
-        // Validações específicas por etapa
-        switch (this.currentWizardStep) {
+        switch (this.currentWorkflowStep) {
             case 1:
-                isValid = this.validateBasicInfo() && isValid;
+                isValid = this.validateWorkflowBasicInfo() && isValid;
                 break;
             case 2:
-                isValid = this.validateProcessingOptions() && isValid;
+                isValid = this.validateWorkflowFolders() && isValid;
                 break;
             case 3:
-                isValid = this.validateRulesAndTransformations() && isValid;
+                isValid = this.validateWorkflowSchedule() && isValid;
+                break;
+            case 4:
+                isValid = this.validateWorkflowFilters() && isValid;
+                break;
+            case 5:
+                isValid = this.validateWorkflowCleanup() && isValid;
                 break;
         }
 
         return isValid;
     }
 
-    validateBasicInfo() {
+    validateWorkflowBasicInfo() {
         let isValid = true;
-        const name = document.getElementById('folder-name');
-        const path = document.getElementById('folder-path');
+        const name = document.getElementById('workflow-name');
 
-        if (name.value.trim().length < 3) {
-            this.showFieldError(name, 'Nome deve ter pelo menos 3 caracteres');
-            isValid = false;
-        }
-
-        if (path.value.trim().length < 5) {
-            this.showFieldError(path, 'Caminho deve ser válido');
+        if (name.value.trim().length < 5) {
+            this.showFieldError(name, 'Nome deve ter pelo menos 5 caracteres');
             isValid = false;
         }
 
         return isValid;
     }
 
-    validateProcessingOptions() {
+    validateWorkflowFolders() {
         let isValid = true;
-        const autoProcess = document.getElementById('auto-process');
-        const frequency = document.getElementById('processing-frequency');
+        const sourceFolder = document.getElementById('source-folder');
+        const targetFolder = document.getElementById('target-folder');
+
+        if (sourceFolder.value === targetFolder.value && sourceFolder.value !== '') {
+            this.showToast('Pasta de origem e destino não podem ser iguais', 'warning');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    validateWorkflowSchedule() {
+        let isValid = true;
+        const frequency = document.getElementById('execution-frequency');
         const cronExpression = document.getElementById('cron-expression');
 
-        if (autoProcess.checked && frequency.value === 'custom' && !cronExpression.value.trim()) {
+        if (frequency.value === 'custom' && !cronExpression.value.trim()) {
             this.showFieldError(cronExpression, 'Expressão cron é obrigatória para frequência personalizada');
             isValid = false;
         }
@@ -154,17 +217,28 @@ class DeParaUI {
         return isValid;
     }
 
-    validateRulesAndTransformations() {
+    validateWorkflowFilters() {
         let isValid = true;
-        const rules = document.getElementById('processing-rules');
+        const filterType = document.getElementById('filter-type').value;
         const extensions = document.getElementById('allowed-extensions');
+        const minSize = document.getElementById('min-size');
+        const minAge = document.getElementById('min-age');
 
-        if (rules.value === 'extension' && !extensions.value.trim()) {
+        if (filterType === 'extension' && !extensions.value.trim()) {
             this.showFieldError(extensions, 'Especifique as extensões permitidas');
             isValid = false;
         }
 
-        // Validar conflito de case
+        if (filterType === 'size' && (!minSize.value || parseFloat(minSize.value) < 0)) {
+            this.showFieldError(minSize, 'Tamanho mínimo deve ser um número positivo');
+            isValid = false;
+        }
+
+        if (filterType === 'age' && (!minAge.value || parseFloat(minAge.value) < 0)) {
+            this.showFieldError(minAge, 'Idade mínima deve ser um número positivo');
+            isValid = false;
+        }
+
         const uppercase = document.getElementById('transform-uppercase');
         const lowercase = document.getElementById('transform-lowercase');
 
@@ -176,64 +250,184 @@ class DeParaUI {
         return isValid;
     }
 
-    showFieldError(field, message) {
-        const validationDiv = field.parentNode.querySelector('.validation-message');
-        if (validationDiv) {
-            validationDiv.textContent = message;
-            validationDiv.className = 'validation-message error';
+    validateWorkflowCleanup() {
+        let isValid = true;
+        const autoCleanup = document.getElementById('auto-cleanup');
+        const customTrash = document.getElementById('trash-folder');
+        const customTrashPath = document.getElementById('custom-trash-path');
+
+        if (autoCleanup.checked && customTrash.value === 'custom' && !customTrashPath.value.trim()) {
+            this.showFieldError(customTrashPath, 'Caminho da pasta de lixeira personalizada é obrigatório');
+            isValid = false;
         }
-        field.style.borderColor = '#e74c3c';
+
+        return isValid;
     }
 
-    clearFieldError(field) {
-        const validationDiv = field.parentNode.querySelector('.validation-message');
-        if (validationDiv) {
-            validationDiv.textContent = '';
-            validationDiv.className = 'validation-message';
-        }
-        field.style.borderColor = 'rgba(102, 126, 234, 0.2)';
+    // Sistema de Gerenciamento de Pastas
+    openFolderManager() {
+        document.getElementById('folder-manager-modal').style.display = 'flex';
+        this.populateFolderTypeHelp();
     }
 
-    updateConfigSummary() {
-        const summary = document.getElementById('config-summary');
-        const name = document.getElementById('folder-name').value;
-        const path = document.getElementById('folder-path').value;
+    closeFolderManagerModal() {
+        document.getElementById('folder-manager-modal').style.display = 'none';
+        this.resetFolderManagerModal();
+    }
+
+    resetFolderManagerModal() {
+        document.getElementById('folder-name').value = '';
+        document.getElementById('folder-path').value = '';
+        document.getElementById('folder-type').value = 'source';
+        document.getElementById('folder-format').value = 'auto';
+        document.getElementById('folder-description').value = '';
+    }
+
+    async saveFolder() {
+        const name = document.getElementById('folder-name').value.trim();
+        const path = document.getElementById('folder-path').value.trim();
         const type = document.getElementById('folder-type').value;
         const format = document.getElementById('folder-format').value;
-        const autoProcess = document.getElementById('auto-process').checked;
-        const frequency = document.getElementById('processing-frequency').value;
+        const description = document.getElementById('folder-description').value.trim();
 
+        if (!name || !path) {
+            this.showToast('Preencha todos os campos obrigatórios', 'warning');
+            return;
+        }
+
+        try {
+            const folderData = {
+                name,
+                path,
+                type,
+                format,
+                description,
+                enabled: true
+            };
+
+            const response = await fetch('/api/folders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(folderData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.folders.push(result.data);
+                this.renderFolders();
+                this.closeFolderManagerModal();
+                this.showToast('Pasta configurada com sucesso!', 'success');
+            } else {
+                const error = await response.json();
+                throw new Error(error.message || 'Erro ao salvar pasta');
+            }
+
+        } catch (error) {
+            console.error('Erro ao salvar pasta:', error);
+            this.showToast(`Erro ao salvar pasta: ${error.message}`, 'error');
+        }
+    }
+
+    // Sistema de Workflows
+    async saveWorkflow() {
+        if (!this.validateCurrentWorkflowStep()) {
+            return;
+        }
+
+        try {
+            const workflowData = this.collectWorkflowData();
+            
+            const response = await fetch('/api/workflows', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(workflowData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.workflows.push(result.data);
+                this.renderWorkflows();
+                this.closeWorkflowModal();
+                this.showToast('Fluxo de trabalho configurado com sucesso!', 'success');
+            } else {
+                const error = await response.json();
+                throw new Error(error.message || 'Erro ao salvar fluxo de trabalho');
+            }
+
+        } catch (error) {
+            console.error('Erro ao salvar fluxo de trabalho:', error);
+            this.showToast(`Erro ao salvar fluxo de trabalho: ${error.message}`, 'error');
+        }
+    }
+
+    collectWorkflowData() {
+        return {
+            name: document.getElementById('workflow-name').value.trim(),
+            description: document.getElementById('workflow-description').value.trim(),
+            sourceFolder: document.getElementById('source-folder').value,
+            targetFolder: document.getElementById('target-folder').value,
+            fileAction: document.getElementById('file-action').value,
+            executionFrequency: document.getElementById('execution-frequency').value,
+            cronExpression: document.getElementById('cron-expression').value.trim(),
+            filterType: document.getElementById('filter-type').value,
+            allowedExtensions: document.getElementById('allowed-extensions').value.trim(),
+            minSize: document.getElementById('min-size').value,
+            minAge: document.getElementById('min-age').value,
+            transformations: {
+                uppercase: document.getElementById('transform-uppercase').checked,
+                lowercase: document.getElementById('transform-lowercase').checked,
+                trim: document.getElementById('transform-trim').checked,
+                validate: document.getElementById('transform-validate').checked
+            },
+            autoCleanup: document.getElementById('auto-cleanup').checked,
+            cleanupFrequency: document.getElementById('cleanup-frequency').value,
+            maxFileAge: document.getElementById('max-file-age').value,
+            trashFolder: document.getElementById('trash-folder').value,
+            customTrashPath: document.getElementById('custom-trash-path').value.trim(),
+            options: {
+                createBackup: document.getElementById('create-backup').checked,
+                generateLogs: document.getElementById('generate-logs').checked,
+                notifyCompletion: document.getElementById('notify-completion').checked
+            },
+            status: document.getElementById('workflow-status').value
+        };
+    }
+
+    updateWorkflowSummary() {
+        const summary = document.getElementById('workflow-summary');
+        const workflowData = this.collectWorkflowData();
+        
         summary.innerHTML = `
-            <h5>📋 Resumo da Configuração</h5>
+            <h5>📋 Resumo do Fluxo de Trabalho</h5>
             <ul>
-                <li><strong>Nome:</strong> ${name}</li>
-                <li><strong>Caminho:</strong> ${path}</li>
-                <li><strong>Tipo:</strong> ${this.getTypeLabel(type)}</li>
-                <li><strong>Formato:</strong> ${this.getFormatLabel(format)}</li>
-                <li><strong>Processamento:</strong> ${autoProcess ? 'Automático' : 'Manual'}</li>
-                ${autoProcess ? `<li><strong>Frequência:</strong> ${this.getFrequencyLabel(frequency)}</li>` : ''}
+                <li><strong>Nome:</strong> ${workflowData.name}</li>
+                <li><strong>Origem:</strong> ${this.getFolderName(workflowData.sourceFolder)}</li>
+                <li><strong>Destino:</strong> ${this.getFolderName(workflowData.targetFolder)}</li>
+                <li><strong>Ação:</strong> ${this.getActionLabel(workflowData.fileAction)}</li>
+                <li><strong>Frequência:</strong> ${this.getFrequencyLabel(workflowData.executionFrequency)}</li>
+                <li><strong>Filtro:</strong> ${this.getFilterLabel(workflowData.filterType)}</li>
+                ${workflowData.autoCleanup ? `<li><strong>Limpeza:</strong> ${workflowData.cleanupFrequency} (${workflowData.maxFileAge} dias)</li>` : ''}
             </ul>
         `;
     }
 
-    getTypeLabel(type) {
-        const labels = {
-            'input': '📥 Pasta de Entrada',
-            'output': '📤 Pasta de Saída',
-            'temp': '🗂️ Pasta Temporária'
-        };
-        return labels[type] || type;
+    // Métodos auxiliares
+    getFolderName(folderId) {
+        const folder = this.folders.find(f => f.id === folderId);
+        return folder ? folder.name : 'N/A';
     }
 
-    getFormatLabel(format) {
+    getActionLabel(action) {
         const labels = {
-            'auto': '🔍 Detecção Automática',
-            'csv': '📊 CSV',
-            'json': '📋 JSON',
-            'xml': '📄 XML',
-            'yaml': '⚙️ YAML'
+            'copy': '📋 Copiar',
+            'move': '📤 Mover',
+            'copy_and_clean': '🧹 Copiar e Limpar'
         };
-        return labels[format] || format;
+        return labels[action] || action;
     }
 
     getFrequencyLabel(frequency) {
@@ -254,175 +448,222 @@ class DeParaUI {
         return labels[frequency] || frequency;
     }
 
+    getFilterLabel(filterType) {
+        const labels = {
+            'all': '✅ Todos os Arquivos',
+            'new': '🆕 Apenas Novos',
+            'modified': '📝 Apenas Modificados',
+            'extension': '🔍 Por Extensão',
+            'size': '📏 Por Tamanho',
+            'age': '⏰ Por Idade'
+        };
+        return labels[filterType] || filterType;
+    }
+
+    // População de campos
+    populateFolderSelects() {
+        const sourceSelect = document.getElementById('source-folder');
+        const targetSelect = document.getElementById('target-folder');
+        
+        sourceSelect.innerHTML = '<option value="">Selecione uma pasta de origem</option>';
+        targetSelect.innerHTML = '<option value="">Selecione uma pasta de destino</option>';
+        
+        this.folders.forEach(folder => {
+            if (folder.type === 'source' || folder.type === 'any') {
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = `${folder.name} (${folder.path})`;
+                sourceSelect.appendChild(option);
+            }
+            
+            if (folder.type === 'target' || folder.type === 'any') {
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = `${folder.name} (${folder.path})`;
+                targetSelect.appendChild(option);
+            }
+        });
+    }
+
+    // Event Listeners
     setupEventListeners() {
-        // Navigation
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.switchTab(e.target.closest('.nav-btn').dataset.tab);
             });
         });
 
-        // File input
-        document.getElementById('file-input').addEventListener('change', (e) => {
-            this.handleFileUpload(e.target.files[0]);
-        });
+        const fileInput = document.getElementById('file-input');
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                this.handleFileUpload(e.target.files[0]);
+            });
+        }
 
-        // Drag and drop for file upload
-        const textarea = document.getElementById('conversion-data');
-        textarea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            textarea.style.borderColor = '#667eea';
-        });
+        this.setupWorkflowEventListeners();
+    }
 
-        textarea.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            textarea.style.borderColor = 'rgba(102, 126, 234, 0.2)';
-        });
+    setupWorkflowEventListeners() {
+        const filterType = document.getElementById('filter-type');
+        if (filterType) {
+            filterType.addEventListener('change', () => this.toggleFilterOptions());
+        }
 
-        textarea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            textarea.style.borderColor = 'rgba(102, 126, 234, 0.2)';
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                this.handleFileUpload(file);
+        const autoCleanup = document.getElementById('auto-cleanup');
+        if (autoCleanup) {
+            autoCleanup.addEventListener('change', () => this.toggleCleanupOptions());
+        }
+
+        const trashFolder = document.getElementById('trash-folder');
+        if (trashFolder) {
+            trashFolder.addEventListener('change', () => this.toggleCustomTrash());
+        }
+
+        const uppercase = document.getElementById('transform-uppercase');
+        const lowercase = document.getElementById('transform-lowercase');
+        if (uppercase && lowercase) {
+            uppercase.addEventListener('change', () => this.toggleCaseConflict());
+            lowercase.addEventListener('change', () => this.toggleCaseConflict());
+        }
+    }
+
+    // Métodos de validação
+    showFieldError(field, message) {
+        const validationDiv = field.parentNode.querySelector('.validation-message');
+        if (validationDiv) {
+            validationDiv.textContent = message;
+            validationDiv.className = 'validation-message error';
+        }
+        field.style.borderColor = '#e74c3c';
+    }
+
+    clearFieldError(field) {
+        const validationDiv = field.parentNode.querySelector('.validation-message');
+        if (validationDiv) {
+            validationDiv.textContent = '';
+            validationDiv.className = 'validation-message';
+        }
+        field.style.borderColor = 'rgba(102, 126, 234, 0.2)';
+    }
+
+    // Métodos de toggle
+    toggleFilterOptions() {
+        const filterType = document.getElementById('filter-type').value;
+        
+        document.getElementById('extension-filter').classList.remove('active');
+        document.getElementById('size-filter').classList.remove('active');
+        document.getElementById('age-filter').classList.remove('active');
+        
+        switch (filterType) {
+            case 'extension':
+                document.getElementById('extension-filter').classList.add('active');
+                break;
+            case 'size':
+                document.getElementById('size-filter').classList.add('active');
+                break;
+            case 'age':
+                document.getElementById('age-filter').classList.add('active');
+                break;
+        }
+    }
+
+    toggleCleanupOptions() {
+        const autoCleanup = document.getElementById('auto-cleanup').checked;
+        document.getElementById('cleanup-options').style.display = autoCleanup ? 'block' : 'none';
+    }
+
+    toggleCustomTrash() {
+        const trashFolder = document.getElementById('trash-folder').value;
+        document.getElementById('custom-trash').classList.toggle('active', trashFolder === 'custom');
+    }
+
+    toggleCaseConflict() {
+        const uppercase = document.getElementById('transform-uppercase');
+        const lowercase = document.getElementById('transform-lowercase');
+        
+        if (uppercase.checked && lowercase.checked) {
+            if (event.target === uppercase) {
+                lowercase.checked = false;
+            } else {
+                uppercase.checked = false;
             }
-        });
-
-        // NOVOS EVENT LISTENERS PARA CONFIGURAÇÃO DE PASTAS
-        this.setupFolderConfigListeners();
-    }
-
-    setupFolderConfigListeners() {
-        // Controle de exibição das opções de processamento
-        const autoProcessCheckbox = document.getElementById('auto-process');
-        const processingOptions = document.getElementById('processing-options');
-        
-        if (autoProcessCheckbox && processingOptions) {
-            autoProcessCheckbox.addEventListener('change', (e) => {
-                processingOptions.style.display = e.target.checked ? 'block' : 'none';
-            });
-        }
-
-        // Controle de exibição do campo cron personalizado
-        const processingFrequency = document.getElementById('processing-frequency');
-        const cronGroup = document.getElementById('cron-group');
-        
-        if (processingFrequency && cronGroup) {
-            processingFrequency.addEventListener('change', (e) => {
-                cronGroup.style.display = e.target.value === 'custom' ? 'block' : 'none';
-            });
-        }
-
-        // Controle de exibição das extensões permitidas
-        const processingRules = document.getElementById('processing-rules');
-        const extensionGroup = document.getElementById('extension-group');
-        
-        if (processingRules && extensionGroup) {
-            processingRules.addEventListener('change', (e) => {
-                extensionGroup.style.display = e.target.value === 'extension' ? 'block' : 'none';
-            });
-        }
-
-        // Atualizar ajuda do tipo de pasta
-        const folderType = document.getElementById('folder-type');
-        if (folderType) {
-            folderType.addEventListener('change', () => this.updateTypeHelp());
         }
     }
 
-    updateTypeHelp() {
-        const typeSelect = document.getElementById('folder-type');
-        const typeHelp = document.getElementById('type-help');
-        
-        if (typeSelect && typeHelp) {
-            const type = typeSelect.value;
-            const helpTexts = {
-                'input': '📥 Pasta onde arquivos chegam para processamento automático',
-                'output': '📤 Pasta onde arquivos processados são salvos',
-                'temp': '🗂️ Pasta temporária para arquivos em processamento'
-            };
-            typeHelp.textContent = helpTexts[type] || helpTexts['input'];
-        }
-    }
-
-    switchTab(tabName) {
-        // Hide all tabs
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.remove('active');
-        });
-
-        // Remove active class from all nav buttons
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-
-        // Show selected tab
-        document.getElementById(tabName).classList.add('active');
-
-        // Activate selected nav button
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-
-        this.currentTab = tabName;
-
-        // Load specific tab data
-        switch (tabName) {
-            case 'dashboard':
-                this.updateDashboard();
-                break;
-            case 'folders':
-                this.loadFolders();
-                break;
-            case 'settings':
-                this.loadSettings();
-                break;
-        }
-    }
-
-    async updateDashboard() {
+    // Métodos de carregamento de dados
+    async loadWorkflows() {
         try {
-            // Update system status
-            const statusResponse = await fetch('/api/status/resources');
-            if (statusResponse.ok) {
-                const statusData = await statusResponse.json();
-                
-                document.getElementById('memory-usage').textContent = 
-                    `${Math.round(statusData.memory.used / 1024 / 1024)} MB / ${Math.round(statusData.memory.total / 1024 / 1024)} MB`;
-                
-                document.getElementById('disk-usage').textContent = 
-                    `${Math.round(statusData.disk.used / 1024 / 1024)} GB / ${Math.round(statusData.disk.total / 1024 / 1024)} GB`;
+            const response = await fetch('/api/workflows');
+            if (response.ok) {
+                const result = await response.json();
+                this.workflows = result.data || [];
+                this.renderWorkflows();
+            } else {
+                throw new Error('Falha ao carregar fluxos de trabalho');
             }
-
-            // Update CPU temperature (Raspberry Pi specific)
-            const tempResponse = await fetch('/api/status/performance');
-            if (tempResponse.ok) {
-                const tempData = await tempResponse.json();
-                if (tempData.cpu && tempData.cpu.temperature) {
-                    document.getElementById('cpu-temp').textContent = `${tempData.cpu.temperature}°C`;
-                }
-            }
-
-            // Update recent activity
-            this.updateRecentActivity();
-
         } catch (error) {
-            console.error('Erro ao atualizar dashboard:', error);
+            console.error('Erro ao carregar fluxos de trabalho:', error);
+            this.workflows = [];
+            this.renderWorkflows();
         }
     }
 
-    updateRecentActivity() {
-        const activityList = document.getElementById('recent-activity');
-        const activities = [
-            { icon: 'folder', text: 'Pasta configurada: Dados_Entrada', time: '2 min atrás' },
-            { icon: 'transform', text: 'Arquivo convertido: dados.csv → dados.json', time: '5 min atrás' },
-            { icon: 'map', text: 'Mapeamento criado: nome → name', time: '10 min atrás' }
-        ];
+    renderWorkflows() {
+        const workflowsGrid = document.getElementById('workflows-grid');
+        
+        if (this.workflows.length === 0) {
+            workflowsGrid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
+                    <span class="material-icons" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">workflow</span>
+                    <p>Nenhum fluxo de trabalho configurado</p>
+                    <p>Clique em "Novo Fluxo" para começar</p>
+                </div>
+            `;
+            return;
+        }
 
-        activityList.innerHTML = activities.map(activity => `
-            <div class="activity-item">
-                <span class="material-icons">${activity.icon}</span>
-                <div style="flex: 1;">
-                    <div>${activity.text}</div>
-                    <small style="color: #999;">${activity.time}</small>
+        workflowsGrid.innerHTML = this.workflows.map(workflow => `
+            <div class="workflow-card">
+                <div class="workflow-header">
+                    <div>
+                        <div class="workflow-name">${workflow.name}</div>
+                        <div class="workflow-description">${workflow.description || 'Sem descrição'}</div>
+                    </div>
+                    <span class="workflow-status ${workflow.status}">${workflow.status}</span>
+                </div>
+                
+                <div class="workflow-details">
+                    <div class="workflow-detail-item">
+                        <span class="material-icons">folder</span>
+                        <span>De: ${this.getFolderName(workflow.sourceFolder)}</span>
+                    </div>
+                    <div class="workflow-detail-item">
+                        <span class="material-icons">folder_shared</span>
+                        <span>Para: ${this.getFolderName(workflow.targetFolder)}</span>
+                    </div>
+                    <div class="workflow-detail-item">
+                        <span class="material-icons">schedule</span>
+                        <span>${this.getFrequencyLabel(workflow.executionFrequency)}</span>
+                    </div>
+                    <div class="workflow-detail-item">
+                        <span class="material-icons">filter_list</span>
+                        <span>${this.getFilterLabel(workflow.filterType)}</span>
+                    </div>
+                </div>
+                
+                <div class="workflow-actions">
+                    <button class="edit-btn" onclick="ui.editWorkflow('${workflow.id}')">
+                        <span class="material-icons">edit</span>
+                        Editar
+                    </button>
+                    <button class="toggle-btn" onclick="ui.toggleWorkflow('${workflow.id}')">
+                        <span class="material-icons">${workflow.status === 'active' ? 'pause' : 'play_arrow'}</span>
+                        ${workflow.status === 'active' ? 'Pausar' : 'Ativar'}
+                    </button>
+                    <button class="delete-btn" onclick="ui.deleteWorkflow('${workflow.id}')">
+                        <span class="material-icons">delete</span>
+                        Excluir
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -440,8 +681,6 @@ class DeParaUI {
             }
         } catch (error) {
             console.error('Erro ao carregar pastas:', error);
-            this.showToast('Erro ao carregar pastas', 'error');
-            // Fallback para dados mock se a API falhar
             this.folders = [];
             this.renderFolders();
         }
@@ -465,16 +704,17 @@ class DeParaUI {
             <div class="folder-card">
                 <div class="folder-header">
                     <div class="folder-name">${folder.name}</div>
-                    <span class="folder-type ${folder.type}">${this.getTypeLabel(folder.type)}</span>
+                    <span class="folder-type ${folder.type}">${this.getFolderTypeLabel(folder.type)}</span>
                 </div>
                 <div class="folder-path">${folder.path}</div>
+                <div class="folder-description">${folder.description || 'Sem descrição'}</div>
                 <div class="folder-actions">
-                    <button class="edit-btn" onclick="ui.editFolder(${folder.id})">
-                        <span class="material-icons" style="font-size: 16px;">edit</span>
+                    <button class="edit-btn" onclick="ui.editFolder('${folder.id}')">
+                        <span class="material-icons">edit</span>
                         Editar
                     </button>
-                    <button class="delete-btn" onclick="ui.deleteFolder(${folder.id})">
-                        <span class="material-icons" style="font-size: 16px;">delete</span>
+                    <button class="delete-btn" onclick="ui.deleteFolder('${folder.id}')">
+                        <span class="material-icons">delete</span>
                         Excluir
                     </button>
                 </div>
@@ -482,261 +722,107 @@ class DeParaUI {
         `).join('');
     }
 
-    getTypeLabel(type) {
+    getFolderTypeLabel(type) {
         const labels = {
-            'input': 'Entrada',
-            'output': 'Saída',
-            'temp': 'Temporária'
+            'source': '📥 Origem',
+            'target': '📤 Destino',
+            'temp': '🗂️ Temporária',
+            'trash': '🗑️ Lixeira',
+            'any': '📁 Qualquer'
         };
         return labels[type] || type;
     }
 
-    openFolderConfig() {
-        document.getElementById('folder-modal').style.display = 'flex';
-        this.currentWizardStep = 1;
-        this.updateWizardStep();
-        document.getElementById('folder-name').focus();
-    }
-
-    closeFolderModal() {
-        document.getElementById('folder-modal').style.display = 'none';
-        this.resetFolderModal();
-    }
-
-    resetFolderModal() {
-        // Resetar campos básicos
-        document.getElementById('folder-name').value = '';
-        document.getElementById('folder-path').value = '';
-        document.getElementById('folder-type').value = 'input';
-        document.getElementById('folder-format').value = 'auto';
-        document.getElementById('auto-process').checked = true;
-        
-        // Resetar campos de processamento
-        document.getElementById('processing-frequency').value = 'realtime';
-        document.getElementById('cron-expression').value = '';
-        document.getElementById('processing-rules').value = 'all';
-        document.getElementById('allowed-extensions').value = '';
-        
-        // Resetar transformações
-        document.getElementById('transform-uppercase').checked = false;
-        document.getElementById('transform-lowercase').checked = false;
-        document.getElementById('transform-trim').checked = true;
-        document.getElementById('transform-validate').checked = true;
-        
-        // Resetar configurações de saída
-        document.getElementById('output-backup').checked = true;
-        document.getElementById('output-log').checked = true;
-        document.getElementById('output-notify').checked = false;
-        
-        // Resetar wizard
-        this.currentWizardStep = 1;
-        this.updateWizardStep();
-        
-        // Limpar validações
-        document.querySelectorAll('.validation-message').forEach(msg => {
-            msg.textContent = '';
-            msg.className = 'validation-message';
+    // Métodos de navegação
+    switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
         });
-        
-        // Resetar bordas dos campos
-        document.querySelectorAll('input, select').forEach(field => {
-            field.style.borderColor = 'rgba(102, 126, 234, 0.2)';
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
         });
-        
-        this.editingFolderId = null;
+
+        document.getElementById(tabName).classList.add('active');
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+        this.currentTab = tabName;
+
+        switch (tabName) {
+            case 'dashboard':
+                this.updateDashboard();
+                break;
+            case 'workflows':
+                this.loadWorkflows();
+                break;
+            case 'folders':
+                this.loadFolders();
+                break;
+            case 'settings':
+                this.loadSettings();
+                break;
+        }
     }
 
-    async saveFolder() {
-        const name = document.getElementById('folder-name').value.trim();
-        const path = document.getElementById('folder-path').value.trim();
-        const type = document.getElementById('folder-type').value;
-        const format = document.getElementById('folder-format').value;
-        const autoProcess = document.getElementById('auto-process').checked;
-
-        if (!name || !path) {
-            this.showToast('Preencha todos os campos obrigatórios', 'warning');
-            return;
-        }
-
-        // NOVOS CAMPOS DE CONFIGURAÇÃO
-        const processingFrequency = document.getElementById('processing-frequency').value;
-        const cronExpression = document.getElementById('cron-expression').value.trim();
-        const processingRules = document.getElementById('processing-rules').value;
-        const allowedExtensions = document.getElementById('allowed-extensions').value.trim();
-        
-        // Transformações
-        const transformUppercase = document.getElementById('transform-uppercase').checked;
-        const transformLowercase = document.getElementById('transform-lowercase').checked;
-        const transformTrim = document.getElementById('transform-trim').checked;
-        const transformValidate = document.getElementById('transform-validate').checked;
-        
-        // Configurações de saída
-        const outputBackup = document.getElementById('output-backup').checked;
-        const outputLog = document.getElementById('output-log').checked;
-        const outputNotify = document.getElementById('output-notify').checked;
-
-        // Validações adicionais
-        if (autoProcess && processingFrequency === 'custom' && !cronExpression) {
-            this.showToast('Expressão cron é obrigatória para frequência personalizada', 'warning');
-            return;
-        }
-
-        if (processingRules === 'extension' && !allowedExtensions) {
-            this.showToast('Especifique as extensões permitidas', 'warning');
-            return;
-        }
-
+    // Métodos existentes mantidos
+    async updateDashboard() {
         try {
-            const folderData = {
-                name,
-                path,
-                type,
-                format,
-                autoProcess,
-                // NOVAS CONFIGURAÇÕES
-                processing: {
-                    frequency: processingFrequency,
-                    cronExpression: processingFrequency === 'custom' ? cronExpression : null,
-                    rules: processingRules,
-                    allowedExtensions: processingRules === 'extension' ? allowedExtensions.split(',').map(ext => ext.trim()) : [],
-                    transformations: {
-                        uppercase: transformUppercase,
-                        lowercase: transformLowercase,
-                        trim: transformTrim,
-                        validate: transformValidate
-                    },
-                    output: {
-                        backup: outputBackup,
-                        log: outputLog,
-                        notify: outputNotify
-                    }
+            const statusResponse = await fetch('/api/status/resources');
+            if (statusResponse.ok) {
+                const statusData = await statusResponse.json();
+                
+                const memoryUsage = document.getElementById('memory-usage');
+                const diskUsage = document.getElementById('disk-usage');
+                
+                if (memoryUsage) {
+                    memoryUsage.textContent = 
+                        `${Math.round(statusData.memory.used / 1024 / 1024)} MB / ${Math.round(statusData.memory.total / 1024 / 1024)} MB`;
                 }
-            };
-
-            const response = await fetch('/api/folders', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(folderData)
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                this.folders.push(result.data);
-                this.renderFolders();
-                this.closeFolderModal();
-                this.showToast('Pasta configurada com sucesso!', 'success');
-
-                // Switch to folders tab to show the new folder
-                this.switchTab('folders');
-            } else {
-                const error = await response.json();
-                throw new Error(error.message || 'Erro ao salvar pasta');
+                
+                if (diskUsage) {
+                    diskUsage.textContent = 
+                        `${Math.round(statusData.disk.used / 1024 / 1024)} GB / ${Math.round(statusData.disk.total / 1024 / 1024)} GB`;
+                }
             }
+
+            const tempResponse = await fetch('/api/status/performance');
+            if (tempResponse.ok) {
+                const tempData = await tempResponse.json();
+                const cpuTemp = document.getElementById('cpu-temp');
+                if (cpuTemp && tempData.cpu && tempData.cpu.temperature) {
+                    cpuTemp.textContent = `${tempData.cpu.temperature}°C`;
+                }
+            }
+
+            this.updateRecentActivity();
 
         } catch (error) {
-            console.error('Erro ao salvar pasta:', error);
-            this.showToast(`Erro ao salvar pasta: ${error.message}`, 'error');
+            console.error('Erro ao atualizar dashboard:', error);
         }
     }
 
-    editFolder(id) {
-        const folder = this.folders.find(f => f.id === id);
-        if (!folder) return;
+    updateRecentActivity() {
+        const activityList = document.getElementById('recent-activity');
+        if (!activityList) return;
 
-        document.getElementById('folder-name').value = folder.name;
-        document.getElementById('folder-path').value = folder.path;
-        document.getElementById('folder-type').value = folder.type;
-        document.getElementById('folder-format').value = folder.format;
-        document.getElementById('auto-process').checked = folder.autoProcess;
+        const activities = [
+            { icon: 'workflow', text: 'Fluxo configurado: Processamento CSV', time: '2 min atrás' },
+            { icon: 'transform', text: 'Arquivo convertido: dados.csv → dados.json', time: '5 min atrás' },
+            { icon: 'folder', text: 'Pasta configurada: Dados_Entrada', time: '10 min atrás' }
+        ];
 
-        // CARREGAR NOVOS CAMPOS DE CONFIGURAÇÃO
-        if (folder.processing) {
-            const processing = folder.processing;
-            
-            // Frequência
-            if (processing.frequency) {
-                document.getElementById('processing-frequency').value = processing.frequency;
-                this.toggleFrequencyFields(processing.frequency);
-            }
-            
-            // Cron personalizado
-            if (processing.cronExpression) {
-                document.getElementById('cron-expression').value = processing.cronExpression;
-            }
-            
-            // Regras de processamento
-            if (processing.rules) {
-                document.getElementById('processing-rules').value = processing.rules;
-                this.toggleProcessingRulesFields(processing.rules);
-            }
-            
-            // Extensões permitidas
-            if (processing.allowedExtensions && processing.allowedExtensions.length > 0) {
-                document.getElementById('allowed-extensions').value = processing.allowedExtensions.join(', ');
-            }
-            
-            // Transformações
-            if (processing.transformations) {
-                const transforms = processing.transformations;
-                document.getElementById('transform-uppercase').checked = transforms.uppercase || false;
-                document.getElementById('transform-lowercase').checked = transforms.lowercase || false;
-                document.getElementById('transform-trim').checked = transforms.trim || false;
-                document.getElementById('transform-validate').checked = transforms.validate || false;
-            }
-            
-            // Configurações de saída
-            if (processing.output) {
-                const output = processing.output;
-                document.getElementById('output-backup').checked = output.backup || false;
-                document.getElementById('output-log').checked = output.log || false;
-                document.getElementById('output-notify').checked = output.notify || false;
-            }
-        }
-
-        document.getElementById('folder-modal').style.display = 'flex';
-        // Store the folder being edited
-        this.editingFolderId = id;
+        activityList.innerHTML = activities.map(activity => `
+            <div class="activity-item">
+                <span class="material-icons">${activity.icon}</span>
+                <div style="flex: 1;">
+                    <div>${activity.text}</div>
+                    <small style="color: #999;">${activity.time}</small>
+                </div>
+            </div>
+        `).join('');
     }
 
-    // NOVOS MÉTODOS AUXILIARES
-    toggleFrequencyFields(frequency) {
-        const cronGroup = document.getElementById('cron-group');
-        if (cronGroup) {
-            cronGroup.style.display = frequency === 'custom' ? 'block' : 'none';
-        }
-    }
-
-    toggleProcessingRulesFields(rules) {
-        const extensionGroup = document.getElementById('extension-group');
-        if (extensionGroup) {
-            extensionGroup.style.display = rules === 'extension' ? 'block' : 'none';
-        }
-    }
-
-    async deleteFolder(id) {
-        if (confirm('Tem certeza que deseja excluir esta pasta?')) {
-            try {
-                const response = await fetch(`/api/folders/${id}`, {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    this.folders = this.folders.filter(f => f.id !== id);
-                    this.renderFolders();
-                    this.showToast('Pasta excluída com sucesso!', 'success');
-                } else {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Erro ao excluir pasta');
-                }
-            } catch (error) {
-                console.error('Erro ao excluir pasta:', error);
-                this.showToast(`Erro ao excluir pasta: ${error.message}`, 'error');
-            }
-        }
-    }
-
+    // Métodos de conversão e mapeamento mantidos
     async convertData() {
         const sourceFormat = document.getElementById('source-format').value;
         const targetFormat = document.getElementById('target-format').value;
@@ -776,6 +862,8 @@ class DeParaUI {
 
     showConversionResult(result) {
         const resultDiv = document.getElementById('conversion-result');
+        if (!resultDiv) return;
+
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = `
             <h3>Resultado da Conversão</h3>
@@ -833,6 +921,8 @@ class DeParaUI {
 
     showMappingResult(result) {
         const resultDiv = document.getElementById('mapping-result');
+        if (!resultDiv) return;
+
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = `
             <h3>Mapeamento Gerado</h3>
@@ -847,9 +937,9 @@ class DeParaUI {
         `;
     }
 
+    // Métodos de configurações
     async loadSettings() {
         try {
-            // In a real implementation, this would fetch from the API
             this.settings = {
                 port: 3000,
                 logLevel: 'info',
@@ -864,10 +954,15 @@ class DeParaUI {
     }
 
     populateSettingsForm() {
-        document.getElementById('app-port').value = this.settings.port;
-        document.getElementById('log-level').value = this.settings.logLevel;
-        document.getElementById('environment').value = this.settings.environment;
-        document.getElementById('log-directory').value = this.settings.logDirectory;
+        const appPort = document.getElementById('app-port');
+        const logLevel = document.getElementById('log-level');
+        const environment = document.getElementById('environment');
+        const logDirectory = document.getElementById('log-directory');
+
+        if (appPort) appPort.value = this.settings.port;
+        if (logLevel) logLevel.value = this.settings.logLevel;
+        if (environment) environment.value = this.settings.environment;
+        if (logDirectory) logDirectory.value = this.settings.logDirectory;
     }
 
     async saveSettings() {
@@ -879,7 +974,6 @@ class DeParaUI {
         };
 
         try {
-            // In a real implementation, this would save to the API
             this.settings = settings;
             this.showToast('Configurações salvas com sucesso!', 'success');
         } catch (error) {
@@ -888,29 +982,33 @@ class DeParaUI {
         }
     }
 
+    // Métodos de arquivo
     handleFileUpload(file) {
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            document.getElementById('conversion-data').value = e.target.result;
+            const conversionData = document.getElementById('conversion-data');
+            if (conversionData) {
+                conversionData.value = e.target.result;
+            }
             this.showToast(`Arquivo "${file.name}" carregado com sucesso!`, 'success');
         };
         reader.readAsText(file);
     }
 
+    // Métodos de monitoramento
     startMonitoring() {
-        // Update dashboard every 30 seconds
         setInterval(() => {
             if (this.currentTab === 'dashboard') {
                 this.updateDashboard();
             }
         }, 30000);
 
-        // Initial update
         this.updateDashboard();
     }
 
+    // Sistema de notificações
     showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -922,17 +1020,18 @@ class DeParaUI {
         `;
 
         const container = document.getElementById('toast-container');
-        container.appendChild(toast);
+        if (container) {
+            container.appendChild(toast);
 
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            toast.style.animation = 'slideOutRight 0.3s ease';
             setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 300);
-        }, 5000);
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 5000);
+        }
     }
 
     getToastIcon(type) {
@@ -944,22 +1043,93 @@ class DeParaUI {
         };
         return icons[type] || 'info';
     }
+
+    // Métodos de ajuda
+    updateSourceFolderInfo() {
+        const sourceFolder = document.getElementById('source-folder');
+        const helpText = document.getElementById('source-folder-help');
+        
+        if (sourceFolder && helpText) {
+            const selectedFolder = this.folders.find(f => f.id === sourceFolder.value);
+            if (selectedFolder) {
+                helpText.textContent = `Pasta: ${selectedFolder.name} (${selectedFolder.path})`;
+            } else {
+                helpText.textContent = 'Pasta onde os arquivos estão localizados';
+            }
+        }
+    }
+
+    updateTargetFolderInfo() {
+        const targetFolder = document.getElementById('target-folder');
+        const helpText = document.getElementById('target-folder-help');
+        
+        if (targetFolder && helpText) {
+            const selectedFolder = this.folders.find(f => f.id === targetFolder.value);
+            if (selectedFolder) {
+                helpText.textContent = `Pasta: ${selectedFolder.name} (${selectedFolder.path})`;
+            } else {
+                helpText.textContent = 'Pasta para onde os arquivos serão enviados';
+            }
+        }
+    }
+
+    updateActionHelp() {
+        const action = document.getElementById('file-action');
+        const helpText = document.getElementById('action-help');
+        
+        if (action && helpText) {
+            const helpTexts = {
+                'copy': '📋 Os arquivos originais permanecerão na pasta de origem',
+                'move': '📤 Os arquivos originais serão removidos da pasta de origem',
+                'copy_and_clean': '🧹 Os arquivos serão copiados e os originais limpos/truncados'
+            };
+            helpText.textContent = helpTexts[action.value] || helpTexts['copy'];
+        }
+    }
+
+    updateFolderTypeHelp() {
+        const typeSelect = document.getElementById('folder-type');
+        const typeHelp = document.getElementById('folder-type-help');
+        
+        if (typeSelect && typeHelp) {
+            const type = typeSelect.value;
+            const helpTexts = {
+                'source': '📥 Pasta onde arquivos chegam para processamento',
+                'target': '📤 Pasta onde arquivos processados são salvos',
+                'temp': '🗂️ Pasta temporária para arquivos em processamento',
+                'trash': '🗑️ Pasta para arquivos removidos/antigos',
+                'any': '📁 Pasta que pode ser usada como origem ou destino'
+            };
+            typeHelp.textContent = helpTexts[type] || helpTexts['source'];
+        }
+    }
 }
 
-// Global functions for onclick handlers
-function openFolderConfig() {
-    ui.openFolderConfig();
+// Funções globais
+function openWorkflowConfig() {
+    ui.openWorkflowConfig();
 }
 
-function closeFolderModal() {
-    ui.closeFolderModal();
+function closeWorkflowModal() {
+    ui.closeWorkflowModal();
+}
+
+function saveWorkflow() {
+    ui.saveWorkflow();
+}
+
+function openFolderManager() {
+    ui.openFolderManager();
+}
+
+function closeFolderManagerModal() {
+    ui.closeFolderManagerModal();
 }
 
 function saveFolder() {
     ui.saveFolder();
 }
 
-// NOVAS FUNÇÕES PARA WIZARD E ONBOARDING
 function showOnboarding() {
     ui.showOnboarding();
 }
@@ -972,84 +1142,32 @@ function startOnboarding() {
     ui.startOnboarding();
 }
 
-function nextStep() {
-    ui.nextStep();
+function nextWorkflowStep() {
+    ui.nextWorkflowStep();
 }
 
-function previousStep() {
-    ui.previousStep();
+function previousWorkflowStep() {
+    ui.previousWorkflowStep();
 }
 
-// NOVAS FUNÇÕES AUXILIARES
-function toggleProcessingOptions() {
-    const autoProcess = document.getElementById('auto-process');
-    const processingOptions = document.getElementById('processing-options');
-    
-    if (processingOptions) {
-        processingOptions.style.display = autoProcess.checked ? 'block' : 'none';
-    }
+function toggleFilterOptions() {
+    ui.toggleFilterOptions();
 }
 
-function toggleCronField() {
-    const frequency = document.getElementById('processing-frequency');
-    const cronGroup = document.getElementById('cron-group');
-    
-    if (cronGroup) {
-        cronGroup.style.display = frequency.value === 'custom' ? 'block' : 'none';
-    }
+function toggleCleanupOptions() {
+    ui.toggleCleanupOptions();
 }
 
-function toggleExtensionField() {
-    const rules = document.getElementById('processing-rules');
-    const extensionGroup = document.getElementById('extension-group');
-    
-    if (extensionGroup) {
-        extensionGroup.style.display = rules.value === 'extension' ? 'block' : 'none';
-    }
+function toggleCustomTrash() {
+    ui.toggleCustomTrash();
 }
 
 function toggleCaseConflict() {
-    const uppercase = document.getElementById('transform-uppercase');
-    const lowercase = document.getElementById('transform-lowercase');
-    
-    if (uppercase.checked && lowercase.checked) {
-        // Desmarcar o outro para evitar conflito
-        if (event.target === uppercase) {
-            lowercase.checked = false;
-        } else {
-            uppercase.checked = false;
-        }
-    }
+    ui.toggleCaseConflict();
 }
 
 function validateField(field, type) {
-    const validationDiv = field.parentNode.querySelector('.validation-message');
-    
-    if (!validationDiv) return;
-    
-    let isValid = true;
-    let message = '';
-    
-    switch (type) {
-        case 'name':
-            if (field.value.trim().length < 3) {
-                isValid = false;
-                message = 'Nome deve ter pelo menos 3 caracteres';
-            }
-            break;
-        case 'path':
-            if (field.value.trim().length < 5) {
-                isValid = false;
-                message = 'Caminho deve ser válido';
-            }
-            break;
-    }
-    
-    if (isValid) {
-        ui.clearFieldError(field);
-    } else {
-        ui.showFieldError(field, message);
-    }
+    ui.validateField(field, type);
 }
 
 function openConversion() {
@@ -1072,13 +1190,13 @@ function saveSettings() {
     ui.saveSettings();
 }
 
-// Initialize the UI when the page loads
+// Inicialização
 let ui;
 document.addEventListener('DOMContentLoaded', () => {
     ui = new DeParaUI();
 });
 
-// Add slideOutRight animation to CSS
+// Adicionar animação CSS
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideOutRight {
