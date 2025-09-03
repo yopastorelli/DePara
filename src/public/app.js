@@ -754,7 +754,15 @@ class DeParaUI {
         document.getElementById('onboarding-overlay').style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
 
-        this.showToast('🚀 Iniciando configuração automática...', 'info');
+        // Mostrar confirmação antes de criar pastas automaticamente
+        const confirmed = await this.showQuickSetupConfirmation();
+
+        if (!confirmed) {
+            this.showToast('Configuração cancelada. Você pode configurar manualmente.', 'info');
+            return;
+        }
+
+        this.showToast('🚀 Criando pastas e templates...', 'info');
 
         try {
             // Criar pastas padrão automaticamente
@@ -772,6 +780,75 @@ class DeParaUI {
             console.error('Erro na configuração rápida:', error);
             this.showToast('❌ Erro na configuração automática. Configure manualmente.', 'error');
         }
+    }
+
+    // Mostrar confirmação antes da configuração automática
+    async showQuickSetupConfirmation() {
+        return new Promise((resolve) => {
+            const confirmationHtml = `
+                <div style="text-align: center; padding: 20px;">
+                    <h3 style="color: #2196F3; margin-bottom: 15px;">🔧 Configuração Automática</h3>
+                    <p style="margin-bottom: 20px; color: #666;">
+                        O sistema pode criar automaticamente pastas e templates básicos para você começar a usar imediatamente.
+                    </p>
+
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+                        <h4 style="margin-bottom: 10px; color: #333;">📁 Pastas que serão criadas:</h4>
+                        <ul style="margin: 0; padding-left: 20px; color: #555;">
+                            <li><strong>Documentos Entrada</strong> - Para arquivos de entrada</li>
+                            <li><strong>Documentos Processados</strong> - Para arquivos processados</li>
+                            <li><strong>Backup Automático</strong> - Para backups</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+                        <h4 style="margin-bottom: 10px; color: #333;">⚙️ Templates que serão criados:</h4>
+                        <ul style="margin: 0; padding-left: 20px; color: #555;">
+                            <li><strong>Backup Diário</strong> - Backup automático diário</li>
+                            <li><strong>Limpeza Semanal</strong> - Limpeza de arquivos temporários</li>
+                        </ul>
+                    </div>
+
+                    <p style="color: #ff9800; font-size: 14px; margin-bottom: 20px;">
+                        ⚠️ <strong>Atenção:</strong> Isso criará pastas no seu sistema de arquivos. Você pode remover ou modificar tudo depois.
+                    </p>
+                </div>
+            `;
+
+            // Criar modal de confirmação
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 0; border-radius: 12px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                    ${confirmationHtml}
+                    <div style="padding: 20px; border-top: 1px solid #eee; text-align: center; display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="this.closest('div').parentElement.remove(); window.quickSetupResolve(false);" style="background: #757575; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                            ❌ Cancelar
+                        </button>
+                        <button onclick="this.closest('div').parentElement.remove(); window.quickSetupResolve(true);" style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                            ✅ Aprovar e Continuar
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Armazenar função de resolução
+            window.quickSetupResolve = resolve;
+
+            document.body.appendChild(modal);
+        });
     }
 
     // Criar pastas padrão automaticamente
@@ -4037,6 +4114,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Após inicializar, definir funções globais
     setTimeout(() => {
+        // Tornar UI disponível globalmente primeiro
+        window.deParaUI = ui;
+
         // Função global para limpar busca
         window.clearSearchGlobal = function() {
             if (window.deParaUI) {
@@ -4088,9 +4168,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.deParaUI.deleteFolder(folderId);
             }
         };
-
-        // Tornar UI disponível globalmente primeiro
-        window.deParaUI = ui;
 
         // Adicionar event listeners para botões (evita CSP violation)
         ui.addOnboardingEventListeners();
