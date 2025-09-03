@@ -530,6 +530,71 @@ body {
     font-size: 20px;
 }
 
+/* Folder Items Styles */
+.folder-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.folder-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.folder-info .material-icons {
+    color: #667eea;
+    font-size: 24px;
+}
+
+.folder-info strong {
+    display: block;
+    color: #333;
+    font-size: 16px;
+}
+
+.folder-info small {
+    color: #666;
+    font-size: 12px;
+}
+
+.folder-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon:hover {
+    background: #f0f0f0;
+}
+
+.btn-icon.danger:hover {
+    background: #ffebee;
+    color: #f44336;
+}
+
+.btn-icon .material-icons {
+    font-size: 18px;
+}
+
 /* Action Buttons */
 .action-btn {
     display: flex;

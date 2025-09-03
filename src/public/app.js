@@ -12,38 +12,75 @@ class DeParaUI {
         this.init();
     }
 
-    init() {
-        this.setupEventListeners();
-        this.initializeCache();
-        this.loadSettings();
-        this.loadFolders();
-        this.loadWorkflows();
-        this.startMonitoring();
+    async init() {
+        console.log('🚀 Inicializando DePara UI...');
 
-        // Testar conexão com API antes de mostrar sucesso
-        this.testApiConnection().then(success => {
-            if (success) {
+        try {
+            // Configurar event listeners primeiro
+            this.setupEventListeners();
+            console.log('✅ Event listeners configurados');
+
+            // Inicializar cache
+            this.initializeCache();
+            console.log('✅ Cache inicializado');
+
+            // Carregar configurações
+            await this.loadSettings();
+            console.log('✅ Configurações carregadas');
+
+            // Carregar pastas
+            await this.loadFolders();
+            console.log('✅ Pastas carregadas');
+
+            // Carregar workflows
+            await this.loadWorkflows();
+            console.log('✅ Workflows carregados');
+
+            // Iniciar monitoramento
+            this.startMonitoring();
+            console.log('✅ Monitoramento iniciado');
+
+            // Testar conexão com API
+            const apiOnline = await this.testApiConnection();
+            if (apiOnline) {
                 this.showToast('DePara iniciado com sucesso!', 'success');
+                console.log('✅ API conectada');
             } else {
                 this.showToast('API não está respondendo. Verifique se o servidor está rodando.', 'warning');
+                console.log('⚠️ API offline');
             }
-        });
 
-        // Iniciar monitoramento do status da API
-        this.updateApiStatus();
-        setInterval(() => this.updateApiStatus(), 30000); // Atualizar a cada 30 segundos
+            // Iniciar monitoramento do status da API
+            this.updateApiStatus();
+            setInterval(() => this.updateApiStatus(), 30000);
+            console.log('✅ Status da API sendo monitorado');
 
-        // Iniciar auto-refresh da dashboard
-        this.startDashboardAutoRefresh();
+            // Iniciar auto-refresh da dashboard
+            this.startDashboardAutoRefresh();
+            console.log('✅ Auto-refresh da dashboard iniciado');
 
-        // Inicializar gráficos
-        this.initializeCharts();
+            // Inicializar gráficos
+            this.initializeCharts();
+            console.log('✅ Gráficos inicializados');
 
-        // Configurar atalhos de teclado
-        this.setupKeyboardShortcuts();
+            // Configurar atalhos de teclado
+            this.setupKeyboardShortcuts();
+            console.log('✅ Atalhos de teclado configurados');
 
-        if (!localStorage.getItem('depara-onboarding-completed')) {
-            setTimeout(() => this.showOnboarding(), 1000);
+            // Forçar atualização inicial da dashboard
+            await this.updateDashboard();
+            console.log('✅ Dashboard atualizada');
+
+            // Mostrar onboarding se necessário
+            if (!localStorage.getItem('depara-onboarding-completed')) {
+                setTimeout(() => this.showOnboarding(), 1000);
+            }
+
+            console.log('🎉 Inicialização completa!');
+
+        } catch (error) {
+            console.error('❌ Erro durante inicialização:', error);
+            this.showToast('Erro na inicialização. Verifique o console.', 'error');
         }
     }
 
@@ -68,20 +105,30 @@ class DeParaUI {
         const apiStatusElement = document.getElementById('api-status');
         const apiStatusIconElement = document.getElementById('api-status-icon');
 
+        if (!apiStatusElement || !apiStatusIconElement) {
+            console.warn('Elementos de status da API não encontrados');
+            return;
+        }
+
         try {
+            console.log('🔍 Verificando status da API...');
             const isOnline = await this.testApiConnection();
+
             if (isOnline) {
+                console.log('✅ API está online');
                 apiStatusElement.textContent = 'Online';
                 apiStatusElement.className = 'value online';
                 apiStatusIconElement.textContent = 'api';
                 apiStatusIconElement.className = 'material-icons online';
             } else {
+                console.log('❌ API está offline');
                 apiStatusElement.textContent = 'Offline';
                 apiStatusElement.className = 'value offline';
                 apiStatusIconElement.textContent = 'error';
                 apiStatusIconElement.className = 'material-icons offline';
             }
         } catch (error) {
+            console.error('❌ Erro ao verificar status da API:', error);
             apiStatusElement.textContent = 'Erro';
             apiStatusElement.className = 'value offline';
             apiStatusIconElement.textContent = 'error';
@@ -584,44 +631,7 @@ class DeParaUI {
         }
     }
 
-    // Função global para limpar busca
-clearSearchGlobal() {
-    if (window.deParaUI) {
-        window.deParaUI.clearSearch();
-    }
-}
-
-// Funções globais para onboarding
-function closeOnboarding() {
-    if (window.deParaUI) {
-        window.deParaUI.closeOnboarding();
-    }
-}
-
-function quickSetup() {
-    if (window.deParaUI) {
-        window.deParaUI.quickSetup();
-    }
-}
-
-// Funções de configuração rápida de pastas
-function createQuickFolder(type) {
-    if (window.deParaUI) {
-        window.deParaUI.createQuickFolder(type);
-    }
-}
-
-function showFolderManager() {
-    if (window.deParaUI) {
-        window.deParaUI.openFolderManager();
-    }
-}
-
-function refreshFolders() {
-    if (window.deParaUI) {
-        window.deParaUI.refreshFoldersList();
-    }
-}
+    // Funções globais serão definidas após a inicialização
 
     // Sistema de Loading States
     showLoading(elementId, message = 'Carregando...') {
@@ -875,7 +885,9 @@ function refreshFolders() {
     }
 
     // Sistema de configuração rápida de pastas
-    createQuickFolder(type) {
+    async createQuickFolder(type) {
+        console.log(`🚀 Iniciando criação de pastas do tipo: ${type}`);
+
         const folderSets = {
             documents: [
                 { name: 'Documentos Entrada', path: '/home/pi/Documents/Entrada', type: 'source', format: 'any' },
@@ -897,22 +909,149 @@ function refreshFolders() {
 
         const folders = folderSets[type];
         if (!folders) {
+            console.error(`❌ Tipo de pasta inválido: ${type}`);
             this.showToast('❌ Tipo de pasta inválido', 'error');
             return;
         }
 
         this.showToast(`🚀 Criando pastas de ${type}...`, 'info');
 
-        // Criar pastas
-        Promise.all(folders.map(folder => this.saveFolder(folder)))
-            .then(() => {
-                this.showToast(`✅ Pastas de ${type} criadas com sucesso!`, 'success');
-                this.refreshFoldersList();
-            })
-            .catch(error => {
-                console.error('Erro ao criar pastas:', error);
-                this.showToast('❌ Erro ao criar algumas pastas', 'error');
-            });
+        try {
+            // Criar pastas uma por vez para melhor controle
+            for (const folder of folders) {
+                console.log(`📁 Criando pasta: ${folder.name} em ${folder.path}`);
+                try {
+                    await this.createFolderOnServer(folder);
+                    console.log(`✅ Pasta criada: ${folder.name}`);
+                } catch (error) {
+                    console.warn(`⚠️ Erro ao criar pasta ${folder.name}:`, error);
+                    // Continua tentando as outras pastas
+                }
+            }
+
+            // Criar templates relacionados
+            await this.createRelatedTemplates(type);
+
+            this.showToast(`✅ Pastas de ${type} criadas com sucesso!`, 'success');
+            this.refreshFoldersList();
+
+        } catch (error) {
+            console.error('❌ Erro geral ao criar pastas:', error);
+            this.showToast('❌ Erro ao criar pastas', 'error');
+        }
+    }
+
+    // Criar pasta no servidor
+    async createFolderOnServer(folder) {
+        console.log(`🌐 Enviando requisição para criar pasta:`, folder);
+
+        const response = await fetch('/api/folders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(folder)
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Erro ao criar pasta: ${error}`);
+        }
+
+        return await response.json();
+    }
+
+    // Criar templates relacionados ao tipo de pasta
+    async createRelatedTemplates(type) {
+        console.log(`📝 Criando templates relacionados ao tipo: ${type}`);
+
+        const templateSets = {
+            documents: [
+                {
+                    name: 'Backup Documentos',
+                    description: 'Faz backup diário de documentos importantes',
+                    action: 'copy',
+                    sourcePath: '/home/pi/Documents/Entrada',
+                    targetPath: '/home/pi/Documents/Processados',
+                    frequency: '1d',
+                    options: { batch: true, backupBeforeMove: false }
+                }
+            ],
+            backup: [
+                {
+                    name: 'Backup Diário',
+                    description: 'Backup automático diário',
+                    action: 'copy',
+                    sourcePath: '/home/pi/Documents',
+                    targetPath: '/home/pi/Backup/Diario',
+                    frequency: '1d',
+                    options: { batch: true, backupBeforeMove: true }
+                },
+                {
+                    name: 'Backup Semanal',
+                    description: 'Backup completo semanal',
+                    action: 'copy',
+                    sourcePath: '/home/pi/Documents',
+                    targetPath: '/home/pi/Backup/Semanal',
+                    frequency: '1w',
+                    options: { batch: true, backupBeforeMove: true }
+                }
+            ],
+            media: [
+                {
+                    name: 'Organizar Fotos',
+                    description: 'Move fotos para pasta organizada',
+                    action: 'move',
+                    sourcePath: '/home/pi/Media/Fotos',
+                    targetPath: '/home/pi/Media/Organizadas/Fotos',
+                    frequency: 'manual',
+                    options: { batch: true }
+                }
+            ],
+            temp: [
+                {
+                    name: 'Limpar Temporários',
+                    description: 'Remove arquivos temporários semanalmente',
+                    action: 'delete',
+                    sourcePath: '/home/pi/Temp',
+                    targetPath: '',
+                    frequency: '1w',
+                    options: { batch: true }
+                }
+            ]
+        };
+
+        const templates = templateSets[type] || [];
+
+        for (const template of templates) {
+            try {
+                console.log(`📋 Criando template: ${template.name}`);
+                await this.createTemplateOnServer(template);
+                console.log(`✅ Template criado: ${template.name}`);
+            } catch (error) {
+                console.warn(`⚠️ Erro ao criar template ${template.name}:`, error);
+            }
+        }
+    }
+
+    // Criar template no servidor
+    async createTemplateOnServer(template) {
+        console.log(`🌐 Enviando requisição para criar template:`, template);
+
+        const response = await fetch('/api/files/templates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(template)
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Erro ao criar template: ${error}`);
+        }
+
+        return await response.json();
     }
 
     // Abrir gerenciador de pastas
@@ -921,24 +1060,167 @@ function refreshFolders() {
     }
 
     // Atualizar lista de pastas
-    refreshFoldersList() {
-        // Simular carregamento de pastas (implementar conforme necessário)
-        console.log('Atualizando lista de pastas...');
-        this.showToast('🔄 Lista de pastas atualizada!', 'info');
+    async refreshFoldersList() {
+        console.log('🔄 Atualizando lista de pastas...');
+
+        try {
+            // Carregar pastas do servidor
+            await this.loadFolders();
+            await this.loadWorkflows();
+
+            // Atualizar interface
+            this.updateFoldersDisplay();
+            this.updateWorkflowsDisplay();
+
+            this.showToast('✅ Lista de pastas atualizada!', 'success');
+            console.log('✅ Lista de pastas atualizada com sucesso');
+
+        } catch (error) {
+            console.error('❌ Erro ao atualizar lista de pastas:', error);
+            this.showToast('❌ Erro ao atualizar lista', 'error');
+        }
+    }
+
+    // Atualizar exibição de pastas
+    updateFoldersDisplay() {
+        const foldersList = document.getElementById('folders-list');
+        if (!foldersList) return;
+
+        if (this.folders.length === 0) {
+            foldersList.innerHTML = `
+                <div class="empty-state">
+                    <span class="material-icons">folder_open</span>
+                    <p>Nenhuma pasta configurada</p>
+                    <small>Use a configuração rápida acima ou crie manualmente</small>
+                </div>
+            `;
+        } else {
+            foldersList.innerHTML = this.folders.map(folder => `
+                <div class="folder-item">
+                    <div class="folder-info">
+                        <span class="material-icons">${this.getFolderIcon(folder.type)}</span>
+                        <div>
+                            <strong>${folder.name}</strong>
+                            <small>${folder.path}</small>
+                        </div>
+                    </div>
+                    <div class="folder-actions">
+                        <button onclick="editFolder('${folder.id}')" class="btn-icon">
+                            <span class="material-icons">edit</span>
+                        </button>
+                        <button onclick="deleteFolder('${folder.id}')" class="btn-icon danger">
+                            <span class="material-icons">delete</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    // Obter ícone da pasta baseado no tipo
+    getFolderIcon(type) {
+        const icons = {
+            source: 'folder',
+            target: 'folder_shared',
+            temp: 'folder_special',
+            trash: 'delete'
+        };
+        return icons[type] || 'folder';
+    }
+
+    // Editar pasta
+    editFolder(folderId) {
+        console.log(`✏️ Editando pasta: ${folderId}`);
+        const folder = this.folders.find(f => f.id === folderId);
+        if (folder) {
+            // Implementar modal de edição
+            this.showToast('Funcionalidade de edição em desenvolvimento', 'info');
+        } else {
+            this.showToast('Pasta não encontrada', 'error');
+        }
+    }
+
+    // Deletar pasta
+    async deleteFolder(folderId) {
+        console.log(`🗑️ Deletando pasta: ${folderId}`);
+
+        if (confirm('Tem certeza que deseja excluir esta pasta?')) {
+            try {
+                const response = await fetch(`/api/folders/${folderId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    this.showToast('✅ Pasta excluída com sucesso!', 'success');
+                    await this.refreshFoldersList();
+                } else {
+                    throw new Error(`Erro HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao excluir pasta:', error);
+                this.showToast('❌ Erro ao excluir pasta', 'error');
+            }
+        }
+    }
+
+    // Atualizar exibição de workflows (placeholder)
+    updateWorkflowsDisplay() {
+        console.log('🔄 Atualizando exibição de workflows...');
+        // Implementar conforme necessário
     }
 
     // Salvar pasta (método auxiliar)
     async saveFolder(folder) {
-        // Simular salvamento (implementar conforme necessário)
-        console.log('Salvando pasta:', folder);
-        return Promise.resolve(folder);
+        console.log('💾 Salvando pasta:', folder);
+
+        try {
+            const response = await fetch('/api/folders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(folder)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('✅ Pasta salva com sucesso:', result);
+            return result;
+
+        } catch (error) {
+            console.error('❌ Erro ao salvar pasta:', error);
+            throw error;
+        }
     }
 
     // Salvar template (método auxiliar)
     async saveTemplate(template) {
-        // Simular salvamento (implementar conforme necessário)
-        console.log('Salvando template:', template);
-        return Promise.resolve(template);
+        console.log('📋 Salvando template:', template);
+
+        try {
+            const response = await fetch('/api/files/templates', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(template)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('✅ Template salvo com sucesso:', result);
+            return result;
+
+        } catch (error) {
+            console.error('❌ Erro ao salvar template:', error);
+            throw error;
+        }
     }
 
     // Sistema de Workflows
@@ -3603,6 +3885,64 @@ document.addEventListener('DOMContentLoaded', () => {
 let ui;
 document.addEventListener('DOMContentLoaded', () => {
     ui = new DeParaUI();
+
+    // Após inicializar, definir funções globais
+    setTimeout(() => {
+        // Função global para limpar busca
+        window.clearSearchGlobal = function() {
+            if (window.deParaUI) {
+                window.deParaUI.clearSearch();
+            }
+        };
+
+        // Funções globais para onboarding
+        window.closeOnboarding = function() {
+            if (window.deParaUI) {
+                window.deParaUI.closeOnboarding();
+            }
+        };
+
+        window.quickSetup = function() {
+            if (window.deParaUI) {
+                window.deParaUI.quickSetup();
+            }
+        };
+
+        // Funções de configuração rápida de pastas
+        window.createQuickFolder = function(type) {
+            if (window.deParaUI) {
+                window.deParaUI.createQuickFolder(type);
+            }
+        };
+
+        window.showFolderManager = function() {
+            if (window.deParaUI) {
+                window.deParaUI.openFolderManager();
+            }
+        };
+
+        window.refreshFolders = function() {
+            if (window.deParaUI) {
+                window.deParaUI.refreshFoldersList();
+            }
+        };
+
+            // Funções auxiliares globais
+        window.editFolder = function(folderId) {
+            if (window.deParaUI) {
+                window.deParaUI.editFolder(folderId);
+            }
+        };
+
+        window.deleteFolder = function(folderId) {
+            if (window.deParaUI) {
+                window.deParaUI.deleteFolder(folderId);
+            }
+        };
+
+        // Tornar UI disponível globalmente
+        window.deParaUI = ui;
+    }, 100);
 });
 
 // Adicionar animação CSS
