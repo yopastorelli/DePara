@@ -18,10 +18,64 @@ class DeParaUI {
         this.loadFolders();
         this.loadWorkflows();
         this.startMonitoring();
-        this.showToast('DePara iniciado com sucesso!', 'success');
-        
+
+        // Testar conexão com API antes de mostrar sucesso
+        this.testApiConnection().then(success => {
+            if (success) {
+                this.showToast('DePara iniciado com sucesso!', 'success');
+            } else {
+                this.showToast('API não está respondendo. Verifique se o servidor está rodando.', 'warning');
+            }
+        });
+
+        // Iniciar monitoramento do status da API
+        this.updateApiStatus();
+        setInterval(() => this.updateApiStatus(), 30000); // Atualizar a cada 30 segundos
+
         if (!localStorage.getItem('depara-onboarding-completed')) {
             setTimeout(() => this.showOnboarding(), 1000);
+        }
+    }
+
+    // Testa conexão com a API
+    async testApiConnection() {
+        try {
+            const response = await fetch('/api/health', {
+                timeout: 5000,
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            return response.ok;
+        } catch (error) {
+            console.warn('Erro ao testar conexão com API:', error);
+            return false;
+        }
+    }
+
+    // Atualiza status da API na interface
+    async updateApiStatus() {
+        const apiStatusElement = document.getElementById('api-status');
+        const apiStatusIconElement = document.getElementById('api-status-icon');
+
+        try {
+            const isOnline = await this.testApiConnection();
+            if (isOnline) {
+                apiStatusElement.textContent = 'Online';
+                apiStatusElement.className = 'value online';
+                apiStatusIconElement.textContent = 'api';
+                apiStatusIconElement.className = 'material-icons online';
+            } else {
+                apiStatusElement.textContent = 'Offline';
+                apiStatusElement.className = 'value offline';
+                apiStatusIconElement.textContent = 'error';
+                apiStatusIconElement.className = 'material-icons offline';
+            }
+        } catch (error) {
+            apiStatusElement.textContent = 'Erro';
+            apiStatusElement.className = 'value offline';
+            apiStatusIconElement.textContent = 'error';
+            apiStatusIconElement.className = 'material-icons offline';
         }
     }
 

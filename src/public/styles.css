@@ -206,6 +206,25 @@ body {
     margin-left: auto;
 }
 
+/* API Status Styles */
+.status-item .value.online {
+    color: #4caf50;
+    font-weight: 700;
+}
+
+.status-item .value.offline {
+    color: #f44336;
+    font-weight: 700;
+}
+
+.status-item .material-icons.online {
+    color: #4caf50;
+}
+
+.status-item .material-icons.offline {
+    color: #f44336;
+}
+
 /* Action Buttons */
 .action-btn {
     display: flex;

@@ -58,7 +58,8 @@ function validateSafePath(filePath, operation = 'read') {
 
   // Verificar se o caminho existe e é acessível
   try {
-    const stats = require('fs').statSync(resolvedPath);
+    const fs = require('fs').promises;
+    const stats = await fs.stat(resolvedPath);
 
     // Verificar se é um arquivo/pasta válida
     if (!stats.isFile() && !stats.isDirectory()) {
@@ -70,9 +71,10 @@ function validateSafePath(filePath, operation = 'read') {
     if (error.code === 'ENOENT') {
       // Caminho não existe - verificar se podemos criar
       if (operation === 'write' || operation === 'create') {
+        const fs = require('fs').promises;
         const parentDir = path.dirname(resolvedPath);
         try {
-          require('fs').accessSync(parentDir);
+          await fs.access(parentDir);
           return resolvedPath;
         } catch (parentError) {
           logger.error(`Erro ao acessar diretório pai: ${parentDir}`, parentError);
@@ -160,8 +162,8 @@ class FileOperationsManager {
 
         try {
             // Validar caminhos antes de qualquer operação
-            const safeSourcePath = validateSafePath(sourcePath, 'read');
-            const safeTargetPath = validateSafePath(targetPath, 'write');
+            const safeSourcePath = await validateSafePath(sourcePath, 'read');
+            const safeTargetPath = await validateSafePath(targetPath, 'write');
 
             logger.startOperation('File Move', {
                 operationId,
@@ -221,8 +223,8 @@ class FileOperationsManager {
 
         try {
             // Validar caminhos antes de qualquer operação
-            const safeSourcePath = validateSafePath(sourcePath, 'read');
-            const safeTargetPath = validateSafePath(targetPath, 'write');
+            const safeSourcePath = await validateSafePath(sourcePath, 'read');
+            const safeTargetPath = await validateSafePath(targetPath, 'write');
 
             logger.startOperation('File Copy', {
                 operationId,
@@ -277,7 +279,7 @@ class FileOperationsManager {
 
         try {
             // Validar caminho antes de qualquer operação
-            const safeFilePath = validateSafePath(filePath, 'write');
+            const safeFilePath = await validateSafePath(filePath, 'write');
 
             logger.startOperation('File Delete', {
                 operationId,
@@ -464,7 +466,9 @@ class FileOperationsManager {
     async executeScheduledOperation(operationId, action, sourcePath, targetPath, options) {
         try {
             // Verificar se é uma operação em lote (pasta inteira)
-            if (options.batch && fs.statSync(sourcePath).isDirectory()) {
+            const fs = require('fs').promises;
+            const stats = await fs.stat(sourcePath);
+            if (options.batch && stats.isDirectory()) {
                 await this.executeBatchOperation(operationId, action, sourcePath, targetPath, options);
             } else {
                 await this.executeSingleOperation(operationId, action, sourcePath, targetPath, options);
