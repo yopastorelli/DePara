@@ -879,16 +879,16 @@ class DeParaUI {
 
         if (isWindows) {
             return {
-                entrada: 'C:\\Users\\' + (process.env.USERNAME || 'User') + '\\Documents\\Entrada',
-                processados: 'C:\\Users\\' + (process.env.USERNAME || 'User') + '\\Documents\\Processados',
-                backup: 'C:\\Users\\' + (process.env.USERNAME || 'User') + '\\Documents\\Backup'
+                entrada: 'C:\\Users\\User\\Documents\\Entrada',
+                processados: 'C:\\Users\\User\\Documents\\Processados',
+                backup: 'C:\\Users\\User\\Documents\\Backup'
             };
         } else {
             // Linux/Raspberry Pi - usar caminhos genéricos que serão resolvidos no backend
             return {
-                entrada: '/home/' + (process.env.USER || 'user') + '/Documents/Entrada',
-                processados: '/home/' + (process.env.USER || 'user') + '/Documents/Processados',
-                backup: '/home/' + (process.env.USER || 'user') + '/Documents/Backup'
+                entrada: '/home/user/Documents/Entrada',
+                processados: '/home/user/Documents/Processados',
+                backup: '/home/user/Documents/Backup'
             };
         }
     }
@@ -1017,7 +1017,7 @@ class DeParaUI {
         // Obter caminhos padrão baseados na plataforma
         const paths = this.getDefaultPaths();
         const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-        const basePath = isWindows ? 'C:\\Users\\' + (process.env.USERNAME || 'User') : '/home/' + (process.env.USER || 'user');
+        const basePath = isWindows ? 'C:\\Users\\User' : '/home/user';
 
         const folderSets = {
             documents: [
@@ -1496,7 +1496,7 @@ class DeParaUI {
                 <div class="modal-body">
                     <div class="folder-browser">
                         <div class="current-path">
-                            <input type="text" id="browser-path" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\' + (process.env.USERNAME || 'User') : '/home/' + (process.env.USER || 'user')}" readonly>
+                            <input type="text" id="browser-path" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User' : '/home/user'}" readonly>
                             <button class="btn btn-sm folder-browser-up-btn">
                                 <span class="material-icons">arrow_upward</span>
                             </button>
@@ -1518,7 +1518,7 @@ class DeParaUI {
         // Configurar event listeners após criar o modal
         this.setupFolderBrowserEventListeners(modal, targetType);
 
-        const defaultPath = navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\Users\\' + (process.env.USERNAME || 'User') : '/home/' + (process.env.USER || 'user');
+        const defaultPath = navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\Users\\User' : '/home/user';
         await this.loadFolders(defaultPath);
     }
 
@@ -1989,7 +1989,7 @@ class DeParaUI {
                         <label for="folder-path-input">Caminho da pasta:</label>
                         <div class="input-group">
                             <input type="text" id="folder-path-input" class="form-input"
-                                   placeholder="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\' + (process.env.USERNAME || 'User') + '\\\\Pictures' : '/home/' + (process.env.USER || 'user') + '/Pictures'}" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\' + (process.env.USERNAME || 'User') + '\\\\Pictures' : '/home/' + (process.env.USER || 'user') + '/Pictures'}">
+                                   placeholder="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User\\\\Pictures' : '/home/user/Pictures'}" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User\\\\Pictures' : '/home/user/Pictures'}">
                             <button class="btn btn-outline slideshow-folder-test-btn">
                                 <span class="material-icons">check</span>
                                 Testar
@@ -2002,8 +2002,8 @@ class DeParaUI {
                     <div class="folder-suggestions">
                         <h4>Pastas comuns:</h4>
                         <div class="suggestion-buttons">
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\' + (process.env.USERNAME || 'User') + '\\\\Pictures' : '/home/' + (process.env.USER || 'user') + '/Pictures'}">~/Pictures</button>
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\' + (process.env.USERNAME || 'User') + '\\\\Downloads' : '/home/' + (process.env.USER || 'user') + '/Downloads'}">~/Downloads</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User\\\\Pictures' : '/home/user/Pictures'}">~/Pictures</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User\\\\Downloads' : '/home/user/Downloads'}">~/Downloads</button>
                             <button class="btn btn-sm slideshow-suggestion-btn" data-path="/media">/media</button>
                             <button class="btn btn-sm slideshow-suggestion-btn" data-path="./">Diretório atual</button>
                         </div>
@@ -5511,7 +5511,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // Função para substituir caminhos dinâmicos baseados na plataforma
 function updateDynamicPaths() {
     const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-    const userName = process.env.USER || process.env.USERNAME || 'user';
+    // No navegador, não temos acesso direto às variáveis de ambiente
+    // Vamos usar valores padrão mais inteligentes baseados na plataforma
+    const userName = isWindows ? 'User' : 'user';
 
     // Mapeamento de caminhos dinâmicos
     const pathMappings = {
