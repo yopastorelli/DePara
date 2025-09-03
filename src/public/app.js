@@ -1853,55 +1853,66 @@ class DeParaUI {
 
     async loadFolders() {
         try {
-            const response = await fetch('/api/folders');
+            console.log('🔍 Carregando pastas da API...');
+            const response = await fetch('/api/files/folders');
             if (response.ok) {
                 const result = await response.json();
                 this.folders = result.data || [];
+                console.log('✅ Pastas carregadas:', this.folders);
                 this.renderFolders();
             } else {
-                throw new Error('Falha ao carregar pastas');
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
-            console.error('Erro ao carregar pastas:', error);
+            console.error('❌ Erro ao carregar pastas:', error);
             this.folders = [];
             this.renderFolders();
         }
     }
 
     renderFolders() {
-        const foldersGrid = document.getElementById('folders-grid');
-        
+        const foldersList = document.getElementById('folders-list');
+
+        if (!foldersList) {
+            console.warn('⚠️ Elemento folders-list não encontrado');
+            return;
+        }
+
+        console.log('🎨 Renderizando pastas:', this.folders);
+
         if (this.folders.length === 0) {
-            foldersGrid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
-                    <span class="material-icons" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">folder_open</span>
+            foldersList.innerHTML = `
+                <div class="empty-state">
+                    <span class="material-icons">folder_open</span>
                     <p>Nenhuma pasta configurada</p>
-                    <p>Clique em "Nova Pasta" para começar</p>
+                    <small>Use a configuração rápida acima ou crie manualmente</small>
                 </div>
             `;
             return;
         }
 
-        foldersGrid.innerHTML = this.folders.map(folder => `
-            <div class="folder-card">
-                <div class="folder-header">
-                    <div class="folder-name">${folder.name}</div>
-                    <span class="folder-type ${folder.type}">${this.getFolderTypeLabel(folder.type)}</span>
+        foldersList.innerHTML = this.folders.map(folder => `
+            <div class="folder-item">
+                <div class="folder-info">
+                    <span class="material-icons">${this.getFolderIcon(folder.type)}</span>
+                    <div>
+                        <strong>${folder.name}</strong>
+                        <small>${folder.path}</small>
+                    </div>
                 </div>
-                <div class="folder-path">${folder.path}</div>
-                <div class="folder-description">${folder.description || 'Sem descrição'}</div>
                 <div class="folder-actions">
-                    <button class="edit-btn" onclick="ui.editFolder('${folder.id}')">
+                    <button class="btn-icon edit-folder-btn" data-folder-id="${folder.id}">
                         <span class="material-icons">edit</span>
-                        Editar
                     </button>
-                    <button class="delete-btn" onclick="ui.deleteFolder('${folder.id}')">
+                    <button class="btn-icon danger delete-folder-btn" data-folder-id="${folder.id}">
                         <span class="material-icons">delete</span>
-                        Excluir
                     </button>
                 </div>
             </div>
         `).join('');
+
+        // Adicionar event listeners para os botões (evita CSP violation)
+        this.addFolderEventListeners();
     }
 
     getFolderTypeLabel(type) {
@@ -1913,6 +1924,60 @@ class DeParaUI {
             'any': '📁 Qualquer'
         };
         return labels[type] || type;
+    }
+
+    // Adicionar event listeners para botões de pasta (evita CSP violation)
+    addFolderEventListeners() {
+        // Botões de editar pasta
+        const editButtons = document.querySelectorAll('.edit-folder-btn');
+        editButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const folderId = e.currentTarget.getAttribute('data-folder-id');
+                this.editFolder(folderId);
+            });
+        });
+
+        // Botões de deletar pasta
+        const deleteButtons = document.querySelectorAll('.delete-folder-btn');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const folderId = e.currentTarget.getAttribute('data-folder-id');
+                this.deleteFolder(folderId);
+            });
+        });
+    }
+
+    // Adicionar event listeners para onboarding (evita CSP violation)
+    addOnboardingEventListeners() {
+        // Botão de ajuda/tutorial
+        const helpBtn = document.querySelector('.help-tutorial-btn');
+        if (helpBtn) {
+            helpBtn.addEventListener('click', () => {
+                this.showOnboarding();
+            });
+        }
+
+        // Botões do modal de onboarding
+        const closeBtn = document.querySelector('.onboarding-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closeOnboarding();
+            });
+        }
+
+        const skipBtn = document.querySelector('.onboarding-skip-btn');
+        if (skipBtn) {
+            skipBtn.addEventListener('click', () => {
+                this.skipOnboarding();
+            });
+        }
+
+        const quickBtn = document.querySelector('.onboarding-quick-btn');
+        if (quickBtn) {
+            quickBtn.addEventListener('click', () => {
+                this.quickSetup();
+            });
+        }
     }
 
     // Métodos de navegação
@@ -2571,19 +2636,43 @@ async function scheduleOperation() {
 // Load Templates
 async function loadTemplates() {
     try {
+        console.log('🔍 Carregando templates...');
         const response = await fetch('/api/files/templates');
         const result = await response.json();
 
-        if (result.success) {
-            renderTemplates(result.data.categories);
+        console.log('📋 Resposta da API de templates:', result);
+
+        if (result.success && result.data) {
+            // Usar categories diretamente se existir, senão usar array vazio
+            const categories = result.data.categories || [];
+            console.log('📂 Categorias recebidas:', categories);
+            renderTemplates(categories);
+        } else {
+            console.warn('⚠️ Resposta da API não contém dados válidos');
+            renderTemplates([]);
         }
     } catch (error) {
-        console.error('Erro ao carregar templates:', error);
+        console.error('❌ Erro ao carregar templates:', error);
+        renderTemplates([]);
     }
 }
 
 function renderTemplates(categories) {
     const container = document.getElementById('template-categories');
+
+    if (!container) {
+        console.warn('⚠️ Container de templates não encontrado');
+        return;
+    }
+
+    console.log('🎨 Renderizando templates:', categories);
+
+    // Verificar se categories é um array
+    if (!Array.isArray(categories)) {
+        console.warn('⚠️ Categories não é um array:', categories);
+        categories = [];
+    }
+
     container.innerHTML = '';
 
     categories.forEach(category => {
@@ -3939,6 +4028,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.deParaUI.deleteFolder(folderId);
             }
         };
+
+        // Adicionar event listeners para botões (evita CSP violation)
+        window.deParaUI.addOnboardingEventListeners();
 
         // Tornar UI disponível globalmente
         window.deParaUI = ui;

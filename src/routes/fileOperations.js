@@ -15,6 +15,154 @@ const { normalRateLimiter, strictRateLimiter } = require('../middleware/rateLimi
 const { sanitizeString, sanitizeFilePath, sanitizeIdentifier, ValidationError } = require('../utils/inputSanitizer');
 
 /**
+ * Gerenciamento de Pastas
+ * GET /api/files/folders - Listar pastas configuradas
+ * POST /api/files/folders - Criar nova pasta
+ * DELETE /api/files/folders/:id - Deletar pasta
+ */
+
+// Lista de pastas configuradas (armazenamento em memória por enquanto)
+let configuredFolders = [
+    {
+        id: '1',
+        name: 'Documentos Entrada',
+        path: '/home/pi/Documents/Entrada',
+        type: 'source',
+        format: 'any',
+        createdAt: new Date().toISOString()
+    },
+    {
+        id: '2',
+        name: 'Documentos Processados',
+        path: '/home/pi/Documents/Processados',
+        type: 'target',
+        format: 'any',
+        createdAt: new Date().toISOString()
+    }
+];
+
+/**
+ * GET /api/files/folders - Listar pastas configuradas
+ */
+router.get('/folders', async (req, res) => {
+    try {
+        logger.startOperation('List Folders', {});
+        const result = configuredFolders;
+        const duration = Date.now() - Date.now();
+        logger.endOperation('List Folders', duration, result);
+
+        res.json({
+            success: true,
+            data: result,
+            count: result.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logger.operationError('List Folders', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro ao listar pastas',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
+ * POST /api/files/folders - Criar nova pasta
+ */
+router.post('/folders', async (req, res) => {
+    try {
+        const { name, path, type = 'source', format = 'any' } = req.body;
+
+        // Validação básica
+        if (!name || !path) {
+            return res.status(400).json({
+                error: {
+                    message: 'Nome e caminho são obrigatórios',
+                    required: ['name', 'path']
+                }
+            });
+        }
+
+        // Criar ID único
+        const id = Date.now().toString();
+
+        const newFolder = {
+            id,
+            name,
+            path,
+            type,
+            format,
+            createdAt: new Date().toISOString()
+        };
+
+        // Adicionar à lista
+        configuredFolders.push(newFolder);
+
+        logger.startOperation('Create Folder', newFolder);
+        const duration = Date.now() - Date.now();
+        logger.endOperation('Create Folder', duration, newFolder);
+
+        res.status(201).json({
+            success: true,
+            data: newFolder,
+            message: 'Pasta criada com sucesso',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logger.operationError('Create Folder', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro ao criar pasta',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
+ * DELETE /api/files/folders/:id - Deletar pasta
+ */
+router.delete('/folders/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const folderIndex = configuredFolders.findIndex(folder => folder.id === id);
+
+        if (folderIndex === -1) {
+            return res.status(404).json({
+                error: {
+                    message: 'Pasta não encontrada',
+                    id: id
+                }
+            });
+        }
+
+        const deletedFolder = configuredFolders.splice(folderIndex, 1)[0];
+
+        logger.startOperation('Delete Folder', { id });
+        const duration = Date.now() - Date.now();
+        logger.endOperation('Delete Folder', duration, deletedFolder);
+
+        res.json({
+            success: true,
+            data: deletedFolder,
+            message: 'Pasta deletada com sucesso',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logger.operationError('Delete Folder', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro ao deletar pasta',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
  * Executar operação imediata em arquivo
  * POST /api/files/execute
  */

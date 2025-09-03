@@ -282,7 +282,41 @@ function customizeTemplate(category, name, customizations = {}) {
  * Lista categorias disponíveis
  */
 function getCategories() {
-    return Object.keys(fileTemplates);
+    const categories = [];
+    const categoryInfo = {
+        backup: {
+            title: '💾 Backup e Segurança',
+            description: 'Templates para criar backups automáticos de arquivos importantes',
+            icon: 'backup'
+        },
+        cleanup: {
+            title: '🧹 Limpeza e Manutenção',
+            description: 'Templates para limpeza automática de arquivos temporários e antigos',
+            icon: 'cleaning_services'
+        },
+        organization: {
+            title: '📁 Organização de Arquivos',
+            description: 'Templates para organizar e mover arquivos automaticamente',
+            icon: 'folder'
+        },
+        monitoring: {
+            title: '📊 Monitoramento',
+            description: 'Templates para monitorar mudanças em diretórios',
+            icon: 'monitoring'
+        }
+    };
+
+    Object.keys(fileTemplates).forEach(key => {
+        if (categoryInfo[key]) {
+            categories.push({
+                id: key,
+                ...categoryInfo[key],
+                templateCount: Object.keys(fileTemplates[key]).length
+            });
+        }
+    });
+
+    return categories;
 }
 
 /**
