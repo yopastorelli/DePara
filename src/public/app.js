@@ -2626,7 +2626,7 @@ class DeParaUI {
             if (response.ok) {
                 const result = await response.json();
                 this.folders.push(result.data);
-                this.renderFolders();
+                this.renderConfiguredFolders();
                 this.closeFolderManagerModal();
                 this.showToast('Pasta configurada com sucesso!', 'success');
             } else {
@@ -3022,18 +3022,18 @@ class DeParaUI {
                 const result = await response.json();
                 this.folders = result.data || [];
                 console.log('✅ Pastas carregadas:', this.folders);
-                this.renderFolders();
+                this.renderConfiguredFolders();
             } else {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
             console.error('❌ Erro ao carregar pastas:', error);
             this.folders = [];
-            this.renderFolders();
+            this.renderConfiguredFolders();
         }
     }
 
-    renderFolders() {
+    renderConfiguredFolders() {
         const foldersList = document.getElementById('folders-list');
 
         if (!foldersList) {
