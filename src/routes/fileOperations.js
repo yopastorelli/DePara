@@ -212,6 +212,119 @@ router.delete('/schedule/:operationId', async (req, res) => {
 });
 
 /**
+ * Editar operação agendada
+ * PUT /api/files/schedule/:operationId
+ */
+router.put('/schedule/:operationId', async (req, res) => {
+    try {
+        const { operationId } = req.params;
+        const { frequency, action, sourcePath, targetPath, options = {} } = req.body;
+
+        // Validação básica dos parâmetros se fornecidos
+        if (frequency && typeof frequency !== 'string') {
+            return res.status(400).json({
+                error: {
+                    message: 'Parâmetro frequency deve ser uma string',
+                    details: 'Exemplos: "5m", "1h", "1d"'
+                }
+            });
+        }
+
+        if (action && typeof action !== 'string') {
+            return res.status(400).json({
+                error: {
+                    message: 'Parâmetro action deve ser uma string',
+                    details: 'Ações suportadas: move, copy, delete'
+                }
+            });
+        }
+
+        if (sourcePath && typeof sourcePath !== 'string') {
+            return res.status(400).json({
+                error: {
+                    message: 'Parâmetro sourcePath deve ser uma string',
+                    details: 'Caminho completo do arquivo ou diretório'
+                }
+            });
+        }
+
+        if (targetPath && typeof targetPath !== 'string') {
+            return res.status(400).json({
+                error: {
+                    message: 'Parâmetro targetPath deve ser uma string',
+                    details: 'Caminho completo do destino'
+                }
+            });
+        }
+
+        // Preparar nova configuração (apenas campos fornecidos)
+        const newConfig = {};
+        if (frequency !== undefined) newConfig.frequency = frequency;
+        if (action !== undefined) newConfig.action = action;
+        if (sourcePath !== undefined) newConfig.sourcePath = sourcePath;
+        if (targetPath !== undefined) newConfig.targetPath = targetPath;
+        if (options !== undefined) newConfig.options = options;
+
+        // Verificar se pelo menos um campo foi fornecido
+        if (Object.keys(newConfig).length === 0) {
+            return res.status(400).json({
+                error: {
+                    message: 'Nenhum campo para atualização fornecido',
+                    details: 'Forneça pelo menos um dos campos: frequency, action, sourcePath, targetPath, options'
+                }
+            });
+        }
+
+        logger.startOperation('File Operation Edit', {
+            operationId,
+            newConfig
+        });
+
+        const result = fileOperationsManager.editScheduledOperation(operationId, newConfig);
+
+        const duration = Date.now() - Date.now();
+        logger.endOperation('File Operation Edit', duration, result);
+
+        res.status(200).json({
+            success: true,
+            data: result,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        logger.operationError('File Operation Edit', error);
+
+        // Tratamento específico de erros
+        if (error.message.includes('não encontrada')) {
+            return res.status(404).json({
+                error: {
+                    message: 'Operação agendada não encontrada',
+                    details: `A operação ${req.params.operationId} não existe ou já foi cancelada`
+                }
+            });
+        }
+
+        if (error.message.includes('Parâmetros obrigatórios ausentes') ||
+            error.message.includes('Ação não suportada') ||
+            error.message.includes('targetPath é obrigatório')) {
+            return res.status(400).json({
+                error: {
+                    message: 'Configuração inválida',
+                    details: error.message
+                }
+            });
+        }
+
+        res.status(500).json({
+            error: {
+                message: 'Erro ao editar operação agendada',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
  * Listar operações agendadas
  * GET /api/files/scheduled
  */

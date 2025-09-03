@@ -11,6 +11,8 @@ DePara é uma aplicação Node.js simplificada e poderosa para gerenciamento aut
 - **Copiar Arquivos**: Copia arquivos preservando o original
 - **Apagar Arquivos**: Remove arquivos com backup automático
 - **Agendamento Flexível**: De segundos até dias de intervalo
+- **Edição de Tarefas**: Modifique operações agendadas existentes
+- **Controle Total**: Cancele ou edite tarefas a qualquer momento
 - **Operações em Lote**: Processa todos os arquivos de uma pasta
 - **Preservação de Estrutura**: Mantém ou achata estrutura de pastas conforme preferência
 

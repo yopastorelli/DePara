@@ -411,6 +411,54 @@ class FileOperationsManager {
     }
 
     /**
+     * Edita operação agendada existente
+     */
+    editScheduledOperation(operationId, newConfig) {
+        // Verificar se a operação existe
+        if (!this.operations.has(operationId)) {
+            throw new Error(`Operação agendada não encontrada: ${operationId}`);
+        }
+
+        // Obter configuração atual
+        const currentConfig = this.operations.get(operationId);
+
+        // Mesclar configurações (novas sobrescrevem antigas)
+        const mergedConfig = { ...currentConfig, ...newConfig };
+
+        // Validar nova configuração
+        const { frequency, action, sourcePath, targetPath, options = {} } = mergedConfig;
+
+        if (!frequency || !action || !sourcePath) {
+            throw new Error('Parâmetros obrigatórios ausentes: frequency, action, sourcePath');
+        }
+
+        // Validar ação suportada
+        const supportedActions = ['move', 'copy', 'delete'];
+        if (!supportedActions.includes(action.toLowerCase())) {
+            throw new Error(`Ação não suportada: ${action}. Use: ${supportedActions.join(', ')}`);
+        }
+
+        // Validar targetPath quando necessário
+        if ((action === 'move' || action === 'copy') && !targetPath) {
+            throw new Error(`targetPath é obrigatório para ação '${action}'`);
+        }
+
+        // Cancelar agendamento atual
+        this.cancelScheduledOperation(operationId);
+
+        // Agendar com nova configuração
+        this.scheduleOperation(operationId, mergedConfig);
+
+        logger.info(`Operação editada: ${operationId} - ${frequency}`);
+
+        return {
+            operationId,
+            config: mergedConfig,
+            status: 'edited'
+        };
+    }
+
+    /**
      * Executa operação agendada
      */
     async executeScheduledOperation(operationId, action, sourcePath, targetPath, options) {

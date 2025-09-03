@@ -131,6 +131,47 @@ Agenda operações periódicas de arquivo.
 }
 ```
 
+#### PUT /api/files/schedule/:operationId
+Edita uma operação agendada existente.
+
+**Parâmetros URL:**
+- `operationId` (string): ID da operação agendada
+
+**Parâmetros:**
+```json
+{
+  "frequency": "5m|1h|1d",           // Opcional: nova frequência
+  "action": "move|copy|delete",       // Opcional: nova ação
+  "sourcePath": "/caminho/origem",    // Opcional: novo caminho origem
+  "targetPath": "/caminho/destino",   // Opcional: novo caminho destino
+  "options": {                       // Opcional: novas opções
+    "batch": true,
+    "backupBeforeMove": true
+  }
+}
+```
+
+**Resposta de Sucesso:**
+```json
+{
+  "success": true,
+  "data": {
+    "operationId": "backup_diario",
+    "config": {
+      "frequency": "6h",
+      "action": "copy",
+      "sourcePath": "/dados",
+      "targetPath": "/backup",
+      "options": { "batch": true }
+    },
+    "status": "edited"
+  },
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Nota:** Você pode fornecer apenas os campos que deseja alterar. Os outros campos manterão seus valores atuais.
+
 #### GET /api/files/scheduled
 Lista todas as operações agendadas.
 
@@ -305,6 +346,7 @@ curl -X POST http://localhost:3000/api/files/execute \
 curl -X POST http://localhost:3000/api/files/schedule \
   -H "Content-Type: application/json" \
   -d '{
+    "operationId": "backup_diario",
     "frequency": "1d",
     "action": "copy",
     "sourcePath": "/dados",
@@ -314,6 +356,22 @@ curl -X POST http://localhost:3000/api/files/schedule \
       "preserveStructure": true
     }
   }'
+```
+
+### Editar Operação Agendada
+```bash
+# Editar frequência de backup diário para a cada 6 horas
+curl -X PUT http://localhost:3000/api/files/schedule/backup_diario \
+  -H "Content-Type: application/json" \
+  -d '{
+    "frequency": "6h",
+    "targetPath": "/backup/novo_local"
+  }'
+```
+
+### Cancelar Operação Agendada
+```bash
+curl -X DELETE http://localhost:3000/api/files/schedule/backup_diario
 ```
 
 ### Verificação de Saúde
