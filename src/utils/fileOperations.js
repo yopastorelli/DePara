@@ -15,6 +15,107 @@ const execAsync = util.promisify(exec);
 const logger = require('./logger');
 
 /**
+ * Lista de arquivos e extensões que devem ser ignorados automaticamente
+ * Inclui arquivos do sistema, temporários e de sincronização
+ */
+const IGNORED_FILES = [
+  // Arquivos do Resilio Sync
+  '.sync',
+  '!sync',
+  '*.!sync',
+  '*.sync',
+  '.resilio-sync',
+  'resilio-sync',
+
+  // Arquivos do sistema
+  '.DS_Store',
+  'Thumbs.db',
+  'desktop.ini',
+  '.directory',
+
+  // Arquivos temporários
+  '*.tmp',
+  '*.temp',
+  '~$*',
+  '*.bak',
+  '*.backup',
+
+  // Arquivos de log
+  '*.log',
+  '*.log.*',
+
+  // Arquivos de configuração
+  '.git',
+  '.gitignore',
+  '.svn',
+  '.hg',
+
+  // Outros arquivos de sistema
+  '.Trash',
+  '.fseventsd',
+  '.Spotlight-V100',
+  '.Trashes',
+  '.AppleDouble',
+  '.LSOverride'
+];
+
+/**
+ * Lista de pastas comuns que podem ser sugeridas para o usuário
+ */
+const COMMON_FOLDERS = [
+  '/home/pi',
+  '/home/pi/Documents',
+  '/home/pi/Downloads',
+  '/home/pi/Pictures',
+  '/home/pi/Videos',
+  '/home/pi/Music',
+  '/home/pi/Desktop',
+  '/media',
+  '/mnt',
+  '/tmp',
+  '/var/log'
+];
+
+/**
+ * Verifica se um arquivo deve ser ignorado baseado na lista de arquivos ignorados
+ * @param {string} fileName - Nome do arquivo
+ * @returns {boolean} - true se deve ser ignorado
+ */
+function shouldIgnoreFile(fileName) {
+  if (!fileName || typeof fileName !== 'string') return false;
+
+  const fileNameLower = fileName.toLowerCase();
+
+  for (const pattern of IGNORED_FILES) {
+    // Verificar padrões com wildcard
+    if (pattern.includes('*')) {
+      const regexPattern = pattern
+        .replace(/\./g, '\\.')
+        .replace(/\*/g, '.*');
+      if (new RegExp(regexPattern, 'i').test(fileNameLower)) {
+        return true;
+      }
+    } else {
+      // Verificar correspondência exata
+      if (fileNameLower === pattern.toLowerCase()) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Filtra arquivos ignorados de uma lista
+ * @param {Array} files - Lista de arquivos
+ * @returns {Array} - Lista filtrada sem arquivos ignorados
+ */
+function filterIgnoredFiles(files) {
+  return files.filter(file => !shouldIgnoreFile(file.name || file));
+}
+
+/**
  * Valida se um caminho é seguro para operações de arquivo
  * Previne acesso a diretórios não autorizados e ataques de path traversal
  */
@@ -262,6 +363,12 @@ class FileOperationsManager {
                 // Recursão para subdiretórios
                 await this.moveDirectoryRecursive(sourcePath, targetPath, options);
             } else {
+                // Verificar se arquivo deve ser ignorado
+                if (shouldIgnoreFile(entry.name)) {
+                    logger.info(`Pulando arquivo ignorado: ${sourcePath}`);
+                    continue;
+                }
+
                 // Filtrar por extensões se especificado
                 if (options.extensions && options.extensions.length > 0) {
                     const ext = path.extname(entry.name).toLowerCase();
@@ -368,6 +475,12 @@ class FileOperationsManager {
                 // Recursão para subdiretórios
                 await this.copyDirectoryRecursive(sourcePath, targetPath, options);
             } else {
+                // Verificar se arquivo deve ser ignorado
+                if (shouldIgnoreFile(entry.name)) {
+                    logger.info(`Pulando arquivo ignorado: ${sourcePath}`);
+                    continue;
+                }
+
                 // Filtrar por extensões se especificado
                 if (options.extensions && options.extensions.length > 0) {
                     const ext = path.extname(entry.name).toLowerCase();
@@ -462,6 +575,12 @@ class FileOperationsManager {
                 // Recursão para subdiretórios
                 await this.deleteDirectoryRecursive(fullPath, options);
             } else {
+                // Verificar se arquivo deve ser ignorado
+                if (shouldIgnoreFile(entry.name)) {
+                    logger.info(`Pulando arquivo ignorado: ${fullPath}`);
+                    continue;
+                }
+
                 // Filtrar por extensões se especificado
                 if (options.extensions && options.extensions.length > 0) {
                     const ext = path.extname(entry.name).toLowerCase();

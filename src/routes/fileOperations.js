@@ -1450,6 +1450,12 @@ router.post('/list-images', async (req, res) => {
                         // Recursão para subdiretórios
                         await listImagesRecursively(fullPath, imageList);
                     } else if (entry.isFile()) {
+                        // Verificar se arquivo deve ser ignorado
+                        const shouldIgnore = shouldIgnoreFile(entry.name);
+                        if (shouldIgnore) {
+                            continue; // Pular arquivos ignorados
+                        }
+
                         // Verificar se é uma imagem
                         const ext = path.extname(entry.name).toLowerCase();
                         if (extensions.includes(ext)) {

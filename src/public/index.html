@@ -310,10 +310,16 @@
 
                 <!-- Drag & Drop Zone -->
                 <div id="operation-config-zone" class="operation-config-zone">
-                    <div class="config-zone-content">
-                        <span class="material-icons config-icon">settings</span>
-                        <h3>Configurar Operação de Arquivos</h3>
-                        <p>Selecione uma pasta de origem e configure a operação desejada</p>
+                                            <div class="config-zone-content">
+                            <span class="material-icons config-icon">settings</span>
+                            <h3>Configurar Operação de Arquivos</h3>
+                            <p>Selecione uma pasta de origem e configure a operação desejada</p>
+
+                            <!-- Info sobre arquivos ignorados -->
+                            <div class="ignored-files-info">
+                                <span class="material-icons">info</span>
+                                <small>Arquivos do sistema (Resilio Sync, temporários, etc.) são automaticamente ignorados</small>
+                            </div>
 
                         <div class="config-form">
                             <div class="form-group">
@@ -324,6 +330,20 @@
                                         <span class="material-icons">folder_open</span>
                                         Selecionar Pasta
                                     </button>
+                                </div>
+
+                                <!-- Lista de pastas sugeridas -->
+                                <div class="folder-suggestions">
+                                    <label>Pastas comuns:</label>
+                                    <div class="suggestion-buttons">
+                                        <button class="btn btn-sm suggestion-btn" data-path="/home/pi">~/</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="/home/pi/Documents">Documents</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="/home/pi/Downloads">Downloads</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="/home/pi/Pictures">Pictures</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="/home/pi/Desktop">Desktop</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="/media">/media</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="/mnt">/mnt</button>
+                                    </div>
                                 </div>
                             </div>
 

@@ -1318,6 +1318,9 @@ class DeParaUI {
         this.addButtonListener('.copy-btn', () => this.selectOperation('copy'));
         this.addButtonListener('.delete-btn', () => this.selectOperation('delete'));
 
+        // Botões de sugestão de pasta
+        this.addButtonListener('.suggestion-btn', (e) => this.selectSuggestedFolder(e));
+
         // Botões de ação
         this.addButtonListener('.execute-now-btn', () => this.executeNow());
         this.addButtonListener('.schedule-btn', () => this.configureOperation());
@@ -1359,6 +1362,18 @@ class DeParaUI {
             this.currentConfig.sourcePath = folderPath;
             document.getElementById('source-folder-path').value = folderPath;
             this.showToast(`Pasta de origem selecionada: ${folderPath}`, 'success');
+        }
+    }
+
+    // Selecionar pasta sugerida
+    selectSuggestedFolder(event) {
+        const button = event.target;
+        const path = button.getAttribute('data-path');
+
+        if (path) {
+            this.currentConfig.sourcePath = path;
+            document.getElementById('source-folder-path').value = path;
+            this.showToast(`Pasta selecionada: ${path}`, 'success');
         }
     }
 

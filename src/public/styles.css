@@ -822,7 +822,28 @@ body {
 
 .config-zone-content p {
     color: #666;
-    margin-bottom: 25px;
+    margin-bottom: 15px;
+}
+
+.ignored-files-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background: rgba(74, 144, 226, 0.1);
+    border: 1px solid rgba(74, 144, 226, 0.2);
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.ignored-files-info .material-icons {
+    color: #4a90e2;
+    font-size: 18px;
+}
+
+.ignored-files-info small {
+    color: #4a90e2;
+    font-weight: 500;
 }
 
 .config-form {
@@ -901,6 +922,46 @@ body {
 .delete-btn.active {
     border-color: #f44336;
     background: #f44336;
+}
+
+.folder-suggestions {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.folder-suggestions label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #4a90e2;
+    font-size: 14px;
+}
+
+.suggestion-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.suggestion-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 6px;
+    background: rgba(74, 144, 226, 0.1);
+    border: 1px solid rgba(74, 144, 226, 0.3);
+    color: #4a90e2;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.suggestion-btn:hover {
+    background: rgba(74, 144, 226, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(74, 144, 226, 0.2);
 }
 
 .form-actions {
