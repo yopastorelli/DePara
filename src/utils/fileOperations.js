@@ -213,13 +213,13 @@ class FileOperationsManager {
             }
 
             // Verificar se moveu corretamente
-            const stats = await fs.stat(safeTargetPath);
+            const targetStats = await fs.stat(safeTargetPath);
 
             const duration = Date.now() - startTime;
             logger.endOperation('File Move', duration, {
                 operationId,
                 success: true,
-                fileSize: stats.size,
+                fileSize: targetStats.size,
                 targetPath: safeTargetPath,
                 preserveStructure: options.preserveStructure
             });
@@ -227,7 +227,7 @@ class FileOperationsManager {
             return {
                 success: true,
                 operationId,
-                fileSize: stats.size,
+                fileSize: targetStats.size,
                 duration,
                 preserveStructure: options.preserveStructure
             };
@@ -319,13 +319,13 @@ class FileOperationsManager {
             }
 
             // Verificar se copiou corretamente
-            const stats = await fs.stat(safeTargetPath);
+            const targetStats = await fs.stat(safeTargetPath);
 
             const duration = Date.now() - startTime;
             logger.endOperation('File Copy', duration, {
                 operationId,
                 success: true,
-                fileSize: stats.size,
+                fileSize: targetStats.size,
                 targetPath: safeTargetPath,
                 preserveStructure: options.preserveStructure
             });
@@ -333,7 +333,7 @@ class FileOperationsManager {
             return {
                 success: true,
                 operationId,
-                fileSize: stats.size,
+                fileSize: targetStats.size,
                 duration,
                 preserveStructure: options.preserveStructure
             };
