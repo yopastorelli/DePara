@@ -837,10 +837,10 @@ class DeParaUI {
                 <div style="background: white; padding: 0; border-radius: 12px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
                     ${confirmationHtml}
                     <div style="padding: 20px; border-top: 1px solid #eee; text-align: center; display: flex; gap: 10px; justify-content: center;">
-                        <button onclick="this.closest('div').parentElement.remove(); window.quickSetupResolve(false);" style="background: #757575; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                        <button class="quick-setup-cancel-btn" style="background: #757575; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
                             ❌ Cancelar
                         </button>
-                        <button onclick="this.closest('div').parentElement.remove(); window.quickSetupResolve(true);" style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                        <button class="quick-setup-approve-btn" style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
                             ✅ Aprovar e Continuar
                         </button>
                     </div>
@@ -851,6 +851,24 @@ class DeParaUI {
             window.quickSetupResolve = resolve;
 
             document.body.appendChild(modal);
+
+            // Configurar event listeners para os botões
+            const cancelBtn = modal.querySelector('.quick-setup-cancel-btn');
+            const approveBtn = modal.querySelector('.quick-setup-approve-btn');
+
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    modal.remove();
+                    resolve(false);
+                });
+            }
+
+            if (approveBtn) {
+                approveBtn.addEventListener('click', () => {
+                    modal.remove();
+                    resolve(true);
+                });
+            }
         });
     }
 
@@ -954,7 +972,7 @@ class DeParaUI {
             <div style="background: white; padding: 0; border-radius: 12px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
                 ${results}
                 <div style="padding: 20px; border-top: 1px solid #eee; text-align: center;">
-                    <button onclick="this.closest('div').parentElement.remove()" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                    <button class="quick-setup-results-close-btn" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
                         🎯 Começar a Usar!
                     </button>
                 </div>
@@ -962,6 +980,12 @@ class DeParaUI {
         `;
 
         document.body.appendChild(modal);
+
+        // Configurar event listener para o botão fechar
+        const closeBtn = modal.querySelector('.quick-setup-results-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => modal.remove());
+        }
     }
 
     // Sistema de configuração rápida de pastas
@@ -1185,15 +1209,33 @@ class DeParaUI {
                         </div>
                     </div>
                     <div class="folder-actions">
-                        <button onclick="editFolder('${folder.id}')" class="btn-icon">
+                        <button class="btn-icon edit-folder-btn" data-folder-id="${folder.id}">
                             <span class="material-icons">edit</span>
                         </button>
-                        <button onclick="deleteFolder('${folder.id}')" class="btn-icon danger">
+                        <button class="btn-icon danger delete-folder-btn" data-folder-id="${folder.id}">
                             <span class="material-icons">delete</span>
                         </button>
                     </div>
                 </div>
             `).join('');
+
+            // Configurar event listeners para os botões de editar/deletar
+            const editButtons = foldersList.querySelectorAll('.edit-folder-btn');
+            const deleteButtons = foldersList.querySelectorAll('.delete-folder-btn');
+
+            editButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const folderId = btn.getAttribute('data-folder-id');
+                    this.editFolder(folderId);
+                });
+            });
+
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const folderId = btn.getAttribute('data-folder-id');
+                    this.deleteFolder(folderId);
+                });
+            });
         }
     }
 
@@ -2929,21 +2971,47 @@ class DeParaUI {
                 </div>
                 
                 <div class="workflow-actions">
-                    <button class="edit-btn" onclick="ui.editWorkflow('${workflow.id}')">
+                    <button class="edit-btn edit-workflow-btn" data-workflow-id="${workflow.id}">
                         <span class="material-icons">edit</span>
                         Editar
                     </button>
-                    <button class="toggle-btn" onclick="ui.toggleWorkflow('${workflow.id}')">
+                    <button class="toggle-btn toggle-workflow-btn" data-workflow-id="${workflow.id}">
                         <span class="material-icons">${workflow.status === 'active' ? 'pause' : 'play_arrow'}</span>
                         ${workflow.status === 'active' ? 'Pausar' : 'Ativar'}
                     </button>
-                    <button class="delete-btn" onclick="ui.deleteWorkflow('${workflow.id}')">
+                    <button class="delete-btn delete-workflow-btn" data-workflow-id="${workflow.id}">
                         <span class="material-icons">delete</span>
                         Excluir
                     </button>
                 </div>
             </div>
         `).join('');
+
+        // Configurar event listeners para os botões de workflow
+        const editButtons = workflowsList.querySelectorAll('.edit-workflow-btn');
+        const toggleButtons = workflowsList.querySelectorAll('.toggle-workflow-btn');
+        const deleteButtons = workflowsList.querySelectorAll('.delete-workflow-btn');
+
+        editButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const workflowId = btn.getAttribute('data-workflow-id');
+                this.editWorkflow(workflowId);
+            });
+        });
+
+        toggleButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const workflowId = btn.getAttribute('data-workflow-id');
+                this.toggleWorkflow(workflowId);
+            });
+        });
+
+        deleteButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const workflowId = btn.getAttribute('data-workflow-id');
+                this.deleteWorkflow(workflowId);
+            });
+        });
     }
 
     async loadFolders() {
