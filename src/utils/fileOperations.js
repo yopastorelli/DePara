@@ -136,11 +136,29 @@ class FileOperationsManager {
 
     async init() {
         try {
+            // Garantir que o diretório de logs existe
+            await this.ensureLogsDirectory();
+
+            // Inicializar diretório de backup
             await this.ensureBackupDirectory();
-            this.startScheduler();
-            logger.info('Gerenciador de operações de arquivos inicializado');
+
+            logger.info('Gerenciador de operações de arquivos inicializado com sucesso');
         } catch (error) {
-            logger.error('Erro ao inicializar gerenciador de operações:', error);
+            console.error('Erro ao inicializar gerenciador de operações:', error.message);
+            console.error('Stack trace:', error.stack);
+
+            // Tentar continuar mesmo com erro de inicialização
+            console.warn('Continuando inicialização apesar do erro no gerenciador de operações');
+        }
+    }
+
+    async ensureLogsDirectory() {
+        try {
+            const logsDir = path.dirname(this.backupConfig.backupDir.replace('backups', 'logs'));
+            await fs.access(logsDir);
+        } catch {
+            await fs.mkdir(path.dirname(this.backupConfig.backupDir.replace('backups', 'logs')), { recursive: true });
+            console.log(`Diretório de logs criado: ${path.dirname(this.backupConfig.backupDir.replace('backups', 'logs'))}`);
         }
     }
 

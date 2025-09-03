@@ -18,10 +18,38 @@ const logger = require('./utils/logger');
 const routes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter, normalRateLimiter, strictRateLimiter } = require('./middleware/rateLimiter');
+const fs = require('fs').promises;
 
 // Configurações da aplicação
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+
+/**
+ * Inicializa diretórios necessários para a aplicação
+ */
+async function initializeDirectories() {
+    const directories = [
+        'logs',
+        'backups',
+        'temp',
+        'public/uploads',
+        'public/downloads'
+    ];
+
+    console.log('🔧 Inicializando diretórios da aplicação...');
+
+    for (const dir of directories) {
+        try {
+            await fs.access(dir);
+            console.log(`✅ Diretório existe: ${dir}`);
+        } catch {
+            await fs.mkdir(dir, { recursive: true });
+            console.log(`📁 Diretório criado: ${dir}`);
+        }
+    }
+
+    console.log('🎯 Inicialização de diretórios concluída!\n');
+}
 
 // Inicializar aplicação Express
 const app = express();
@@ -130,12 +158,28 @@ app.use('*', (req, res) => {
 });
 
 // Inicializar servidor
-const server = app.listen(PORT, () => {
-  logger.info(`🚀 Servidor DePara iniciado na porta ${PORT}`);
-  logger.info(`📊 API disponível em: http://localhost:${PORT}`);
-  logger.info(`🌐 Interface web disponível em: http://localhost:${PORT}/ui`);
-  logger.info(`📚 Documentação da API: http://localhost:${PORT}/api/docs`);
-});
+async function startServer() {
+    try {
+        // Inicializar diretórios necessários
+        await initializeDirectories();
+
+        // Iniciar servidor
+        const server = app.listen(PORT, () => {
+            logger.info(`🚀 Servidor DePara iniciado na porta ${PORT}`);
+            logger.info(`📊 API disponível em: http://localhost:${PORT}`);
+            logger.info(`🌐 Interface web disponível em: http://localhost:${PORT}/ui`);
+            logger.info(`📚 Documentação da API: http://localhost:${PORT}/api/docs`);
+        });
+
+        return server;
+    } catch (error) {
+        console.error('❌ Erro crítico durante inicialização:', error);
+        process.exit(1);
+    }
+}
+
+// Iniciar aplicação
+startServer();
 
 // Tratamento de erros não capturados
 process.on('uncaughtException', (error) => {
