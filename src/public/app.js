@@ -3034,7 +3034,10 @@ class DeParaUI {
     }
 
     renderConfiguredFolders() {
+        console.log('🔄 Iniciando renderConfiguredFolders com', this.folders?.length || 0, 'pastas');
+
         const foldersList = document.getElementById('folders-list');
+        console.log('📍 Elemento folders-list encontrado:', !!foldersList);
 
         if (!foldersList) {
             console.warn('⚠️ Elemento folders-list não encontrado');
@@ -3042,6 +3045,7 @@ class DeParaUI {
         }
 
         console.log('🎨 Renderizando pastas:', this.folders);
+        console.log('📊 Conteúdo atual do foldersList:', foldersList.innerHTML.substring(0, 100) + '...');
 
         if (this.folders.length === 0) {
             foldersList.innerHTML = `
@@ -3073,6 +3077,9 @@ class DeParaUI {
                 </div>
             </div>
         `).join('');
+
+        console.log('✅ HTML definido para foldersList');
+        console.log('📊 Novo conteúdo do foldersList:', foldersList.innerHTML.substring(0, 200) + '...');
 
         // Adicionar event listeners para os botões (evita CSP violation)
         this.addFolderEventListeners();
