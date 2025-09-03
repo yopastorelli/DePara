@@ -72,7 +72,7 @@ const errorHandler = (error, req, res, next) => {
   }
   
   // Erros de limite de taxa
-  else if (error.name === 'RateLimitError') {
+  else if (error.name === 'RateLimitError' || error.message.includes('Rate limit')) {
     statusCode = 429;
     message = 'Muitas requisições';
     details = error.message;

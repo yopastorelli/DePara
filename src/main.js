@@ -17,6 +17,7 @@ require('dotenv').config();
 const logger = require('./utils/logger');
 const routes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
+const { readRateLimiter, normalRateLimiter, strictRateLimiter } = require('./middleware/rateLimiter');
 
 // Configurações da aplicação
 const PORT = process.env.PORT || 3000;
@@ -49,6 +50,9 @@ app.use(helmet({
 
 // Middleware de CORS removido - aplicação roda apenas localmente
 // Não há necessidade de CORS para uso local no Raspberry Pi
+
+// Rate limiting para todas as rotas
+app.use('/api', readRateLimiter); // Rate limiting permissivo para leitura
 
 // Middleware de parsing com limites adequados para processamento local
 const MAX_PAYLOAD = process.env.MAX_PAYLOAD || '100mb'; // Muito maior para dados locais

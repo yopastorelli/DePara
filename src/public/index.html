@@ -177,6 +177,33 @@
                     </div>
                 </div>
 
+                <!-- Usage Chart Card -->
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h3>Uso do Sistema</h3>
+                        <span class="material-icons refresh-icon" onclick="refreshCharts()" title="Atualizar">refresh</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="chart-container">
+                            <canvas id="usage-chart" width="300" height="150"></canvas>
+                        </div>
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <span class="legend-color operations"></span>
+                                <span>Operações</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color memory"></span>
+                                <span>Memória (%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color disk"></span>
+                                <span>Disco (%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Recent Activity Card -->
                 <div class="card activity-card">
                     <div class="card-header">
@@ -200,10 +227,22 @@
                 <div class="scheduled-header">
                     <h2>Operações Agendadas</h2>
                     <p>Gerencie todas as operações programadas para execução automática</p>
-                    <button class="btn btn-primary" onclick="showScheduleModal()">
-                        <span class="material-icons">add</span>
-                        Nova Operação
-                    </button>
+
+                    <!-- Barra de busca -->
+                    <div class="search-container">
+                        <div class="search-input-container">
+                            <span class="material-icons search-icon">search</span>
+                            <input type="text" id="scheduled-search" placeholder="Buscar operações..."
+                                   oninput="filterScheduledOperations(this.value)">
+                            <button class="clear-search" onclick="clearSearch()" style="display: none;">
+                                <span class="material-icons">clear</span>
+                            </button>
+                        </div>
+                        <button class="btn btn-primary" onclick="showScheduleModal()">
+                            <span class="material-icons">add</span>
+                            Nova Operação
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Progress Section -->

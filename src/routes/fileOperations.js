@@ -11,12 +11,14 @@ const router = express.Router();
 const fileOperationsManager = require('../utils/fileOperations');
 const fileTemplates = require('../utils/fileTemplates');
 const logger = require('../utils/logger');
+const { normalRateLimiter, strictRateLimiter } = require('../middleware/rateLimiter');
+const { sanitizeString, sanitizeFilePath, sanitizeIdentifier, ValidationError } = require('../utils/inputSanitizer');
 
 /**
  * Executar operação imediata em arquivo
  * POST /api/files/execute
  */
-router.post('/execute', async (req, res) => {
+router.post('/execute', normalRateLimiter, async (req, res) => {
     const startTime = Date.now();
 
     try {
@@ -188,7 +190,7 @@ router.post('/schedule', async (req, res) => {
  * Cancelar operação agendada
  * DELETE /api/files/schedule/:operationId
  */
-router.delete('/schedule/:operationId', async (req, res) => {
+router.delete('/schedule/:operationId', strictRateLimiter, async (req, res) => {
     try {
         const { operationId } = req.params;
 
@@ -215,44 +217,55 @@ router.delete('/schedule/:operationId', async (req, res) => {
  * Editar operação agendada
  * PUT /api/files/schedule/:operationId
  */
-router.put('/schedule/:operationId', async (req, res) => {
+router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
     try {
         const { operationId } = req.params;
         const { frequency, action, sourcePath, targetPath, options = {} } = req.body;
 
-        // Validação básica dos parâmetros se fornecidos
-        if (frequency && typeof frequency !== 'string') {
-            return res.status(400).json({
-                error: {
-                    message: 'Parâmetro frequency deve ser uma string',
-                    details: 'Exemplos: "5m", "1h", "1d"'
-                }
-            });
-        }
+        // Sanitização e validação robusta dos parâmetros
+        try {
+            if (frequency !== undefined) {
+                frequency = sanitizeString(frequency, {
+                    field: 'frequency',
+                    maxLength: 10,
+                    allowedChars: '0-9mhdw'
+                });
+            }
 
-        if (action && typeof action !== 'string') {
-            return res.status(400).json({
-                error: {
-                    message: 'Parâmetro action deve ser uma string',
-                    details: 'Ações suportadas: move, copy, delete'
+            if (action !== undefined) {
+                action = sanitizeString(action, {
+                    field: 'action',
+                    maxLength: 10,
+                    allowedChars: 'a-z'
+                });
+                // Validar ação específica
+                const validActions = ['move', 'copy', 'delete'];
+                if (!validActions.includes(action)) {
+                    throw new ValidationError(`Ação inválida. Deve ser uma das seguintes: ${validActions.join(', ')}`, 'action', action);
                 }
-            });
-        }
+            }
 
-        if (sourcePath && typeof sourcePath !== 'string') {
+            if (sourcePath !== undefined) {
+                sourcePath = sanitizeFilePath(sourcePath, {
+                    field: 'sourcePath',
+                    allowAbsolute: true,
+                    allowRelative: true
+                });
+            }
+
+            if (targetPath !== undefined) {
+                targetPath = sanitizeFilePath(targetPath, {
+                    field: 'targetPath',
+                    allowAbsolute: true,
+                    allowRelative: true
+                });
+            }
+        } catch (validationError) {
             return res.status(400).json({
                 error: {
-                    message: 'Parâmetro sourcePath deve ser uma string',
-                    details: 'Caminho completo do arquivo ou diretório'
-                }
-            });
-        }
-
-        if (targetPath && typeof targetPath !== 'string') {
-            return res.status(400).json({
-                error: {
-                    message: 'Parâmetro targetPath deve ser uma string',
-                    details: 'Caminho completo do destino'
+                    message: 'Erro de validação nos parâmetros',
+                    details: validationError.message,
+                    field: validationError.field
                 }
             });
         }

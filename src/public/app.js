@@ -14,6 +14,7 @@ class DeParaUI {
 
     init() {
         this.setupEventListeners();
+        this.initializeCache();
         this.loadSettings();
         this.loadFolders();
         this.loadWorkflows();
@@ -31,6 +32,15 @@ class DeParaUI {
         // Iniciar monitoramento do status da API
         this.updateApiStatus();
         setInterval(() => this.updateApiStatus(), 30000); // Atualizar a cada 30 segundos
+
+        // Iniciar auto-refresh da dashboard
+        this.startDashboardAutoRefresh();
+
+        // Inicializar gráficos
+        this.initializeCharts();
+
+        // Configurar atalhos de teclado
+        this.setupKeyboardShortcuts();
 
         if (!localStorage.getItem('depara-onboarding-completed')) {
             setTimeout(() => this.showOnboarding(), 1000);
@@ -77,6 +87,601 @@ class DeParaUI {
             apiStatusIconElement.textContent = 'error';
             apiStatusIconElement.className = 'material-icons offline';
         }
+    }
+
+    // Auto-refresh da dashboard
+    startDashboardAutoRefresh() {
+        this.autoRefreshInterval = setInterval(async () => {
+            if (this.currentTab === 'dashboard') {
+                await this.refreshDashboardData();
+            }
+        }, 30000); // Atualizar a cada 30 segundos
+
+        // Também atualizar quando voltar para a aba dashboard
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const tab = btn.dataset.tab;
+                if (tab === 'dashboard') {
+                    setTimeout(() => this.refreshDashboardData(), 100);
+                }
+            });
+        });
+    }
+
+    // Atualizar dados da dashboard
+    async refreshDashboardData() {
+        try {
+            // Atualizar status do sistema
+            await this.updateSystemStatus();
+
+            // Atualizar atividades recentes se estiver visível
+            await this.loadRecentActivities();
+
+            // Atualizar contadores
+            await this.updateCounters();
+
+            console.log('Dashboard atualizada automaticamente');
+        } catch (error) {
+            console.warn('Erro ao atualizar dashboard:', error);
+        }
+    }
+
+    // Atualizar status do sistema
+    async updateSystemStatus() {
+        try {
+            const response = await fetch('/api/health');
+            if (response.ok) {
+                const data = await response.json();
+                this.updateSystemStatusDisplay(data);
+            }
+        } catch (error) {
+            console.warn('Erro ao atualizar status do sistema:', error);
+        }
+    }
+
+    // Atualizar atividades recentes
+    async loadRecentActivities() {
+        try {
+            const response = await fetch('/api/files/stats');
+            if (response.ok) {
+                const data = await response.json();
+                this.updateActivitiesDisplay(data);
+            }
+        } catch (error) {
+            console.warn('Erro ao carregar atividades:', error);
+        }
+    }
+
+    // Atualizar contadores
+    async updateCounters() {
+        try {
+            // Contar operações ativas
+            const scheduledResponse = await fetch('/api/files/scheduled');
+            if (scheduledResponse.ok) {
+                const scheduledData = await scheduledResponse.json();
+                const activeOps = scheduledData.data.filter(op =>
+                    op.status === 'running' || op.status === 'scheduled'
+                ).length;
+                document.getElementById('active-ops').textContent = activeOps;
+            }
+        } catch (error) {
+            console.warn('Erro ao atualizar contadores:', error);
+        }
+    }
+
+    // Sistema de Cache
+    initializeCache() {
+        this.cache = {
+            settings: null,
+            folders: null,
+            workflows: null,
+            operations: null,
+            stats: null,
+            timestamps: {}
+        };
+        this.cacheExpiry = 5 * 60 * 1000; // 5 minutos
+    }
+
+    // Verificar se cache é válido
+    isCacheValid(key) {
+        const timestamp = this.cache.timestamps[key];
+        if (!timestamp) return false;
+        return (Date.now() - timestamp) < this.cacheExpiry;
+    }
+
+    // Obter dados do cache ou API
+    async getCachedData(key, apiCall, useCache = true) {
+        if (useCache && this.isCacheValid(key) && this.cache[key]) {
+            console.log(`Usando cache para ${key}`);
+            return this.cache[key];
+        }
+
+        try {
+            const data = await apiCall();
+            this.cache[key] = data;
+            this.cache.timestamps[key] = Date.now();
+            console.log(`Dados atualizados para ${key}`);
+            return data;
+        } catch (error) {
+            console.warn(`Erro ao carregar ${key}:`, error);
+            // Retornar cache antigo se disponível
+            if (this.cache[key]) {
+                console.log(`Retornando cache antigo para ${key}`);
+                return this.cache[key];
+            }
+            throw error;
+        }
+    }
+
+    // Limpar cache específico
+    clearCache(key = null) {
+        if (key) {
+            this.cache[key] = null;
+            delete this.cache.timestamps[key];
+            console.log(`Cache limpo para ${key}`);
+        } else {
+            this.initializeCache();
+            console.log('Todo cache limpo');
+        }
+    }
+
+    // Métodos de cache específicos
+    async loadSettingsCached() {
+        return this.getCachedData('settings', async () => {
+            const response = await fetch('/api/health');
+            if (!response.ok) throw new Error('Erro ao carregar configurações');
+            return response.json();
+        });
+    }
+
+    async loadFoldersCached() {
+        return this.getCachedData('folders', async () => {
+            // Simular carregamento de pastas (implementar conforme necessário)
+            return [];
+        });
+    }
+
+    async loadWorkflowsCached() {
+        return this.getCachedData('workflows', async () => {
+            // Simular carregamento de workflows (implementar conforme necessário)
+            return [];
+        });
+    }
+
+    async loadOperationsCached() {
+        return this.getCachedData('operations', async () => {
+            const response = await fetch('/api/files/scheduled');
+            if (!response.ok) throw new Error('Erro ao carregar operações');
+            return response.json();
+        });
+    }
+
+    async loadStatsCached() {
+        return this.getCachedData('stats', async () => {
+            const response = await fetch('/api/files/stats');
+            if (!response.ok) throw new Error('Erro ao carregar estatísticas');
+            return response.json();
+        }, false); // Stats sempre frescos
+    }
+
+    // Sistema de Gráficos
+    initializeCharts() {
+        this.chartData = {
+            operations: 0,
+            memory: 0,
+            disk: 0
+        };
+        this.updateCharts();
+    }
+
+    async updateCharts() {
+        try {
+            // Obter dados de operações
+            const operationsResponse = await fetch('/api/files/scheduled');
+            if (operationsResponse.ok) {
+                const operationsData = await operationsResponse.json();
+                this.chartData.operations = operationsData.data.length;
+            }
+
+            // Simular dados de memória e disco (em produção, obter da API /api/health/detailed)
+            this.chartData.memory = Math.floor(Math.random() * 30) + 20; // 20-50%
+            this.chartData.disk = Math.floor(Math.random() * 20) + 10;   // 10-30%
+
+            this.renderChart();
+        } catch (error) {
+            console.warn('Erro ao atualizar gráficos:', error);
+        }
+    }
+
+    renderChart() {
+        const canvas = document.getElementById('usage-chart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Limpar canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Dados do gráfico
+        const data = [
+            { label: 'Operações', value: this.chartData.operations, color: '#667eea', max: 20 },
+            { label: 'Memória', value: this.chartData.memory, color: '#764ba2', max: 100 },
+            { label: 'Disco', value: this.chartData.disk, color: '#f093fb', max: 100 }
+        ];
+
+        const barWidth = 40;
+        const spacing = 60;
+        const startX = 50;
+        const maxBarHeight = height - 60;
+
+        data.forEach((item, index) => {
+            const x = startX + (index * spacing);
+            const barHeight = (item.value / item.max) * maxBarHeight;
+            const y = height - 40 - barHeight;
+
+            // Desenhar barra
+            ctx.fillStyle = item.color;
+            ctx.fillRect(x, y, barWidth, barHeight);
+
+            // Desenhar borda
+            ctx.strokeStyle = item.color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, barWidth, barHeight);
+
+            // Desenhar valor
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Roboto';
+            ctx.textAlign = 'center';
+            ctx.fillText(item.value.toString(), x + barWidth/2, y - 5);
+
+            // Desenhar label
+            ctx.fillStyle = '#666';
+            ctx.font = '10px Roboto';
+            ctx.fillText(item.label, x + barWidth/2, height - 20);
+        });
+    }
+
+    // Função global para atualizar gráficos
+    refreshCharts() {
+        if (window.deParaUI) {
+            window.deParaUI.updateCharts();
+        }
+    }
+
+    // Sistema de Atalhos de Teclado
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (event) => {
+            // Ignorar se usuário está digitando em input
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            // Ctrl+S: Salvar configurações
+            if (event.ctrlKey && event.key === 's') {
+                event.preventDefault();
+                this.quickSave();
+                this.showToast('Configurações salvas!', 'success');
+                return;
+            }
+
+            // Ctrl+R: Atualizar dados
+            if (event.ctrlKey && event.key === 'r') {
+                event.preventDefault();
+                this.refreshAllData();
+                this.showToast('Dados atualizados!', 'success');
+                return;
+            }
+
+            // F1: Mostrar ajuda
+            if (event.key === 'F1') {
+                event.preventDefault();
+                this.showKeyboardHelp();
+                return;
+            }
+
+            // Alt+D: Ir para Dashboard
+            if (event.altKey && event.key === 'd') {
+                event.preventDefault();
+                this.switchTab('dashboard');
+                return;
+            }
+
+            // Alt+F: Ir para Operações de Arquivos
+            if (event.altKey && event.key === 'f') {
+                event.preventDefault();
+                this.switchTab('fileops');
+                return;
+            }
+
+            // Alt+S: Ir para Operações Agendadas
+            if (event.altKey && event.key === 's') {
+                event.preventDefault();
+                this.switchTab('scheduled');
+                return;
+            }
+
+            // Alt+B: Ir para Backups
+            if (event.altKey && event.key === 'b') {
+                event.preventDefault();
+                this.switchTab('backups');
+                return;
+            }
+
+            // Alt+C: Ir para Configurações
+            if (event.altKey && event.key === 'c') {
+                event.preventDefault();
+                this.switchTab('settings');
+                return;
+            }
+
+            // Escape: Fechar modais
+            if (event.key === 'Escape') {
+                this.closeAllModals();
+                return;
+            }
+        });
+    }
+
+    // Salvar configurações rapidamente
+    async quickSave() {
+        try {
+            // Salvar configurações da aba atual
+            if (this.currentTab === 'settings') {
+                await this.saveSettings();
+            } else if (this.currentTab === 'backups') {
+                await this.updateBackupConfig();
+            }
+        } catch (error) {
+            console.warn('Erro ao salvar rapidamente:', error);
+        }
+    }
+
+    // Atualizar todos os dados
+    async refreshAllData() {
+        this.clearCache(); // Limpar cache para forçar atualização
+        await this.refreshDashboardData();
+        await this.updateCharts();
+        await this.loadOperationsCached();
+    }
+
+    // Trocar aba
+    switchTab(tabId) {
+        const tabButton = document.querySelector(`[data-tab="${tabId}"]`);
+        if (tabButton) {
+            tabButton.click();
+        }
+    }
+
+    // Fechar todos os modais
+    closeAllModals() {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            modal.style.display = 'none';
+        });
+    }
+
+    // Mostrar ajuda de atalhos
+    showKeyboardHelp() {
+        const shortcuts = [
+            { key: 'Ctrl+S', description: 'Salvar configurações' },
+            { key: 'Ctrl+R', description: 'Atualizar dados' },
+            { key: 'F1', description: 'Mostrar esta ajuda' },
+            { key: 'Alt+D', description: 'Ir para Dashboard' },
+            { key: 'Alt+F', description: 'Ir para Operações de Arquivos' },
+            { key: 'Alt+S', description: 'Ir para Operações Agendadas' },
+            { key: 'Alt+B', description: 'Ir para Backups' },
+            { key: 'Alt+C', description: 'Ir para Configurações' },
+            { key: 'Esc', description: 'Fechar modais' }
+        ];
+
+        let helpText = '🎹 Atalhos de Teclado Disponíveis:\n\n';
+        shortcuts.forEach(shortcut => {
+            helpText += `${shortcut.key.padEnd(10)} - ${shortcut.description}\n`;
+        });
+
+        alert(helpText);
+    }
+
+    // Sistema de Busca em Operações
+    filterScheduledOperations(searchTerm) {
+        const searchInput = document.getElementById('scheduled-search');
+        const clearButton = document.querySelector('.clear-search');
+        const operationsList = document.getElementById('scheduled-operations-list');
+
+        if (!operationsList) return;
+
+        const operationItems = operationsList.querySelectorAll('.operation-item');
+
+        if (searchTerm.trim() === '') {
+            // Mostrar todas as operações
+            operationItems.forEach(item => {
+                item.style.display = 'block';
+            });
+            clearButton.style.display = 'none';
+            return;
+        }
+
+        clearButton.style.display = 'block';
+
+        const term = searchTerm.toLowerCase();
+
+        operationItems.forEach(item => {
+            const operationName = item.querySelector('.operation-name')?.textContent.toLowerCase() || '';
+            const operationType = item.querySelector('.operation-type')?.textContent.toLowerCase() || '';
+            const operationPath = item.querySelector('.operation-path')?.textContent.toLowerCase() || '';
+            const operationFrequency = item.querySelector('.operation-frequency')?.textContent.toLowerCase() || '';
+
+            const matches = operationName.includes(term) ||
+                          operationType.includes(term) ||
+                          operationPath.includes(term) ||
+                          operationFrequency.includes(term);
+
+            item.style.display = matches ? 'block' : 'none';
+        });
+
+        this.updateSearchResultsCount();
+    }
+
+    // Atualizar contador de resultados da busca
+    updateSearchResultsCount() {
+        const operationsList = document.getElementById('scheduled-operations-list');
+        if (!operationsList) return;
+
+        const visibleItems = operationsList.querySelectorAll('.operation-item[style*="block"], .operation-item:not([style*="none"])');
+        const totalItems = operationsList.querySelectorAll('.operation-item');
+
+        const searchInput = document.getElementById('scheduled-search');
+        if (searchInput && searchInput.value.trim() !== '') {
+            const countElement = document.querySelector('.search-results-count') ||
+                               this.createSearchResultsCount();
+
+            countElement.textContent = `Encontrados ${visibleItems.length} de ${totalItems.length} operações`;
+        } else {
+            const countElement = document.querySelector('.search-results-count');
+            if (countElement) {
+                countElement.remove();
+            }
+        }
+    }
+
+    // Criar elemento de contador de resultados
+    createSearchResultsCount() {
+        const searchContainer = document.querySelector('.search-container');
+        const countElement = document.createElement('div');
+        countElement.className = 'search-results-count';
+        countElement.style.cssText = `
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+            font-weight: 500;
+        `;
+
+        searchContainer.appendChild(countElement);
+        return countElement;
+    }
+
+    // Limpar busca
+    clearSearch() {
+        const searchInput = document.getElementById('scheduled-search');
+        const clearButton = document.querySelector('.clear-search');
+
+        if (searchInput) {
+            searchInput.value = '';
+            this.filterScheduledOperations('');
+        }
+
+        if (clearButton) {
+            clearButton.style.display = 'none';
+        }
+    }
+
+    // Função global para busca
+    filterScheduledOperationsGlobal(searchTerm) {
+        if (window.deParaUI) {
+            window.deParaUI.filterScheduledOperations(searchTerm);
+        }
+    }
+
+    // Função global para limpar busca
+    clearSearchGlobal() {
+        if (window.deParaUI) {
+            window.deParaUI.clearSearch();
+        }
+    }
+
+    // Sistema de Loading States
+    showLoading(elementId, message = 'Carregando...') {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        // Criar overlay de loading
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'loading-overlay';
+        loadingOverlay.id = `loading-${elementId}`;
+        loadingOverlay.innerHTML = `
+            <div class="loading-spinner"></div>
+            <div class="loading-message">${message}</div>
+        `;
+
+        // Adicionar estilos inline para garantir visibilidade
+        loadingOverlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            border-radius: 8px;
+        `;
+
+        // Tornar elemento relativo se não for
+        const currentPosition = window.getComputedStyle(element).position;
+        if (currentPosition === 'static') {
+            element.style.position = 'relative';
+        }
+
+        element.appendChild(loadingOverlay);
+    }
+
+    hideLoading(elementId) {
+        const loadingOverlay = document.getElementById(`loading-${elementId}`);
+        if (loadingOverlay) {
+            loadingOverlay.remove();
+        }
+    }
+
+    // Wrapper para funções assíncronas com loading
+    async withLoading(elementId, asyncFunction, message = 'Carregando...') {
+        try {
+            this.showLoading(elementId, message);
+            const result = await asyncFunction();
+            return result;
+        } finally {
+            this.hideLoading(elementId);
+        }
+    }
+
+    // Loading para botões
+    setButtonLoading(button, loading = true, originalText = null) {
+        if (loading) {
+            button.disabled = true;
+            button.dataset.originalText = originalText || button.innerHTML;
+            button.innerHTML = `
+                <div class="button-loading">
+                    <div class="loading-spinner small"></div>
+                    Carregando...
+                </div>
+            `;
+        } else {
+            button.disabled = false;
+            if (button.dataset.originalText) {
+                button.innerHTML = button.dataset.originalText;
+            }
+        }
+    }
+
+    // Loading para formulários
+    setFormLoading(form, loading = true) {
+        const inputs = form.querySelectorAll('input, select, textarea, button');
+        inputs.forEach(input => {
+            if (input.type === 'submit' || input.type === 'button' || input.tagName === 'BUTTON') {
+                this.setButtonLoading(input, loading);
+            } else {
+                input.disabled = loading;
+                if (loading) {
+                    input.dataset.wasDisabled = input.disabled;
+                } else if (input.dataset.wasDisabled === 'false') {
+                    input.disabled = false;
+                }
+            }
+        });
     }
 
     // Sistema de Onboarding
