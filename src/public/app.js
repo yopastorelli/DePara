@@ -1267,39 +1267,39 @@ class DeParaUI {
         this.addButtonListener('.schedule-modal-btn', () => this.showScheduleModal());
 
         // Botões de backup
-        this.addButtonListener('.load-backups-btn', () => this.loadBackups());
-        this.addButtonListener('.update-backup-btn', () => this.updateBackupConfig());
+        this.addButtonListener('.load-backups-btn', () => window.loadBackups());
+        this.addButtonListener('.update-backup-btn', () => window.updateBackupConfig());
 
         // Botões de configurações
-        this.addButtonListener('.show-ignored-btn', () => this.showIgnoredPatterns());
+        this.addButtonListener('.show-ignored-btn', () => window.showIgnoredPatterns());
         this.addButtonListener('.save-settings-btn', () => this.saveSettings());
 
         // Botões de workflow
-        this.addButtonListener('.close-workflow-btn', () => this.closeWorkflowModal());
-        this.addButtonListener('#prev-step', () => this.previousWorkflowStep());
-        this.addButtonListener('#next-step', () => this.nextWorkflowStep());
-        this.addButtonListener('#save-step', () => this.saveWorkflow());
-        this.addButtonListener('.cancel-workflow-btn', () => this.closeWorkflowModal());
+        this.addButtonListener('.close-workflow-btn', () => window.closeWorkflowModal());
+        this.addButtonListener('#prev-step', () => window.previousWorkflowStep());
+        this.addButtonListener('#next-step', () => window.nextWorkflowStep());
+        this.addButtonListener('#save-step', () => window.saveWorkflow());
+        this.addButtonListener('.cancel-workflow-btn', () => window.closeWorkflowModal());
 
         // Botões de gerenciamento de pastas
-        this.addButtonListener('.close-folder-manager-btn', () => this.closeFolderManagerModal());
-        this.addButtonListener('.cancel-folder-manager-btn', () => this.closeFolderManagerModal());
-        this.addButtonListener('.save-folder-btn', () => this.saveFolder());
+        this.addButtonListener('.close-folder-manager-btn', () => window.closeFolderManagerModal());
+        this.addButtonListener('.cancel-folder-manager-btn', () => window.closeFolderManagerModal());
+        this.addButtonListener('.save-folder-btn', () => window.saveFolder());
 
         // Botões de operações de arquivo
-        this.addButtonListener('.close-file-operation-btn', () => this.closeFileOperationModal());
-        this.addButtonListener('.cancel-file-operation-btn', () => this.closeFileOperationModal());
-        this.addButtonListener('.execute-file-operation-btn', () => this.executeFileOperation());
+        this.addButtonListener('.close-file-operation-btn', () => window.closeFileOperationModal());
+        this.addButtonListener('.cancel-file-operation-btn', () => window.closeFileOperationModal());
+        this.addButtonListener('.execute-file-operation-btn', () => window.executeFileOperation());
 
         // Botões de agendamento
-        this.addButtonListener('.close-schedule-btn', () => this.closeScheduleModal());
-        this.addButtonListener('.cancel-schedule-btn', () => this.closeScheduleModal());
-        this.addButtonListener('.schedule-operation-btn', () => this.scheduleOperation());
+        this.addButtonListener('.close-schedule-btn', () => window.closeScheduleModal());
+        this.addButtonListener('.cancel-schedule-btn', () => window.closeScheduleModal());
+        this.addButtonListener('.schedule-operation-btn', () => window.scheduleOperation());
 
         // Botões de slideshow
-        this.addButtonListener('.close-slideshow-folder-btn', () => this.closeSlideshowFolderModal());
-        this.addButtonListener('.cancel-slideshow-folder-btn', () => this.closeSlideshowFolderModal());
-        this.addButtonListener('.start-slideshow-btn', () => this.startSlideshow());
+        this.addButtonListener('.close-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
+        this.addButtonListener('.cancel-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
+        this.addButtonListener('.start-slideshow-btn', () => window.startSlideshow());
         this.addButtonListener('#slideshow-prev', () => this.previousSlide());
         this.addButtonListener('#slideshow-next', () => this.nextSlide());
         this.addButtonListener('.close-slideshow-btn', () => this.closeSlideshowViewer());
@@ -2558,35 +2558,35 @@ class DeParaUI {
         const moveCard = document.querySelector('.action-move-card');
         if (moveCard) {
             moveCard.addEventListener('click', () => {
-                window.deParaUI.showFileOperationModal('move');
+                window.showFileOperationModal('move');
             });
         }
 
         const copyCard = document.querySelector('.action-copy-card');
         if (copyCard) {
             copyCard.addEventListener('click', () => {
-                window.deParaUI.showFileOperationModal('copy');
+                window.showFileOperationModal('copy');
             });
         }
 
         const deleteCard = document.querySelector('.action-delete-card');
         if (deleteCard) {
             deleteCard.addEventListener('click', () => {
-                window.deParaUI.showFileOperationModal('delete');
+                window.showFileOperationModal('delete');
             });
         }
 
         const scheduleCard = document.querySelector('.action-schedule-card');
         if (scheduleCard) {
             scheduleCard.addEventListener('click', () => {
-                window.deParaUI.showScheduleModal();
+                window.showScheduleModal();
             });
         }
 
         const slideshowCard = document.querySelector('.action-slideshow-card');
         if (slideshowCard) {
             slideshowCard.addEventListener('click', () => {
-                window.deParaUI.showSlideshowModal();
+                window.showSlideshowModal();
             });
         }
 
