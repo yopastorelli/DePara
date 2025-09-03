@@ -99,8 +99,9 @@
             </div>
             
             <div class="onboarding-actions">
-                <button class="btn btn-secondary" onclick="skipOnboarding()">Pular Tutorial</button>
-                <button class="btn btn-primary" onclick="startOnboarding()">Começar Configuração</button>
+                <button class="btn btn-secondary" onclick="closeOnboarding()">❌ Fechar Tutorial</button>
+                <button class="btn btn-outline" onclick="skipOnboarding()">⏭️ Pular Tutorial</button>
+                <button class="btn btn-primary" onclick="quickSetup()">🚀 Configuração Rápida</button>
             </div>
         </div>
     </div>
@@ -406,35 +407,100 @@
         <div id="settings" class="tab-content">
             <div class="settings-container">
                 <h2>Configurações do Sistema</h2>
-                <div class="settings-form">
-                    <div class="form-group">
-                        <label>Porta da Aplicação</label>
-                        <input type="number" id="app-port" value="3000" min="1024" max="65535">
+
+                <!-- Configuração Rápida de Pastas -->
+                <div class="quick-folders-section">
+                    <h3>🚀 Configuração Rápida de Pastas</h3>
+                    <p>Crie pastas comuns automaticamente com um clique:</p>
+
+                    <div class="quick-folders-grid">
+                        <div class="quick-folder-card" onclick="createQuickFolder('documents')">
+                            <div class="folder-icon">📄</div>
+                            <h4>Documentos</h4>
+                            <p>Entrada e saída de documentos</p>
+                            <small>Cria: ~/Documents/Entrada, ~/Documents/Saida</small>
+                        </div>
+
+                        <div class="quick-folder-card" onclick="createQuickFolder('backup')">
+                            <div class="folder-icon">💾</div>
+                            <h4>Backup</h4>
+                            <p>Sistema de backup automático</p>
+                            <small>Cria: ~/Backup/Diario, ~/Backup/Semanal</small>
+                        </div>
+
+                        <div class="quick-folder-card" onclick="createQuickFolder('media')">
+                            <div class="folder-icon">🖼️</div>
+                            <h4>Mídia</h4>
+                            <p>Fotos, vídeos e mídia</p>
+                            <small>Cria: ~/Media/Fotos, ~/Media/Videos</small>
+                        </div>
+
+                        <div class="quick-folder-card" onclick="createQuickFolder('temp')">
+                            <div class="folder-icon">🗂️</div>
+                            <h4>Temporário</h4>
+                            <p>Arquivos temporários</p>
+                            <small>Cria: ~/Temp/Processamento, ~/Temp/Lixeira</small>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Nível de Log</label>
-                        <select id="log-level">
-                            <option value="error">Erro</option>
-                            <option value="warn">Aviso</option>
-                            <option value="info" selected>Informação</option>
-                            <option value="debug">Debug</option>
-                        </select>
+
+                    <div class="quick-actions">
+                        <button class="btn btn-outline" onclick="showFolderManager()">
+                            <span class="material-icons">create_new_folder</span>
+                            Criar Pasta Personalizada
+                        </button>
+                        <button class="btn btn-secondary" onclick="refreshFolders()">
+                            <span class="material-icons">refresh</span>
+                            Atualizar Lista
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label>Ambiente</label>
-                        <select id="environment">
-                            <option value="development">Desenvolvimento</option>
-                            <option value="production" selected>Produção</option>
-                        </select>
+                </div>
+
+                <!-- Lista de Pastas Configuradas -->
+                <div class="folders-list-section">
+                    <h3>📁 Pastas Configuradas</h3>
+                    <div id="folders-list" class="folders-list">
+                        <!-- Pastas serão carregadas dinamicamente -->
+                        <div class="empty-state">
+                            <span class="material-icons">folder_open</span>
+                            <p>Nenhuma pasta configurada</p>
+                            <small>Use a configuração rápida acima ou crie manualmente</small>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Diretório de Logs</label>
-                        <input type="text" id="log-directory" value="logs/">
+                </div>
+
+                <!-- Configurações Avançadas -->
+                <div class="advanced-settings">
+                    <h3>⚙️ Configurações Avançadas</h3>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label>Porta da Aplicação</label>
+                            <input type="number" id="app-port" value="3000" min="1024" max="65535">
+                        </div>
+                        <div class="form-group">
+                            <label>Nível de Log</label>
+                            <select id="log-level">
+                                <option value="error">Erro</option>
+                                <option value="warn">Aviso</option>
+                                <option value="info" selected>Informação</option>
+                                <option value="debug">Debug</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ambiente</label>
+                            <select id="environment">
+                                <option value="development">Desenvolvimento</option>
+                                <option value="production" selected>Produção</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Diretório de Logs</label>
+                            <input type="text" id="log-directory" value="logs/">
+                        </div>
+                        <button class="btn btn-primary" onclick="saveSettings()">
+                            <span class="material-icons">save</span>
+                            Salvar Configurações
+                        </button>
                     </div>
-                    <button class="btn btn-primary" onclick="saveSettings()">
-                        <span class="material-icons">save</span>
-                        Salvar Configurações
-                    </button>
                 </div>
             </div>
         </div>

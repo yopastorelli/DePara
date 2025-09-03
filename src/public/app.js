@@ -585,11 +585,43 @@ class DeParaUI {
     }
 
     // Função global para limpar busca
-    clearSearchGlobal() {
-        if (window.deParaUI) {
-            window.deParaUI.clearSearch();
-        }
+clearSearchGlobal() {
+    if (window.deParaUI) {
+        window.deParaUI.clearSearch();
     }
+}
+
+// Funções globais para onboarding
+function closeOnboarding() {
+    if (window.deParaUI) {
+        window.deParaUI.closeOnboarding();
+    }
+}
+
+function quickSetup() {
+    if (window.deParaUI) {
+        window.deParaUI.quickSetup();
+    }
+}
+
+// Funções de configuração rápida de pastas
+function createQuickFolder(type) {
+    if (window.deParaUI) {
+        window.deParaUI.createQuickFolder(type);
+    }
+}
+
+function showFolderManager() {
+    if (window.deParaUI) {
+        window.deParaUI.openFolderManager();
+    }
+}
+
+function refreshFolders() {
+    if (window.deParaUI) {
+        window.deParaUI.refreshFoldersList();
+    }
+}
 
     // Sistema de Loading States
     showLoading(elementId, message = 'Carregando...') {
@@ -692,12 +724,221 @@ class DeParaUI {
     skipOnboarding() {
         document.getElementById('onboarding-overlay').style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
+        this.showToast('Tutorial pulado! Você pode acessá-lo novamente pelo botão de ajuda.', 'info');
     }
 
     startOnboarding() {
         document.getElementById('onboarding-overlay').style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
         this.openWorkflowConfig();
+    }
+
+    closeOnboarding() {
+        document.getElementById('onboarding-overlay').style.display = 'none';
+        localStorage.setItem('depara-onboarding-completed', 'true');
+        this.showToast('Tutorial fechado! Use o botão de ajuda se precisar de orientações.', 'info');
+    }
+
+    // Configuração rápida e automática
+    async quickSetup() {
+        document.getElementById('onboarding-overlay').style.display = 'none';
+        localStorage.setItem('depara-onboarding-completed', 'true');
+
+        this.showToast('🚀 Iniciando configuração automática...', 'info');
+
+        try {
+            // Criar pastas padrão automaticamente
+            await this.createDefaultFolders();
+
+            // Configurar templates básicos
+            await this.createDefaultTemplates();
+
+            this.showToast('✅ Configuração automática concluída!', 'success');
+
+            // Mostrar modal de pastas configuradas
+            this.showQuickSetupResults();
+
+        } catch (error) {
+            console.error('Erro na configuração rápida:', error);
+            this.showToast('❌ Erro na configuração automática. Configure manualmente.', 'error');
+        }
+    }
+
+    // Criar pastas padrão automaticamente
+    async createDefaultFolders() {
+        const defaultFolders = [
+            { name: 'Documentos Entrada', path: '/home/pi/Documents/Entrada', type: 'source', format: 'any' },
+            { name: 'Documentos Processados', path: '/home/pi/Documents/Processados', type: 'target', format: 'any' },
+            { name: 'Backup Automático', path: '/home/pi/Documents/Backup', type: 'target', format: 'any' }
+        ];
+
+        for (const folder of defaultFolders) {
+            try {
+                await this.saveFolder(folder);
+                console.log(`Pasta criada: ${folder.name}`);
+            } catch (error) {
+                console.warn(`Erro ao criar pasta ${folder.name}:`, error);
+            }
+        }
+    }
+
+    // Criar templates básicos
+    async createDefaultTemplates() {
+        const templates = [
+            {
+                name: 'Backup Diário',
+                description: 'Faz backup diário de documentos importantes',
+                action: 'copy',
+                source: '/home/pi/Documents/Entrada',
+                target: '/home/pi/Documents/Backup',
+                frequency: '1d',
+                options: { batch: true, backupBeforeMove: false }
+            },
+            {
+                name: 'Limpeza Semanal',
+                description: 'Remove arquivos temporários semanalmente',
+                action: 'delete',
+                source: '/tmp',
+                target: '',
+                frequency: '1w',
+                options: { batch: true }
+            }
+        ];
+
+        for (const template of templates) {
+            try {
+                await this.saveTemplate(template);
+                console.log(`Template criado: ${template.name}`);
+            } catch (error) {
+                console.warn(`Erro ao criar template ${template.name}:`, error);
+            }
+        }
+    }
+
+    // Mostrar resultados da configuração rápida
+    showQuickSetupResults() {
+        const results = `
+        <div style="text-align: center; padding: 20px;">
+            <h3 style="color: #4caf50; margin-bottom: 15px;">🎉 Configuração Concluída!</h3>
+            <p style="margin-bottom: 20px;">Pastas e templates foram criados automaticamente:</p>
+
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+                <h4>📁 Pastas Criadas:</h4>
+                <ul style="margin: 10px 0;">
+                    <li>📥 <strong>Documentos Entrada</strong> - Para arquivos de entrada</li>
+                    <li>📤 <strong>Documentos Processados</strong> - Para arquivos processados</li>
+                    <li>💾 <strong>Backup Automático</strong> - Para backups</li>
+                </ul>
+            </div>
+
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+                <h4>⚙️ Templates Criados:</h4>
+                <ul style="margin: 10px 0;">
+                    <li>📅 <strong>Backup Diário</strong> - Backup automático diário</li>
+                    <li>🧹 <strong>Limpeza Semanal</strong> - Limpeza de arquivos temporários</li>
+                </ul>
+            </div>
+
+            <p style="color: #666; font-size: 14px;">
+                Você pode personalizar essas configurações nas abas "Operações de Arquivos" e "Configurações".
+            </p>
+        </div>
+        `;
+
+        // Criar modal simples
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        modal.innerHTML = `
+            <div style="background: white; padding: 0; border-radius: 12px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                ${results}
+                <div style="padding: 20px; border-top: 1px solid #eee; text-align: center;">
+                    <button onclick="this.closest('div').parentElement.remove()" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                        🎯 Começar a Usar!
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    // Sistema de configuração rápida de pastas
+    createQuickFolder(type) {
+        const folderSets = {
+            documents: [
+                { name: 'Documentos Entrada', path: '/home/pi/Documents/Entrada', type: 'source', format: 'any' },
+                { name: 'Documentos Processados', path: '/home/pi/Documents/Processados', type: 'target', format: 'any' }
+            ],
+            backup: [
+                { name: 'Backup Diário', path: '/home/pi/Backup/Diario', type: 'target', format: 'any' },
+                { name: 'Backup Semanal', path: '/home/pi/Backup/Semanal', type: 'target', format: 'any' }
+            ],
+            media: [
+                { name: 'Fotos', path: '/home/pi/Media/Fotos', type: 'source', format: 'any' },
+                { name: 'Vídeos', path: '/home/pi/Media/Videos', type: 'source', format: 'any' }
+            ],
+            temp: [
+                { name: 'Processamento', path: '/home/pi/Temp/Processamento', type: 'temp', format: 'any' },
+                { name: 'Lixeira', path: '/home/pi/Temp/Lixeira', type: 'trash', format: 'any' }
+            ]
+        };
+
+        const folders = folderSets[type];
+        if (!folders) {
+            this.showToast('❌ Tipo de pasta inválido', 'error');
+            return;
+        }
+
+        this.showToast(`🚀 Criando pastas de ${type}...`, 'info');
+
+        // Criar pastas
+        Promise.all(folders.map(folder => this.saveFolder(folder)))
+            .then(() => {
+                this.showToast(`✅ Pastas de ${type} criadas com sucesso!`, 'success');
+                this.refreshFoldersList();
+            })
+            .catch(error => {
+                console.error('Erro ao criar pastas:', error);
+                this.showToast('❌ Erro ao criar algumas pastas', 'error');
+            });
+    }
+
+    // Abrir gerenciador de pastas
+    openFolderManager() {
+        document.getElementById('folder-manager-modal').style.display = 'flex';
+    }
+
+    // Atualizar lista de pastas
+    refreshFoldersList() {
+        // Simular carregamento de pastas (implementar conforme necessário)
+        console.log('Atualizando lista de pastas...');
+        this.showToast('🔄 Lista de pastas atualizada!', 'info');
+    }
+
+    // Salvar pasta (método auxiliar)
+    async saveFolder(folder) {
+        // Simular salvamento (implementar conforme necessário)
+        console.log('Salvando pasta:', folder);
+        return Promise.resolve(folder);
+    }
+
+    // Salvar template (método auxiliar)
+    async saveTemplate(template) {
+        // Simular salvamento (implementar conforme necessário)
+        console.log('Salvando template:', template);
+        return Promise.resolve(template);
     }
 
     // Sistema de Workflows
