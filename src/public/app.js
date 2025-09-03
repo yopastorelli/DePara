@@ -1267,8 +1267,12 @@ class DeParaUI {
         this.addButtonListener('.schedule-modal-btn', () => this.showScheduleModal());
 
         // Botões de backup
-        this.addButtonListener('.load-backups-btn', () => window.loadBackups());
-        this.addButtonListener('.update-backup-btn', () => window.updateBackupConfig());
+        this.addButtonListener('.load-backups-btn', () => {
+            if (typeof loadBackups === 'function') loadBackups();
+        });
+        this.addButtonListener('.update-backup-btn', () => {
+            if (typeof updateBackupConfig === 'function') updateBackupConfig();
+        });
 
         // Botões de configurações
         this.addButtonListener('.show-ignored-btn', () => window.showIgnoredPatterns());
@@ -1304,10 +1308,19 @@ class DeParaUI {
         this.addButtonListener('#slideshow-next', () => this.nextSlide());
         this.addButtonListener('.close-slideshow-btn', () => this.closeSlideshowViewer());
 
-        // Botão seletor de arquivos
-        this.addButtonListener('.file-selector-btn', () => {
-            document.getElementById('file-selector').click();
+        // Botão seletor de pasta
+        this.addButtonListener('.select-folder-btn', () => {
+            this.selectSourceFolder();
         });
+
+        // Botões de operação
+        this.addButtonListener('.move-btn', () => this.selectOperation('move'));
+        this.addButtonListener('.copy-btn', () => this.selectOperation('copy'));
+        this.addButtonListener('.delete-btn', () => this.selectOperation('delete'));
+
+        // Botões de ação
+        this.addButtonListener('.execute-now-btn', () => this.executeNow());
+        this.addButtonListener('.schedule-btn', () => this.configureOperation());
 
         // Filtros de busca (input events)
         const searchInput = document.getElementById('scheduled-search');
@@ -1324,6 +1337,139 @@ class DeParaUI {
         if (element) {
             element.addEventListener('click', callback);
         }
+    }
+
+    // ==========================================
+    // OPERATION CONFIGURATION
+    // ==========================================
+
+    // Estado da configuração atual
+    currentConfig = {
+        sourcePath: '',
+        operation: '',
+        targetPath: '',
+        extensions: [],
+        recursive: true
+    };
+
+    // Selecionar pasta de origem
+    selectSourceFolder() {
+        const folderPath = prompt('Digite o caminho completo da pasta de origem:', '/home/pi/Documents');
+        if (folderPath) {
+            this.currentConfig.sourcePath = folderPath;
+            document.getElementById('source-folder-path').value = folderPath;
+            this.showToast(`Pasta de origem selecionada: ${folderPath}`, 'success');
+        }
+    }
+
+    // Selecionar operação
+    selectOperation(operation) {
+        // Remove classe active de todos os botões
+        document.querySelectorAll('.operation-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Adiciona classe active ao botão selecionado
+        const selectedBtn = document.querySelector(`.${operation}-btn`);
+        if (selectedBtn) {
+            selectedBtn.classList.add('active');
+        }
+
+        this.currentConfig.operation = operation;
+
+        // Se for delete, esconde o campo de destino
+        const targetField = document.getElementById('target-folder-path').parentElement;
+        if (operation === 'delete') {
+            targetField.style.display = 'none';
+        } else {
+            targetField.style.display = 'block';
+        }
+
+        this.showToast(`Operação selecionada: ${operation}`, 'info');
+    }
+
+    // Executar operação imediatamente
+    async executeNow() {
+        const sourcePath = this.currentConfig.sourcePath;
+        const operation = this.currentConfig.operation;
+        const targetPath = document.getElementById('target-folder-path').value.trim();
+
+        if (!sourcePath) {
+            this.showToast('Selecione uma pasta de origem', 'error');
+            return;
+        }
+
+        if (!operation) {
+            this.showToast('Selecione uma operação', 'error');
+            return;
+        }
+
+        if ((operation === 'move' || operation === 'copy') && !targetPath) {
+            this.showToast('Digite o caminho de destino', 'error');
+            return;
+        }
+
+        try {
+            this.showToast(`Executando ${operation}...`, 'info');
+
+            // Executa a operação diretamente via API
+            const response = await fetch('/api/files/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: operation,
+                    sourcePath: sourcePath,
+                    targetPath: targetPath,
+                    options: {
+                        recursive: true
+                    }
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast(`Operação ${operation} executada com sucesso!`, 'success', true);
+            } else {
+                this.showToast(`Erro: ${result.error?.message || 'Erro desconhecido'}`, 'error');
+            }
+
+        } catch (error) {
+            console.error('Erro ao executar operação:', error);
+            this.showToast('Erro ao executar operação', 'error');
+        }
+    }
+
+    // Configurar operação completa (para agendamento)
+    configureOperation() {
+        const sourcePath = this.currentConfig.sourcePath;
+        const operation = this.currentConfig.operation;
+        const targetPath = document.getElementById('target-folder-path').value.trim();
+
+        if (!sourcePath) {
+            this.showToast('Selecione uma pasta de origem', 'error');
+            return;
+        }
+
+        if (!operation) {
+            this.showToast('Selecione uma operação', 'error');
+            return;
+        }
+
+        if ((operation === 'move' || operation === 'copy') && !targetPath) {
+            this.showToast('Digite o caminho de destino', 'error');
+            return;
+        }
+
+        // Salva a configuração atual
+        this.currentConfig.targetPath = targetPath;
+
+        this.showToast(`Operação configurada: ${operation} de ${sourcePath}`, 'success');
+
+        // Abre o modal de agendamento
+        this.showScheduleModal();
     }
 
     // ==========================================
@@ -4722,20 +4868,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Funções para backups (chamar diretamente as funções globais)
-        window.loadBackups = function() {
-            // Chamar diretamente a função global loadBackups
-            if (typeof loadBackups === 'function') {
-                loadBackups();
-            }
-        };
-
-        window.updateBackupConfig = function() {
-            // Chamar diretamente a função global updateBackupConfig
-            if (typeof updateBackupConfig === 'function') {
-                updateBackupConfig();
-            }
-        };
+        // Funções para backups (já existem como globais, não precisamos recriar)
+        // loadBackups() e updateBackupConfig() já estão definidos como funções globais
+        // Vamos apenas garantir que elas sejam acessíveis
 
         // Funções para configurações
         window.showIgnoredPatterns = function() {

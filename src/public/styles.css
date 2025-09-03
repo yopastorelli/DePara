@@ -792,6 +792,139 @@ body {
     100% { transform: rotate(360deg); }
 }
 
+/* Operation Configuration Zone */
+.operation-config-zone {
+    border: 2px dashed #ddd;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    background: #fafafa;
+    margin-bottom: 30px;
+    transition: all 0.3s ease;
+}
+
+.operation-config-zone:hover {
+    border-color: #4a90e2;
+    background: #f0f8ff;
+}
+
+.config-zone-content .config-icon {
+    font-size: 48px;
+    color: #4a90e2;
+    margin-bottom: 15px;
+}
+
+.config-zone-content h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.config-zone-content p {
+    color: #666;
+    margin-bottom: 25px;
+}
+
+.config-form {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.config-form .form-group {
+    margin-bottom: 20px;
+}
+
+.config-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.input-group input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.operation-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.operation-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: 2px solid #ddd;
+    background: white;
+    color: #666;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.operation-btn:hover {
+    border-color: #4a90e2;
+    color: #4a90e2;
+    transform: translateY(-2px);
+}
+
+.operation-btn.active {
+    border-color: #4a90e2;
+    background: #4a90e2;
+    color: white;
+}
+
+.move-btn.active {
+    border-color: #ff9800;
+    background: #ff9800;
+}
+
+.copy-btn.active {
+    border-color: #4caf50;
+    background: #4caf50;
+}
+
+.delete-btn.active {
+    border-color: #f44336;
+    background: #f44336;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.form-actions .btn {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.form-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 /* Action Buttons */
 .action-btn {
     display: flex;

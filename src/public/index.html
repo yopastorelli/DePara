@@ -309,18 +309,60 @@
                 <h2>Operações de Arquivos</h2>
 
                 <!-- Drag & Drop Zone -->
-                <div id="drag-drop-zone" class="drag-drop-zone">
-                    <div class="drop-zone-content">
-                        <span class="material-icons drop-icon">cloud_upload</span>
-                        <h3>Arraste arquivos ou pastas aqui</h3>
-                        <p>ou clique para selecionar manualmente</p>
-                        <input type="file" id="file-selector" multiple webkitdirectory style="display: none;">
-                        <button class="btn btn-secondary file-selector-btn">
-                            <span class="material-icons">folder_open</span>
-                            Selecionar Arquivos/Pastas
-                        </button>
+                <div id="operation-config-zone" class="operation-config-zone">
+                    <div class="config-zone-content">
+                        <span class="material-icons config-icon">settings</span>
+                        <h3>Configurar Operação de Arquivos</h3>
+                        <p>Selecione uma pasta de origem e configure a operação desejada</p>
+
+                        <div class="config-form">
+                            <div class="form-group">
+                                <label for="source-folder-path">Pasta de Origem:</label>
+                                <div class="input-group">
+                                    <input type="text" id="source-folder-path" placeholder="/home/user/Documents" readonly>
+                                    <button class="btn btn-outline select-folder-btn">
+                                        <span class="material-icons">folder_open</span>
+                                        Selecionar Pasta
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Operação:</label>
+                                <div class="operation-buttons">
+                                    <button class="btn operation-btn move-btn" data-operation="move">
+                                        <span class="material-icons">drive_file_move</span>
+                                        Mover
+                                    </button>
+                                    <button class="btn operation-btn copy-btn" data-operation="copy">
+                                        <span class="material-icons">content_copy</span>
+                                        Copiar
+                                    </button>
+                                    <button class="btn operation-btn delete-btn" data-operation="delete">
+                                        <span class="material-icons">delete_forever</span>
+                                        Apagar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="target-folder-path">Destino (opcional):</label>
+                                <input type="text" id="target-folder-path" placeholder="/home/user/Backup">
+                            </div>
+
+                            <div class="form-actions">
+                                <button class="btn btn-secondary execute-now-btn">
+                                    <span class="material-icons">play_arrow</span>
+                                    Executar Agora
+                                </button>
+                                <button class="btn btn-primary schedule-btn">
+                                    <span class="material-icons">schedule</span>
+                                    Agendar Operação
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div id="drop-preview" class="drop-preview" style="display: none;">
+                </div>
                         <!-- Preview será mostrado aqui -->
                     </div>
                 </div>
