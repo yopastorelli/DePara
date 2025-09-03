@@ -1907,7 +1907,7 @@ class DeParaUI {
             <div class="modal-content" style="max-width: 600px; width: 90%;">
                 <div class="modal-header">
                     <h3>Selecionar Pasta</h3>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                    <button class="modal-close slideshow-folder-close-btn">
                         <span class="material-icons">close</span>
                     </button>
                 </div>
@@ -1917,7 +1917,7 @@ class DeParaUI {
                         <div class="input-group">
                             <input type="text" id="folder-path-input" class="form-input"
                                    placeholder="/home/pi/Pictures" value="/home/pi/Pictures">
-                            <button class="btn btn-outline" onclick="window.deParaUI.testFolderPath()">
+                            <button class="btn btn-outline slideshow-folder-test-btn">
                                 <span class="material-icons">check</span>
                                 Testar
                             </button>
@@ -1929,21 +1929,63 @@ class DeParaUI {
                     <div class="folder-suggestions">
                         <h4>Pastas comuns:</h4>
                         <div class="suggestion-buttons">
-                            <button class="btn btn-sm" onclick="window.deParaUI.selectSuggestedFolder('/home/pi/Pictures')">~/Pictures</button>
-                            <button class="btn btn-sm" onclick="window.deParaUI.selectSuggestedFolder('/home/pi/Downloads')">~/Downloads</button>
-                            <button class="btn btn-sm" onclick="window.deParaUI.selectSuggestedFolder('/media')">/media</button>
-                            <button class="btn btn-sm" onclick="window.deParaUI.selectSuggestedFolder('./')">Diretório atual</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/pi/Pictures">~/Pictures</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/pi/Downloads">~/Downloads</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/media">/media</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="./">Diretório atual</button>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancelar</button>
-                    <button class="btn btn-primary" onclick="window.deParaUI.confirmFolderSelection()">Selecionar</button>
+                    <button class="btn btn-secondary slideshow-folder-cancel-btn">Cancelar</button>
+                    <button class="btn btn-primary slideshow-folder-select-btn">Selecionar</button>
                 </div>
             </div>
         `;
 
         document.body.appendChild(modal);
+
+        // Configurar event listeners para o modal de slideshow
+        this.setupSlideshowFolderEventListeners(modal);
+    }
+
+    // Configurar event listeners para o modal de seleção de pasta do slideshow
+    setupSlideshowFolderEventListeners(modal) {
+        // Botão fechar
+        const closeBtn = modal.querySelector('.slideshow-folder-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => modal.remove());
+        }
+
+        // Botão testar
+        const testBtn = modal.querySelector('.slideshow-folder-test-btn');
+        if (testBtn) {
+            testBtn.addEventListener('click', () => this.testFolderPath());
+        }
+
+        // Botões de sugestão
+        const suggestionBtns = modal.querySelectorAll('.slideshow-suggestion-btn');
+        suggestionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const path = btn.getAttribute('data-path');
+                this.selectSuggestedFolder(path);
+            });
+        });
+
+        // Botão cancelar
+        const cancelBtn = modal.querySelector('.slideshow-folder-cancel-btn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => modal.remove());
+        }
+
+        // Botão selecionar
+        const selectBtn = modal.querySelector('.slideshow-folder-select-btn');
+        if (selectBtn) {
+            selectBtn.addEventListener('click', () => {
+                this.confirmFolderSelection();
+                modal.remove();
+            });
+        }
     }
 
     // Selecionar pasta sugerida
