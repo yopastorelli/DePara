@@ -4721,123 +4721,128 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Funções para backups
+        // Funções para backups (chamar diretamente as funções globais)
         window.loadBackups = function() {
-            if (window.deParaUI) {
-                window.deParaUI.loadBackups();
+            // Chamar diretamente a função global loadBackups
+            if (typeof loadBackups === 'function') {
+                loadBackups();
             }
         };
 
         window.updateBackupConfig = function() {
-            if (window.deParaUI) {
-                window.deParaUI.updateBackupConfig();
+            // Chamar diretamente a função global updateBackupConfig
+            if (typeof updateBackupConfig === 'function') {
+                updateBackupConfig();
             }
         };
 
         // Funções para configurações
         window.showIgnoredPatterns = function() {
-            if (window.deParaUI) {
-                window.deParaUI.showIgnoredPatterns();
+            // Chamar diretamente a função global showIgnoredPatterns
+            if (typeof showIgnoredPatterns === 'function') {
+                showIgnoredPatterns();
             }
         };
 
         window.saveSettings = function() {
-            if (window.deParaUI) {
+            // Chamar o método da classe DeParaUI
+            if (window.deParaUI && typeof window.deParaUI.saveSettings === 'function') {
                 window.deParaUI.saveSettings();
             }
         };
 
-        // Funções para workflows
+        // Funções para workflows (todas são funções globais)
         window.closeWorkflowModal = function() {
-            if (window.deParaUI) {
-                window.deParaUI.closeWorkflowModal();
+            if (typeof closeWorkflowModal === 'function') {
+                closeWorkflowModal();
             }
         };
 
         window.previousWorkflowStep = function() {
-            if (window.deParaUI) {
-                window.deParaUI.previousWorkflowStep();
+            if (typeof previousWorkflowStep === 'function') {
+                previousWorkflowStep();
             }
         };
 
         window.nextWorkflowStep = function() {
-            if (window.deParaUI) {
-                window.deParaUI.nextWorkflowStep();
+            if (typeof nextWorkflowStep === 'function') {
+                nextWorkflowStep();
             }
         };
 
         window.saveWorkflow = function() {
-            if (window.deParaUI) {
-                window.deParaUI.saveWorkflow();
+            if (typeof saveWorkflow === 'function') {
+                saveWorkflow();
             }
         };
 
-        // Funções para gerenciamento de pastas
+        // Funções para gerenciamento de pastas (todas são funções globais)
         window.closeFolderManagerModal = function() {
-            if (window.deParaUI) {
-                window.deParaUI.closeFolderManagerModal();
+            if (typeof closeFolderManagerModal === 'function') {
+                closeFolderManagerModal();
             }
         };
 
         window.saveFolder = function() {
-            if (window.deParaUI) {
-                window.deParaUI.saveFolder();
+            if (typeof saveFolder === 'function') {
+                saveFolder();
             }
         };
 
-        // Funções para operações de arquivo
+        // Funções para operações de arquivo (todas são funções globais)
         window.closeFileOperationModal = function() {
-            if (window.deParaUI) {
-                window.deParaUI.closeFileOperationModal();
+            if (typeof closeFileOperationModal === 'function') {
+                closeFileOperationModal();
             }
         };
 
         window.executeFileOperation = function() {
-            if (window.deParaUI) {
-                window.deParaUI.executeFileOperation();
+            if (typeof executeFileOperation === 'function') {
+                executeFileOperation();
             }
         };
 
-        // Funções para agendamento
+        // Funções para agendamento (todas são funções globais)
         window.closeScheduleModal = function() {
-            if (window.deParaUI) {
-                window.deParaUI.closeScheduleModal();
+            if (typeof closeScheduleModal === 'function') {
+                closeScheduleModal();
             }
         };
 
         window.scheduleOperation = function() {
-            if (window.deParaUI) {
-                window.deParaUI.scheduleOperation();
+            if (typeof scheduleOperation === 'function') {
+                scheduleOperation();
             }
         };
 
-        // Funções para slideshow
+        // Funções para slideshow (todas são funções globais)
         window.closeSlideshowFolderModal = function() {
-            if (window.deParaUI) {
-                window.deParaUI.closeSlideshowFolderModal();
+            if (typeof closeSlideshowFolderModal === 'function') {
+                closeSlideshowFolderModal();
             }
         };
 
         window.startSlideshow = function() {
-            if (window.deParaUI) {
-                window.deParaUI.startSlideshow();
+            if (typeof startSlideshow === 'function') {
+                startSlideshow();
             }
         };
 
+        // Funções de slideshow (estas são métodos da classe DeParaUI)
         window.previousImage = function() {
-            if (window.deParaUI) {
+            if (window.deParaUI && typeof window.deParaUI.previousSlide === 'function') {
                 window.deParaUI.previousSlide();
             }
         };
 
         window.nextImage = function() {
-            if (window.deParaUI) {
+            if (window.deParaUI && typeof window.deParaUI.nextSlide === 'function') {
                 window.deParaUI.nextSlide();
             }
         };
 
         window.closeSlideshow = function() {
-            if (window.deParaUI) {
+            if (window.deParaUI && typeof window.deParaUI.closeSlideshowViewer === 'function') {
                 window.deParaUI.closeSlideshowViewer();
             }
         };
