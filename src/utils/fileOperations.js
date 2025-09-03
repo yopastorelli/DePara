@@ -18,7 +18,7 @@ const logger = require('./logger');
  * Valida se um caminho é seguro para operações de arquivo
  * Previne acesso a diretórios não autorizados e ataques de path traversal
  */
-function validateSafePath(filePath, operation = 'read') {
+async function validateSafePath(filePath, operation = 'read') {
   if (!filePath || typeof filePath !== 'string') {
     throw new Error('Caminho inválido ou vazio');
   }
