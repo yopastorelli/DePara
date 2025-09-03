@@ -3028,9 +3028,39 @@ class DeParaUI {
             }
         } catch (error) {
             console.error('❌ Erro ao carregar pastas:', error);
-            this.folders = [];
-            this.renderConfiguredFolders();
+
+            // Verificar se é erro de conexão (API não disponível)
+            if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
+                console.warn('⚠️ API não está disponível. Mostrando mensagem para o usuário.');
+                this.showApiUnavailableMessage();
+            } else {
+                this.folders = [];
+                this.renderConfiguredFolders();
+            }
         }
+    }
+
+    // Mostrar mensagem quando API não está disponível
+    showApiUnavailableMessage() {
+        const foldersList = document.getElementById('folders-list');
+        if (!foldersList) return;
+
+        foldersList.innerHTML = `
+            <div class="empty-state api-unavailable">
+                <span class="material-icons" style="color: #ff9800;">warning</span>
+                <p><strong>Servidor não está executando</strong></p>
+                <small style="color: #666;">
+                    O servidor Node.js precisa estar rodando para carregar as pastas.<br>
+                    Execute: <code style="background: #f5f5f5; padding: 2px 4px; border-radius: 3px;">node src/main.js</code>
+                </small>
+                <button class="btn btn-primary" onclick="window.location.reload()" style="margin-top: 10px;">
+                    <span class="material-icons">refresh</span>
+                    Tentar Novamente
+                </button>
+            </div>
+        `;
+
+        console.log('📢 Mensagem de API indisponível exibida');
     }
 
     renderConfiguredFolders() {
