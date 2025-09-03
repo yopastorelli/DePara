@@ -1775,36 +1775,45 @@ class DeParaUI {
     // Métodos de carregamento de dados
     async loadWorkflows() {
         try {
-            const response = await fetch('/api/workflows');
+            console.log('🔍 Carregando workflows da API...');
+            const response = await fetch('/api/files/workflows');
             if (response.ok) {
                 const result = await response.json();
                 this.workflows = result.data || [];
+                console.log('✅ Workflows carregados:', this.workflows);
                 this.renderWorkflows();
             } else {
-                throw new Error('Falha ao carregar fluxos de trabalho');
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
-            console.error('Erro ao carregar fluxos de trabalho:', error);
+            console.error('❌ Erro ao carregar workflows:', error);
             this.workflows = [];
             this.renderWorkflows();
         }
     }
 
     renderWorkflows() {
-        const workflowsGrid = document.getElementById('workflows-grid');
-        
+        const workflowsList = document.getElementById('workflows-list');
+
+        if (!workflowsList) {
+            console.warn('⚠️ Elemento workflows-list não encontrado');
+            return;
+        }
+
+        console.log('🎨 Renderizando workflows:', this.workflows);
+
         if (this.workflows.length === 0) {
-            workflowsGrid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
-                    <span class="material-icons" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">workflow</span>
-                    <p>Nenhum fluxo de trabalho configurado</p>
-                    <p>Clique em "Novo Fluxo" para começar</p>
+            workflowsList.innerHTML = `
+                <div class="empty-state">
+                    <span class="material-icons">workflow</span>
+                    <p>Nenhum workflow configurado</p>
+                    <small>Use o modal de workflow para criar</small>
                 </div>
             `;
             return;
         }
 
-        workflowsGrid.innerHTML = this.workflows.map(workflow => `
+        workflowsList.innerHTML = this.workflows.map(workflow => `
             <div class="workflow-card">
                 <div class="workflow-header">
                     <div>
@@ -1976,6 +1985,52 @@ class DeParaUI {
         if (quickBtn) {
             quickBtn.addEventListener('click', () => {
                 this.quickSetup();
+            });
+        }
+
+        // Botões de ação principal (evita CSP violation)
+        this.addActionButtonListeners();
+    }
+
+    // Adicionar event listeners para botões de ação (evita CSP violation)
+    addActionButtonListeners() {
+        // Botão mover arquivo
+        const moveBtn = document.querySelector('.action-move-btn');
+        if (moveBtn) {
+            moveBtn.addEventListener('click', () => {
+                this.showFileOperationModal('move');
+            });
+        }
+
+        // Botão copiar arquivo
+        const copyBtn = document.querySelector('.action-copy-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                this.showFileOperationModal('copy');
+            });
+        }
+
+        // Botão deletar arquivo
+        const deleteBtn = document.querySelector('.action-delete-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                this.showFileOperationModal('delete');
+            });
+        }
+
+        // Botão agendar operação
+        const scheduleBtn = document.querySelector('.action-schedule-btn');
+        if (scheduleBtn) {
+            scheduleBtn.addEventListener('click', () => {
+                this.showScheduleModal();
+            });
+        }
+
+        // Botão slideshow
+        const slideshowBtn = document.querySelector('.action-slideshow-btn');
+        if (slideshowBtn) {
+            slideshowBtn.addEventListener('click', () => {
+                this.showSlideshowModal();
             });
         }
     }
@@ -2678,13 +2733,10 @@ function renderTemplates(categories) {
     categories.forEach(category => {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'template-category';
-        categoryDiv.innerHTML = `
-            <div class="category-header">
-                <h4>${category.title}</h4>
-                <p>${category.description}</p>
-            </div>
-            <div class="category-templates">
-                ${category.templates.map(template => `
+
+        // Verificar se templates existe e é um array
+        const templates = category.templates || [];
+        const templatesHtml = Array.isArray(templates) ? templates.map(template => `
                     <div class="template-card" onclick="applyTemplate('${template.category}', '${template.templateName}')">
                         <h5>${template.name}</h5>
                         <p>${template.description}</p>
@@ -2692,7 +2744,15 @@ function renderTemplates(categories) {
                             <button class="btn btn-sm btn-primary">Aplicar</button>
                         </div>
                     </div>
-                `).join('')}
+                `).join('') : '<p class="no-templates">Nenhum template disponível</p>';
+
+        categoryDiv.innerHTML = `
+            <div class="category-header">
+                <h4>${category.title}</h4>
+                <p>${category.description}</p>
+            </div>
+            <div class="category-templates">
+                ${templatesHtml}
             </div>
         `;
         container.appendChild(categoryDiv);
@@ -4029,11 +4089,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Adicionar event listeners para botões (evita CSP violation)
-        window.deParaUI.addOnboardingEventListeners();
-
-        // Tornar UI disponível globalmente
+        // Tornar UI disponível globalmente primeiro
         window.deParaUI = ui;
+
+        // Adicionar event listeners para botões (evita CSP violation)
+        ui.addOnboardingEventListeners();
     }, 100);
 });
 

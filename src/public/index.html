@@ -155,23 +155,23 @@
                         <h3>Ações Rápidas</h3>
                     </div>
                     <div class="card-content">
-                        <button class="action-btn" onclick="showFileOperationModal('move')">
+                        <button class="action-btn action-move-btn">
                             <span class="material-icons">drive_file_move</span>
                             Mover Arquivo
                         </button>
-                        <button class="action-btn" onclick="showFileOperationModal('copy')">
+                        <button class="action-btn action-copy-btn">
                             <span class="material-icons">content_copy</span>
                             Copiar Arquivo
                         </button>
-                        <button class="action-btn" onclick="showFileOperationModal('delete')">
+                        <button class="action-btn action-delete-btn">
                             <span class="material-icons">delete_forever</span>
                             Apagar Arquivo
                         </button>
-                        <button class="action-btn" onclick="showScheduleModal()">
+                        <button class="action-btn action-schedule-btn">
                             <span class="material-icons">schedule</span>
                             Agendar Operação
                         </button>
-                        <button class="action-btn" onclick="showSlideshowModal()">
+                        <button class="action-btn action-slideshow-btn">
                             <span class="material-icons">slideshow</span>
                             Slideshow de Imagens
                         </button>
@@ -464,6 +464,19 @@
                             <span class="material-icons">folder_open</span>
                             <p>Nenhuma pasta configurada</p>
                             <small>Use a configuração rápida acima ou crie manualmente</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Workflows Configurados -->
+                <div class="workflows-list-section">
+                    <h3>⚙️ Workflows Configurados</h3>
+                    <div id="workflows-list" class="workflows-list">
+                        <!-- Workflows serão carregadas dinamicamente -->
+                        <div class="empty-state">
+                            <span class="material-icons">workflow</span>
+                            <p>Nenhum workflow configurado</p>
+                            <small>Use o modal de workflow para criar</small>
                         </div>
                     </div>
                 </div>

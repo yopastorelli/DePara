@@ -41,6 +41,26 @@ let configuredFolders = [
     }
 ];
 
+// Lista de workflows configurados (armazenamento em memória por enquanto)
+let configuredWorkflows = [
+    {
+        id: '1',
+        name: 'Processamento Diário',
+        description: 'Processa documentos diariamente',
+        steps: [],
+        createdAt: new Date().toISOString(),
+        status: 'active'
+    },
+    {
+        id: '2',
+        name: 'Backup Semanal',
+        description: 'Realiza backup semanal dos arquivos',
+        steps: [],
+        createdAt: new Date().toISOString(),
+        status: 'active'
+    }
+];
+
 /**
  * GET /api/files/folders - Listar pastas configuradas
  */
@@ -156,6 +176,134 @@ router.delete('/folders/:id', async (req, res) => {
         res.status(500).json({
             error: {
                 message: 'Erro ao deletar pasta',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
+ * Gerenciamento de Workflows
+ * GET /api/files/workflows - Listar workflows configurados
+ * POST /api/files/workflows - Criar novo workflow
+ * DELETE /api/files/workflows/:id - Deletar workflow
+ */
+
+/**
+ * GET /api/files/workflows - Listar workflows configurados
+ */
+router.get('/workflows', async (req, res) => {
+    try {
+        logger.startOperation('List Workflows', {});
+        const result = configuredWorkflows;
+        const duration = Date.now() - Date.now();
+        logger.endOperation('List Workflows', duration, result);
+
+        res.json({
+            success: true,
+            data: result,
+            count: result.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logger.operationError('List Workflows', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro ao listar workflows',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
+ * POST /api/files/workflows - Criar novo workflow
+ */
+router.post('/workflows', async (req, res) => {
+    try {
+        const { name, description, steps = [] } = req.body;
+
+        // Validação básica
+        if (!name || !description) {
+            return res.status(400).json({
+                error: {
+                    message: 'Nome e descrição são obrigatórios',
+                    required: ['name', 'description']
+                }
+            });
+        }
+
+        // Criar ID único
+        const id = Date.now().toString();
+
+        const newWorkflow = {
+            id,
+            name,
+            description,
+            steps,
+            createdAt: new Date().toISOString(),
+            status: 'active'
+        };
+
+        // Adicionar à lista
+        configuredWorkflows.push(newWorkflow);
+
+        logger.startOperation('Create Workflow', newWorkflow);
+        const duration = Date.now() - Date.now();
+        logger.endOperation('Create Workflow', duration, newWorkflow);
+
+        res.status(201).json({
+            success: true,
+            data: newWorkflow,
+            message: 'Workflow criado com sucesso',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logger.operationError('Create Workflow', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro ao criar workflow',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
+ * DELETE /api/files/workflows/:id - Deletar workflow
+ */
+router.delete('/workflows/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const workflowIndex = configuredWorkflows.findIndex(workflow => workflow.id === id);
+
+        if (workflowIndex === -1) {
+            return res.status(404).json({
+                error: {
+                    message: 'Workflow não encontrado',
+                    id: id
+                }
+            });
+        }
+
+        const deletedWorkflow = configuredWorkflows.splice(workflowIndex, 1)[0];
+
+        logger.startOperation('Delete Workflow', { id });
+        const duration = Date.now() - Date.now();
+        logger.endOperation('Delete Workflow', duration, deletedWorkflow);
+
+        res.json({
+            success: true,
+            data: deletedWorkflow,
+            message: 'Workflow deletado com sucesso',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logger.operationError('Delete Workflow', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro ao deletar workflow',
                 details: error.message
             }
         });

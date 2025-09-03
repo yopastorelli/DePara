@@ -595,6 +595,19 @@ body {
     font-size: 18px;
 }
 
+/* Workflows List Styles */
+.workflows-list-section {
+    margin-bottom: 30px;
+}
+
+.workflows-list {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 200px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
 /* Action Buttons */
 .action-btn {
     display: flex;
