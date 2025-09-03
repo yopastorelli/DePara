@@ -1264,7 +1264,9 @@ class DeParaUI {
         // Botões de dashboard
         this.addButtonListener('.refresh-charts-btn', () => this.updateCharts());
         this.addButtonListener('.clear-search-btn', () => this.clearSearch());
-        this.addButtonListener('.schedule-modal-btn', () => this.showScheduleModal());
+        this.addButtonListener('.schedule-modal-btn', () => {
+            if (typeof showScheduleModal === 'function') showScheduleModal();
+        });
 
         // Botões de backup
         this.addButtonListener('.load-backups-btn', () => {
@@ -1291,9 +1293,15 @@ class DeParaUI {
         this.addButtonListener('.save-folder-btn', () => window.saveFolder());
 
         // Botões de operações de arquivo
-        this.addButtonListener('.close-file-operation-btn', () => window.closeFileOperationModal());
-        this.addButtonListener('.cancel-file-operation-btn', () => window.closeFileOperationModal());
-        this.addButtonListener('.execute-file-operation-btn', () => window.executeFileOperation());
+        this.addButtonListener('.close-file-operation-btn', () => {
+            if (typeof closeFileOperationModal === 'function') closeFileOperationModal();
+        });
+        this.addButtonListener('.cancel-file-operation-btn', () => {
+            if (typeof closeFileOperationModal === 'function') closeFileOperationModal();
+        });
+        this.addButtonListener('.execute-file-operation-btn', () => {
+            if (typeof executeFileOperation === 'function') executeFileOperation();
+        });
 
         // Botões de agendamento
         this.addButtonListener('.close-schedule-btn', () => window.closeScheduleModal());
@@ -1323,7 +1331,13 @@ class DeParaUI {
 
         // Botões de ação
         this.addButtonListener('.execute-now-btn', () => this.executeNow());
-        this.addButtonListener('.schedule-btn', () => this.configureOperation());
+        this.addButtonListener('.schedule-btn', () => {
+            if (typeof showScheduleModal === 'function') {
+                this.configureOperation();
+            } else {
+                this.showToast('Funcionalidade de agendamento não disponível', 'warning');
+            }
+        });
 
         // Filtros de busca (input events)
         const searchInput = document.getElementById('scheduled-search');
@@ -1484,7 +1498,9 @@ class DeParaUI {
         this.showToast(`Operação configurada: ${operation} de ${sourcePath}`, 'success');
 
         // Abre o modal de agendamento
-        this.showScheduleModal();
+        if (typeof showScheduleModal === 'function') {
+            showScheduleModal();
+        }
     }
 
     // ==========================================
@@ -4940,18 +4956,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Funções para operações de arquivo (todas são funções globais)
-        window.closeFileOperationModal = function() {
-            if (typeof closeFileOperationModal === 'function') {
-                closeFileOperationModal();
-            }
-        };
-
-        window.executeFileOperation = function() {
-            if (typeof executeFileOperation === 'function') {
-                executeFileOperation();
-            }
-        };
+        // Funções para operações de arquivo (já existem como globais, não precisamos recriar)
+        // closeFileOperationModal() e executeFileOperation() já estão definidos como funções globais
 
         // Funções para agendamento (todas são funções globais)
         window.closeScheduleModal = function() {
