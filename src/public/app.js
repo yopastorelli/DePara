@@ -1265,7 +1265,9 @@ class DeParaUI {
         this.addButtonListener('.refresh-charts-btn', () => this.updateCharts());
         this.addButtonListener('.clear-search-btn', () => this.clearSearch());
         this.addButtonListener('.schedule-modal-btn', () => {
-            if (typeof showScheduleModal === 'function') showScheduleModal();
+            // Redirecionar para a nova interface de operações de arquivos
+            this.switchTab('fileops');
+            this.showToast('Use a nova interface de configuração de operações abaixo', 'info');
         });
 
         // Botões de ação rápida (interface antiga) - redirecionar para nova interface
@@ -2875,21 +2877,27 @@ class DeParaUI {
         const moveCard = document.querySelector('.action-move-card');
         if (moveCard) {
             moveCard.addEventListener('click', () => {
-                window.showFileOperationModal('move');
+                if (typeof showFileOperationModal === 'function') {
+                    showFileOperationModal('move');
+                }
             });
         }
 
         const copyCard = document.querySelector('.action-copy-card');
         if (copyCard) {
             copyCard.addEventListener('click', () => {
-                window.showFileOperationModal('copy');
+                if (typeof showFileOperationModal === 'function') {
+                    showFileOperationModal('copy');
+                }
             });
         }
 
         const deleteCard = document.querySelector('.action-delete-card');
         if (deleteCard) {
             deleteCard.addEventListener('click', () => {
-                window.showFileOperationModal('delete');
+                if (typeof showFileOperationModal === 'function') {
+                    showFileOperationModal('delete');
+                }
             });
         }
 
@@ -5034,8 +5042,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         window.showScheduleModal = function() {
-            if (window.deParaUI) {
-                window.deParaUI.showScheduleModal();
+            // Chamar diretamente a função global showScheduleModal
+            if (typeof showScheduleModal === 'function') {
+                showScheduleModal();
             }
         };
 
