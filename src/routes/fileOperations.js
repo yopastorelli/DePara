@@ -1574,4 +1574,67 @@ router.get('/image/:imagePath(*)', async (req, res) => {
     }
 });
 
+// Listar pastas de um diretório para navegador
+router.post('/list-folders', async (req, res) => {
+    const startTime = Date.now();
+
+    try {
+        const { path } = req.body;
+
+        if (!path || typeof path !== 'string') {
+            return res.status(400).json({
+                error: {
+                    message: 'Parâmetro path é obrigatório e deve ser uma string',
+                    required: ['path']
+                }
+            });
+        }
+
+        logger.startOperation('List Folders', { path });
+
+        // Validar caminho
+        const safePath = await validateSafePath(path, 'read');
+
+        // Ler conteúdo do diretório
+        const entries = await fs.readdir(safePath, { withFileTypes: true });
+
+        // Filtrar apenas diretórios (pastas)
+        const folders = entries
+            .filter(entry => entry.isDirectory())
+            .filter(entry => !shouldIgnoreFile(entry.name)) // Não mostrar pastas ignoradas
+            .map(entry => ({
+                name: entry.name,
+                path: require('path').join(safePath, entry.name)
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabeticamente
+
+        const duration = Date.now() - startTime;
+        logger.endOperation('List Folders', duration, {
+            folderCount: folders.length,
+            path: safePath
+        });
+
+        res.json({
+            success: true,
+            data: {
+                folders,
+                currentPath: safePath,
+                totalCount: folders.length
+            },
+            timestamp: new Date().toISOString(),
+            duration
+        });
+
+    } catch (error) {
+        const duration = Date.now() - startTime;
+        logger.operationError('List Folders', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro interno do servidor',
+                details: error.message
+            }
+        });
+    }
+});
+
 module.exports = router;

@@ -279,10 +279,14 @@ class FileOperationsManager {
         const operationId = this.generateOperationId();
         const startTime = Date.now();
 
+        // Definir variáveis para uso no bloco catch
+        let safeSourcePath = sourcePath;
+        let safeTargetPath = targetPath;
+
         try {
             // Validar caminhos antes de qualquer operação
-            const safeSourcePath = await validateSafePath(sourcePath, 'read');
-            const safeTargetPath = await validateSafePath(targetPath, 'write');
+            safeSourcePath = await validateSafePath(sourcePath, 'read');
+            safeTargetPath = await validateSafePath(targetPath, 'write');
 
             logger.startOperation('File Move', {
                 operationId,
@@ -396,10 +400,14 @@ class FileOperationsManager {
         const operationId = this.generateOperationId();
         const startTime = Date.now();
 
+        // Definir variáveis para uso no bloco catch
+        let safeSourcePath = sourcePath;
+        let safeTargetPath = targetPath;
+
         try {
             // Validar caminhos antes de qualquer operação
-            const safeSourcePath = await validateSafePath(sourcePath, 'read');
-            const safeTargetPath = await validateSafePath(targetPath, 'write');
+            safeSourcePath = await validateSafePath(sourcePath, 'read');
+            safeTargetPath = await validateSafePath(targetPath, 'write');
 
             logger.startOperation('File Copy', {
                 operationId,
@@ -506,9 +514,12 @@ class FileOperationsManager {
         const operationId = this.generateOperationId();
         const startTime = Date.now();
 
+        // Definir variável para uso no bloco catch
+        let safeFilePath = filePath;
+
         try {
             // Validar caminho antes de qualquer operação
-            const safeFilePath = await validateSafePath(filePath, 'write');
+            safeFilePath = await validateSafePath(filePath, 'write');
 
             logger.startOperation('File Delete', {
                 operationId,

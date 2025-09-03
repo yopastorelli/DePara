@@ -1326,6 +1326,11 @@ class DeParaUI {
             this.selectSourceFolder();
         });
 
+        // Botão seletor de pasta de destino
+        this.addButtonListener('.select-target-btn', () => {
+            this.selectTargetFolder();
+        });
+
         // Botões de operação
         this.addButtonListener('.move-btn', () => this.selectOperation('move'));
         this.addButtonListener('.copy-btn', () => this.selectOperation('copy'));
@@ -1388,12 +1393,118 @@ class DeParaUI {
 
     // Selecionar pasta de origem
     selectSourceFolder() {
-        const folderPath = prompt('Digite o caminho completo da pasta de origem:', '/home/pi/Documents');
-        if (folderPath) {
-            this.currentConfig.sourcePath = folderPath;
-            document.getElementById('source-folder-path').value = folderPath;
-            this.showToast(`Pasta de origem selecionada: ${folderPath}`, 'success');
+        this.showFolderBrowser('source');
+    }
+
+    // Selecionar pasta de destino
+    selectTargetFolder() {
+        this.showFolderBrowser('target');
+    }
+
+    // Mostrar navegador de pastas
+    async showFolderBrowser(targetType) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content folder-browser-modal" style="max-width: 700px; width: 90%;">
+                <div class="modal-header">
+                    <h3>Selecionar Pasta</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="folder-browser">
+                        <div class="current-path">
+                            <input type="text" id="browser-path" value="/home/pi" readonly>
+                            <button class="btn btn-sm" onclick="window.deParaUI.goUp()">
+                                <span class="material-icons">arrow_upward</span>
+                            </button>
+                        </div>
+                        <div class="folder-list" id="folder-list">
+                            <div class="loading">Carregando pastas...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancelar</button>
+                    <button class="btn btn-primary" onclick="window.deParaUI.selectCurrentFolder('${targetType}')">Selecionar Esta Pasta</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        await this.loadFolders('/home/pi');
+    }
+
+    // Carregar pastas de um diretório
+    async loadFolders(path) {
+        try {
+            const response = await fetch('/api/files/list-folders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.renderFolders(result.data.folders, path);
+            } else {
+                this.showToast('Erro ao carregar pastas', 'error');
+            }
+        } catch (error) {
+            console.error('Erro ao carregar pastas:', error);
+            this.showToast('Erro ao carregar pastas', 'error');
         }
+    }
+
+    // Renderizar lista de pastas
+    renderFolders(folders, currentPath) {
+        document.getElementById('browser-path').value = currentPath;
+
+        const folderList = document.getElementById('folder-list');
+        if (!folders || folders.length === 0) {
+            folderList.innerHTML = '<div class="empty">Nenhuma pasta encontrada</div>';
+            return;
+        }
+
+        folderList.innerHTML = folders.map(folder => `
+            <div class="folder-item" onclick="window.deParaUI.navigateTo('${folder.path}')">
+                <span class="material-icons">folder</span>
+                <span class="folder-name">${folder.name}</span>
+            </div>
+        `).join('');
+    }
+
+    // Navegar para uma pasta
+    navigateTo(path) {
+        this.loadFolders(path);
+    }
+
+    // Voltar um nível
+    goUp() {
+        const currentPath = document.getElementById('browser-path').value;
+        const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
+        this.loadFolders(parentPath);
+    }
+
+    // Selecionar pasta atual
+    selectCurrentFolder(targetType) {
+        const selectedPath = document.getElementById('browser-path').value;
+
+        if (targetType === 'source') {
+            this.currentConfig.sourcePath = selectedPath;
+            document.getElementById('source-folder-path').value = selectedPath;
+            this.showToast(`Pasta de origem selecionada: ${selectedPath}`, 'success');
+        } else if (targetType === 'target') {
+            document.getElementById('target-folder-path').value = selectedPath;
+            this.showToast(`Pasta de destino selecionada: ${selectedPath}`, 'success');
+        }
+
+        // Fechar modal
+        document.querySelector('.folder-browser-modal').closest('.modal').remove();
     }
 
     // Selecionar pasta sugerida
@@ -1423,12 +1534,24 @@ class DeParaUI {
 
         this.currentConfig.operation = operation;
 
-        // Se for delete, esconde o campo de destino
+        // Controla a visibilidade e obrigatoriedade do campo destino
         const targetField = document.getElementById('target-folder-path').parentElement;
+        const targetInput = document.getElementById('target-folder-path');
+        const targetHelp = document.getElementById('target-help');
+
         if (operation === 'delete') {
+            // Para apagar, o campo destino é opcional e fica oculto
             targetField.style.display = 'none';
+            targetInput.required = false;
+            targetInput.value = ''; // Limpar valor
         } else {
+            // Para mover/copiar, o campo destino é obrigatório e fica visível
             targetField.style.display = 'block';
+            targetInput.required = true;
+
+            // Atualizar texto de ajuda
+            const operationText = operation === 'move' ? 'mover' : 'copiar';
+            targetHelp.textContent = `Selecione a pasta de destino (obrigatório para ${operationText})`;
         }
 
         this.showToast(`Operação selecionada: ${operation}`, 'info');

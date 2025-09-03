@@ -964,6 +964,75 @@ body {
     box-shadow: 0 2px 6px rgba(74, 144, 226, 0.2);
 }
 
+/* Folder Browser Styles */
+.folder-browser-modal {
+    max-height: 80vh;
+}
+
+.folder-browser {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.current-path {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.current-path input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+.folder-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fafafa;
+}
+
+.folder-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.folder-item:hover {
+    background: rgba(74, 144, 226, 0.1);
+}
+
+.folder-item:last-child {
+    border-bottom: none;
+}
+
+.folder-item .material-icons {
+    color: #ff9800;
+    font-size: 20px;
+}
+
+.folder-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.loading, .empty {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
 .form-actions {
     display: flex;
     gap: 15px;
