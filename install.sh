@@ -114,3 +114,4 @@ if [[ $REPLY =~ ^[Ss]$ ]]; then
     echo "Iniciando DePara..."
     npm start
 fi
+

@@ -190,17 +190,27 @@ class FileOperationsManager {
                 options
             });
 
+            // Verificar se é um diretório para operação recursiva
+            const stats = await fs.stat(safeSourcePath);
+            const isDirectory = stats.isDirectory();
+
             // Criar backup se solicitado
             if (options.backupBeforeMove) {
                 await this.createBackup(safeSourcePath, 'move');
             }
 
-            // Garantir que o diretório de destino existe
-            const targetDir = path.dirname(safeTargetPath);
-            await fs.mkdir(targetDir, { recursive: true });
+            if (isDirectory && options.recursive !== false) {
+                // Operação recursiva em diretório
+                await this.moveDirectoryRecursive(safeSourcePath, safeTargetPath, options);
+            } else {
+                // Operação simples em arquivo
+                // Garantir que o diretório de destino existe
+                const targetDir = path.dirname(safeTargetPath);
+                await fs.mkdir(targetDir, { recursive: true });
 
-            // Mover o arquivo
-            await fs.rename(safeSourcePath, safeTargetPath);
+                // Mover o arquivo
+                await fs.rename(safeSourcePath, safeTargetPath);
+            }
 
             // Verificar se moveu corretamente
             const stats = await fs.stat(safeTargetPath);
@@ -233,6 +243,46 @@ class FileOperationsManager {
     }
 
     /**
+     * Move diretório recursivamente com todas as subpastas
+     */
+    async moveDirectoryRecursive(sourceDir, targetDir, options = {}) {
+        logger.info(`Iniciando movimento recursivo: ${sourceDir} -> ${targetDir}`);
+
+        // Garantir que o diretório de destino existe
+        await fs.mkdir(targetDir, { recursive: true });
+
+        // Ler conteúdo do diretório
+        const entries = await fs.readdir(sourceDir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const sourcePath = path.join(sourceDir, entry.name);
+            const targetPath = path.join(targetDir, entry.name);
+
+            if (entry.isDirectory()) {
+                // Recursão para subdiretórios
+                await this.moveDirectoryRecursive(sourcePath, targetPath, options);
+            } else {
+                // Filtrar por extensões se especificado
+                if (options.extensions && options.extensions.length > 0) {
+                    const ext = path.extname(entry.name).toLowerCase();
+                    if (!options.extensions.includes(ext)) {
+                        logger.info(`Pulando arquivo (extensão não permitida): ${sourcePath}`);
+                        continue; // Pular arquivo se extensão não estiver na lista
+                    }
+                }
+
+                // Mover arquivo
+                await fs.rename(sourcePath, targetPath);
+                logger.info(`Arquivo movido: ${sourcePath} -> ${targetPath}`);
+            }
+        }
+
+        // Remover diretório vazio
+        await fs.rmdir(sourceDir);
+        logger.info(`Diretório movido: ${sourceDir} -> ${targetDir}`);
+    }
+
+    /**
      * Executa operação de copiar arquivo
      */
     async copyFile(sourcePath, targetPath, options = {}) {
@@ -251,12 +301,22 @@ class FileOperationsManager {
                 options
             });
 
-            // Garantir que o diretório de destino existe
-            const targetDir = path.dirname(safeTargetPath);
-            await fs.mkdir(targetDir, { recursive: true });
+            // Verificar se é um diretório para operação recursiva
+            const stats = await fs.stat(safeSourcePath);
+            const isDirectory = stats.isDirectory();
 
-            // Copiar o arquivo
-            await fs.copyFile(safeSourcePath, safeTargetPath);
+            if (isDirectory && options.recursive !== false) {
+                // Operação recursiva em diretório
+                await this.copyDirectoryRecursive(safeSourcePath, safeTargetPath, options);
+            } else {
+                // Operação simples em arquivo
+                // Garantir que o diretório de destino existe
+                const targetDir = path.dirname(safeTargetPath);
+                await fs.mkdir(targetDir, { recursive: true });
+
+                // Copiar o arquivo
+                await fs.copyFile(safeSourcePath, safeTargetPath);
+            }
 
             // Verificar se copiou corretamente
             const stats = await fs.stat(safeTargetPath);
@@ -289,6 +349,44 @@ class FileOperationsManager {
     }
 
     /**
+     * Copia diretório recursivamente com todas as subpastas
+     */
+    async copyDirectoryRecursive(sourceDir, targetDir, options = {}) {
+        logger.info(`Iniciando cópia recursiva: ${sourceDir} -> ${targetDir}`);
+
+        // Garantir que o diretório de destino existe
+        await fs.mkdir(targetDir, { recursive: true });
+
+        // Ler conteúdo do diretório
+        const entries = await fs.readdir(sourceDir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const sourcePath = path.join(sourceDir, entry.name);
+            const targetPath = path.join(targetDir, entry.name);
+
+            if (entry.isDirectory()) {
+                // Recursão para subdiretórios
+                await this.copyDirectoryRecursive(sourcePath, targetPath, options);
+            } else {
+                // Filtrar por extensões se especificado
+                if (options.extensions && options.extensions.length > 0) {
+                    const ext = path.extname(entry.name).toLowerCase();
+                    if (!options.extensions.includes(ext)) {
+                        logger.info(`Pulando arquivo (extensão não permitida): ${sourcePath}`);
+                        continue; // Pular arquivo se extensão não estiver na lista
+                    }
+                }
+
+                // Copiar arquivo
+                await fs.copyFile(sourcePath, targetPath);
+                logger.info(`Arquivo copiado: ${sourcePath} -> ${targetPath}`);
+            }
+        }
+
+        logger.info(`Diretório copiado: ${sourceDir} -> ${targetDir}`);
+    }
+
+    /**
      * Executa operação de apagar arquivo com backup
      */
     async deleteFile(filePath, options = {}) {
@@ -310,12 +408,18 @@ class FileOperationsManager {
                 await this.createBackup(safeFilePath, 'delete');
             }
 
-            // Obter informações do arquivo antes de apagar
+            // Obter informações do arquivo/diretório antes de apagar
             const stats = await fs.stat(safeFilePath);
-            const fileSize = stats.size;
+            const isDirectory = stats.isDirectory();
 
-            // Apagar o arquivo
-            await fs.unlink(safeFilePath);
+            if (isDirectory && options.recursive !== false) {
+                // Operação recursiva em diretório
+                await this.deleteDirectoryRecursive(safeFilePath, options);
+            } else {
+                // Operação simples em arquivo
+                // Apagar o arquivo
+                await fs.unlink(safeFilePath);
+            }
 
             const duration = Date.now() - startTime;
             logger.endOperation('File Delete', duration, {
@@ -340,6 +444,47 @@ class FileOperationsManager {
             });
             throw error;
         }
+    }
+
+    /**
+     * Apaga diretório recursivamente com todas as subpastas
+     */
+    async deleteDirectoryRecursive(dirPath, options = {}) {
+        logger.info(`Iniciando exclusão recursiva: ${dirPath}`);
+
+        // Ler conteúdo do diretório
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(dirPath, entry.name);
+
+            if (entry.isDirectory()) {
+                // Recursão para subdiretórios
+                await this.deleteDirectoryRecursive(fullPath, options);
+            } else {
+                // Filtrar por extensões se especificado
+                if (options.extensions && options.extensions.length > 0) {
+                    const ext = path.extname(entry.name).toLowerCase();
+                    if (!options.extensions.includes(ext)) {
+                        logger.info(`Pulando arquivo (extensão não permitida): ${fullPath}`);
+                        continue; // Pular arquivo se extensão não estiver na lista
+                    }
+                }
+
+                // Criar backup se solicitado
+                if (this.backupConfig.enabled || options.forceBackup) {
+                    await this.createBackup(fullPath, 'delete');
+                }
+
+                // Apagar arquivo
+                await fs.unlink(fullPath);
+                logger.info(`Arquivo excluído: ${fullPath}`);
+            }
+        }
+
+        // Apagar diretório vazio
+        await fs.rmdir(dirPath);
+        logger.info(`Diretório excluído: ${dirPath}`);
     }
 
     /**

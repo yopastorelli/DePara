@@ -328,25 +328,30 @@
                 <!-- Quick Actions -->
                 <div class="fileops-actions">
                     <div class="action-cards">
-                        <div class="action-card" onclick="showFileOperationModal('move')">
+                        <div class="action-card action-move-card">
                             <span class="material-icons">drive_file_move</span>
                             <h3>Mover Arquivo</h3>
                             <p>Move arquivo com backup automático</p>
                         </div>
-                        <div class="action-card" onclick="showFileOperationModal('copy')">
+                        <div class="action-card action-copy-card">
                             <span class="material-icons">content_copy</span>
                             <h3>Copiar Arquivo</h3>
                             <p>Copia arquivo preservando original</p>
                         </div>
-                        <div class="action-card" onclick="showFileOperationModal('delete')">
+                        <div class="action-card action-delete-card">
                             <span class="material-icons">delete_forever</span>
                             <h3>Apagar Arquivo</h3>
                             <p>Remove arquivo com backup</p>
                         </div>
-                        <div class="action-card" onclick="showScheduleModal()">
+                        <div class="action-card action-schedule-card">
                             <span class="material-icons">schedule</span>
                             <h3>Agendar Operação</h3>
                             <p>Configure operações automáticas</p>
+                        </div>
+                        <div class="action-card action-slideshow-card">
+                            <span class="material-icons">slideshow</span>
+                            <h3>Slideshow</h3>
+                            <p>Visualize imagens em slideshow</p>
                         </div>
                     </div>
                 </div>
@@ -414,28 +419,28 @@
                     <p>Crie pastas comuns automaticamente com um clique:</p>
 
                     <div class="quick-folders-grid">
-                        <div class="quick-folder-card" onclick="createQuickFolder('documents')">
+                        <div class="quick-folder-card quick-folder-documents">
                             <div class="folder-icon">📄</div>
                             <h4>Documentos</h4>
                             <p>Entrada e saída de documentos</p>
                             <small>Cria: ~/Documents/Entrada, ~/Documents/Saida</small>
                         </div>
 
-                        <div class="quick-folder-card" onclick="createQuickFolder('backup')">
+                        <div class="quick-folder-card quick-folder-backup">
                             <div class="folder-icon">💾</div>
                             <h4>Backup</h4>
                             <p>Sistema de backup automático</p>
                             <small>Cria: ~/Backup/Diario, ~/Backup/Semanal</small>
                         </div>
 
-                        <div class="quick-folder-card" onclick="createQuickFolder('media')">
+                        <div class="quick-folder-card quick-folder-media">
                             <div class="folder-icon">🖼️</div>
                             <h4>Mídia</h4>
                             <p>Fotos, vídeos e mídia</p>
                             <small>Cria: ~/Media/Fotos, ~/Media/Videos</small>
                         </div>
 
-                        <div class="quick-folder-card" onclick="createQuickFolder('temp')">
+                        <div class="quick-folder-card quick-folder-temp">
                             <div class="folder-icon">🗂️</div>
                             <h4>Temporário</h4>
                             <p>Arquivos temporários</p>
@@ -444,11 +449,11 @@
                     </div>
 
                     <div class="quick-actions">
-                        <button class="btn btn-outline" onclick="showFolderManager()">
+                        <button class="btn btn-outline folder-manager-btn">
                             <span class="material-icons">create_new_folder</span>
                             Criar Pasta Personalizada
                         </button>
-                        <button class="btn btn-secondary" onclick="refreshFolders()">
+                        <button class="btn btn-secondary refresh-folders-btn">
                             <span class="material-icons">refresh</span>
                             Atualizar Lista
                         </button>
@@ -918,9 +923,24 @@
                             <input type="checkbox" id="preserve-structure" checked>
                             <span>📁 Preservar estrutura de pastas</span>
                         </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="recursive-operation">
+                            <span>🔄 Processar recursivamente</span>
+                        </label>
                     </div>
+
+                    <!-- Filtro de extensões -->
+                    <div class="form-group" id="extensions-filter" style="display: none;">
+                        <label for="file-extensions">Extensões de arquivo (separadas por vírgula):</label>
+                        <input type="text" id="file-extensions" placeholder="jpg,png,gif,pdf,txt" class="form-input">
+                        <small class="form-help">
+                            Deixe vazio para processar todos os arquivos. Exemplo: jpg,png,gif
+                        </small>
+                    </div>
+
                     <small class="form-help">
-                        <strong>Preservar estrutura:</strong> Mantém a organização de subpastas no destino
+                        <strong>Preservar estrutura:</strong> Mantém a organização de subpastas no destino<br>
+                        <strong>Processar recursivamente:</strong> Inclui todas as subpastas na operação
                     </small>
                 </div>
             </div>
@@ -1120,6 +1140,106 @@
                 <button class="btn btn-secondary" onclick="closeSlideshowFolderModal()">Cancelar</button>
                 <button class="btn btn-primary" onclick="startSlideshow()">Iniciar Slideshow</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal de Slideshow -->
+    <div id="slideshow-modal" class="modal" style="display: none;">
+        <div class="modal-content slideshow-modal-content">
+            <div class="modal-header">
+                <h3>Slideshow de Imagens</h3>
+                <button class="modal-close slideshow-close-btn" title="Fechar">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Seletor de Pasta -->
+                <div class="slideshow-folder-selector">
+                    <label for="slideshow-folder-path">Pasta com imagens:</label>
+                    <div class="input-group">
+                        <input type="text" id="slideshow-folder-path" placeholder="/home/pi/Pictures" readonly>
+                        <button class="btn btn-outline slideshow-browse-btn">
+                            <span class="material-icons">folder_open</span>
+                            Selecionar Pasta
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Configurações do Slideshow -->
+                <div class="slideshow-settings">
+                    <div class="setting-row">
+                        <label for="slideshow-interval">Intervalo (segundos):</label>
+                        <input type="number" id="slideshow-interval" value="3" min="1" max="30">
+                    </div>
+
+                    <div class="setting-row">
+                        <label for="slideshow-extensions">Extensões:</label>
+                        <div class="extensions-list">
+                            <label><input type="checkbox" value=".jpg" checked> JPG</label>
+                            <label><input type="checkbox" value=".jpeg" checked> JPEG</label>
+                            <label><input type="checkbox" value=".png" checked> PNG</label>
+                            <label><input type="checkbox" value=".gif" checked> GIF</label>
+                            <label><input type="checkbox" value=".bmp" checked> BMP</label>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <label for="slideshow-recursive">
+                            <input type="checkbox" id="slideshow-recursive" checked>
+                            Incluir subpastas
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary slideshow-close-btn">Cancelar</button>
+                <button class="btn btn-primary slideshow-start-btn">Iniciar Slideshow</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Exibição do Slideshow -->
+    <div id="slideshow-viewer" class="slideshow-viewer" style="display: none;">
+        <div class="slideshow-header">
+            <div class="slideshow-info">
+                <span id="slideshow-counter">1 / 0</span>
+                <span id="slideshow-filename">Nenhuma imagem</span>
+            </div>
+            <div class="slideshow-controls">
+                <button class="slideshow-btn slideshow-prev-btn" title="Anterior (←)">
+                    <span class="material-icons">chevron_left</span>
+                </button>
+                <button class="slideshow-btn slideshow-play-pause-btn" title="Pausar/Reproduzir (Espaço)">
+                    <span class="material-icons">pause</span>
+                </button>
+                <button class="slideshow-btn slideshow-next-btn" title="Próximo (→)">
+                    <span class="material-icons">chevron_right</span>
+                </button>
+                <button class="slideshow-btn slideshow-close-viewer-btn" title="Fechar (ESC)">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="slideshow-content">
+            <div class="slideshow-image-container">
+                <img id="slideshow-image" src="" alt="Slideshow" style="display: none;">
+                <div id="slideshow-loading" class="slideshow-loading">
+                    <div class="spinner"></div>
+                    <p>Carregando imagens...</p>
+                </div>
+                <div id="slideshow-error" class="slideshow-error" style="display: none;">
+                    <span class="material-icons">error</span>
+                    <p>Erro ao carregar imagem</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controles de navegação por teclado -->
+        <div class="slideshow-keyboard-hint">
+            Use as setas ← → para navegar, Espaço para pausar/reproduzir, ESC para fechar
         </div>
     </div>
 

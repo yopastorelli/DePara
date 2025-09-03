@@ -237,3 +237,4 @@ Se encontrar problemas com a proteção de arquivos:
 ---
 
 **🎉 Com o sistema de proteção inteligente, suas pastas sincronizadas estão sempre seguras!**
+

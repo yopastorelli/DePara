@@ -1246,6 +1246,416 @@ class DeParaUI {
         // Implementar conforme necessário
     }
 
+    // Adicionar event listeners para operações de arquivo
+    addFileOperationEventListeners() {
+        // Mostrar/ocultar filtro de extensões quando recursão é selecionada
+        const recursiveCheckbox = document.getElementById('recursive-operation');
+        const extensionsFilter = document.getElementById('extensions-filter');
+
+        if (recursiveCheckbox && extensionsFilter) {
+            recursiveCheckbox.addEventListener('change', (e) => {
+                extensionsFilter.style.display = e.target.checked ? 'block' : 'none';
+            });
+        }
+    }
+
+    // ==========================================
+    // SLIDESHOW FUNCTIONALITY
+    // ==========================================
+
+    // Sistema de Slideshow
+    slideshowImages = [];
+    currentSlideIndex = 0;
+    slideshowInterval = null;
+    slideshowPlaying = false;
+
+    // Adicionar event listeners para slideshow
+    addSlideshowEventListeners() {
+        // Modal de configuração
+        const closeBtns = document.querySelectorAll('.slideshow-close-btn');
+        closeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.closeSlideshowModal();
+            });
+        });
+
+        const startBtn = document.querySelector('.slideshow-start-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                this.startSlideshowFromModal();
+            });
+        }
+
+        const browseBtn = document.querySelector('.slideshow-browse-btn');
+        if (browseBtn) {
+            browseBtn.addEventListener('click', () => {
+                this.browseSlideshowFolder();
+            });
+        }
+
+        // Viewer de slideshow
+        const prevBtn = document.querySelector('.slideshow-prev-btn');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                this.previousSlide();
+            });
+        }
+
+        const nextBtn = document.querySelector('.slideshow-next-btn');
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                this.nextSlide();
+            });
+        }
+
+        const playPauseBtn = document.querySelector('.slideshow-play-pause-btn');
+        if (playPauseBtn) {
+            playPauseBtn.addEventListener('click', () => {
+                this.togglePlayPause();
+            });
+        }
+
+        const closeViewerBtn = document.querySelector('.slideshow-close-viewer-btn');
+        if (closeViewerBtn) {
+            closeViewerBtn.addEventListener('click', () => {
+                this.closeSlideshowViewer();
+            });
+        }
+
+        // Controles de teclado
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('slideshow-viewer').style.display !== 'none') {
+                this.handleSlideshowKeydown(e);
+            }
+        });
+    }
+
+    // Abrir modal de slideshow
+    showSlideshowModal() {
+        document.getElementById('slideshow-modal').style.display = 'flex';
+    }
+
+    // Fechar modal de slideshow
+    closeSlideshowModal() {
+        document.getElementById('slideshow-modal').style.display = 'none';
+    }
+
+    // Navegar para pasta de slideshow
+    browseSlideshowFolder() {
+        // Criar um modal personalizado para seleção de pasta
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 600px; width: 90%;">
+                <div class="modal-header">
+                    <h3>Selecionar Pasta</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="folder-path-input">Caminho da pasta:</label>
+                        <div class="input-group">
+                            <input type="text" id="folder-path-input" class="form-input"
+                                   placeholder="/home/pi/Pictures" value="/home/pi/Pictures">
+                            <button class="btn btn-outline" onclick="window.deParaUI.testFolderPath()">
+                                <span class="material-icons">check</span>
+                                Testar
+                            </button>
+                        </div>
+                        <small class="form-help">
+                            Digite o caminho completo da pasta que contém as imagens
+                        </small>
+                    </div>
+                    <div class="folder-suggestions">
+                        <h4>Pastas comuns:</h4>
+                        <div class="suggestion-buttons">
+                            <button class="btn btn-sm" onclick="window.deParaUI.selectSuggestedFolder('/home/pi/Pictures')">~/Pictures</button>
+                            <button class="btn btn-sm" onclick="window.deParaUI.selectSuggestedFolder('/home/pi/Downloads')">~/Downloads</button>
+                            <button class="btn btn-sm" onclick="window.deParaUI.selectSuggestedFolder('/media')">/media</button>
+                            <button class="btn btn-sm" onclick="window.deParaUI.selectSuggestedFolder('./')">Diretório atual</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancelar</button>
+                    <button class="btn btn-primary" onclick="window.deParaUI.confirmFolderSelection()">Selecionar</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    // Selecionar pasta sugerida
+    selectSuggestedFolder(path) {
+        const input = document.getElementById('folder-path-input');
+        if (input) {
+            input.value = path;
+        }
+    }
+
+    // Testar se a pasta existe e tem imagens
+    async testFolderPath() {
+        const input = document.getElementById('folder-path-input');
+        const path = input.value.trim();
+
+        if (!path) {
+            this.showToast('Digite um caminho válido', 'warning');
+            return;
+        }
+
+        try {
+            // Tentar listar imagens da pasta
+            const response = await fetch('/api/files/list-images', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    folderPath: path,
+                    extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
+                    recursive: true
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const count = result.data.totalCount;
+                this.showToast(`✅ Pasta encontrada! ${count} imagem(ns) localizada(s)`, 'success');
+            } else {
+                this.showToast('❌ Pasta não encontrada ou inacessível', 'error');
+            }
+        } catch (error) {
+            this.showToast('❌ Erro ao testar pasta', 'error');
+        }
+    }
+
+    // Confirmar seleção de pasta
+    confirmFolderSelection() {
+        const input = document.getElementById('folder-path-input');
+        const slideshowInput = document.getElementById('slideshow-folder-path');
+
+        if (input && slideshowInput) {
+            slideshowInput.value = input.value;
+        }
+
+        // Fechar modal
+        const modal = document.querySelector('.modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    // Iniciar slideshow a partir do modal
+    async startSlideshowFromModal() {
+        const folderPath = document.getElementById('slideshow-folder-path').value.trim();
+        const interval = parseInt(document.getElementById('slideshow-interval').value) || 3;
+        const recursive = document.getElementById('slideshow-recursive').checked;
+
+        // Coletar extensões selecionadas
+        const extensions = [];
+        document.querySelectorAll('.extensions-list input:checked').forEach(checkbox => {
+            extensions.push(checkbox.value);
+        });
+
+        if (!folderPath) {
+            this.showToast('Selecione uma pasta com imagens', 'error');
+            return;
+        }
+
+        if (extensions.length === 0) {
+            this.showToast('Selecione pelo menos uma extensão de imagem', 'error');
+            return;
+        }
+
+        // Fechar modal de configuração
+        this.closeSlideshowModal();
+
+        // Iniciar carregamento das imagens
+        await this.loadSlideshowImages(folderPath, extensions, recursive, interval);
+    }
+
+    // Carregar imagens do slideshow
+    async loadSlideshowImages(folderPath, extensions, recursive, interval) {
+        try {
+            this.showToast('🔍 Procurando imagens...', 'info');
+
+            // Preparar extensões para a API
+            const formattedExtensions = extensions.map(ext => ext.startsWith('.') ? ext : '.' + ext);
+
+            const response = await fetch('/api/files/list-images', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    folderPath,
+                    extensions: formattedExtensions,
+                    recursive
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.error?.message || 'Erro ao listar imagens');
+            }
+
+            this.slideshowImages = result.data.images;
+            this.slideshowInterval = interval * 1000;
+
+            if (this.slideshowImages.length === 0) {
+                this.showToast('Nenhuma imagem encontrada na pasta', 'warning');
+                return;
+            }
+
+            this.showToast(`✅ ${this.slideshowImages.length} imagens encontradas`, 'success');
+            this.startSlideshowViewer();
+
+        } catch (error) {
+            console.error('Erro ao carregar imagens:', error);
+            this.showToast('Erro ao carregar imagens: ' + error.message, 'error');
+        }
+    }
+
+    // Iniciar viewer do slideshow
+    startSlideshowViewer() {
+        document.getElementById('slideshow-viewer').style.display = 'flex';
+        this.currentSlideIndex = 0;
+        this.slideshowPlaying = true;
+
+        this.updateSlideDisplay();
+        this.startAutoPlay();
+    }
+
+    // Atualizar exibição do slide atual
+    updateSlideDisplay() {
+        const imageElement = document.getElementById('slideshow-image');
+        const counterElement = document.getElementById('slideshow-counter');
+        const filenameElement = document.getElementById('slideshow-filename');
+        const loadingElement = document.getElementById('slideshow-loading');
+        const errorElement = document.getElementById('slideshow-error');
+
+        if (this.slideshowImages.length === 0) {
+            loadingElement.style.display = 'none';
+            errorElement.style.display = 'block';
+            return;
+        }
+
+        const currentImage = this.slideshowImages[this.currentSlideIndex];
+
+        // Atualizar contador e nome do arquivo
+        counterElement.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+        filenameElement.textContent = currentImage.name;
+
+        // Mostrar loading
+        loadingElement.style.display = 'block';
+        imageElement.style.display = 'none';
+        errorElement.style.display = 'none';
+
+        // Carregar imagem através da API
+        setTimeout(() => {
+            loadingElement.style.display = 'none';
+            imageElement.src = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
+            imageElement.style.display = 'block';
+
+            // Manipular erro de carregamento
+            imageElement.onerror = () => {
+                loadingElement.style.display = 'none';
+                imageElement.style.display = 'none';
+                errorElement.style.display = 'block';
+            };
+
+            imageElement.onload = () => {
+                // Imagem carregada com sucesso
+                errorElement.style.display = 'none';
+            };
+        }, 300);
+    }
+
+    // Próximo slide
+    nextSlide() {
+        if (this.slideshowImages.length === 0) return;
+
+        this.currentSlideIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
+        this.updateSlideDisplay();
+    }
+
+    // Slide anterior
+    previousSlide() {
+        if (this.slideshowImages.length === 0) return;
+
+        this.currentSlideIndex = this.currentSlideIndex === 0 ?
+            this.slideshowImages.length - 1 :
+            this.currentSlideIndex - 1;
+        this.updateSlideDisplay();
+    }
+
+    // Alternar play/pause
+    togglePlayPause() {
+        this.slideshowPlaying = !this.slideshowPlaying;
+
+        const playPauseBtn = document.querySelector('.slideshow-play-pause-btn .material-icons');
+        if (this.slideshowPlaying) {
+            playPauseBtn.textContent = 'pause';
+            this.startAutoPlay();
+        } else {
+            playPauseBtn.textContent = 'play_arrow';
+            this.stopAutoPlay();
+        }
+    }
+
+    // Iniciar reprodução automática
+    startAutoPlay() {
+        this.stopAutoPlay(); // Parar qualquer intervalo existente
+
+        if (this.slideshowPlaying && this.slideshowImages.length > 1) {
+            this.autoPlayInterval = setInterval(() => {
+                this.nextSlide();
+            }, this.slideshowInterval);
+        }
+    }
+
+    // Parar reprodução automática
+    stopAutoPlay() {
+        if (this.autoPlayInterval) {
+            clearInterval(this.autoPlayInterval);
+            this.autoPlayInterval = null;
+        }
+    }
+
+    // Fechar viewer do slideshow
+    closeSlideshowViewer() {
+        this.stopAutoPlay();
+        document.getElementById('slideshow-viewer').style.display = 'none';
+        this.slideshowImages = [];
+        this.currentSlideIndex = 0;
+    }
+
+    // Manipular eventos de teclado no slideshow
+    handleSlideshowKeydown(event) {
+        switch (event.key) {
+            case 'ArrowLeft':
+                event.preventDefault();
+                this.previousSlide();
+                break;
+            case 'ArrowRight':
+                event.preventDefault();
+                this.nextSlide();
+                break;
+            case ' ':
+                event.preventDefault();
+                this.togglePlayPause();
+                break;
+            case 'Escape':
+                event.preventDefault();
+                this.closeSlideshowViewer();
+                break;
+        }
+    }
+
     // Salvar pasta (método auxiliar)
     async saveFolder(folder) {
         console.log('💾 Salvando pasta:', folder);
@@ -2067,47 +2477,98 @@ class DeParaUI {
 
         // Botões de ação principal (evita CSP violation)
         this.addActionButtonListeners();
+
+        // Botões de slideshow
+        this.addSlideshowEventListeners();
+
+        // Filtros de operação de arquivo
+        this.addFileOperationEventListeners();
     }
 
     // Adicionar event listeners para botões de ação (evita CSP violation)
     addActionButtonListeners() {
-        // Botão mover arquivo
-        const moveBtn = document.querySelector('.action-move-btn');
-        if (moveBtn) {
-            moveBtn.addEventListener('click', () => {
+        // Botões da dashboard principal
+        const moveCard = document.querySelector('.action-move-card');
+        if (moveCard) {
+            moveCard.addEventListener('click', () => {
                 this.showFileOperationModal('move');
             });
         }
 
-        // Botão copiar arquivo
-        const copyBtn = document.querySelector('.action-copy-btn');
-        if (copyBtn) {
-            copyBtn.addEventListener('click', () => {
+        const copyCard = document.querySelector('.action-copy-card');
+        if (copyCard) {
+            copyCard.addEventListener('click', () => {
                 this.showFileOperationModal('copy');
             });
         }
 
-        // Botão deletar arquivo
-        const deleteBtn = document.querySelector('.action-delete-btn');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => {
+        const deleteCard = document.querySelector('.action-delete-card');
+        if (deleteCard) {
+            deleteCard.addEventListener('click', () => {
                 this.showFileOperationModal('delete');
             });
         }
 
-        // Botão agendar operação
-        const scheduleBtn = document.querySelector('.action-schedule-btn');
-        if (scheduleBtn) {
-            scheduleBtn.addEventListener('click', () => {
+        const scheduleCard = document.querySelector('.action-schedule-card');
+        if (scheduleCard) {
+            scheduleCard.addEventListener('click', () => {
                 this.showScheduleModal();
             });
         }
 
-        // Botão slideshow
-        const slideshowBtn = document.querySelector('.action-slideshow-btn');
-        if (slideshowBtn) {
-            slideshowBtn.addEventListener('click', () => {
+        const slideshowCard = document.querySelector('.action-slideshow-card');
+        if (slideshowCard) {
+            slideshowCard.addEventListener('click', () => {
                 this.showSlideshowModal();
+            });
+        }
+
+        // Botões de configuração rápida de pastas
+        this.addQuickFolderListeners();
+
+        // Botões de gerenciamento de pastas
+        const folderManagerBtn = document.querySelector('.folder-manager-btn');
+        if (folderManagerBtn) {
+            folderManagerBtn.addEventListener('click', () => {
+                this.openFolderManager();
+            });
+        }
+
+        const refreshFoldersBtn = document.querySelector('.refresh-folders-btn');
+        if (refreshFoldersBtn) {
+            refreshFoldersBtn.addEventListener('click', () => {
+                this.refreshFoldersList();
+            });
+        }
+    }
+
+    // Adicionar event listeners para botões de configuração rápida de pastas
+    addQuickFolderListeners() {
+        const documentsCard = document.querySelector('.quick-folder-documents');
+        if (documentsCard) {
+            documentsCard.addEventListener('click', () => {
+                this.createQuickFolder('documents');
+            });
+        }
+
+        const backupCard = document.querySelector('.quick-folder-backup');
+        if (backupCard) {
+            backupCard.addEventListener('click', () => {
+                this.createQuickFolder('backup');
+            });
+        }
+
+        const mediaCard = document.querySelector('.quick-folder-media');
+        if (mediaCard) {
+            mediaCard.addEventListener('click', () => {
+                this.createQuickFolder('media');
+            });
+        }
+
+        const tempCard = document.querySelector('.quick-folder-temp');
+        if (tempCard) {
+            tempCard.addEventListener('click', () => {
+                this.createQuickFolder('temp');
             });
         }
     }
@@ -2607,6 +3068,9 @@ async function executeFileOperation() {
     const backupBefore = document.getElementById('backup-before-operation').checked;
     const overwrite = document.getElementById('overwrite-existing').checked;
     const preserveStructure = document.getElementById('preserve-structure').checked;
+    const recursive = document.getElementById('recursive-operation').checked;
+    const extensionsInput = document.getElementById('file-extensions').value.trim();
+    const extensions = extensionsInput ? extensionsInput.split(',').map(ext => ext.trim().toLowerCase()) : null;
 
     if (!sourcePath) {
         showToast('Caminho de origem é obrigatório', 'error');
@@ -2626,7 +3090,9 @@ async function executeFileOperation() {
                 backupBeforeMove: action === 'move' ? backupBefore : false,
                 forceBackup: action === 'delete' ? backupBefore : false,
                 overwrite,
-                preserveStructure
+                preserveStructure,
+                recursive,
+                extensions
             }
         };
 

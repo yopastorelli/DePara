@@ -1413,4 +1413,159 @@ router.get('/actions', async (req, res) => {
     }
 });
 
+// Listar imagens para slideshow
+router.post('/list-images', async (req, res) => {
+    const startTime = Date.now();
+
+    try {
+        const { folderPath, extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'], recursive = true } = req.body;
+
+        if (!folderPath || typeof folderPath !== 'string') {
+            return res.status(400).json({
+                error: {
+                    message: 'Parâmetro folderPath é obrigatório e deve ser uma string',
+                    required: ['folderPath']
+                }
+            });
+        }
+
+        logger.startOperation('List Images', {
+            folderPath,
+            extensions,
+            recursive
+        });
+
+        // Validar caminho
+        const safePath = await validateSafePath(folderPath, 'read');
+
+        // Função auxiliar para listar imagens recursivamente
+        async function listImagesRecursively(dirPath, imageList = []) {
+            try {
+                const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+                for (const entry of entries) {
+                    const fullPath = path.join(dirPath, entry.name);
+
+                    if (entry.isDirectory() && recursive) {
+                        // Recursão para subdiretórios
+                        await listImagesRecursively(fullPath, imageList);
+                    } else if (entry.isFile()) {
+                        // Verificar se é uma imagem
+                        const ext = path.extname(entry.name).toLowerCase();
+                        if (extensions.includes(ext)) {
+                            // Obter informações do arquivo
+                            const stats = await fs.stat(fullPath);
+                            imageList.push({
+                                path: fullPath,
+                                name: entry.name,
+                                size: stats.size,
+                                modified: stats.mtime,
+                                extension: ext
+                            });
+                        }
+                    }
+                }
+            } catch (error) {
+                logger.warn(`Erro ao acessar diretório ${dirPath}:`, error.message);
+            }
+
+            return imageList;
+        }
+
+        const images = await listImagesRecursively(safePath);
+
+        // Ordenar por nome do arquivo
+        images.sort((a, b) => a.name.localeCompare(b.name));
+
+        const duration = Date.now() - startTime;
+        logger.endOperation('List Images', duration, {
+            imageCount: images.length,
+            folderPath: safePath
+        });
+
+        res.json({
+            success: true,
+            data: {
+                images,
+                totalCount: images.length,
+                folderPath: safePath
+            },
+            timestamp: new Date().toISOString(),
+            duration
+        });
+
+    } catch (error) {
+        const duration = Date.now() - startTime;
+        logger.operationError('List Images', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro interno do servidor',
+                details: error.message
+            }
+        });
+    }
+});
+
+// Servir imagem para slideshow
+router.get('/image/:imagePath(*)', async (req, res) => {
+    try {
+        const imagePath = req.params.imagePath;
+
+        // Validar caminho da imagem
+        const safePath = await validateSafePath(imagePath, 'read');
+
+        // Verificar se o arquivo existe
+        const stats = await fs.stat(safePath);
+
+        // Verificar se é uma imagem
+        const ext = path.extname(safePath).toLowerCase();
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+
+        if (!allowedExtensions.includes(ext)) {
+            return res.status(403).json({
+                error: {
+                    message: 'Tipo de arquivo não permitido para visualização'
+                }
+            });
+        }
+
+        // Definir content-type baseado na extensão
+        const contentTypes = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.bmp': 'image/bmp',
+            '.webp': 'image/webp'
+        };
+
+        res.setHeader('Content-Type', contentTypes[ext] || 'application/octet-stream');
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache por 1 hora
+
+        // Stream do arquivo
+        const stream = require('fs').createReadStream(safePath);
+        stream.pipe(res);
+
+        stream.on('error', (error) => {
+            logger.error('Erro ao streamar imagem:', error);
+            if (!res.headersSent) {
+                res.status(500).json({
+                    error: {
+                        message: 'Erro ao carregar imagem'
+                    }
+                });
+            }
+        });
+
+    } catch (error) {
+        logger.error('Erro ao servir imagem:', error);
+        res.status(404).json({
+            error: {
+                message: 'Imagem não encontrada',
+                details: error.message
+            }
+        });
+    }
+});
+
 module.exports = router;
