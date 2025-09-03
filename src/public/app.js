@@ -3542,9 +3542,10 @@ function initFileOperationsTab() {
         mutations.forEach((mutation) => {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                 if (fileopsTab.classList.contains('active')) {
-                    loadTemplates();
-                    loadScheduledOperations();
-                    loadBackups();
+                    // Verificações de segurança antes de chamar as funções
+                    if (typeof loadTemplates === 'function') loadTemplates();
+                    if (typeof loadScheduledOperations === 'function') loadScheduledOperations();
+                    if (typeof loadBackups === 'function') loadBackups();
                 }
             }
         });
@@ -3555,11 +3556,11 @@ function initFileOperationsTab() {
         attributeFilter: ['class']
     });
 
-    // Load initial data
+    // Load initial data (com verificação de segurança)
     setTimeout(() => {
-        loadTemplates();
-        loadScheduledOperations();
-        loadBackups();
+        if (typeof loadTemplates === 'function') loadTemplates();
+        if (typeof loadScheduledOperations === 'function') loadScheduledOperations();
+        if (typeof loadBackups === 'function') loadBackups();
     }, 100);
 }
 
