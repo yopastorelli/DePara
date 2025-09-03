@@ -234,7 +234,7 @@
                         <div class="search-input-container">
                             <span class="material-icons search-icon">search</span>
                             <input type="text" id="scheduled-search" placeholder="Buscar operações..."
-                                   oninput="filterScheduledOperations(this.value)">
+                                   class="filter-scheduled-input">
                             <button class="clear-search clear-search-btn" style="display: none;">
                                 <span class="material-icons">clear</span>
                             </button>
@@ -616,7 +616,7 @@
                     <div class="form-group">
                         <label>Nome do Fluxo</label>
                         <input type="text" id="workflow-name" placeholder="Ex: Processamento de Dados CSV" 
-                               oninput="validateField(this, 'name')" required>
+                               class="validate-name-input" required>
                         <small class="form-help">Nome descritivo para identificar o fluxo</small>
                         <div class="validation-message" id="name-validation"></div>
                     </div>
@@ -637,7 +637,7 @@
                     
                     <div class="form-group">
                         <label>Pasta de Origem</label>
-                        <select id="source-folder" onchange="updateSourceFolderInfo()" required>
+                        <select id="source-folder" class="source-folder-select" required>
                             <option value="">Selecione uma pasta de origem</option>
                             <!-- Opções serão carregadas dinamicamente -->
                         </select>
@@ -646,7 +646,7 @@
                     
                     <div class="form-group">
                         <label>Pasta de Destino</label>
-                        <select id="target-folder" onchange="updateTargetFolderInfo()" required>
+                        <select id="target-folder" class="target-folder-select" required>
                             <option value="">Selecione uma pasta de destino</option>
                             <!-- Opções serão carregadas dinamicamente -->
                         </select>
@@ -655,7 +655,7 @@
                     
                     <div class="form-group">
                         <label>Ação com Arquivos</label>
-                        <select id="file-action" onchange="updateActionHelp()" required>
+                        <select id="file-action" class="file-action-select" required>
                             <option value="copy">📋 Copiar (manter original)</option>
                             <option value="move">📤 Mover (remover original)</option>
                             <option value="copy_and_clean">🧹 Copiar e Limpar Original</option>
@@ -673,7 +673,7 @@
                     
                     <div class="form-group">
                         <label>Frequência de Execução</label>
-                        <select id="execution-frequency" onchange="toggleCronField()" required>
+                        <select id="execution-frequency" class="execution-frequency-select" required>
                             <option value="realtime">⚡ Tempo Real (Imediato)</option>
                             <option value="1min">⏱️ A cada 1 minuto</option>
                             <option value="5min">⏱️ A cada 5 minutos</option>
@@ -709,7 +709,7 @@
                     
                     <div class="form-group">
                         <label>Tipo de Filtro</label>
-                        <select id="filter-type" onchange="toggleFilterOptions()" required>
+                        <select id="filter-type" class="filter-type-select" required>
                             <option value="all">✅ Todos os Arquivos</option>
                             <option value="new">🆕 Apenas Arquivos Novos</option>
                             <option value="modified">📝 Apenas Arquivos Modificados</option>
@@ -750,11 +750,11 @@
                                 <span>✅ Validar Dados</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" id="transform-uppercase" onchange="toggleCaseConflict()">
+                                <input type="checkbox" id="transform-uppercase" class="transform-uppercase-checkbox">
                                 <span>🔠 Converter para Maiúsculas</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" id="transform-lowercase" onchange="toggleCaseConflict()">
+                                <input type="checkbox" id="transform-lowercase" class="transform-lowercase-checkbox">
                                 <span>🔤 Converter para Minúsculas</span>
                             </label>
                         </div>
@@ -773,7 +773,7 @@
                         <label>Limpeza Automática</label>
                         <div class="checkbox-group">
                             <label class="checkbox-item">
-                                <input type="checkbox" id="auto-cleanup" onchange="toggleCleanupOptions()">
+                                <input type="checkbox" id="auto-cleanup" class="auto-cleanup-checkbox">
                                 <span>🗑️ Ativar limpeza automática</span>
                             </label>
                         </div>
@@ -919,7 +919,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Tipo de Pasta</label>
-                        <select id="folder-type" onchange="updateFolderTypeHelp()">
+                        <select id="folder-type" class="folder-type-select">
                             <option value="source">📥 Pasta de Origem</option>
                             <option value="target">📤 Pasta de Destino</option>
                             <option value="temp">🗂️ Pasta Temporária</option>
@@ -1043,7 +1043,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Ação</label>
-                        <select id="schedule-action" onchange="updateScheduleForm()" required>
+                        <select id="schedule-action" class="schedule-action-select" required>
                             <option value="">Selecione uma ação</option>
                             <option value="move">📤 Mover</option>
                             <option value="copy">📋 Copiar</option>

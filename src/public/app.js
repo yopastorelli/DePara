@@ -76,6 +76,9 @@ class DeParaUI {
                 setTimeout(() => this.showOnboarding(), 1000);
             }
 
+            // Configurar event listeners para substituir violações de CSP
+            this.setupCSPSafeEventListeners();
+
             console.log('🎉 Inicialização completa!');
 
         } catch (error) {
@@ -1412,7 +1415,7 @@ class DeParaUI {
             <div class="modal-content folder-browser-modal" style="max-width: 700px; width: 90%;">
                 <div class="modal-header">
                     <h3>Selecionar Pasta</h3>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                    <button class="modal-close folder-browser-close-btn">
                         <span class="material-icons">close</span>
                     </button>
                 </div>
@@ -1420,7 +1423,7 @@ class DeParaUI {
                     <div class="folder-browser">
                         <div class="current-path">
                             <input type="text" id="browser-path" value="/home/pi" readonly>
-                            <button class="btn btn-sm" onclick="window.deParaUI.goUp()">
+                            <button class="btn btn-sm folder-browser-up-btn">
                                 <span class="material-icons">arrow_upward</span>
                             </button>
                         </div>
@@ -1430,13 +1433,17 @@ class DeParaUI {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancelar</button>
-                    <button class="btn btn-primary" onclick="window.deParaUI.selectCurrentFolder('${targetType}')">Selecionar Esta Pasta</button>
+                    <button class="btn btn-secondary folder-browser-cancel-btn">Cancelar</button>
+                    <button class="btn btn-primary folder-browser-select-btn" data-target-type="${targetType}">Selecionar Esta Pasta</button>
                 </div>
             </div>
         `;
 
         document.body.appendChild(modal);
+
+        // Configurar event listeners após criar o modal
+        this.setupFolderBrowserEventListeners(modal, targetType);
+
         await this.loadFolders('/home/pi');
     }
 
@@ -1462,6 +1469,37 @@ class DeParaUI {
         }
     }
 
+    // Configurar event listeners para o navegador de pastas
+    setupFolderBrowserEventListeners(modal, targetType) {
+        // Botão fechar
+        const closeBtn = modal.querySelector('.folder-browser-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => modal.remove());
+        }
+
+        // Botão voltar
+        const upBtn = modal.querySelector('.folder-browser-up-btn');
+        if (upBtn) {
+            upBtn.addEventListener('click', () => this.goUp());
+        }
+
+        // Botão cancelar
+        const cancelBtn = modal.querySelector('.folder-browser-cancel-btn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => modal.remove());
+        }
+
+        // Botão selecionar
+        const selectBtn = modal.querySelector('.folder-browser-select-btn');
+        if (selectBtn) {
+            selectBtn.addEventListener('click', () => {
+                const targetTypeFromBtn = selectBtn.getAttribute('data-target-type');
+                this.selectCurrentFolder(targetTypeFromBtn);
+                modal.remove();
+            });
+        }
+    }
+
     // Renderizar lista de pastas
     renderFolders(folders, currentPath) {
         document.getElementById('browser-path').value = currentPath;
@@ -1473,11 +1511,20 @@ class DeParaUI {
         }
 
         folderList.innerHTML = folders.map(folder => `
-            <div class="folder-item" onclick="window.deParaUI.navigateTo('${folder.path}')">
+            <div class="folder-item" data-path="${folder.path}">
                 <span class="material-icons">folder</span>
                 <span class="folder-name">${folder.name}</span>
             </div>
         `).join('');
+
+        // Configurar event listeners para os itens de pasta
+        const folderItems = folderList.querySelectorAll('.folder-item');
+        folderItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const path = item.getAttribute('data-path');
+                this.navigateTo(path);
+            });
+        });
     }
 
     // Navegar para uma pasta
@@ -1507,6 +1554,99 @@ class DeParaUI {
 
         // Fechar modal
         document.querySelector('.folder-browser-modal').closest('.modal').remove();
+    }
+
+    // Configurar event listeners seguros para CSP (substituir onclick/onchange inline)
+    setupCSPSafeEventListeners() {
+        // Barra de busca de operações agendadas
+        const searchInput = document.querySelector('.filter-scheduled-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterScheduledOperations(e.target.value);
+            });
+        }
+
+        // Selects do formulário de operações
+        const sourceFolderSelect = document.querySelector('.source-folder-select');
+        if (sourceFolderSelect) {
+            sourceFolderSelect.addEventListener('change', () => {
+                this.updateSourceFolderInfo();
+            });
+        }
+
+        const targetFolderSelect = document.querySelector('.target-folder-select');
+        if (targetFolderSelect) {
+            targetFolderSelect.addEventListener('change', () => {
+                this.updateTargetFolderInfo();
+            });
+        }
+
+        const fileActionSelect = document.querySelector('.file-action-select');
+        if (fileActionSelect) {
+            fileActionSelect.addEventListener('change', () => {
+                this.updateActionHelp();
+            });
+        }
+
+        const executionFrequencySelect = document.querySelector('.execution-frequency-select');
+        if (executionFrequencySelect) {
+            executionFrequencySelect.addEventListener('change', () => {
+                this.toggleCronField();
+            });
+        }
+
+        const filterTypeSelect = document.querySelector('.filter-type-select');
+        if (filterTypeSelect) {
+            filterTypeSelect.addEventListener('change', () => {
+                this.toggleFilterOptions();
+            });
+        }
+
+        // Checkboxes de transformação
+        const uppercaseCheckbox = document.querySelector('.transform-uppercase-checkbox');
+        if (uppercaseCheckbox) {
+            uppercaseCheckbox.addEventListener('change', () => {
+                this.toggleCaseConflict();
+            });
+        }
+
+        const lowercaseCheckbox = document.querySelector('.transform-lowercase-checkbox');
+        if (lowercaseCheckbox) {
+            lowercaseCheckbox.addEventListener('change', () => {
+                this.toggleCaseConflict();
+            });
+        }
+
+        const autoCleanupCheckbox = document.querySelector('.auto-cleanup-checkbox');
+        if (autoCleanupCheckbox) {
+            autoCleanupCheckbox.addEventListener('change', () => {
+                this.toggleCleanupOptions();
+            });
+        }
+
+        // Selects do formulário de pastas
+        const folderTypeSelect = document.querySelector('.folder-type-select');
+        if (folderTypeSelect) {
+            folderTypeSelect.addEventListener('change', () => {
+                this.updateFolderTypeHelp();
+            });
+        }
+
+        // Select do formulário de agendamento
+        const scheduleActionSelect = document.querySelector('.schedule-action-select');
+        if (scheduleActionSelect) {
+            scheduleActionSelect.addEventListener('change', () => {
+                this.updateScheduleForm();
+            });
+        }
+
+        // Input de validação de nome
+        const nameInput = document.querySelector('.validate-name-input');
+        if (nameInput) {
+            nameInput.addEventListener('input', (e) => {
+                this.validateField(e.target, 'name');
+            });
+        }
     }
 
     // Selecionar pasta sugerida
