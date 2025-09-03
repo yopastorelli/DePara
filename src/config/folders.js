@@ -58,16 +58,39 @@ class FolderManager {
     }
 
     getDefaultFolders() {
+        // Detectar usuário atual e caminhos padrão baseados na plataforma
+        const userHome = process.env.HOME || process.env.USERPROFILE || '/tmp';
+        const userName = process.env.USER || process.env.USERNAME || 'user';
+
+        // Caminhos adaptáveis por plataforma
+        const getDefaultPaths = () => {
+            if (process.platform === 'win32') {
+                return {
+                    input: path.join(userHome, 'Documents', 'Entrada'),
+                    output: path.join(userHome, 'Documents', 'Saida'),
+                    temp: path.join(userHome, 'Documents', 'Temp')
+                };
+            } else {
+                // Linux/Unix/Raspberry Pi
+                return {
+                    input: path.join(userHome, 'dados', 'entrada'),
+                    output: path.join(userHome, 'dados', 'saida'),
+                    temp: path.join(userHome, 'dados', 'temp')
+                };
+            }
+        };
+
+        const paths = getDefaultPaths();
+
         return [
             {
                 id: 'default-input',
                 name: 'Dados_Entrada',
-                path: '/home/yo/dados/entrada',
+                path: paths.input,
                 type: 'input',
                 format: 'auto',
                 autoProcess: true,
                 enabled: true,
-                // NOVAS CONFIGURAÇÕES DE PROCESSAMENTO
                 processing: {
                     frequency: 'realtime',
                     cronExpression: null,
@@ -91,12 +114,11 @@ class FolderManager {
             {
                 id: 'default-output',
                 name: 'Dados_Saida',
-                path: '/home/yo/dados/saida',
+                path: paths.output,
                 type: 'output',
                 format: 'json',
                 autoProcess: false,
                 enabled: true,
-                // NOVAS CONFIGURAÇÕES DE PROCESSAMENTO
                 processing: {
                     frequency: 'daily',
                     cronExpression: null,
@@ -120,12 +142,11 @@ class FolderManager {
             {
                 id: 'default-temp',
                 name: 'Dados_Temporarios',
-                path: '/home/yo/dados/temp',
+                path: paths.temp,
                 type: 'temp',
                 format: 'auto',
                 autoProcess: false,
                 enabled: true,
-                // NOVAS CONFIGURAÇÕES DE PROCESSAMENTO
                 processing: {
                     frequency: '1hour',
                     cronExpression: null,

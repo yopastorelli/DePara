@@ -61,20 +61,42 @@ const IGNORED_FILES = [
 
 /**
  * Lista de pastas comuns que podem ser sugeridas para o usuário
+ * Função que gera caminhos baseados na plataforma atual
  */
-const COMMON_FOLDERS = [
-  '/home/pi',
-  '/home/pi/Documents',
-  '/home/pi/Downloads',
-  '/home/pi/Pictures',
-  '/home/pi/Videos',
-  '/home/pi/Music',
-  '/home/pi/Desktop',
-  '/media',
-  '/mnt',
-  '/tmp',
-  '/var/log'
-];
+const getCommonFolders = () => {
+  const userHome = process.env.HOME || process.env.USERPROFILE || '/tmp';
+
+  if (process.platform === 'win32') {
+    // Windows
+    return [
+      userHome,
+      path.join(userHome, 'Documents'),
+      path.join(userHome, 'Downloads'),
+      path.join(userHome, 'Pictures'),
+      path.join(userHome, 'Videos'),
+      path.join(userHome, 'Music'),
+      path.join(userHome, 'Desktop'),
+      'C:\\',
+      'D:\\',
+      path.join(userHome, 'AppData', 'Local', 'Temp')
+    ];
+  } else {
+    // Linux/Unix/Raspberry Pi
+    return [
+      userHome,
+      path.join(userHome, 'Documents'),
+      path.join(userHome, 'Downloads'),
+      path.join(userHome, 'Pictures'),
+      path.join(userHome, 'Videos'),
+      path.join(userHome, 'Music'),
+      path.join(userHome, 'Desktop'),
+      '/media',
+      '/mnt',
+      '/tmp',
+      '/var/log'
+    ];
+  }
+};
 
 /**
  * Verifica se um arquivo deve ser ignorado baseado na lista de arquivos ignorados

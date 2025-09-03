@@ -22,24 +22,53 @@ const { sanitizeString, sanitizeFilePath, sanitizeIdentifier, ValidationError } 
  */
 
 // Lista de pastas configuradas (armazenamento em memória por enquanto)
-let configuredFolders = [
-    {
-        id: '1',
-        name: 'Documentos Entrada',
-        path: '/home/pi/Documents/Entrada',
-        type: 'source',
-        format: 'any',
-        createdAt: new Date().toISOString()
-    },
-    {
-        id: '2',
-        name: 'Documentos Processados',
-        path: '/home/pi/Documents/Processados',
-        type: 'target',
-        format: 'any',
-        createdAt: new Date().toISOString()
+const getDefaultConfiguredFolders = () => {
+    const userHome = process.env.HOME || process.env.USERPROFILE || '/tmp';
+    const path = require('path');
+
+    if (process.platform === 'win32') {
+        return [
+            {
+                id: '1',
+                name: 'Documentos Entrada',
+                path: path.join(userHome, 'Documents', 'Entrada'),
+                type: 'source',
+                format: 'any',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: '2',
+                name: 'Documentos Processados',
+                path: path.join(userHome, 'Documents', 'Processados'),
+                type: 'target',
+                format: 'any',
+                createdAt: new Date().toISOString()
+            }
+        ];
+    } else {
+        // Linux/Unix/Raspberry Pi
+        return [
+            {
+                id: '1',
+                name: 'Documentos Entrada',
+                path: path.join(userHome, 'Documents', 'Entrada'),
+                type: 'source',
+                format: 'any',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: '2',
+                name: 'Documentos Processados',
+                path: path.join(userHome, 'Documents', 'Processados'),
+                type: 'target',
+                format: 'any',
+                createdAt: new Date().toISOString()
+            }
+        ];
     }
-];
+};
+
+let configuredFolders = getDefaultConfiguredFolders();
 
 // Lista de workflows configurados (armazenamento em memória por enquanto)
 let configuredWorkflows = [

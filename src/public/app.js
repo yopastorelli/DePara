@@ -872,12 +872,34 @@ class DeParaUI {
         });
     }
 
+    // Função para obter caminhos padrão baseados na plataforma
+    getDefaultPaths() {
+        // Detectar se estamos no Windows ou Linux
+        const isWindows = navigator.userAgent.indexOf('Windows') > -1;
+
+        if (isWindows) {
+            return {
+                entrada: 'C:\\Users\\' + (process.env.USERNAME || 'User') + '\\Documents\\Entrada',
+                processados: 'C:\\Users\\' + (process.env.USERNAME || 'User') + '\\Documents\\Processados',
+                backup: 'C:\\Users\\' + (process.env.USERNAME || 'User') + '\\Documents\\Backup'
+            };
+        } else {
+            // Linux/Raspberry Pi - usar caminhos genéricos que serão resolvidos no backend
+            return {
+                entrada: '/home/' + (process.env.USER || 'user') + '/Documents/Entrada',
+                processados: '/home/' + (process.env.USER || 'user') + '/Documents/Processados',
+                backup: '/home/' + (process.env.USER || 'user') + '/Documents/Backup'
+            };
+        }
+    }
+
     // Criar pastas padrão automaticamente
     async createDefaultFolders() {
+        const paths = this.getDefaultPaths();
         const defaultFolders = [
-            { name: 'Documentos Entrada', path: '/home/pi/Documents/Entrada', type: 'source', format: 'any' },
-            { name: 'Documentos Processados', path: '/home/pi/Documents/Processados', type: 'target', format: 'any' },
-            { name: 'Backup Automático', path: '/home/pi/Documents/Backup', type: 'target', format: 'any' }
+            { name: 'Documentos Entrada', path: paths.entrada, type: 'source', format: 'any' },
+            { name: 'Documentos Processados', path: paths.processados, type: 'target', format: 'any' },
+            { name: 'Backup Automático', path: paths.backup, type: 'target', format: 'any' }
         ];
 
         for (const folder of defaultFolders) {
@@ -897,8 +919,8 @@ class DeParaUI {
                 name: 'Backup Diário',
                 description: 'Faz backup diário de documentos importantes',
                 action: 'copy',
-                source: '/home/pi/Documents/Entrada',
-                target: '/home/pi/Documents/Backup',
+                source: paths.entrada,
+                target: paths.backup,
                 frequency: '1d',
                 options: { batch: true, backupBeforeMove: false }
             },
@@ -992,22 +1014,27 @@ class DeParaUI {
     async createQuickFolder(type) {
         console.log(`🚀 Iniciando criação de pastas do tipo: ${type}`);
 
+        // Obter caminhos padrão baseados na plataforma
+        const paths = this.getDefaultPaths();
+        const isWindows = navigator.userAgent.indexOf('Windows') > -1;
+        const basePath = isWindows ? 'C:\\Users\\' + (process.env.USERNAME || 'User') : '/home/' + (process.env.USER || 'user');
+
         const folderSets = {
             documents: [
-                { name: 'Documentos Entrada', path: '/home/pi/Documents/Entrada', type: 'source', format: 'any' },
-                { name: 'Documentos Processados', path: '/home/pi/Documents/Processados', type: 'target', format: 'any' }
+                { name: 'Documentos Entrada', path: paths.entrada, type: 'source', format: 'any' },
+                { name: 'Documentos Processados', path: paths.processados, type: 'target', format: 'any' }
             ],
             backup: [
-                { name: 'Backup Diário', path: '/home/pi/Backup/Diario', type: 'target', format: 'any' },
-                { name: 'Backup Semanal', path: '/home/pi/Backup/Semanal', type: 'target', format: 'any' }
+                { name: 'Backup Diário', path: isWindows ? basePath + '\\Backup\\Diario' : basePath + '/Backup/Diario', type: 'target', format: 'any' },
+                { name: 'Backup Semanal', path: isWindows ? basePath + '\\Backup\\Semanal' : basePath + '/Backup/Semanal', type: 'target', format: 'any' }
             ],
             media: [
-                { name: 'Fotos', path: '/home/pi/Media/Fotos', type: 'source', format: 'any' },
-                { name: 'Vídeos', path: '/home/pi/Media/Videos', type: 'source', format: 'any' }
+                { name: 'Fotos', path: isWindows ? basePath + '\\Pictures' : basePath + '/Pictures', type: 'source', format: 'any' },
+                { name: 'Vídeos', path: isWindows ? basePath + '\\Videos' : basePath + '/Videos', type: 'source', format: 'any' }
             ],
             temp: [
-                { name: 'Processamento', path: '/home/pi/Temp/Processamento', type: 'temp', format: 'any' },
-                { name: 'Lixeira', path: '/home/pi/Temp/Lixeira', type: 'trash', format: 'any' }
+                { name: 'Processamento', path: isWindows ? basePath + '\\Temp\\Processamento' : basePath + '/Temp/Processamento', type: 'temp', format: 'any' },
+                { name: 'Lixeira', path: isWindows ? basePath + '\\Temp\\Lixeira' : basePath + '/Temp/Lixeira', type: 'trash', format: 'any' }
             ]
         };
 
@@ -1069,14 +1096,17 @@ class DeParaUI {
     async createRelatedTemplates(type) {
         console.log(`📝 Criando templates relacionados ao tipo: ${type}`);
 
+        // Obter caminhos padrão baseados na plataforma
+        const paths = this.getDefaultPaths();
+
         const templateSets = {
             documents: [
                 {
                     name: 'Backup Documentos',
                     description: 'Faz backup diário de documentos importantes',
                     action: 'copy',
-                    sourcePath: '/home/pi/Documents/Entrada',
-                    targetPath: '/home/pi/Documents/Processados',
+                    sourcePath: paths.entrada,
+                    targetPath: paths.processados,
                     frequency: '1d',
                     options: { batch: true, backupBeforeMove: false }
                 }
@@ -1086,8 +1116,8 @@ class DeParaUI {
                     name: 'Backup Diário',
                     description: 'Backup automático diário',
                     action: 'copy',
-                    sourcePath: '/home/pi/Documents',
-                    targetPath: '/home/pi/Backup/Diario',
+                    sourcePath: paths.entrada.replace('/Entrada', '').replace('\\Entrada', ''),
+                    targetPath: paths.backup + (navigator.userAgent.indexOf('Windows') > -1 ? '\\Diario' : '/Diario'),
                     frequency: '1d',
                     options: { batch: true, backupBeforeMove: true }
                 },
@@ -1095,8 +1125,8 @@ class DeParaUI {
                     name: 'Backup Semanal',
                     description: 'Backup completo semanal',
                     action: 'copy',
-                    sourcePath: '/home/pi/Documents',
-                    targetPath: '/home/pi/Backup/Semanal',
+                    sourcePath: paths.entrada.replace('/Entrada', '').replace('\\Entrada', ''),
+                    targetPath: paths.backup + (navigator.userAgent.indexOf('Windows') > -1 ? '\\Semanal' : '/Semanal'),
                     frequency: '1w',
                     options: { batch: true, backupBeforeMove: true }
                 }
@@ -1106,8 +1136,8 @@ class DeParaUI {
                     name: 'Organizar Fotos',
                     description: 'Move fotos para pasta organizada',
                     action: 'move',
-                    sourcePath: '/home/pi/Media/Fotos',
-                    targetPath: '/home/pi/Media/Organizadas/Fotos',
+                    sourcePath: paths.entrada.replace('Documents/Entrada', 'Pictures').replace('Documents\\Entrada', 'Pictures'),
+                    targetPath: paths.entrada.replace('Documents/Entrada', 'Pictures/Organizadas').replace('Documents\\Entrada', 'Pictures\\Organizadas'),
                     frequency: 'manual',
                     options: { batch: true }
                 }
@@ -1466,7 +1496,7 @@ class DeParaUI {
                 <div class="modal-body">
                     <div class="folder-browser">
                         <div class="current-path">
-                            <input type="text" id="browser-path" value="/home/pi" readonly>
+                            <input type="text" id="browser-path" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\' + (process.env.USERNAME || 'User') : '/home/' + (process.env.USER || 'user')}" readonly>
                             <button class="btn btn-sm folder-browser-up-btn">
                                 <span class="material-icons">arrow_upward</span>
                             </button>
@@ -1488,7 +1518,8 @@ class DeParaUI {
         // Configurar event listeners após criar o modal
         this.setupFolderBrowserEventListeners(modal, targetType);
 
-        await this.loadFolders('/home/pi');
+        const defaultPath = navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\Users\\' + (process.env.USERNAME || 'User') : '/home/' + (process.env.USER || 'user');
+        await this.loadFolders(defaultPath);
     }
 
     // Carregar pastas de um diretório
@@ -1958,7 +1989,7 @@ class DeParaUI {
                         <label for="folder-path-input">Caminho da pasta:</label>
                         <div class="input-group">
                             <input type="text" id="folder-path-input" class="form-input"
-                                   placeholder="/home/pi/Pictures" value="/home/pi/Pictures">
+                                   placeholder="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\' + (process.env.USERNAME || 'User') + '\\\\Pictures' : '/home/' + (process.env.USER || 'user') + '/Pictures'}" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\' + (process.env.USERNAME || 'User') + '\\\\Pictures' : '/home/' + (process.env.USER || 'user') + '/Pictures'}">
                             <button class="btn btn-outline slideshow-folder-test-btn">
                                 <span class="material-icons">check</span>
                                 Testar
@@ -1971,8 +2002,8 @@ class DeParaUI {
                     <div class="folder-suggestions">
                         <h4>Pastas comuns:</h4>
                         <div class="suggestion-buttons">
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/pi/Pictures">~/Pictures</button>
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/pi/Downloads">~/Downloads</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\' + (process.env.USERNAME || 'User') + '\\\\Pictures' : '/home/' + (process.env.USER || 'user') + '/Pictures'}">~/Pictures</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\' + (process.env.USERNAME || 'User') + '\\\\Downloads' : '/home/' + (process.env.USER || 'user') + '/Downloads'}">~/Downloads</button>
                             <button class="btn btn-sm slideshow-suggestion-btn" data-path="/media">/media</button>
                             <button class="btn btn-sm slideshow-suggestion-btn" data-path="./">Diretório atual</button>
                         </div>
@@ -5476,6 +5507,40 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.setupAdditionalEventListeners();
     }, 100);
 });
+
+// Função para substituir caminhos dinâmicos baseados na plataforma
+function updateDynamicPaths() {
+    const isWindows = navigator.userAgent.indexOf('Windows') > -1;
+    const userName = process.env.USER || process.env.USERNAME || 'user';
+
+    // Mapeamento de caminhos dinâmicos
+    const pathMappings = {
+        'dynamic-home': isWindows ? `C:\\Users\\${userName}` : `/home/${userName}`,
+        'dynamic-documents': isWindows ? `C:\\Users\\${userName}\\Documents` : `/home/${userName}/Documents`,
+        'dynamic-downloads': isWindows ? `C:\\Users\\${userName}\\Downloads` : `/home/${userName}/Downloads`,
+        'dynamic-pictures': isWindows ? `C:\\Users\\${userName}\\Pictures` : `/home/${userName}/Pictures`,
+        'dynamic-desktop': isWindows ? `C:\\Users\\${userName}\\Desktop` : `/home/${userName}/Desktop`,
+        'dynamic-pictures-placeholder': isWindows ? `C:\\Users\\${userName}\\Pictures` : `/home/${userName}/Pictures`
+    };
+
+    // Substituir data-path dos botões
+    Object.keys(pathMappings).forEach(key => {
+        const buttons = document.querySelectorAll(`[data-path="${key}"]`);
+        buttons.forEach(button => {
+            button.setAttribute('data-path', pathMappings[key]);
+        });
+    });
+
+    // Substituir placeholder do slideshow
+    const slideshowInput = document.getElementById('slideshow-folder-path');
+    if (slideshowInput && pathMappings['dynamic-pictures-placeholder']) {
+        slideshowInput.placeholder = pathMappings['dynamic-pictures-placeholder'];
+        slideshowInput.value = pathMappings['dynamic-pictures-placeholder'];
+    }
+}
+
+// Executar quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', updateDynamicPaths);
 
 // Adicionar animação CSS
 const style = document.createElement('style');

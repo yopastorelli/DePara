@@ -336,11 +336,11 @@
                                 <div class="folder-suggestions">
                                     <label>Pastas comuns:</label>
                                     <div class="suggestion-buttons">
-                                        <button class="btn btn-sm suggestion-btn" data-path="/home/pi">~/</button>
-                                        <button class="btn btn-sm suggestion-btn" data-path="/home/pi/Documents">Documents</button>
-                                        <button class="btn btn-sm suggestion-btn" data-path="/home/pi/Downloads">Downloads</button>
-                                        <button class="btn btn-sm suggestion-btn" data-path="/home/pi/Pictures">Pictures</button>
-                                        <button class="btn btn-sm suggestion-btn" data-path="/home/pi/Desktop">Desktop</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="dynamic-home">~</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="dynamic-documents">Documents</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="dynamic-downloads">Downloads</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="dynamic-pictures">Pictures</button>
+                                        <button class="btn btn-sm suggestion-btn" data-path="dynamic-desktop">Desktop</button>
                                         <button class="btn btn-sm suggestion-btn" data-path="/media">/media</button>
                                         <button class="btn btn-sm suggestion-btn" data-path="/mnt">/mnt</button>
                                     </div>
@@ -1229,7 +1229,7 @@
                 <div class="slideshow-folder-selector">
                     <label for="slideshow-folder-path">Pasta com imagens:</label>
                     <div class="input-group">
-                        <input type="text" id="slideshow-folder-path" placeholder="/home/pi/Pictures" readonly>
+                        <input type="text" id="slideshow-folder-path" placeholder="dynamic-pictures-placeholder" readonly>
                         <button class="btn btn-outline slideshow-browse-btn">
                             <span class="material-icons">folder_open</span>
                             Selecionar Pasta
