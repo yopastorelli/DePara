@@ -182,7 +182,7 @@
                 <div class="card chart-card">
                     <div class="card-header">
                         <h3>Uso do Sistema</h3>
-                        <span class="material-icons refresh-icon" onclick="refreshCharts()" title="Atualizar">refresh</span>
+                        <span class="material-icons refresh-icon refresh-charts-btn" title="Atualizar">refresh</span>
                     </div>
                     <div class="card-content">
                         <div class="chart-container">
@@ -235,11 +235,11 @@
                             <span class="material-icons search-icon">search</span>
                             <input type="text" id="scheduled-search" placeholder="Buscar operações..."
                                    oninput="filterScheduledOperations(this.value)">
-                            <button class="clear-search" onclick="clearSearch()" style="display: none;">
+                            <button class="clear-search clear-search-btn" style="display: none;">
                                 <span class="material-icons">clear</span>
                             </button>
                         </div>
-                        <button class="btn btn-primary" onclick="showScheduleModal()">
+                        <button class="btn btn-primary schedule-modal-btn">
                             <span class="material-icons">add</span>
                             Nova Operação
                         </button>
@@ -266,7 +266,7 @@
                 <div class="backups-header">
                     <h2>Sistema de Backups</h2>
                     <p>Gerencie backups automáticos e restaure arquivos quando necessário</p>
-                    <button class="btn btn-secondary" onclick="loadBackups()">
+                    <button class="btn btn-secondary load-backups-btn">
                         <span class="material-icons">refresh</span>
                         Atualizar
                     </button>
@@ -290,7 +290,7 @@
                                 Backup automático habilitado
                             </label>
                         </div>
-                        <button class="btn btn-primary" onclick="updateBackupConfig()">
+                        <button class="btn btn-primary update-backup-btn">
                             Salvar Configurações
                         </button>
                     </div>
@@ -315,7 +315,7 @@
                         <h3>Arraste arquivos ou pastas aqui</h3>
                         <p>ou clique para selecionar manualmente</p>
                         <input type="file" id="file-selector" multiple webkitdirectory style="display: none;">
-                        <button class="btn btn-secondary" onclick="document.getElementById('file-selector').click()">
+                        <button class="btn btn-secondary file-selector-btn">
                             <span class="material-icons">folder_open</span>
                             Selecionar Arquivos/Pastas
                         </button>
@@ -377,7 +377,7 @@
                     <h3>🛡️ Arquivos Protegidos</h3>
                     <p>Arquivos ignorados automaticamente para proteger sincronização</p>
                     <div class="ignored-files-info" id="ignored-files-info">
-                        <button class="btn btn-secondary" onclick="showIgnoredPatterns()">
+                        <button class="btn btn-secondary show-ignored-btn">
                             <span class="material-icons">info</span>
                             Ver Arquivos Ignorados
                         </button>
@@ -514,7 +514,7 @@
                             <label>Diretório de Logs</label>
                             <input type="text" id="log-directory" value="logs/">
                         </div>
-                        <button class="btn btn-primary" onclick="saveSettings()">
+                        <button class="btn btn-primary save-settings-btn">
                             <span class="material-icons">save</span>
                             Salvar Configurações
                         </button>
@@ -529,7 +529,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Configurar Novo Fluxo de Trabalho</h3>
-                <button class="modal-close" onclick="closeWorkflowModal()">
+                <button class="modal-close close-workflow-btn">
                     <span class="material-icons">close</span>
                 </button>
             </div>
@@ -792,7 +792,7 @@
             <!-- Navegação do Wizard -->
             <div class="modal-footer">
                 <div class="wizard-navigation">
-                    <button class="btn btn-secondary" id="prev-step" onclick="previousWorkflowStep()" style="display: none;">
+                    <button class="btn btn-secondary" id="prev-step" style="display: none;">
                         <span class="material-icons">arrow_back</span>
                         Anterior
                     </button>
@@ -806,18 +806,18 @@
                         <span class="step-dot" data-step="6"></span>
                     </div>
                     
-                    <button class="btn btn-primary" id="next-step" onclick="nextWorkflowStep()">
+                    <button class="btn btn-primary" id="next-step">
                         Próximo
                         <span class="material-icons">arrow_forward</span>
                     </button>
                     
-                    <button class="btn btn-success" id="save-step" onclick="saveWorkflow()" style="display: none;">
+                    <button class="btn btn-success" id="save-step" style="display: none;">
                         <span class="material-icons">save</span>
                         Salvar Fluxo
                     </button>
                 </div>
                 
-                <button class="btn btn-secondary" onclick="closeWorkflowModal()">Cancelar</button>
+                <button class="btn btn-secondary cancel-workflow-btn">Cancelar</button>
             </div>
         </div>
     </div>
@@ -827,7 +827,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Gerenciar Pastas</h3>
-                <button class="modal-close" onclick="closeFolderManagerModal()">
+                <button class="modal-close close-folder-manager-btn">
                     <span class="material-icons">close</span>
                 </button>
             </div>
@@ -879,8 +879,8 @@
             </div>
             
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeFolderManagerModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="saveFolder()">Salvar Pasta</button>
+                <button class="btn btn-secondary cancel-folder-manager-btn">Cancelar</button>
+                <button class="btn btn-primary save-folder-btn">Salvar Pasta</button>
             </div>
         </div>
     </div>
@@ -890,7 +890,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="file-operation-title">Operação de Arquivo</h3>
-                <button class="modal-close" onclick="closeFileOperationModal()">
+                <button class="modal-close close-file-operation-btn">
                     <span class="material-icons">close</span>
                 </button>
             </div>
@@ -946,8 +946,8 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeFileOperationModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="executeFileOperation()">Executar</button>
+                <button class="btn btn-secondary cancel-file-operation-btn">Cancelar</button>
+                <button class="btn btn-primary execute-file-operation-btn">Executar</button>
             </div>
         </div>
     </div>
@@ -957,7 +957,7 @@
         <div class="modal-content large-modal">
             <div class="modal-header">
                 <h3>Agendar Operação</h3>
-                <button class="modal-close" onclick="closeScheduleModal()">
+                <button class="modal-close close-schedule-btn">
                     <span class="material-icons">close</span>
                 </button>
             </div>
@@ -1038,8 +1038,8 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeScheduleModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="scheduleOperation()">Agendar</button>
+                <button class="btn btn-secondary cancel-schedule-btn">Cancelar</button>
+                <button class="btn btn-primary schedule-operation-btn">Agendar</button>
             </div>
         </div>
     </div>
@@ -1063,7 +1063,7 @@
 
                 <!-- Controles -->
                 <div class="slideshow-controls">
-                    <button class="slideshow-btn" id="slideshow-prev" onclick="previousImage()">
+                    <button class="slideshow-btn" id="slideshow-prev">
                         <span class="material-icons">chevron_left</span>
                     </button>
 
@@ -1074,13 +1074,13 @@
                         <div class="slideshow-filename" id="image-filename">-</div>
                     </div>
 
-                    <button class="slideshow-btn" id="slideshow-next" onclick="nextImage()">
+                    <button class="slideshow-btn" id="slideshow-next">
                         <span class="material-icons">chevron_right</span>
                     </button>
                 </div>
 
                 <!-- Botão de fechar -->
-                <button class="slideshow-close-btn" onclick="closeSlideshow()" title="Fechar (ESC)">
+                <button class="slideshow-close-btn close-slideshow-btn" title="Fechar (ESC)">
                     <span class="material-icons">close</span>
                 </button>
 
@@ -1097,7 +1097,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Selecionar Pasta para Slideshow</h3>
-                <button class="modal-close" onclick="closeSlideshowFolderModal()">
+                <button class="modal-close close-slideshow-folder-btn">
                     <span class="material-icons">close</span>
                 </button>
             </div>
@@ -1137,8 +1137,8 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeSlideshowFolderModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="startSlideshow()">Iniciar Slideshow</button>
+                <button class="btn btn-secondary cancel-slideshow-folder-btn">Cancelar</button>
+                <button class="btn btn-primary start-slideshow-btn">Iniciar Slideshow</button>
             </div>
         </div>
     </div>

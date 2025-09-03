@@ -1259,6 +1259,73 @@ class DeParaUI {
         }
     }
 
+    // Configurar event listeners para todos os novos botões
+    setupAdditionalEventListeners() {
+        // Botões de dashboard
+        this.addButtonListener('.refresh-charts-btn', () => this.updateCharts());
+        this.addButtonListener('.clear-search-btn', () => this.clearSearch());
+        this.addButtonListener('.schedule-modal-btn', () => this.showScheduleModal());
+
+        // Botões de backup
+        this.addButtonListener('.load-backups-btn', () => this.loadBackups());
+        this.addButtonListener('.update-backup-btn', () => this.updateBackupConfig());
+
+        // Botões de configurações
+        this.addButtonListener('.show-ignored-btn', () => this.showIgnoredPatterns());
+        this.addButtonListener('.save-settings-btn', () => this.saveSettings());
+
+        // Botões de workflow
+        this.addButtonListener('.close-workflow-btn', () => this.closeWorkflowModal());
+        this.addButtonListener('#prev-step', () => this.previousWorkflowStep());
+        this.addButtonListener('#next-step', () => this.nextWorkflowStep());
+        this.addButtonListener('#save-step', () => this.saveWorkflow());
+        this.addButtonListener('.cancel-workflow-btn', () => this.closeWorkflowModal());
+
+        // Botões de gerenciamento de pastas
+        this.addButtonListener('.close-folder-manager-btn', () => this.closeFolderManagerModal());
+        this.addButtonListener('.cancel-folder-manager-btn', () => this.closeFolderManagerModal());
+        this.addButtonListener('.save-folder-btn', () => this.saveFolder());
+
+        // Botões de operações de arquivo
+        this.addButtonListener('.close-file-operation-btn', () => this.closeFileOperationModal());
+        this.addButtonListener('.cancel-file-operation-btn', () => this.closeFileOperationModal());
+        this.addButtonListener('.execute-file-operation-btn', () => this.executeFileOperation());
+
+        // Botões de agendamento
+        this.addButtonListener('.close-schedule-btn', () => this.closeScheduleModal());
+        this.addButtonListener('.cancel-schedule-btn', () => this.closeScheduleModal());
+        this.addButtonListener('.schedule-operation-btn', () => this.scheduleOperation());
+
+        // Botões de slideshow
+        this.addButtonListener('.close-slideshow-folder-btn', () => this.closeSlideshowFolderModal());
+        this.addButtonListener('.cancel-slideshow-folder-btn', () => this.closeSlideshowFolderModal());
+        this.addButtonListener('.start-slideshow-btn', () => this.startSlideshow());
+        this.addButtonListener('#slideshow-prev', () => this.previousSlide());
+        this.addButtonListener('#slideshow-next', () => this.nextSlide());
+        this.addButtonListener('.close-slideshow-btn', () => this.closeSlideshowViewer());
+
+        // Botão seletor de arquivos
+        this.addButtonListener('.file-selector-btn', () => {
+            document.getElementById('file-selector').click();
+        });
+
+        // Filtros de busca (input events)
+        const searchInput = document.getElementById('scheduled-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterScheduledOperations(e.target.value);
+            });
+        }
+    }
+
+    // Função auxiliar para adicionar event listeners de botões
+    addButtonListener(selector, callback) {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.addEventListener('click', callback);
+        }
+    }
+
     // ==========================================
     // SLIDESHOW FUNCTIONALITY
     // ==========================================
@@ -2491,35 +2558,35 @@ class DeParaUI {
         const moveCard = document.querySelector('.action-move-card');
         if (moveCard) {
             moveCard.addEventListener('click', () => {
-                this.showFileOperationModal('move');
+                window.deParaUI.showFileOperationModal('move');
             });
         }
 
         const copyCard = document.querySelector('.action-copy-card');
         if (copyCard) {
             copyCard.addEventListener('click', () => {
-                this.showFileOperationModal('copy');
+                window.deParaUI.showFileOperationModal('copy');
             });
         }
 
         const deleteCard = document.querySelector('.action-delete-card');
         if (deleteCard) {
             deleteCard.addEventListener('click', () => {
-                this.showFileOperationModal('delete');
+                window.deParaUI.showFileOperationModal('delete');
             });
         }
 
         const scheduleCard = document.querySelector('.action-schedule-card');
         if (scheduleCard) {
             scheduleCard.addEventListener('click', () => {
-                this.showScheduleModal();
+                window.deParaUI.showScheduleModal();
             });
         }
 
         const slideshowCard = document.querySelector('.action-slideshow-card');
         if (slideshowCard) {
             slideshowCard.addEventListener('click', () => {
-                this.showSlideshowModal();
+                window.deParaUI.showSlideshowModal();
             });
         }
 
@@ -2530,14 +2597,14 @@ class DeParaUI {
         const folderManagerBtn = document.querySelector('.folder-manager-btn');
         if (folderManagerBtn) {
             folderManagerBtn.addEventListener('click', () => {
-                this.openFolderManager();
+                window.deParaUI.openFolderManager();
             });
         }
 
         const refreshFoldersBtn = document.querySelector('.refresh-folders-btn');
         if (refreshFoldersBtn) {
             refreshFoldersBtn.addEventListener('click', () => {
-                this.refreshFoldersList();
+                window.deParaUI.refreshFoldersList();
             });
         }
     }
@@ -4635,8 +4702,149 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
+        // Funções para botões de dashboard
+        window.refreshCharts = function() {
+            if (window.deParaUI) {
+                window.deParaUI.updateCharts();
+            }
+        };
+
+        window.clearSearch = function() {
+            if (window.deParaUI) {
+                window.deParaUI.clearSearch();
+            }
+        };
+
+        window.showScheduleModal = function() {
+            if (window.deParaUI) {
+                window.deParaUI.showScheduleModal();
+            }
+        };
+
+        // Funções para backups
+        window.loadBackups = function() {
+            if (window.deParaUI) {
+                window.deParaUI.loadBackups();
+            }
+        };
+
+        window.updateBackupConfig = function() {
+            if (window.deParaUI) {
+                window.deParaUI.updateBackupConfig();
+            }
+        };
+
+        // Funções para configurações
+        window.showIgnoredPatterns = function() {
+            if (window.deParaUI) {
+                window.deParaUI.showIgnoredPatterns();
+            }
+        };
+
+        window.saveSettings = function() {
+            if (window.deParaUI) {
+                window.deParaUI.saveSettings();
+            }
+        };
+
+        // Funções para workflows
+        window.closeWorkflowModal = function() {
+            if (window.deParaUI) {
+                window.deParaUI.closeWorkflowModal();
+            }
+        };
+
+        window.previousWorkflowStep = function() {
+            if (window.deParaUI) {
+                window.deParaUI.previousWorkflowStep();
+            }
+        };
+
+        window.nextWorkflowStep = function() {
+            if (window.deParaUI) {
+                window.deParaUI.nextWorkflowStep();
+            }
+        };
+
+        window.saveWorkflow = function() {
+            if (window.deParaUI) {
+                window.deParaUI.saveWorkflow();
+            }
+        };
+
+        // Funções para gerenciamento de pastas
+        window.closeFolderManagerModal = function() {
+            if (window.deParaUI) {
+                window.deParaUI.closeFolderManagerModal();
+            }
+        };
+
+        window.saveFolder = function() {
+            if (window.deParaUI) {
+                window.deParaUI.saveFolder();
+            }
+        };
+
+        // Funções para operações de arquivo
+        window.closeFileOperationModal = function() {
+            if (window.deParaUI) {
+                window.deParaUI.closeFileOperationModal();
+            }
+        };
+
+        window.executeFileOperation = function() {
+            if (window.deParaUI) {
+                window.deParaUI.executeFileOperation();
+            }
+        };
+
+        // Funções para agendamento
+        window.closeScheduleModal = function() {
+            if (window.deParaUI) {
+                window.deParaUI.closeScheduleModal();
+            }
+        };
+
+        window.scheduleOperation = function() {
+            if (window.deParaUI) {
+                window.deParaUI.scheduleOperation();
+            }
+        };
+
+        // Funções para slideshow
+        window.closeSlideshowFolderModal = function() {
+            if (window.deParaUI) {
+                window.deParaUI.closeSlideshowFolderModal();
+            }
+        };
+
+        window.startSlideshow = function() {
+            if (window.deParaUI) {
+                window.deParaUI.startSlideshow();
+            }
+        };
+
+        window.previousImage = function() {
+            if (window.deParaUI) {
+                window.deParaUI.previousSlide();
+            }
+        };
+
+        window.nextImage = function() {
+            if (window.deParaUI) {
+                window.deParaUI.nextSlide();
+            }
+        };
+
+        window.closeSlideshow = function() {
+            if (window.deParaUI) {
+                window.deParaUI.closeSlideshowViewer();
+            }
+        };
+
         // Adicionar event listeners para botões (evita CSP violation)
         ui.addOnboardingEventListeners();
+        ui.setupAdditionalEventListeners();
     }, 100);
 });
 
