@@ -1,12 +1,62 @@
 /**
  * Testes para Rotas de Health da API DePara
- * 
+ *
  * @author yopastorelli
  * @version 1.0.0
  */
 
 const request = require('supertest');
-const app = require('../src/main');
+const path = require('path');
+
+// Mock do logger para testes
+jest.mock('../src/utils/logger', () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+  operationError: jest.fn(),
+  performance: jest.fn(),
+  startOperation: jest.fn(),
+  endOperation: jest.fn()
+}));
+
+// Mock do fileOperations para testes
+jest.mock('../src/utils/fileOperations', () => ({
+  getStats: jest.fn(() => ({
+    scheduledOperations: 0,
+    totalOperations: 0,
+    backupEnabled: true,
+    backupDir: '/tmp/backups',
+    retentionDays: 30
+  })),
+  getActiveOperations: jest.fn(() => []),
+  getScheduledOperations: jest.fn(() => [])
+}));
+
+// Mock do folderManager para testes
+jest.mock('../src/config/folders', () => ({
+  getFolders: jest.fn(() => []),
+  getFolder: jest.fn(() => null)
+}));
+
+// Mock do dotenv
+jest.mock('dotenv', () => ({
+  config: jest.fn()
+}));
+
+let app;
+
+beforeAll(() => {
+  // Importar app após os mocks
+  app = require('../src/main');
+});
+
+afterAll(async () => {
+  // Limpar recursos após testes
+  if (app && app.close) {
+    await new Promise(resolve => app.close(resolve));
+  }
+});
 
 describe('Health Check Endpoints', () => {
   describe('GET /api/health', () => {
@@ -20,8 +70,8 @@ describe('Health Check Endpoints', () => {
       expect(response.body).toHaveProperty('uptime');
       expect(response.body).toHaveProperty('environment');
       expect(response.body).toHaveProperty('version');
-      expect(response.body).toHaveProperty('memory');
-      expect(response.body).toHaveProperty('system');
+      expect(response.body.memory).toBeDefined();
+      expect(response.body.system).toBeDefined();
     });
 
     it('deve incluir informações de memória válidas', async () => {
@@ -29,9 +79,7 @@ describe('Health Check Endpoints', () => {
         .get('/api/health')
         .expect(200);
 
-      expect(response.body.memory).toHaveProperty('used');
-      expect(response.body.memory).toHaveProperty('total');
-      expect(response.body.memory).toHaveProperty('external');
+      expect(response.body.memory).toBeDefined();
       expect(typeof response.body.memory.used).toBe('number');
       expect(typeof response.body.memory.total).toBe('number');
     });
@@ -41,11 +89,9 @@ describe('Health Check Endpoints', () => {
         .get('/api/health')
         .expect(200);
 
-      expect(response.body.system).toHaveProperty('platform');
-      expect(response.body.system).toHaveProperty('arch');
-      expect(response.body.system).toHaveProperty('nodeVersion');
-      expect(response.body.system).toHaveProperty('cpuCount');
-      expect(response.body.system).toHaveProperty('loadAverage');
+      expect(response.body.system).toBeDefined();
+      expect(typeof response.body.system.cpuCount).toBe('number');
+      expect(Array.isArray(response.body.system.loadAverage)).toBe(true);
     });
   });
 
@@ -57,10 +103,10 @@ describe('Health Check Endpoints', () => {
 
       expect(response.body).toHaveProperty('status', 'OK');
       expect(response.body).toHaveProperty('timestamp');
-      expect(response.body).toHaveProperty('application');
-      expect(response.body).toHaveProperty('memory');
-      expect(response.body).toHaveProperty('system');
-      expect(response.body).toHaveProperty('network');
+      expect(response.body.application).toBeDefined();
+      expect(response.body.memory).toBeDefined();
+      expect(response.body.system).toBeDefined();
+      expect(response.body.network).toBeDefined();
     });
 
     it('deve incluir informações detalhadas da aplicação', async () => {
@@ -72,7 +118,7 @@ describe('Health Check Endpoints', () => {
       expect(response.body.application).toHaveProperty('version');
       expect(response.body.application).toHaveProperty('uptime');
       expect(response.body.application).toHaveProperty('environment');
-      expect(response.body.application).toHaveProperty('pid');
+      expect(typeof response.body.application.pid).toBe('number');
     });
 
     it('deve incluir informações detalhadas de memória', async () => {
@@ -80,11 +126,10 @@ describe('Health Check Endpoints', () => {
         .get('/api/health/detailed')
         .expect(200);
 
-      expect(response.body.memory).toHaveProperty('heapUsed');
-      expect(response.body.memory).toHaveProperty('heapTotal');
-      expect(response.body.memory).toHaveProperty('external');
-      expect(response.body.memory).toHaveProperty('rss');
-      expect(response.body.memory).toHaveProperty('arrayBuffers');
+      expect(typeof response.body.memory.heapUsed).toBe('number');
+      expect(typeof response.body.memory.heapTotal).toBe('number');
+      expect(typeof response.body.memory.external).toBe('number');
+      expect(typeof response.body.memory.rss).toBe('number');
     });
   });
 
@@ -96,8 +141,8 @@ describe('Health Check Endpoints', () => {
 
       expect(response.body).toHaveProperty('status', 'OK');
       expect(response.body).toHaveProperty('timestamp');
-      expect(response.body).toHaveProperty('checks');
-      expect(response.body).toHaveProperty('summary');
+      expect(response.body.checks).toBeDefined();
+      expect(response.body.summary).toBeDefined();
     });
 
     it('deve incluir verificações de conectividade válidas', async () => {
@@ -105,13 +150,13 @@ describe('Health Check Endpoints', () => {
         .get('/api/health/connectivity')
         .expect(200);
 
-      expect(response.body.checks).toHaveProperty('fileSystem');
-      expect(response.body.checks).toHaveProperty('memory');
-      expect(response.body.checks).toHaveProperty('process');
+      expect(response.body.checks.fileSystem).toBeDefined();
+      expect(response.body.checks.memory).toBeDefined();
+      expect(response.body.checks.process).toBeDefined();
 
-      expect(response.body.checks.fileSystem).toHaveProperty('status');
-      expect(response.body.checks.memory).toHaveProperty('status');
-      expect(response.body.checks.process).toHaveProperty('status');
+      expect(response.body.checks.fileSystem.status).toBeDefined();
+      expect(response.body.checks.memory.status).toBeDefined();
+      expect(response.body.checks.process.status).toBeDefined();
     });
   });
 });

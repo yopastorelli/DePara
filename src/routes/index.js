@@ -11,10 +11,8 @@ const logger = require('../utils/logger');
 
 // Importar rotas específicas
 const healthRoutes = require('./health');
-const convertRoutes = require('./convert');
-const mapRoutes = require('./map');
 const statusRoutes = require('./status');
-const folderRoutes = require('./folders');
+const fileOperationsRoutes = require('./fileOperations');
 
 // Middleware de logging para todas as rotas
 router.use((req, res, next) => {
@@ -43,41 +41,49 @@ router.use((req, res, next) => {
 // Rota de documentação da API
 router.get('/docs', (req, res) => {
   res.json({
-    message: 'Documentação da API DePara',
-    version: '1.0.0',
+    message: 'Documentação da API DePara v2.0.0',
+    version: '2.0.0',
+    description: 'Sistema simplificado focado em operações de arquivos',
     endpoints: {
       health: {
         GET: '/api/health - Status da aplicação'
       },
-      convert: {
-        POST: '/api/convert - Conversão de dados entre formatos'
-      },
-      map: {
-        POST: '/api/map - Mapeamento de campos de dados'
-      },
       status: {
         GET: '/api/status - Informações detalhadas do sistema'
+      },
+      files: {
+        POST: '/api/files/execute - Executar operação imediata',
+        POST: '/api/files/schedule - Agendar operação periódica',
+        GET: '/api/files/scheduled - Listar operações agendadas',
+        POST: '/api/files/batch - Operação em lote',
+        GET: '/api/files/templates - Templates pré-configurados'
       }
     },
     examples: {
-      convert: {
+      execute: {
         method: 'POST',
-        url: '/api/convert',
+        url: '/api/files/execute',
         body: {
-          sourceFormat: 'csv',
-          targetFormat: 'json',
-          data: 'nome,idade\nJoão,25\nMaria,30'
+          action: 'move',
+          sourcePath: '/origem/arquivo.txt',
+          targetPath: '/destino/arquivo.txt',
+          options: {
+            backupBeforeMove: true,
+            preserveStructure: true
+          }
         }
       },
-      map: {
+      schedule: {
         method: 'POST',
-        url: '/api/map',
+        url: '/api/files/schedule',
         body: {
-          sourceFields: ['nome', 'idade'],
-          targetFields: ['name', 'age'],
-          mapping: {
-            'nome': 'name',
-            'idade': 'age'
+          frequency: '1h',
+          action: 'copy',
+          sourcePath: '/origem',
+          targetPath: '/destino',
+          options: {
+            batch: true,
+            preserveStructure: false
           }
         }
       }
@@ -87,19 +93,19 @@ router.get('/docs', (req, res) => {
 
 // Aplicar rotas específicas
 router.use('/health', healthRoutes);
-router.use('/convert', convertRoutes);
-router.use('/map', mapRoutes);
 router.use('/status', statusRoutes);
-router.use('/folders', folderRoutes);
+router.use('/files', fileOperationsRoutes);
 
 // Rota padrão da API
 router.get('/', (req, res) => {
   res.json({
-    message: 'DePara API v1.0.0',
-    description: 'Sistema de Conversão e Mapeamento de Dados',
+    message: 'DePara API v2.0.0',
+    description: 'Sistema de Gerenciamento de Arquivos com Operações Automáticas',
     documentation: '/api/docs',
     health: '/api/health',
-    status: '/api/status'
+    status: '/api/status',
+    files: '/api/files',
+    ui: '/ui'
   });
 });
 

@@ -1,99 +1,86 @@
 @echo off
-REM Script de Instalação Automatizada para DePara
-REM Este script configura o ambiente e instala as dependências
-
-echo.
 echo ========================================
-echo    INSTALADOR AUTOMATIZADO DEPARA
+echo       INSTALADOR DePara v2.0
 echo ========================================
 echo.
-
-echo [1/5] Verificando requisitos do sistema...
+echo Sistema de Gerenciamento de Arquivos
+echo Com operações automáticas e backup
 echo.
+echo ========================================
 
 REM Verificar se Node.js está instalado
+echo [1/5] Verificando Node.js...
 node --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ERRO: Node.js nao encontrado!
-    echo Por favor, instale o Node.js versao 16.0.0 ou superior
-    echo Download: https://nodejs.org/
-    pause
+    echo ❌ Node.js não encontrado!
+    echo.
+    echo 📥 Baixe e instale o Node.js de:
+    echo https://nodejs.org/
+    echo.
+    echo Pressione qualquer tecla para sair...
+    pause >nul
     exit /b 1
 )
 
-REM Verificar se npm está disponível
+REM Verificar se npm está instalado
+echo [2/5] Verificando npm...
 npm --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ERRO: npm nao encontrado!
-    echo Por favor, verifique a instalacao do Node.js
-    pause
+    echo ❌ npm não encontrado!
+    echo Pressione qualquer tecla para continuar...
+    pause >nul
     exit /b 1
 )
 
-echo [OK] Node.js e npm encontrados
-echo.
+echo ✅ Node.js e npm encontrados!
 
-REM Verificar versões
-for /f "tokens=*" %%i in ('node --version') do set NODE_VERSION=%%i
-for /f "tokens=*" %%i in ('npm --version') do set NPM_VERSION=%%i
-
-echo Node.js: %NODE_VERSION%
-echo npm: %NPM_VERSION%
+REM Instalar dependências
 echo.
-
-echo [2/5] Criando diretorio de logs...
-if not exist "logs" mkdir logs
-echo [OK] Diretorio de logs criado
-echo.
-
-echo [3/5] Instalando dependencias...
-echo.
+echo [3/5] Instalando dependências...
+echo Isso pode levar alguns minutos...
 npm install
 if %errorlevel% neq 0 (
-    echo ERRO: Falha ao instalar dependencias!
+    echo ❌ Erro ao instalar dependências!
     pause
     exit /b 1
 )
-echo [OK] Dependencias instaladas com sucesso
-echo.
 
-echo [4/5] Configurando arquivo de ambiente...
+REM Criar estrutura de pastas
+echo.
+echo [4/5] Criando estrutura de pastas...
+if not exist "backups" mkdir backups
+if not exist "logs" mkdir logs
+if not exist "temp" mkdir temp
+
+REM Criar arquivo de configuração básico
 if not exist ".env" (
-    if exist "env.example" (
-        copy "env.example" ".env" >nul
-        echo [OK] Arquivo .env criado a partir do exemplo
-    ) else (
-        echo [AVISO] Arquivo env.example nao encontrado
-        echo Crie manualmente o arquivo .env se necessario
-    )
-) else (
-    echo [OK] Arquivo .env ja existe
+    echo [5/5] Criando configuração básica...
+    echo PORT=3000> .env
+    echo NODE_ENV=production>> .env
+    echo LOG_LEVEL=info>> .env
+    echo LOG_FILE=logs/app.log>> .env
 )
-echo.
-
-echo [5/5] Verificando instalacao...
-echo.
-
-REM Testar se a aplicação pode ser iniciada
-echo Testando inicializacao da aplicacao...
-timeout /t 3 /nobreak >nul
 
 echo.
 echo ========================================
-echo    INSTALACAO CONCLUIDA COM SUCESSO!
+echo ✅ INSTALAÇÃO CONCLUÍDA COM SUCESSO!
 echo ========================================
 echo.
-echo Para iniciar a aplicacao:
-echo   npm start
+echo 🚀 Para iniciar o DePara:
+echo    npm start
 echo.
-echo Para modo desenvolvimento:
-echo   npm run dev
+echo 🌐 Interface web:
+echo    http://localhost:3000/ui
 echo.
-echo Para executar testes:
-echo   npm test
+echo 📚 Documentação da API:
+echo    http://localhost:3000/api/docs
 echo.
-echo Aplicacao disponivel em: http://localhost:3000
-echo Documentacao da API: http://localhost:3000/api/docs
+echo 📁 Principais funcionalidades:
+echo    • Mover/copiar arquivos automaticamente
+echo    • Backup automático antes de apagar
+echo    • Agendamento flexível (segundos a dias)
+echo    • Templates pré-configurados
+echo    • Interface web amigável
 echo.
 echo Pressione qualquer tecla para sair...
 pause >nul

@@ -1,8 +1,8 @@
-# Documentação da API DePara
+# Documentação da API DePara - Gerenciador de Arquivos
 
 ## Visão Geral
 
-A API DePara é uma interface RESTful que oferece funcionalidades de conversão e mapeamento de dados entre diferentes formatos. A API foi projetada para ser simples de usar, bem documentada e com tratamento robusto de erros.
+A API DePara é uma interface RESTful simplificada focada em operações automatizadas de arquivos. Permite mover, copiar e apagar arquivos com agendamento flexível, backup automático e controle sobre a estrutura de pastas. A API foi projetada para ser simples de usar, bem documentada e com tratamento robusto de erros.
 
 ## Base URL
 
@@ -77,20 +77,21 @@ Verifica o status detalhado da aplicação.
 #### GET /api/health/connectivity
 Verifica a conectividade e serviços do sistema.
 
-### 2. Conversão de Dados
+### 2. Operações de Arquivos
 
-#### POST /api/convert
-Converte dados entre diferentes formatos.
+#### POST /api/files/execute
+Executa operações imediatas de arquivo (mover, copiar, apagar).
 
 **Parâmetros:**
 ```json
 {
-  "sourceFormat": "csv",
-  "targetFormat": "json",
-  "data": "nome,idade\nJoão,25\nMaria,30",
+  "action": "move|copy|delete",
+  "sourcePath": "/caminho/arquivo.txt",
+  "targetPath": "/caminho/destino.txt",
   "options": {
-    "delimiter": ",",
-    "encoding": "utf-8"
+    "backupBeforeMove": true,
+    "overwrite": false,
+    "preserveStructure": true
   }
 }
 ```
@@ -99,95 +100,42 @@ Converte dados entre diferentes formatos.
 ```json
 {
   "success": true,
-  "data": [
-    {"nome": "João", "idade": "25"},
-    {"nome": "Maria", "idade": "30"}
-  ],
-  "conversion": {
-    "sourceFormat": "csv",
-    "targetFormat": "json",
-    "sourceDataLength": 35,
-    "targetDataLength": 67,
-    "conversionTime": 15,
-    "options": {...}
+  "data": {
+    "action": "move",
+    "sourcePath": "/caminho/arquivo.txt",
+    "targetPath": "/caminho/destino.txt",
+    "backupCreated": "/backups/arquivo.txt.backup",
+    "timestamp": "2024-01-01T00:00:00.000Z"
   },
   "timestamp": "2024-01-01T00:00:00.000Z"
 }
 ```
 
-#### GET /api/convert/formats
-Lista os formatos suportados para conversão.
-
-**Formatos Suportados:**
-- CSV (Comma Separated Values)
-- JSON (JavaScript Object Notation)
-- XML (eXtensible Markup Language)
-- YAML (YAML Ain't Markup Language)
-
-### 3. Mapeamento de Dados
-
-#### POST /api/map
-Aplica mapeamento de campos em dados estruturados.
+#### POST /api/files/schedule
+Agenda operações periódicas de arquivo.
 
 **Parâmetros:**
 ```json
 {
-  "sourceFields": ["nome", "idade", "email"],
-  "targetFields": ["name", "age", "email"],
-  "mapping": {
-    "nome": "name",
-    "idade": "age",
-    "email": "email"
-  },
-  "data": [
-    {"nome": "João", "idade": 25, "email": "joao@email.com"},
-    {"nome": "Maria", "idade": 30, "email": "maria@email.com"}
-  ],
+  "frequency": "5m|1h|1d",
+  "action": "move|copy|delete",
+  "sourcePath": "/caminho/origem",
+  "targetPath": "/caminho/destino",
   "options": {
-    "strict": false,
-    "fillUnmapped": true,
-    "defaultValue": null
+    "batch": true,
+    "filters": {
+      "extensions": ["txt", "csv"]
+    },
+    "preserveStructure": true
   }
 }
 ```
 
-**Resposta:**
-```json
-{
-  "success": true,
-  "data": [
-    {"name": "João", "age": 25, "email": "joao@email.com"},
-    {"name": "Maria", "age": 30, "email": "maria@email.com"}
-  ],
-  "mapping": {
-    "sourceFieldsCount": 3,
-    "targetFieldsCount": 3,
-    "mappingRules": 3,
-    "processingTime": 8,
-    "options": {...}
-  },
-  "timestamp": "2024-01-01T00:00:00.000Z"
-}
-```
+#### GET /api/files/scheduled
+Lista todas as operações agendadas.
 
-#### POST /api/map/auto
-Gera mapeamento automático entre campos.
-
-**Parâmetros:**
-```json
-{
-  "sourceFields": ["nome", "idade", "email"],
-  "targetFields": ["name", "age", "email"],
-  "strategy": "similarity"
-}
-```
-
-**Estratégias Disponíveis:**
-- `similarity`: Baseado em similaridade de nomes
-- `position`: Baseado na posição dos campos
-
-#### POST /api/map/validate
-Valida um esquema de mapeamento.
+#### GET /api/files/templates
+Lista templates pré-configurados para operações comuns.
 
 ### 4. Status do Sistema
 
@@ -205,6 +153,112 @@ Métricas de performance do sistema.
 
 #### GET /api/status/logs
 Status do sistema de logs.
+
+### 6. Operações de Arquivos
+
+#### POST /api/files/execute
+Executa operação imediata em arquivo (mover, copiar, apagar).
+
+**Parâmetros:**
+```json
+{
+  "action": "move|copy|delete",
+  "sourcePath": "/caminho/arquivo.txt",
+  "targetPath": "/caminho/destino.txt",
+  "options": {
+    "backupBeforeMove": true,
+    "overwrite": false,
+    "preserveStructure": true
+  }
+}
+```
+
+**Opções Importantes:**
+- `preserveStructure`: Mantém a estrutura de subpastas (true) ou achata tudo na raiz (false)
+
+#### POST /api/files/schedule
+Agenda operação periódica.
+
+**Parâmetros:**
+```json
+{
+  "frequency": "5m|1h|1d",
+  "action": "move|copy|delete",
+  "sourcePath": "/caminho/origem",
+  "targetPath": "/caminho/destino",
+  "options": {
+    "batch": true,
+    "filters": {
+      "extensions": ["txt", "csv"]
+    },
+    "preserveStructure": true
+  }
+}
+```
+
+**Opções Importantes:**
+- `preserveStructure`: Mantém a estrutura de subpastas (true) ou achata tudo na raiz (false)
+
+#### GET /api/files/scheduled
+Lista operações agendadas.
+
+#### POST /api/files/batch
+Executa operação em lote em todos os arquivos de uma pasta.
+
+#### GET /api/files/templates
+Lista templates pré-configurados.
+
+#### POST /api/files/templates/:category/:name/apply
+Aplica template com customizações.
+
+#### GET /api/files/ignored-patterns
+Lista todos os padrões de arquivos automaticamente ignorados.
+
+#### POST /api/files/check-ignore
+Verifica se um arquivo específico seria ignorado pelas regras automáticas.
+
+**Parâmetros:**
+```json
+{
+  "filePath": "/caminho/completo/arquivo.ext",
+  "filename": "arquivo.ext"
+}
+```
+
+## 🛡️ Sistema de Arquivos Ignorados
+
+A aplicação possui um sistema inteligente de proteção que **automaticamente ignora** arquivos críticos para:
+
+### 🔄 Resilio Sync (BitTorrent Sync)
+- `.sync` - Diretório de configuração da sincronização
+- `.!sync` - Arquivos temporários de sincronização
+- `.rsls` - Arquivos de lista de sincronização
+- `.syncignore` - Arquivo de configuração de ignore
+- `.bts` - Arquivos BitTorrent Sync (versão antiga)
+- `*.!sync` - Arquivos temporários com extensão
+- `*.sync` - Arquivos de configuração
+- `*.rsls` - Arquivos de lista
+- `*.bts` - Arquivos BitTorrent
+
+### 💻 Arquivos de Sistema
+- `Thumbs.db` - Miniaturas do Windows
+- `.DS_Store` - Arquivos do macOS
+- `desktop.ini` - Configurações do Windows
+- Arquivos de lixeira e temporários do sistema
+
+### ⏰ Arquivos Temporários
+- `*.tmp`, `*.temp` - Arquivos temporários
+- `*.bak`, `*.backup` - Arquivos de backup
+- `*.log` - Arquivos de log
+- `__pycache__` - Cache Python
+- `node_modules/` - Dependências Node.js
+
+### ✅ Benefícios da Proteção Automática
+
+1. **🔄 Preserva Sincronização** - Não interrompe o Resilio Sync
+2. **🛡️ Evita Problemas** - Não move arquivos críticos do sistema
+3. **⚡ Performance** - Não processa arquivos desnecessários
+4. **🔧 Compatibilidade** - Funciona em Windows, Linux e macOS
 
 ## Códigos de Status HTTP
 
@@ -231,26 +285,34 @@ A API implementa tratamento robusto de erros com:
 
 ## Exemplos de Uso
 
-### Conversão CSV para JSON
+### Mover Arquivo com Backup
 ```bash
-curl -X POST http://localhost:3000/api/convert \
+curl -X POST http://localhost:3000/api/files/execute \
   -H "Content-Type: application/json" \
   -d '{
-    "sourceFormat": "csv",
-    "targetFormat": "json",
-    "data": "nome,idade\nJoão,25\nMaria,30"
+    "action": "move",
+    "sourcePath": "/origem/arquivo.txt",
+    "targetPath": "/destino/arquivo.txt",
+    "options": {
+      "backupBeforeMove": true,
+      "preserveStructure": true
+    }
   }'
 ```
 
-### Mapeamento de Campos
+### Agendar Backup Diário
 ```bash
-curl -X POST http://localhost:3000/api/map \
+curl -X POST http://localhost:3000/api/files/schedule \
   -H "Content-Type: application/json" \
   -d '{
-    "sourceFields": ["nome", "idade"],
-    "targetFields": ["name", "age"],
-    "mapping": {"nome": "name", "idade": "age"},
-    "data": [{"nome": "João", "idade": 25}]
+    "frequency": "1d",
+    "action": "copy",
+    "sourcePath": "/dados",
+    "targetPath": "/backup/diario",
+    "options": {
+      "batch": true,
+      "preserveStructure": true
+    }
   }'
 ```
 
@@ -258,6 +320,33 @@ curl -X POST http://localhost:3000/api/map \
 ```bash
 curl http://localhost:3000/api/health
 ```
+
+## 📁 Operações de Arquivos
+
+A API inclui poderosas funcionalidades para operações de arquivos com agendamento automático:
+
+### Ações Suportadas
+- **Mover**: Move arquivos entre pastas com backup automático
+- **Copiar**: Copia arquivos preservando o original
+- **Apagar**: Remove arquivos com backup automático
+
+### Frequências Disponíveis
+- `30s` - A cada 30 segundos
+- `1m` - A cada 1 minuto
+- `5m` - A cada 5 minutos
+- `15m` - A cada 15 minutos
+- `30m` - A cada 30 minutos
+- `1h` - A cada 1 hora
+- `6h` - A cada 6 horas
+- `12h` - A cada 12 horas
+- `1d` - A cada 1 dia
+
+### Templates Pré-configurados
+- **Backup**: Backup diário, por hora
+- **Limpeza**: Limpeza de temporários, logs antigos
+- **Organização**: Por tipo, por data
+- **Sincronização**: Espelhamento, backup incremental
+- **Processamento**: Importação de dados, arquivamento
 
 ## Suporte e Contato
 

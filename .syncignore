@@ -1,0 +1,42 @@
+# Arquivo .syncignore para Resilio Sync
+# Este arquivo é automaticamente criado pelo Resilio Sync
+# para especificar quais arquivos devem ser ignorados na sincronização
+
+# Arquivos de sistema
+Thumbs.db
+.DS_Store
+desktop.ini
+.Trash-*
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
+*.backup
+*.log
+*.pid
+*.sock
+
+# Caches e builds
+__pycache__/
+node_modules/
+.cache/
+target/
+build/
+dist/
+
+# Arquivos de desenvolvimento
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backups do DePara
+backups/
+logs/
+
+# Arquivos específicos do projeto
+.env
+.env.local
+.env.production

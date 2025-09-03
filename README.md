@@ -1,16 +1,52 @@
-# DePara - Sistema de Conversão e Mapeamento de Dados
+# DePara - Gerenciador Automatizado de Arquivos
 
 ## 📋 Descrição
 
-DePara é uma aplicação Node.js que oferece funcionalidades de conversão e mapeamento de dados entre diferentes formatos e estruturas. O sistema foi projetado para ser facilmente instalável e executável, seguindo as melhores práticas de desenvolvimento e automação.
+DePara é uma aplicação Node.js simplificada e poderosa para gerenciamento automatizado de arquivos. Oferece operações de mover, copiar e apagar arquivos com agendamento flexível, backup automático e controle total sobre a estrutura de pastas. Perfeita para automação de tarefas de arquivo em qualquer ambiente.
 
 ## 🚀 Funcionalidades
 
+### 🗂️ **Operações de Arquivos**
+- **Mover Arquivos**: Move arquivos entre pastas com backup automático
+- **Copiar Arquivos**: Copia arquivos preservando o original
+- **Apagar Arquivos**: Remove arquivos com backup automático
+- **Agendamento Flexível**: De segundos até dias de intervalo
+- **Operações em Lote**: Processa todos os arquivos de uma pasta
+- **Preservação de Estrutura**: Mantém ou achata estrutura de pastas conforme preferência
+
+### 🔄 **Automação e Templates**
+- **Templates Pré-configurados**: Cenários comuns prontos para uso
+  - 📦 **Backup**: Diário, por hora, incremental
+  - 🧹 **Limpeza**: Temporários, logs antigos, arquivos velhos
+  - 📁 **Organização**: Por tipo, por data, por tamanho
+  - 🔄 **Sincronização**: Espelhamento, backup bidirecional
+  - ⚙️ **Processamento**: Importação, arquivamento automático
+
+### 🛡️ **Sistema de Proteção Inteligente**
+- **Arquivos Críticos Protegidos**: Resilio Sync, sistema e temporários
+- **Ignorar Automático**: Não interrompe sincronização ou sistema
+- **Compatibilidade Total**: Windows, Linux, macOS
+- **Verificação Manual**: Teste se arquivo seria ignorado
+
+### 📊 **Monitoramento e Controle**
+- **Dashboard Web**: Interface amigável para controle total
+- **API REST Completa**: Integração com outros sistemas
+- **Logs Estruturados**: Monitoramento detalhado de operações
+- **Backup Automático**: Proteção antes de qualquer operação
+- **Filtros Avançados**: Por extensão, tamanho, data, padrão
+
+### 🔧 **Conversão e Mapeamento**
 - **Conversão de Dados**: Transformação entre diferentes formatos (CSV, JSON, XML)
 - **Mapeamento Inteligente**: Sistema de regras para mapeamento automático de campos
-- **API REST**: Interface HTTP para integração com outros sistemas
-- **Logs Estruturados**: Sistema de logging para monitoramento e debug
-- **Configuração Flexível**: Suporte a variáveis de ambiente e arquivos de configuração
+- **Validação Automática**: Verificação de integridade dos dados
+- **Transformações**: Limpeza, formatação, validação
+
+### 🖼️ **Slideshow de Imagens**
+- **Visualização Fullscreen**: Apresentação de imagens em tela cheia
+- **Navegação Inteligente**: Teclado, mouse e toque
+- **Busca Recursiva**: Inclui todas as subpastas automaticamente
+- **Filtros Avançados**: Seleção por tipo de arquivo
+- **Controles Intuitivos**: ESC para sair, setas para navegar
 
 ## 📋 Pré-requisitos
 
@@ -28,64 +64,163 @@ git --version
 
 ## 🛠️ Instalação
 
-### 1. Clonar o Repositório
+### 🚀 **Instalação Automática (Recomendado)**
 
+#### Windows
+```batch
+# Execute o instalador automático
+install.bat
+```
+
+#### Linux/macOS
+```bash
+# Execute o instalador automático
+./install.sh
+```
+
+O instalador fará automaticamente:
+- ✅ Verificação do Node.js e npm
+- ✅ Instalação de todas as dependências
+- ✅ Criação da estrutura de pastas (backups, logs, temp)
+- ✅ Configuração básica do ambiente
+- ✅ Instruções de uso
+
+### 🔧 **Instalação Manual**
+
+#### 1. Clonar o Repositório
 ```bash
 git clone https://github.com/yopastorelli/DePara.git
 cd DePara
 ```
 
-### 2. Instalar Dependências
-
+#### 2. Instalar Dependências
 ```bash
 npm install
 ```
 
-### 3. Configurar Variáveis de Ambiente
-
+#### 3. Configurar Ambiente
 ```bash
-# Copiar arquivo de exemplo
+# Windows
 copy env.example .env
-
-# Editar o arquivo .env com suas configurações
 notepad .env
+
+# Linux/macOS
+cp env.example .env
+nano .env
 ```
 
-### 4. Executar a Aplicação
-
+#### 4. Executar a Aplicação
 ```bash
-# Modo desenvolvimento (com auto-reload)
+# Modo desenvolvimento
 npm run dev
 
 # Modo produção
 npm start
 ```
 
+### 🌐 **Acesso Após Instalação**
+
+Após iniciar, acesse:
+- **Interface Web**: http://localhost:3000/ui
+- **API**: http://localhost:3000/api
+- **Documentação**: http://localhost:3000/api/docs
+
 ## 🎯 Como Usar
 
-### Acesso à API
+### 🌐 **Interface Web (Recomendado para Iniciantes)**
 
-Após iniciar a aplicação, a API estará disponível em:
-- **URL Base**: `http://localhost:3000`
-- **Documentação**: `http://localhost:3000/api/docs`
+Acesse `http://localhost:3000/ui` e use a interface amigável para:
 
-### Endpoints Principais
+#### 1. **Operações Imediatas**
+- **Mover/Copiar/Apagar** arquivos individualmente
+- **Backup automático** antes de qualquer operação
+- **Visualização** do progresso em tempo real
 
+#### 2. **Agendamento Automático**
+- Configure operações recorrentes (a cada 5 minutos, 1 hora, diariamente)
+- Use **templates pré-configurados** para cenários comuns
+- **Monitore** operações agendadas ativas
+
+#### 3. **Templates Rápidos**
+- **Backup Diário**: Configure backup automático de pastas importantes
+- **Limpeza de Logs**: Remova arquivos de log antigos automaticamente
+- **Organização por Tipo**: Mova arquivos para pastas organizadas por extensão
+- **Sincronização**: Mantenha pastas espelhadas
+
+#### 4. **Slideshow de Imagens**
+- Clique no botão **"Slideshow de Imagens"** no dashboard
+- Selecione a pasta contendo as imagens
+- Escolha os tipos de arquivo desejados (JPG, PNG, GIF, etc.)
+- Defina a profundidade de busca em subpastas
+- Inicie a apresentação em fullscreen
+- Use as setas do teclado, roda do mouse ou toque para navegar
+- Pressione **ESC** ou clique no botão **X** para sair
+
+### 🔌 **API REST (Para Integração)**
+
+#### Endpoints Principais
 - `GET /api/health` - Status da aplicação
+- `POST /api/files/execute` - Operações imediatas em arquivos
+- `POST /api/files/schedule` - Agendamento de operações
+- `GET /api/files/templates` - Templates pré-configurados
+- `GET /api/files/images/:folderPath` - Listar imagens para slideshow
+- `GET /api/files/image/:imagePath` - Servir imagem para slideshow
 - `POST /api/convert` - Conversão de dados
 - `POST /api/map` - Mapeamento de campos
-- `GET /api/status` - Informações do sistema
 
-### Exemplo de Uso
+#### Exemplos Práticos
 
 ```bash
-# Verificar status da aplicação
+# Verificar status
 curl http://localhost:3000/api/health
 
-# Converter dados
-curl -X POST http://localhost:3000/api/convert \
+# Mover arquivo com backup e preservação de estrutura
+curl -X POST http://localhost:3000/api/files/execute \
   -H "Content-Type: application/json" \
-  -d '{"format": "csv", "data": "..."}'
+  -d '{
+    "action": "move",
+    "sourcePath": "/origem/arquivo.txt",
+    "targetPath": "/destino/arquivo.txt",
+    "options": {
+      "backupBeforeMove": true,
+      "preserveStructure": true
+    }
+  }'
+
+# Agendar backup diário com preservação de estrutura
+curl -X POST http://localhost:3000/api/files/schedule \
+  -H "Content-Type: application/json" \
+  -d '{
+    "frequency": "1d",
+    "action": "copy",
+    "sourcePath": "/dados",
+    "targetPath": "/backup/diario",
+    "options": {
+      "batch": true,
+      "preserveStructure": true
+    }
+  }'
+
+# Aplicar template de limpeza
+curl -X POST http://localhost:3000/api/files/templates/cleanup/temp_files/apply \
+  -H "Content-Type: application/json" \
+  -d '{"sourcePath": "/minha_pasta_temp"}'
+
+# Verificar se arquivo seria ignorado
+curl -X POST http://localhost:3000/api/files/check-ignore \
+  -H "Content-Type: application/json" \
+  -d '{"filePath": "/sync/.sync/Archive", "filename": "Archive"}'
+
+# Listar padrões de arquivos protegidos
+curl http://localhost:3000/api/files/ignored-patterns
+
+# Listar imagens para slideshow (busca recursiva)
+curl "http://localhost:3000/api/files/images/caminho/para/imagens?extensions=jpg,png,gif&maxDepth=5"
+
+# Verificar se arquivo seria ignorado
+curl -X POST http://localhost:3000/api/files/check-ignore \
+  -H "Content-Type: application/json" \
+  -d '{"filePath": "/sync/.sync/Archive", "filename": "Archive"}'
 ```
 
 ## 🧪 Testes
@@ -107,9 +242,16 @@ npm run test:coverage
 
 - `npm start` - Inicia a aplicação em modo produção
 - `npm run dev` - Inicia em modo desenvolvimento com nodemon
+- `npm run start:bg` - Inicia em segundo plano com PM2
+- `npm run start:bg:prod` - Inicia em produção com PM2
+- `npm run stop:bg` - Para a aplicação em segundo plano
+- `npm run restart:bg` - Reinicia a aplicação em segundo plano
+- `npm run status` - Verifica status da aplicação PM2
+- `npm run logs` - Visualiza logs da aplicação PM2
 - `npm test` - Executa os testes
 - `npm run lint` - Executa o linter ESLint
 - `npm run setup` - Instala dependências
+- `npm run setup:bg` - Instala dependências + PM2 global
 
 ### Estrutura do Projeto
 

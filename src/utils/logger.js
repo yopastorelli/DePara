@@ -39,6 +39,14 @@ class Logger {
   constructor() {
     this.ensureLogDirectory();
     this.currentLevel = LOG_LEVELS[LOG_LEVEL] || LOG_LEVELS.info;
+
+    // Otimizações para Raspberry Pi
+    this.logBuffer = [];
+    this.bufferSize = process.env.LOG_BUFFER_SIZE || 10; // Buffer de logs para reduzir I/O
+    this.flushInterval = process.env.LOG_FLUSH_INTERVAL || 5000; // 5 segundos
+
+    // Iniciar flush automático do buffer
+    this.startBufferFlush();
   }
 
   /**
@@ -67,14 +75,62 @@ class Logger {
   }
 
   /**
-   * Escreve no arquivo de log
+   * Inicia o flush automático do buffer
+   */
+  startBufferFlush() {
+    this.flushTimer = setInterval(() => {
+      this.flushBuffer();
+    }, this.flushInterval);
+  }
+
+  /**
+   * Para o flush automático
+   */
+  stopBufferFlush() {
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer);
+      this.flushTimer = null;
+    }
+    // Flush final
+    this.flushBuffer();
+  }
+
+  /**
+   * Adiciona entrada ao buffer
+   */
+  addToBuffer(logEntry) {
+    this.logBuffer.push(logEntry);
+
+    // Flush imediato se buffer estiver cheio
+    if (this.logBuffer.length >= this.bufferSize) {
+      this.flushBuffer();
+    }
+  }
+
+  /**
+   * Escreve buffer no arquivo
+   */
+  flushBuffer() {
+    if (this.logBuffer.length === 0) return;
+
+    try {
+      const bufferContent = this.logBuffer.join('\n') + '\n';
+      fs.appendFileSync(LOG_FILE, bufferContent);
+      this.logBuffer = []; // Limpar buffer
+    } catch (error) {
+      console.error('Erro ao escrever buffer no arquivo de log:', error);
+      // Tentar escrever diretamente no console se falhar
+      this.logBuffer.forEach(entry => console.error('LOG ERROR:', entry));
+      this.logBuffer = [];
+    }
+  }
+
+  /**
+   * Escreve no arquivo de log (versão otimizada)
    */
   writeToFile(logEntry) {
-    try {
-      fs.appendFileSync(LOG_FILE, logEntry + '\n');
-    } catch (error) {
-      console.error('Erro ao escrever no arquivo de log:', error);
-    }
+    // Usar buffer para reduzir I/O
+    this.addToBuffer(logEntry);
   }
 
   /**
@@ -206,5 +262,30 @@ class Logger {
 
 // Instância singleton do logger
 const logger = new Logger();
+
+// Cleanup quando aplicação terminar
+process.on('exit', () => {
+  logger.stopBufferFlush();
+});
+
+process.on('SIGINT', () => {
+  logger.stopBufferFlush();
+});
+
+process.on('SIGTERM', () => {
+  logger.stopBufferFlush();
+});
+
+process.on('uncaughtException', (error) => {
+  logger.stopBufferFlush();
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.stopBufferFlush();
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
 
 module.exports = logger;

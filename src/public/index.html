@@ -21,21 +21,17 @@
                     <span class="material-icons">dashboard</span>
                     Dashboard
                 </button>
-                <button class="nav-btn" data-tab="workflows">
-                    <span class="material-icons">workflow</span>
-                    Fluxos de Trabalho
+                <button class="nav-btn" data-tab="fileops">
+                    <span class="material-icons">folder_copy</span>
+                    Operações de Arquivos
                 </button>
-                <button class="nav-btn" data-tab="folders">
-                    <span class="material-icons">folder</span>
-                    Gerenciar Pastas
+                <button class="nav-btn" data-tab="scheduled">
+                    <span class="material-icons">schedule</span>
+                    Operações Agendadas
                 </button>
-                <button class="nav-btn" data-tab="conversion">
-                    <span class="material-icons">transform</span>
-                    Conversão
-                </button>
-                <button class="nav-btn" data-tab="mapping">
-                    <span class="material-icons">map</span>
-                    Mapeamento
+                <button class="nav-btn" data-tab="backups">
+                    <span class="material-icons">backup</span>
+                    Backups
                 </button>
                 <button class="nav-btn" data-tab="settings">
                     <span class="material-icons">settings</span>
@@ -136,10 +132,10 @@
                             </div>
                         </div>
                         <div class="status-item">
-                            <span class="material-icons">thermostat</span>
+                            <span class="material-icons">schedule</span>
                             <div>
-                                <span class="label">Temperatura</span>
-                                <span class="value" id="cpu-temp">--</span>
+                                <span class="label">Operações Ativas</span>
+                                <span class="value" id="active-ops">--</span>
                             </div>
                         </div>
                     </div>
@@ -151,17 +147,25 @@
                         <h3>Ações Rápidas</h3>
                     </div>
                     <div class="card-content">
-                        <button class="action-btn" onclick="openWorkflowConfig()">
-                            <span class="material-icons">add_workflow</span>
-                            Novo Fluxo de Trabalho
+                        <button class="action-btn" onclick="showFileOperationModal('move')">
+                            <span class="material-icons">drive_file_move</span>
+                            Mover Arquivo
                         </button>
-                        <button class="action-btn" onclick="openFolderManager()">
-                            <span class="material-icons">folder_shared</span>
-                            Gerenciar Pastas
+                        <button class="action-btn" onclick="showFileOperationModal('copy')">
+                            <span class="material-icons">content_copy</span>
+                            Copiar Arquivo
                         </button>
-                        <button class="action-btn" onclick="openConversion()">
-                            <span class="material-icons">file_upload</span>
-                            Converter Arquivo
+                        <button class="action-btn" onclick="showFileOperationModal('delete')">
+                            <span class="material-icons">delete_forever</span>
+                            Apagar Arquivo
+                        </button>
+                        <button class="action-btn" onclick="showScheduleModal()">
+                            <span class="material-icons">schedule</span>
+                            Agendar Operação
+                        </button>
+                        <button class="action-btn" onclick="showSlideshowModal()">
+                            <span class="material-icons">slideshow</span>
+                            Slideshow de Imagens
                         </button>
                     </div>
                 </div>
@@ -183,112 +187,174 @@
             </div>
         </div>
 
-        <!-- Workflows Tab - NOVA ABA PRINCIPAL -->
-        <div id="workflows" class="tab-content">
-            <div class="workflows-container">
-                <div class="workflows-header">
-                    <h2>Fluxos de Trabalho</h2>
-                    <p>Configure como os arquivos fluem entre pastas automaticamente</p>
-                    <button class="btn btn-primary" onclick="openWorkflowConfig()">
+        <!-- Scheduled Operations Tab -->
+        <div id="scheduled" class="tab-content">
+            <div class="scheduled-container">
+                <div class="scheduled-header">
+                    <h2>Operações Agendadas</h2>
+                    <p>Gerencie todas as operações programadas para execução automática</p>
+                    <button class="btn btn-primary" onclick="showScheduleModal()">
                         <span class="material-icons">add</span>
-                        Novo Fluxo
+                        Nova Operação
                     </button>
                 </div>
-                
-                <div class="workflows-grid" id="workflows-grid">
-                    <!-- Fluxos serão carregados dinamicamente -->
+
+                <!-- Progress Section -->
+                <div class="progress-section">
+                    <h3>Operações em Andamento</h3>
+                    <div class="progress-list" id="progress-list">
+                        <!-- Operações em andamento serão mostradas aqui -->
+                    </div>
+                </div>
+
+                <div class="operations-list" id="scheduled-operations-list">
+                    <!-- Operações agendadas serão carregadas dinamicamente -->
                 </div>
             </div>
         </div>
 
-        <!-- Folders Tab - GERENCIAMENTO DE PASTAS -->
-        <div id="folders" class="tab-content">
-            <div class="folders-container">
-                <div class="folders-header">
-                    <h2>Gerenciamento de Pastas</h2>
-                    <p>Configure pastas de origem, destino e temporárias</p>
-                    <button class="btn btn-primary" onclick="openFolderManager()">
-                        <span class="material-icons">add</span>
-                        Nova Pasta
+        <!-- Backups Tab -->
+        <div id="backups" class="tab-content">
+            <div class="backups-container">
+                <div class="backups-header">
+                    <h2>Sistema de Backups</h2>
+                    <p>Gerencie backups automáticos e restaure arquivos quando necessário</p>
+                    <button class="btn btn-secondary" onclick="loadBackups()">
+                        <span class="material-icons">refresh</span>
+                        Atualizar
                     </button>
                 </div>
-                
-                <div class="folders-grid" id="folders-grid">
-                    <!-- Pastas serão carregadas dinamicamente -->
-                </div>
-            </div>
-        </div>
 
-        <!-- Conversion Tab -->
-        <div id="conversion" class="tab-content">
-            <div class="conversion-container">
-                <h2>Conversão de Dados</h2>
-                <div class="conversion-form">
-                    <div class="form-group">
-                        <label>Formato de Origem</label>
-                        <select id="source-format">
-                            <option value="csv">CSV</option>
-                            <option value="json">JSON</option>
-                            <option value="xml">XML</option>
-                            <option value="yaml">YAML</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Formato de Destino</label>
-                        <select id="target-format">
-                            <option value="json">JSON</option>
-                            <option value="csv">CSV</option>
-                            <option value="xml">XML</option>
-                            <option value="yaml">YAML</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Arquivo ou Dados</label>
-                        <textarea id="conversion-data" placeholder="Cole seus dados aqui ou arraste um arquivo..."></textarea>
-                        <input type="file" id="file-input" accept=".csv,.json,.xml,.yaml,.txt" style="display: none;">
-                        <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">
-                            <span class="material-icons">upload_file</span>
-                            Escolher Arquivo
+                <!-- Backup Configuration -->
+                <div class="backup-config">
+                    <h3>Configurações de Backup</h3>
+                    <div class="config-form">
+                        <div class="form-group">
+                            <label>Diretório de Backup:</label>
+                            <input type="text" id="backup-dir" placeholder="/caminho/backups">
+                        </div>
+                        <div class="form-group">
+                            <label>Retenção (dias):</label>
+                            <input type="number" id="retention-days" value="30" min="1" max="365">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="backup-enabled" checked>
+                                Backup automático habilitado
+                            </label>
+                        </div>
+                        <button class="btn btn-primary" onclick="updateBackupConfig()">
+                            Salvar Configurações
                         </button>
                     </div>
-                    <button class="btn btn-primary" onclick="convertData()">
-                        <span class="material-icons">transform</span>
-                        Converter
-                    </button>
                 </div>
-                <div id="conversion-result" class="conversion-result" style="display: none;">
-                    <!-- Resultado da conversão será exibido aqui -->
+
+                <!-- Backup List -->
+                <div class="backups-list" id="backups-list">
+                    <!-- Backups serão carregados dinamicamente -->
                 </div>
             </div>
         </div>
 
-        <!-- Mapping Tab -->
-        <div id="mapping" class="tab-content">
-            <div class="mapping-container">
-                <h2>Mapeamento de Campos</h2>
-                <div class="mapping-form">
-                    <div class="form-group">
-                        <label>Campos de Origem</label>
-                        <input type="text" id="source-fields" placeholder="nome,idade,email (separados por vírgula)">
+        <!-- File Operations Tab -->
+        <div id="fileops" class="tab-content">
+            <div class="fileops-container">
+                <h2>Operações de Arquivos</h2>
+
+                <!-- Drag & Drop Zone -->
+                <div id="drag-drop-zone" class="drag-drop-zone">
+                    <div class="drop-zone-content">
+                        <span class="material-icons drop-icon">cloud_upload</span>
+                        <h3>Arraste arquivos ou pastas aqui</h3>
+                        <p>ou clique para selecionar manualmente</p>
+                        <input type="file" id="file-selector" multiple webkitdirectory style="display: none;">
+                        <button class="btn btn-secondary" onclick="document.getElementById('file-selector').click()">
+                            <span class="material-icons">folder_open</span>
+                            Selecionar Arquivos/Pastas
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label>Campos de Destino</label>
-                        <input type="text" id="target-fields" placeholder="name,age,email (separados por vírgula)">
+                    <div id="drop-preview" class="drop-preview" style="display: none;">
+                        <!-- Preview será mostrado aqui -->
                     </div>
-                    <div class="form-group">
-                        <label>Dados de Exemplo (opcional)</label>
-                        <textarea id="mapping-data" placeholder='[{"nome": "João", "idade": 25, "email": "joao@email.com"}]'></textarea>
-                    </div>
-                    <button class="btn btn-primary" onclick="generateMapping()">
-                        <span class="material-icons">auto_fix_high</span>
-                        Gerar Mapeamento
-                    </button>
                 </div>
-                <div id="mapping-result" class="mapping-result" style="display: none;">
-                    <!-- Resultado do mapeamento será exibido aqui -->
+
+                <!-- Quick Actions -->
+                <div class="fileops-actions">
+                    <div class="action-cards">
+                        <div class="action-card" onclick="showFileOperationModal('move')">
+                            <span class="material-icons">drive_file_move</span>
+                            <h3>Mover Arquivo</h3>
+                            <p>Move arquivo com backup automático</p>
+                        </div>
+                        <div class="action-card" onclick="showFileOperationModal('copy')">
+                            <span class="material-icons">content_copy</span>
+                            <h3>Copiar Arquivo</h3>
+                            <p>Copia arquivo preservando original</p>
+                        </div>
+                        <div class="action-card" onclick="showFileOperationModal('delete')">
+                            <span class="material-icons">delete_forever</span>
+                            <h3>Apagar Arquivo</h3>
+                            <p>Remove arquivo com backup</p>
+                        </div>
+                        <div class="action-card" onclick="showScheduleModal()">
+                            <span class="material-icons">schedule</span>
+                            <h3>Agendar Operação</h3>
+                            <p>Configure operações automáticas</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Templates Section -->
+                <div class="templates-section">
+                    <h3>Templates Pré-configurados</h3>
+                    <div class="template-categories" id="template-categories">
+                        <!-- Templates serão carregados dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Scheduled Operations -->
+                <div class="scheduled-operations">
+                    <h3>Operações Agendadas</h3>
+                    <div class="operations-list" id="scheduled-operations-list">
+                        <!-- Operações agendadas serão carregadas dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Ignored Files Info -->
+                <div class="ignored-files-section">
+                    <h3>🛡️ Arquivos Protegidos</h3>
+                    <p>Arquivos ignorados automaticamente para proteger sincronização</p>
+                    <div class="ignored-files-info" id="ignored-files-info">
+                        <button class="btn btn-secondary" onclick="showIgnoredPatterns()">
+                            <span class="material-icons">info</span>
+                            Ver Arquivos Ignorados
+                        </button>
+                        <div class="ignored-summary">
+                            <span class="material-icons">sync</span>
+                            <strong>Resilio Sync:</strong> .sync, .!sync, .rsls, etc.
+                        </div>
+                        <div class="ignored-summary">
+                            <span class="material-icons">computer</span>
+                            <strong>Sistema:</strong> Thumbs.db, .DS_Store, etc.
+                        </div>
+                        <div class="ignored-summary">
+                            <span class="material-icons">access_time</span>
+                            <strong>Temporários:</strong> *.tmp, *.bak, etc.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Backups -->
+                <div class="backups-section">
+                    <h3>Backups Recentes</h3>
+                    <div class="backups-list" id="backups-list">
+                        <!-- Backups serão carregados dinamicamente -->
+                    </div>
                 </div>
             </div>
         </div>
+
+
 
         <!-- Settings Tab -->
         <div id="settings" class="tab-content">
@@ -685,6 +751,249 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeFolderManagerModal()">Cancelar</button>
                 <button class="btn btn-primary" onclick="saveFolder()">Salvar Pasta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Operation Modal -->
+    <div id="file-operation-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="file-operation-title">Operação de Arquivo</h3>
+                <button class="modal-close" onclick="closeFileOperationModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Arquivo de Origem</label>
+                    <input type="text" id="source-file-path" placeholder="/caminho/arquivo.txt" required>
+                    <small class="form-help">Caminho completo do arquivo</small>
+                </div>
+
+                <div class="form-group" id="target-file-group">
+                    <label>Arquivo de Destino</label>
+                    <input type="text" id="target-file-path" placeholder="/caminho/destino.txt">
+                    <small class="form-help">Caminho completo do destino</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Opções</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="backup-before-operation" checked>
+                            <span>📦 Criar backup antes da operação</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="overwrite-existing">
+                            <span>⚠️ Sobrescrever se existir</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="preserve-structure" checked>
+                            <span>📁 Preservar estrutura de pastas</span>
+                        </label>
+                    </div>
+                    <small class="form-help">
+                        <strong>Preservar estrutura:</strong> Mantém a organização de subpastas no destino
+                    </small>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeFileOperationModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="executeFileOperation()">Executar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Operation Modal -->
+    <div id="schedule-modal" class="modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Agendar Operação</h3>
+                <button class="modal-close" onclick="closeScheduleModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome da Operação</label>
+                    <input type="text" id="schedule-name" placeholder="Ex: Backup diário" required>
+                    <small class="form-help">Nome descritivo para identificar a operação</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ação</label>
+                        <select id="schedule-action" onchange="updateScheduleForm()" required>
+                            <option value="">Selecione uma ação</option>
+                            <option value="move">📤 Mover</option>
+                            <option value="copy">📋 Copiar</option>
+                            <option value="delete">🗑️ Apagar</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Frequência</label>
+                        <select id="schedule-frequency" required>
+                            <option value="">Selecione frequência</option>
+                            <option value="30s">30 segundos</option>
+                            <option value="1m">1 minuto</option>
+                            <option value="5m">5 minutos</option>
+                            <option value="15m">15 minutos</option>
+                            <option value="30m">30 minutos</option>
+                            <option value="1h">1 hora</option>
+                            <option value="6h">6 horas</option>
+                            <option value="12h">12 horas</option>
+                            <option value="1d">Diariamente</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Caminho de Origem</label>
+                    <input type="text" id="schedule-source" placeholder="/origem" required>
+                    <small class="form-help">Pasta ou arquivo de origem</small>
+                </div>
+
+                <div class="form-group" id="schedule-target-group">
+                    <label>Caminho de Destino</label>
+                    <input type="text" id="schedule-target" placeholder="/destino">
+                    <small class="form-help">Pasta ou arquivo de destino</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Filtros (opcional)</label>
+                    <input type="text" id="schedule-filters" placeholder="*.txt,*.csv">
+                    <small class="form-help">Extensões separadas por vírgula (ex: *.txt,*.csv)</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Opções Adicionais</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="schedule-batch" checked>
+                            <span>📁 Operação em lote (todos os arquivos da pasta)</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="schedule-backup">
+                            <span>💾 Criar backup</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="schedule-preserve-structure" checked>
+                            <span>🏗️ Preservar estrutura de pastas</span>
+                        </label>
+                    </div>
+                    <small class="form-help">
+                        <strong>Preservar estrutura:</strong> Mantém a organização de subpastas no destino
+                    </small>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeScheduleModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="scheduleOperation()">Agendar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slideshow Modal -->
+    <div id="slideshow-modal" class="slideshow-modal" style="display: none;">
+        <div class="slideshow-overlay">
+            <div class="slideshow-container">
+                <!-- Imagem principal -->
+                <div class="slideshow-image-container">
+                    <img id="slideshow-image" class="slideshow-image" src="" alt="" style="display: none;">
+                    <div id="slideshow-loading" class="slideshow-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Carregando imagens...</p>
+                    </div>
+                    <div id="slideshow-error" class="slideshow-error" style="display: none;">
+                        <span class="material-icons">error</span>
+                        <p>Erro ao carregar imagem</p>
+                    </div>
+                </div>
+
+                <!-- Controles -->
+                <div class="slideshow-controls">
+                    <button class="slideshow-btn" id="slideshow-prev" onclick="previousImage()">
+                        <span class="material-icons">chevron_left</span>
+                    </button>
+
+                    <div class="slideshow-info">
+                        <div class="slideshow-counter">
+                            <span id="current-image">0</span> / <span id="total-images">0</span>
+                        </div>
+                        <div class="slideshow-filename" id="image-filename">-</div>
+                    </div>
+
+                    <button class="slideshow-btn" id="slideshow-next" onclick="nextImage()">
+                        <span class="material-icons">chevron_right</span>
+                    </button>
+                </div>
+
+                <!-- Botão de fechar -->
+                <button class="slideshow-close-btn" onclick="closeSlideshow()" title="Fechar (ESC)">
+                    <span class="material-icons">close</span>
+                </button>
+
+                <!-- Indicadores de progresso -->
+                <div class="slideshow-progress">
+                    <div class="progress-bar" id="slideshow-progress-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Seleção de Pasta para Slideshow -->
+    <div id="slideshow-folder-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Selecionar Pasta para Slideshow</h3>
+                <button class="modal-close" onclick="closeSlideshowFolderModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Caminho da Pasta:</label>
+                    <input type="text" id="slideshow-folder-path" placeholder="/caminho/para/imagens"
+                           required onkeydown="if(event.key==='Enter') startSlideshow()">
+                    <small class="form-help">Digite o caminho completo da pasta contendo as imagens</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Extensões de Arquivo:</label>
+                    <div class="extension-selector">
+                        <label><input type="checkbox" value="jpg" checked> JPG</label>
+                        <label><input type="checkbox" value="jpeg" checked> JPEG</label>
+                        <label><input type="checkbox" value="png" checked> PNG</label>
+                        <label><input type="checkbox" value="gif" checked> GIF</label>
+                        <label><input type="checkbox" value="bmp"> BMP</label>
+                        <label><input type="checkbox" value="webp"> WebP</label>
+                        <label><input type="checkbox" value="tiff"> TIFF</label>
+                    </div>
+                    <small class="form-help">Selecione os tipos de imagem a incluir</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Profundidade de Busca:</label>
+                    <select id="slideshow-max-depth">
+                        <option value="3">3 níveis (padrão)</option>
+                        <option value="5">5 níveis</option>
+                        <option value="10">10 níveis</option>
+                        <option value="unlimited">Ilimitado</option>
+                    </select>
+                    <small class="form-help">Profundidade máxima para buscar imagens em subpastas</small>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSlideshowFolderModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="startSlideshow()">Iniciar Slideshow</button>
             </div>
         </div>
     </div>

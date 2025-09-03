@@ -25,28 +25,35 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Inicializar aplicação Express
 const app = express();
 
-// Middleware de segurança
+// Middleware de segurança simplificado para uso local
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      // Removido upgradeInsecureRequests para desenvolvimento local
     },
   },
+  // Desabilitar HSTS para desenvolvimento local
+  hsts: false,
+  // Simplificar outras configurações
+  noSniff: true,
+  xssFilter: true,
+  hidePoweredBy: true
 }));
 
-// Middleware de CORS
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
-    : ['http://localhost:3000', 'http://localhost:3001'],
-  credentials: true
-}));
+// Middleware de CORS removido - aplicação roda apenas localmente
+// Não há necessidade de CORS para uso local no Raspberry Pi
 
-// Middleware de parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Middleware de parsing com limites adequados para processamento local
+const MAX_PAYLOAD = process.env.MAX_PAYLOAD || '100mb'; // Muito maior para dados locais
+app.use(express.json({ limit: MAX_PAYLOAD }));
+app.use(express.urlencoded({ extended: true, limit: MAX_PAYLOAD }));
 
 // Middleware de logging
 app.use(morgan('combined', {
@@ -94,9 +101,7 @@ app.get('/', (req, res) => {
         endpoints: {
             health: '/api/health',
             status: '/api/status',
-            convert: '/api/convert',
-            map: '/api/map',
-            folders: '/api/folders',
+            files: '/api/files',
             ui: '/ui'
         },
         documentation: '/api/docs'

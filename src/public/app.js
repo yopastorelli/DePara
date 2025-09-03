@@ -1178,6 +1178,1105 @@ function openMapping() {
     ui.switchTab('mapping');
 }
 
+// ==========================================
+// FILE OPERATIONS FUNCTIONS
+// ==========================================
+
+// File Operation Modal
+function showFileOperationModal(action) {
+    const modal = document.getElementById('file-operation-modal');
+    const title = document.getElementById('file-operation-title');
+    const targetGroup = document.getElementById('target-file-group');
+
+    // Set title and hide/show target field based on action
+    switch(action) {
+        case 'move':
+            title.textContent = 'Mover Arquivo';
+            targetGroup.style.display = 'block';
+            break;
+        case 'copy':
+            title.textContent = 'Copiar Arquivo';
+            targetGroup.style.display = 'block';
+            break;
+        case 'delete':
+            title.textContent = 'Apagar Arquivo';
+            targetGroup.style.display = 'none';
+            break;
+    }
+
+    // Store current action
+    modal.dataset.action = action;
+
+    // Reset form
+    document.getElementById('source-file-path').value = '';
+    document.getElementById('target-file-path').value = '';
+    document.getElementById('backup-before-operation').checked = true;
+    document.getElementById('overwrite-existing').checked = false;
+
+    modal.style.display = 'flex';
+}
+
+function closeFileOperationModal() {
+    document.getElementById('file-operation-modal').style.display = 'none';
+}
+
+async function executeFileOperation() {
+    const modal = document.getElementById('file-operation-modal');
+    const action = modal.dataset.action;
+    const sourcePath = document.getElementById('source-file-path').value.trim();
+    const targetPath = document.getElementById('target-file-path').value.trim();
+    const backupBefore = document.getElementById('backup-before-operation').checked;
+    const overwrite = document.getElementById('overwrite-existing').checked;
+    const preserveStructure = document.getElementById('preserve-structure').checked;
+
+    if (!sourcePath) {
+        showToast('Caminho de origem é obrigatório', 'error');
+        return;
+    }
+
+    if ((action === 'move' || action === 'copy') && !targetPath) {
+        showToast('Caminho de destino é obrigatório', 'error');
+        return;
+    }
+
+    try {
+        const requestData = {
+            action,
+            sourcePath,
+            options: {
+                backupBeforeMove: action === 'move' ? backupBefore : false,
+                forceBackup: action === 'delete' ? backupBefore : false,
+                overwrite,
+                preserveStructure
+            }
+        };
+
+        if (action === 'move' || action === 'copy') {
+            requestData.targetPath = targetPath;
+        }
+
+        const response = await fetch('/api/files/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
+            showToast(`Operação ${action} executada com sucesso!${structureMsg}`, 'success', true);
+            closeFileOperationModal();
+            // Refresh relevant sections
+            loadScheduledOperations();
+            loadBackups();
+        } else {
+            showToast(result.error?.message || 'Erro na operação', 'error', true);
+        }
+
+    } catch (error) {
+        console.error('Erro ao executar operação:', error);
+        showToast('Erro ao executar operação', 'error');
+    }
+}
+
+// Schedule Modal
+function showScheduleModal() {
+    const modal = document.getElementById('schedule-modal');
+
+    // Reset form
+    document.getElementById('schedule-name').value = '';
+    document.getElementById('schedule-action').value = '';
+    document.getElementById('schedule-frequency').value = '';
+    document.getElementById('schedule-source').value = '';
+    document.getElementById('schedule-target').value = '';
+    document.getElementById('schedule-filters').value = '';
+    document.getElementById('schedule-batch').checked = true;
+    document.getElementById('schedule-backup').checked = false;
+
+    updateScheduleForm();
+
+    modal.style.display = 'flex';
+}
+
+function closeScheduleModal() {
+    document.getElementById('schedule-modal').style.display = 'none';
+}
+
+function updateScheduleForm() {
+    const action = document.getElementById('schedule-action').value;
+    const targetGroup = document.getElementById('schedule-target-group');
+
+    if (action === 'delete') {
+        targetGroup.style.display = 'none';
+    } else {
+        targetGroup.style.display = 'block';
+    }
+}
+
+async function scheduleOperation() {
+    const name = document.getElementById('schedule-name').value.trim();
+    const action = document.getElementById('schedule-action').value;
+    const frequency = document.getElementById('schedule-frequency').value;
+    const sourcePath = document.getElementById('schedule-source').value.trim();
+    const targetPath = document.getElementById('schedule-target').value.trim();
+    const filters = document.getElementById('schedule-filters').value.trim();
+    const batch = document.getElementById('schedule-batch').checked;
+    const backup = document.getElementById('schedule-backup').checked;
+    const preserveStructure = document.getElementById('schedule-preserve-structure').checked;
+
+    if (!name || !action || !frequency || !sourcePath) {
+        showToast('Preencha todos os campos obrigatórios', 'error');
+        return;
+    }
+
+    if ((action === 'move' || action === 'copy') && !targetPath) {
+        showToast('Caminho de destino é obrigatório', 'error');
+        return;
+    }
+
+    try {
+        const requestData = {
+            operationId: `ui_${Date.now()}`,
+            frequency,
+            action,
+            sourcePath,
+            options: {
+                batch,
+                backupBeforeMove: action === 'move' ? backup : false,
+                forceBackup: action === 'delete' ? backup : false,
+                preserveStructure
+            }
+        };
+
+        if (action === 'move' || action === 'copy') {
+            requestData.targetPath = targetPath;
+        }
+
+        if (filters) {
+            requestData.options.filters = {
+                extensions: filters.split(',').map(ext => ext.trim().replace('*.', ''))
+            };
+        }
+
+        const response = await fetch('/api/files/schedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
+            showToast(`Operação "${name}" agendada com sucesso!${structureMsg}`, 'success', true);
+            closeScheduleModal();
+            loadScheduledOperations();
+        } else {
+            showToast(result.error?.message || 'Erro ao agendar operação', 'error', true);
+        }
+
+    } catch (error) {
+        console.error('Erro ao agendar operação:', error);
+        showToast('Erro ao agendar operação', 'error');
+    }
+}
+
+// Load Templates
+async function loadTemplates() {
+    try {
+        const response = await fetch('/api/files/templates');
+        const result = await response.json();
+
+        if (result.success) {
+            renderTemplates(result.data.categories);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar templates:', error);
+    }
+}
+
+function renderTemplates(categories) {
+    const container = document.getElementById('template-categories');
+    container.innerHTML = '';
+
+    categories.forEach(category => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'template-category';
+        categoryDiv.innerHTML = `
+            <div class="category-header">
+                <h4>${category.title}</h4>
+                <p>${category.description}</p>
+            </div>
+            <div class="category-templates">
+                ${category.templates.map(template => `
+                    <div class="template-card" onclick="applyTemplate('${template.category}', '${template.templateName}')">
+                        <h5>${template.name}</h5>
+                        <p>${template.description}</p>
+                        <div class="template-actions">
+                            <button class="btn btn-sm btn-primary">Aplicar</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        container.appendChild(categoryDiv);
+    });
+}
+
+async function applyTemplate(category, name) {
+    try {
+        const response = await fetch(`/api/files/templates/${category}/${name}/apply`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast(`Template "${result.data.template}" aplicado com sucesso!`, 'success', true);
+            loadScheduledOperations();
+        } else {
+            showToast(result.error?.message || 'Erro ao aplicar template', 'error', true);
+        }
+
+    } catch (error) {
+        console.error('Erro ao aplicar template:', error);
+        showToast('Erro ao aplicar template', 'error');
+    }
+}
+
+// Load Progress of Active Operations
+async function loadProgress() {
+    try {
+        const response = await fetch('/api/files/progress');
+        const result = await response.json();
+
+        if (result.success) {
+            renderProgress(result.data);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar progresso:', error);
+    }
+}
+
+function renderProgress(operations) {
+    const container = document.getElementById('progress-list');
+
+    if (operations.length === 0) {
+        container.innerHTML = '<p class="empty-state">Nenhuma operação em andamento</p>';
+        return;
+    }
+
+    container.innerHTML = operations.map(op => {
+        const isError = op.percentage < 0;
+        const isCompleted = op.percentage === 100;
+        const progressClass = isError ? 'progress-error' :
+                             isCompleted ? 'progress-completed' : '';
+
+        return `
+            <div class="progress-item ${progressClass}">
+                <div class="progress-header">
+                    <span class="progress-title">${op.operationId}</span>
+                    <span class="progress-percentage">
+                        ${isError ? 'Erro' : isCompleted ? 'Concluído' : `${op.percentage}%`}
+                    </span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: ${Math.max(0, op.percentage)}%"></div>
+                </div>
+                <div class="progress-message">${op.message}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Load Scheduled Operations
+async function loadScheduledOperations() {
+    try {
+        const response = await fetch('/api/files/scheduled');
+        const result = await response.json();
+
+        if (result.success) {
+            renderScheduledOperations(result.data);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar operações agendadas:', error);
+    }
+}
+
+function renderScheduledOperations(operations) {
+    const container = document.getElementById('scheduled-operations-list');
+
+    if (operations.length === 0) {
+        container.innerHTML = '<p class="empty-state">Nenhuma operação agendada</p>';
+        return;
+    }
+
+    container.innerHTML = operations.map(op => `
+        <div class="operation-item ${op.active ? 'active' : 'paused'}">
+            <div class="operation-info">
+                <h4>${op.action.toUpperCase()} - ${op.frequency}</h4>
+                <p><strong>Origem:</strong> ${op.sourcePath}</p>
+                ${op.targetPath ? `<p><strong>Destino:</strong> ${op.targetPath}</p>` : ''}
+                <p><strong>Status:</strong> ${op.active ? 'Ativa' : 'Pausada'}</p>
+            </div>
+            <div class="operation-actions">
+                <button class="btn btn-sm btn-danger" onclick="cancelScheduledOperation('${op.id}')">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function cancelScheduledOperation(operationId) {
+    try {
+        const response = await fetch(`/api/files/schedule/${operationId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Operação cancelada com sucesso!', 'success', true);
+            loadScheduledOperations();
+        } else {
+            showToast(result.error?.message || 'Erro ao cancelar operação', 'error', true);
+        }
+
+    } catch (error) {
+        console.error('Erro ao cancelar operação:', error);
+        showToast('Erro ao cancelar operação', 'error');
+    }
+}
+
+// Load Backups
+async function loadBackups() {
+    try {
+        const response = await fetch('/api/files/backups');
+        const result = await response.json();
+
+        if (result.success) {
+            renderBackups(result.data);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar backups:', error);
+    }
+}
+
+function renderBackups(backups) {
+    const container = document.getElementById('backups-list');
+
+    if (backups.length === 0) {
+        container.innerHTML = '<p class="empty-state">Nenhum backup encontrado</p>';
+        return;
+    }
+
+    container.innerHTML = backups.slice(0, 10).map(backup => `
+        <div class="backup-item">
+            <div class="backup-info">
+                <h4>${backup.filename}</h4>
+                <p><strong>Tamanho:</strong> ${(backup.size / 1024).toFixed(1)} KB</p>
+                <p><strong>Criado:</strong> ${new Date(backup.created).toLocaleString()}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Initialize File Operations Tab
+function initFileOperationsTab() {
+    // Load data when tab is activated
+    const fileopsTab = document.getElementById('fileops');
+
+    // Create a mutation observer to detect when tab becomes active
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                if (fileopsTab.classList.contains('active')) {
+                    loadTemplates();
+                    loadScheduledOperations();
+                    loadBackups();
+                }
+            }
+        });
+    });
+
+    observer.observe(fileopsTab, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+
+    // Load initial data
+    setTimeout(() => {
+        loadTemplates();
+        loadScheduledOperations();
+        loadBackups();
+    }, 100);
+}
+
+// Initialize Scheduled Operations Tab with Progress
+function initScheduledOperationsTab() {
+    const scheduledTab = document.getElementById('scheduled');
+    let progressInterval;
+
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                if (scheduledTab.classList.contains('active')) {
+                    // Load data when tab becomes active
+                    loadScheduledOperations();
+                    loadProgress();
+
+                    // Start auto-refresh for progress
+                    if (!progressInterval) {
+                        progressInterval = setInterval(() => {
+                            loadProgress();
+                        }, 2000); // Update every 2 seconds
+                    }
+                } else {
+                    // Stop auto-refresh when tab becomes inactive
+                    if (progressInterval) {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                    }
+                }
+            }
+        });
+    });
+
+    observer.observe(scheduledTab, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+
+    // Load initial data
+    setTimeout(() => {
+        loadScheduledOperations();
+        loadProgress();
+    }, 100);
+}
+
+// System Notifications
+let notificationsEnabled = false;
+
+async function initNotifications() {
+    // Check if notifications are supported
+    if ('Notification' in window) {
+        // Check current permission
+        if (Notification.permission === 'granted') {
+            notificationsEnabled = true;
+        } else if (Notification.permission !== 'denied') {
+            // Request permission
+            const permission = await Notification.requestPermission();
+            notificationsEnabled = permission === 'granted';
+        }
+    }
+
+    // Store preference
+    localStorage.setItem('notificationsEnabled', notificationsEnabled);
+}
+
+function showSystemNotification(title, body, icon = '/icon-192x192.png') {
+    if (!notificationsEnabled) return;
+
+    try {
+        const notification = new Notification(title, {
+            body: body,
+            icon: icon,
+            badge: icon,
+            tag: 'depara-operation', // Group similar notifications
+            requireInteraction: false,
+            silent: false
+        });
+
+        // Auto close after 5 seconds
+        setTimeout(() => {
+            notification.close();
+        }, 5000);
+
+        // Handle click
+        notification.onclick = function() {
+            window.focus();
+            notification.close();
+        };
+
+    } catch (error) {
+        console.error('Erro ao mostrar notificação:', error);
+    }
+}
+
+// Enhanced Toast notifications helper
+function showToast(message, type = 'info', showSystemNotification = false) {
+    const container = document.getElementById('toast-container');
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-message">${message}</span>
+        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+    `;
+
+    container.appendChild(toast);
+
+    // Show system notification for important messages
+    if (showSystemNotification && (type === 'success' || type === 'error')) {
+        const title = type === 'success' ? 'Operação Concluída' : 'Erro na Operação';
+        showSystemNotification(title, message);
+    }
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+// Enhanced operation feedback with notifications
+async function executeFileOperationDirect(file, operation, destination) {
+    try {
+        const preserveStructure = document.getElementById('preserve-structure-modal')?.checked ?? true;
+
+        const requestData = {
+            action: operation,
+            sourcePath: file.path || file.name, // Para arquivos do drag & drop, pode não ter path
+            options: {
+                preserveStructure,
+                batch: false
+            }
+        };
+
+        if (operation !== 'delete') {
+            requestData.targetPath = destination;
+        }
+
+        const response = await fetch('/api/files/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
+            showToast(`Operação ${operation} executada com sucesso!${structureMsg}`, 'success', true);
+
+            // Fecha modal se existir
+            const modal = document.querySelector('.modal');
+            if (modal) modal.remove();
+
+            // Limpa preview
+            clearFilePreview();
+        } else {
+            showToast(result.error?.message || 'Erro na operação', 'error', true);
+        }
+
+    } catch (error) {
+        console.error('Erro ao executar operação:', error);
+        showToast('Erro ao executar operação', 'error', true);
+    }
+}
+
+// Backup Configuration
+async function updateBackupConfig() {
+    const backupDir = document.getElementById('backup-dir').value.trim();
+    const retentionDays = parseInt(document.getElementById('retention-days').value);
+    const enabled = document.getElementById('backup-enabled').checked;
+
+    try {
+        const config = {
+            enabled,
+            retentionDays
+        };
+
+        if (backupDir) {
+            config.backupDir = backupDir;
+        }
+
+        const response = await fetch('/api/files/backup-config', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Configurações de backup atualizadas!', 'success', true);
+            loadBackups();
+        } else {
+            showToast(result.error?.message || 'Erro ao atualizar configurações', 'error', true);
+        }
+
+    } catch (error) {
+        console.error('Erro ao atualizar configurações de backup:', error);
+        showToast('Erro ao atualizar configurações de backup', 'error');
+    }
+}
+
+// Load backup configuration into form
+async function loadBackupConfig() {
+    try {
+        const response = await fetch('/api/files/backup-config');
+        const result = await response.json();
+
+        if (result.success) {
+            const config = result.data;
+            document.getElementById('backup-dir').value = config.backupDir || '';
+            document.getElementById('retention-days').value = config.retentionDays || 30;
+            document.getElementById('backup-enabled').checked = config.enabled !== false;
+        }
+    } catch (error) {
+        console.error('Erro ao carregar configurações de backup:', error);
+    }
+}
+
+// ==========================================
+// DRAG & DROP FUNCTIONALITY
+// ==========================================
+
+let draggedFiles = [];
+let currentOperation = null;
+
+function initDragAndDrop() {
+    const dropZone = document.getElementById('drag-drop-zone');
+    const fileSelector = document.getElementById('file-selector');
+
+    if (!dropZone) return;
+
+    // Event listeners para drag & drop
+    dropZone.addEventListener('dragover', handleDragOver);
+    dropZone.addEventListener('dragleave', handleDragLeave);
+    dropZone.addEventListener('drop', handleDrop);
+
+    // Event listener para seletor de arquivos
+    fileSelector.addEventListener('change', handleFileSelect);
+
+    console.log('Drag & drop initialized');
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const dropZone = document.getElementById('drag-drop-zone');
+    dropZone.classList.add('drag-over');
+
+    // Feedback visual
+    e.dataTransfer.dropEffect = 'copy';
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const dropZone = document.getElementById('drag-drop-zone');
+    // Só remove a classe se o mouse saiu realmente da zona
+    const rect = dropZone.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+        dropZone.classList.remove('drag-over');
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const dropZone = document.getElementById('drag-drop-zone');
+    dropZone.classList.remove('drag-over');
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+        handleFiles(files);
+    }
+}
+
+function handleFileSelect(e) {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+        handleFiles(files);
+    }
+}
+
+function handleFiles(files) {
+    draggedFiles = files;
+    showFilePreview(files);
+}
+
+function showFilePreview(files) {
+    const dropZone = document.getElementById('drag-drop-zone');
+    const dropContent = dropZone.querySelector('.drop-zone-content');
+    const dropPreview = document.getElementById('drop-preview');
+
+    // Esconde conteúdo original
+    dropContent.style.display = 'none';
+
+    // Mostra preview
+    dropPreview.style.display = 'flex';
+    dropPreview.innerHTML = `
+        <h4>${files.length} arquivo(s) selecionado(s)</h4>
+        <div class="file-preview-list">
+            ${files.map((file, index) => `
+                <div class="file-preview-item">
+                    <span class="material-icons file-preview-icon">
+                        ${getFileIcon(file.type, file.name)}
+                    </span>
+                    <div class="file-preview-info">
+                        <h5>${file.name}</h5>
+                        <p>${formatFileSize(file.size)} • ${getFileType(file.type, file.name)}</p>
+                    </div>
+                    <div class="file-preview-actions">
+                        <button class="btn btn-sm btn-primary" onclick="selectOperationForFile(${index}, 'move')">
+                            Mover
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="selectOperationForFile(${index}, 'copy')">
+                            Copiar
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="selectOperationForFile(${index}, 'delete')">
+                            Apagar
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        <div class="preview-actions" style="margin-top: 20px;">
+            <button class="btn btn-secondary" onclick="clearFilePreview()">
+                <span class="material-icons">clear</span>
+                Limpar Seleção
+            </button>
+        </div>
+    `;
+}
+
+function selectOperationForFile(fileIndex, operation) {
+    const file = draggedFiles[fileIndex];
+    currentOperation = { file, operation };
+
+    if (operation === 'delete') {
+        // Para delete, não precisa de destino
+        showDeleteConfirmation(file);
+    } else {
+        // Para move/copy, precisa escolher destino
+        showDestinationModal(file, operation);
+    }
+}
+
+function showDeleteConfirmation(file) {
+    if (confirm(`Tem certeza que deseja apagar "${file.name}"?\n\nEsta ação criará um backup automático.`)) {
+        executeFileOperationDirect(file, 'delete', null);
+    }
+}
+
+function showDestinationModal(file, operation) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>${operation === 'move' ? 'Mover' : 'Copiar'} Arquivo</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="file-info">
+                    <span class="material-icons">${getFileIcon(file.type, file.name)}</span>
+                    <div>
+                        <h4>${file.name}</h4>
+                        <p>${formatFileSize(file.size)}</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Caminho de destino:</label>
+                    <input type="text" id="destination-path" placeholder="/caminho/destino" required>
+                    <small class="form-help">Digite o caminho completo onde o arquivo será ${operation === 'move' ? 'movido' : 'copiado'}</small>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="preserve-structure-modal" checked>
+                        Preservar estrutura de pastas
+                    </label>
+                    <small class="form-help">Mantém a organização de subpastas no destino</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancelar</button>
+                <button class="btn btn-primary" onclick="executeFileOperationDirect(${JSON.stringify(file).replace(/"/g, '&quot;')}, '${operation}', document.getElementById('destination-path').value)">
+                    ${operation === 'move' ? 'Mover' : 'Copiar'}
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+}
+
+async function executeFileOperationDirect(file, operation, destination) {
+    try {
+        const preserveStructure = document.getElementById('preserve-structure-modal')?.checked ?? true;
+
+        const requestData = {
+            action: operation,
+            sourcePath: file.path || file.name, // Para arquivos do drag & drop, pode não ter path
+            options: {
+                preserveStructure,
+                batch: false
+            }
+        };
+
+        if (operation !== 'delete') {
+            requestData.targetPath = destination;
+        }
+
+        const response = await fetch('/api/files/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast(`Operação ${operation} executada com sucesso!`, 'success');
+
+            // Fecha modal se existir
+            const modal = document.querySelector('.modal');
+            if (modal) modal.remove();
+
+            // Limpa preview
+            clearFilePreview();
+        } else {
+            showToast(result.error?.message || 'Erro na operação', 'error');
+        }
+
+    } catch (error) {
+        console.error('Erro ao executar operação:', error);
+        showToast('Erro ao executar operação', 'error');
+    }
+}
+
+function clearFilePreview() {
+    const dropZone = document.getElementById('drag-drop-zone');
+    const dropContent = dropZone.querySelector('.drop-zone-content');
+    const dropPreview = document.getElementById('drop-preview');
+
+    dropContent.style.display = 'flex';
+    dropPreview.style.display = 'none';
+    dropPreview.innerHTML = '';
+    draggedFiles = [];
+    currentOperation = null;
+}
+
+// Utility functions
+function getFileIcon(mimeType, fileName) {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'videocam';
+    if (mimeType.startsWith('audio/')) return 'audiotrack';
+    if (mimeType === 'application/pdf') return 'picture_as_pdf';
+
+    // Por extensão
+    const ext = fileName.split('.').pop().toLowerCase();
+    switch (ext) {
+        case 'txt': return 'description';
+        case 'doc':
+        case 'docx': return 'article';
+        case 'xls':
+        case 'xlsx': return 'table_chart';
+        case 'zip':
+        case 'rar':
+        case '7z': return 'archive';
+        case 'js':
+        case 'py':
+        case 'java':
+        case 'cpp':
+        case 'c': return 'code';
+        default: return 'insert_drive_file';
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function getFileType(mimeType, fileName) {
+    if (mimeType) return mimeType.split('/')[0];
+    return fileName.split('.').pop().toUpperCase();
+}
+
+// ==========================================
+// IGNORED FILES MANAGEMENT
+// ==========================================
+
+// Show ignored patterns modal
+async function showIgnoredPatterns() {
+    try {
+        const response = await fetch('/api/files/ignored-patterns');
+        const result = await response.json();
+
+        if (result.success) {
+            showIgnoredPatternsModal(result.data);
+        } else {
+            showToast('Erro ao carregar padrões ignorados', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar padrões ignorados:', error);
+        showToast('Erro ao carregar padrões ignorados', 'error');
+    }
+}
+
+function showIgnoredPatternsModal(data) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>🛡️ Arquivos Automaticamente Ignorados</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="ignored-description">
+                    <p><strong>Por que ignorar arquivos?</strong></p>
+                    <p>Certos arquivos são críticos para o funcionamento do sistema e sincronização.
+                    Eles são automaticamente ignorados para evitar:</p>
+                    <ul>
+                        <li>❌ Interrupção da sincronização do Resilio Sync</li>
+                        <li>❌ Problemas de compatibilidade entre sistemas</li>
+                        <li>❌ Processamento desnecessário de arquivos temporários</li>
+                        <li>❌ Conflitos com ferramentas de desenvolvimento</li>
+                    </ul>
+                </div>
+
+                <div class="ignored-categories">
+                    ${Object.entries(data.categories).map(([key, description]) => `
+                        <div class="ignored-category">
+                            <h4>${key === 'resilioSync' ? '🔄' : key === 'systemFiles' ? '💻' : '⏰'} ${description.split(' - ')[0]}</h4>
+                            <p>${description}</p>
+                            <div class="patterns-grid">
+                                ${data.patterns[key].map(pattern => `
+                                    <span class="pattern-tag">${pattern}</span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="ignored-test">
+                    <h4>🔍 Testar Arquivo</h4>
+                    <p>Verifique se um arquivo específico seria ignorado:</p>
+                    <div class="test-form">
+                        <input type="text" id="test-file-path" placeholder="/caminho/arquivo.ext" style="flex: 1;">
+                        <button class="btn btn-primary" onclick="testFileIgnore()">
+                            Verificar
+                        </button>
+                    </div>
+                    <div id="test-result" class="test-result" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Fechar</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+}
+
+async function testFileIgnore() {
+    const filePath = document.getElementById('test-file-path').value.trim();
+    const resultDiv = document.getElementById('test-result');
+
+    if (!filePath) {
+        resultDiv.innerHTML = '<span style="color: #f44336;">Digite um caminho de arquivo</span>';
+        return;
+    }
+
+    // Extrair apenas o nome do arquivo
+    const filename = filePath.split('/').pop() || filePath.split('\\').pop() || filePath;
+
+    try {
+        const response = await fetch('/api/files/check-ignore', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                filePath,
+                filename
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const isIgnored = result.data.shouldIgnore;
+            resultDiv.innerHTML = `
+                <div style="padding: 10px; border-radius: 6px; background: ${isIgnored ? '#ffebee' : '#e8f5e8'}; border-left: 4px solid ${isIgnored ? '#f44336' : '#4caf50'};">
+                    <strong>${isIgnored ? '🚫 IGNORADO' : '✅ PROCESSADO'}</strong><br>
+                    <small>${result.data.reason}</small>
+                </div>
+            `;
+        } else {
+            resultDiv.innerHTML = '<span style="color: #f44336;">Erro ao verificar arquivo</span>';
+        }
+
+    } catch (error) {
+        console.error('Erro ao testar arquivo:', error);
+        resultDiv.innerHTML = '<span style="color: #f44336;">Erro ao verificar arquivo</span>';
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize notifications first
+    await initNotifications();
+
+    // Initialize tabs
+    initFileOperationsTab();
+    initScheduledOperationsTab();
+    initDragAndDrop();
+
+    // Load backup config when backups tab is activated
+    const backupsTab = document.getElementById('backups');
+    if (backupsTab) {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    if (backupsTab.classList.contains('active')) {
+                        loadBackupConfig();
+                        loadBackups();
+                    }
+                }
+            });
+        });
+        observer.observe(backupsTab, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+    }
+});
+
 function convertData() {
     ui.convertData();
 }
@@ -1189,6 +2288,416 @@ function generateMapping() {
 function saveSettings() {
     ui.saveSettings();
 }
+
+// ==========================================
+// SLIDESHOW FUNCTIONALITY
+// ==========================================
+
+// Slideshow state
+let slideshowImages = [];
+let currentImageIndex = 0;
+let slideshowInterval = null;
+let autoAdvance = true;
+
+// Slideshow Functions
+function showSlideshowModal() {
+    const modal = document.getElementById('slideshow-folder-modal');
+    modal.style.display = 'flex';
+
+    // Focus no campo de pasta
+    setTimeout(() => {
+        document.getElementById('slideshow-folder-path').focus();
+    }, 100);
+}
+
+function closeSlideshowFolderModal() {
+    document.getElementById('slideshow-folder-modal').style.display = 'none';
+    resetSlideshowFolderForm();
+}
+
+function resetSlideshowFolderForm() {
+    document.getElementById('slideshow-folder-path').value = '';
+    document.getElementById('slideshow-max-depth').value = '3';
+
+    // Resetar checkboxes de extensões
+    const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]');
+    extensionCheckboxes.forEach(checkbox => {
+        const isDefaultChecked = ['jpg', 'jpeg', 'png', 'gif'].includes(checkbox.value);
+        checkbox.checked = isDefaultChecked;
+    });
+}
+
+async function startSlideshow() {
+    const folderPath = document.getElementById('slideshow-folder-path').value.trim();
+    const maxDepth = document.getElementById('slideshow-max-depth').value;
+
+    if (!folderPath) {
+        showToast('Digite o caminho da pasta', 'error');
+        return;
+    }
+
+    // Coletar extensões selecionadas
+    const selectedExtensions = [];
+    const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]:checked');
+    extensionCheckboxes.forEach(checkbox => {
+        selectedExtensions.push(checkbox.value);
+    });
+
+    if (selectedExtensions.length === 0) {
+        showToast('Selecione pelo menos uma extensão de arquivo', 'error');
+        return;
+    }
+
+    try {
+        // Fechar modal de seleção
+        closeSlideshowFolderModal();
+
+        // Mostrar slideshow
+        showSlideshow(folderPath, selectedExtensions, maxDepth);
+
+    } catch (error) {
+        console.error('Erro ao iniciar slideshow:', error);
+        showToast('Erro ao iniciar slideshow', 'error');
+    }
+}
+
+async function showSlideshow(folderPath, extensions, maxDepth) {
+    const slideshowModal = document.getElementById('slideshow-modal');
+    const imageElement = document.getElementById('slideshow-image');
+    const loadingElement = document.getElementById('slideshow-loading');
+    const errorElement = document.getElementById('slideshow-error');
+
+    // Reset state
+    slideshowImages = [];
+    currentImageIndex = 0;
+
+    // Show modal
+    slideshowModal.style.display = 'block';
+
+    // Show loading
+    loadingElement.style.display = 'flex';
+    imageElement.style.display = 'none';
+    errorElement.style.display = 'none';
+
+    try {
+        // Build query parameters
+        const params = new URLSearchParams({
+            extensions: extensions.join(','),
+            maxDepth: maxDepth || '3'
+        });
+
+        const response = await fetch(`/api/files/images/${encodeURIComponent(folderPath)}?${params}`);
+
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data.images && result.data.images.length > 0) {
+            slideshowImages = result.data.images;
+            await loadImage(0);
+            updateSlideshowUI();
+
+            // Start auto-advance if enabled
+            if (autoAdvance) {
+                startAutoAdvance();
+            }
+
+            showToast(`Slideshow iniciado com ${slideshowImages.length} imagens`, 'success');
+        } else {
+            throw new Error(result.error?.message || 'Nenhuma imagem encontrada');
+        }
+
+    } catch (error) {
+        console.error('Erro ao carregar imagens:', error);
+        showSlideshowError(error.message);
+    }
+}
+
+async function loadImage(index) {
+    if (index < 0 || index >= slideshowImages.length) {
+        return;
+    }
+
+    const imageElement = document.getElementById('slideshow-image');
+    const loadingElement = document.getElementById('slideshow-loading');
+    const errorElement = document.getElementById('slideshow-error');
+
+    // Show loading
+    loadingElement.style.display = 'flex';
+    imageElement.style.display = 'none';
+    errorElement.style.display = 'none';
+
+    const image = slideshowImages[index];
+
+    return new Promise((resolve, reject) => {
+        imageElement.onload = () => {
+            loadingElement.style.display = 'none';
+            imageElement.style.display = 'block';
+            currentImageIndex = index;
+            updateSlideshowUI();
+            resolve();
+        };
+
+        imageElement.onerror = () => {
+            console.error('Erro ao carregar imagem:', image.path);
+            showSlideshowError(`Erro ao carregar: ${image.name}`);
+            reject(new Error(`Erro ao carregar imagem: ${image.name}`));
+        };
+
+        // Set image source - por enquanto usaremos um placeholder
+        // TODO: Implementar endpoint para servir imagens
+        imageElement.src = `data:image/svg+xml;base64,${btoa(`
+            <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100%" height="100%" fill="#f0f0f0"/>
+                <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#666" font-family="Arial" font-size="16">
+                    ${image.name}
+                </text>
+            </svg>
+        `)}`;
+        imageElement.alt = image.name;
+    });
+}
+
+function showSlideshowError(message) {
+    const loadingElement = document.getElementById('slideshow-loading');
+    const errorElement = document.getElementById('slideshow-error');
+    const errorText = errorElement.querySelector('p');
+
+    loadingElement.style.display = 'none';
+    errorElement.style.display = 'flex';
+    errorText.textContent = message;
+}
+
+function updateSlideshowUI() {
+    const currentImageElement = document.getElementById('current-image');
+    const totalImagesElement = document.getElementById('total-images');
+    const filenameElement = document.getElementById('image-filename');
+    const progressBar = document.getElementById('slideshow-progress-bar');
+    const prevBtn = document.getElementById('slideshow-prev');
+    const nextBtn = document.getElementById('slideshow-next');
+
+    if (slideshowImages.length > 0) {
+        const currentImage = slideshowImages[currentImageIndex];
+
+        currentImageElement.textContent = currentImageIndex + 1;
+        totalImagesElement.textContent = slideshowImages.length;
+        filenameElement.textContent = currentImage.name;
+
+        // Update progress bar
+        const progress = ((currentImageIndex + 1) / slideshowImages.length) * 100;
+        progressBar.style.width = `${progress}%`;
+
+        // Update navigation buttons
+        prevBtn.disabled = currentImageIndex === 0;
+        nextBtn.disabled = currentImageIndex === slideshowImages.length - 1;
+
+        prevBtn.style.opacity = prevBtn.disabled ? 0.5 : 1;
+        nextBtn.style.opacity = nextBtn.disabled ? 0.5 : 1;
+    }
+}
+
+function nextImage() {
+    if (currentImageIndex < slideshowImages.length - 1) {
+        loadImage(currentImageIndex + 1);
+    }
+}
+
+function previousImage() {
+    if (currentImageIndex > 0) {
+        loadImage(currentImageIndex - 1);
+    }
+}
+
+function startAutoAdvance() {
+    if (slideshowInterval) {
+        clearInterval(slideshowInterval);
+    }
+
+    slideshowInterval = setInterval(() => {
+        if (currentImageIndex < slideshowImages.length - 1) {
+            nextImage();
+        } else {
+            // Loop back to first image
+            loadImage(0);
+        }
+    }, 5000); // Change image every 5 seconds
+}
+
+function stopAutoAdvance() {
+    if (slideshowInterval) {
+        clearInterval(slideshowInterval);
+        slideshowInterval = null;
+    }
+}
+
+function closeSlideshow() {
+    const slideshowModal = document.getElementById('slideshow-modal');
+
+    // Stop auto-advance
+    stopAutoAdvance();
+
+    // Hide modal
+    slideshowModal.style.display = 'none';
+
+    // Reset state
+    slideshowImages = [];
+    currentImageIndex = 0;
+
+    // Clear image source
+    const imageElement = document.getElementById('slideshow-image');
+    imageElement.src = '';
+    imageElement.style.display = 'none';
+
+    // Reset UI
+    document.getElementById('slideshow-loading').style.display = 'none';
+    document.getElementById('slideshow-error').style.display = 'none';
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (event) => {
+    const slideshowModal = document.getElementById('slideshow-modal');
+
+    if (slideshowModal.style.display === 'block') {
+        switch (event.key) {
+            case 'ArrowLeft':
+                event.preventDefault();
+                previousImage();
+                break;
+            case 'ArrowRight':
+                event.preventDefault();
+                nextImage();
+                break;
+            case ' ':
+                event.preventDefault();
+                // Toggle auto-advance
+                if (slideshowInterval) {
+                    stopAutoAdvance();
+                    showToast('Apresentação automática parada', 'info');
+                } else {
+                    startAutoAdvance();
+                    showToast('Apresentação automática iniciada', 'info');
+                }
+                break;
+            case 'Escape':
+                event.preventDefault();
+                closeSlideshow();
+                break;
+            case 'Home':
+                event.preventDefault();
+                loadImage(0);
+                break;
+            case 'End':
+                event.preventDefault();
+                loadImage(slideshowImages.length - 1);
+                break;
+        }
+    }
+});
+
+// Mouse wheel navigation
+document.addEventListener('wheel', (event) => {
+    const slideshowModal = document.getElementById('slideshow-modal');
+
+    if (slideshowModal.style.display === 'block') {
+        event.preventDefault();
+
+        if (event.deltaY > 0) {
+            nextImage();
+        } else {
+            previousImage();
+        }
+    }
+});
+
+// Touch/swipe navigation for mobile
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener('touchstart', (event) => {
+    const slideshowModal = document.getElementById('slideshow-modal');
+
+    if (slideshowModal.style.display === 'block') {
+        touchStartX = event.touches[0].clientX;
+        touchStartY = event.touches[0].clientY;
+    }
+});
+
+document.addEventListener('touchend', (event) => {
+    const slideshowModal = document.getElementById('slideshow-modal');
+
+    if (slideshowModal.style.display === 'block') {
+        const touchEndX = event.changedTouches[0].clientX;
+        const touchEndY = event.changedTouches[0].clientY;
+
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+
+        // Check if it's a horizontal swipe (more horizontal than vertical)
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+            if (deltaX > 0) {
+                previousImage(); // Swipe right = previous
+            } else {
+                nextImage(); // Swipe left = next
+            }
+        }
+    }
+});
+
+// Prevent context menu in slideshow
+document.addEventListener('contextmenu', (event) => {
+    const slideshowModal = document.getElementById('slideshow-modal');
+
+    if (slideshowModal.style.display === 'block') {
+        event.preventDefault();
+    }
+});
+
+// Add slideshow hints
+function addSlideshowHints() {
+    const slideshowModal = document.getElementById('slideshow-modal');
+    const existingHints = slideshowModal.querySelector('.slideshow-hints');
+
+    if (!existingHints) {
+        const hints = document.createElement('div');
+        hints.className = 'slideshow-hints';
+        hints.innerHTML = `
+            <div><strong>Navegação:</strong></div>
+            <div>← → Setas | Espaço: Pausar/Continuar</div>
+            <div>Home/End: Início/Fim | ESC: Sair</div>
+            <div>Roda do mouse: Próxima/Anterior</div>
+        `;
+
+        slideshowModal.querySelector('.slideshow-container').appendChild(hints);
+    }
+}
+
+// Initialize slideshow hints when modal is shown
+const slideshowObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const slideshowModal = document.getElementById('slideshow-modal');
+            if (slideshowModal.style.display === 'block') {
+                addSlideshowHints();
+            }
+        }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const slideshowModal = document.getElementById('slideshow-modal');
+    if (slideshowModal) {
+        slideshowObserver.observe(slideshowModal, {
+            attributes: true,
+            attributeFilter: ['style']
+        });
+    }
+});
+
+// ==========================================
+// END SLIDESHOW FUNCTIONALITY
+// ==========================================
 
 // Inicialização
 let ui;
