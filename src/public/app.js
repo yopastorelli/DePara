@@ -1277,6 +1277,8 @@ class DeParaUI {
         this.addButtonListener('.action-move-btn', () => this.redirectToFileOperations('move'));
         this.addButtonListener('.action-copy-btn', () => this.redirectToFileOperations('copy'));
         this.addButtonListener('.action-delete-btn', () => this.redirectToFileOperations('delete'));
+        this.addButtonListener('.action-schedule-btn', () => this.redirectToFileOperations('schedule'));
+        this.addButtonListener('.action-slideshow-btn', () => this.showSlideshowModal());
 
         // Botões de backup
         this.addButtonListener('.load-backups-btn', () => {
@@ -1449,6 +1451,8 @@ class DeParaUI {
 
     // Carregar pastas de um diretório
     async loadFolders(path) {
+        console.log('🔍 Iniciando carregamento de pastas para:', path);
+
         try {
             const response = await fetch('/api/files/list-folders', {
                 method: 'POST',
@@ -1456,16 +1460,25 @@ class DeParaUI {
                 body: JSON.stringify({ path })
             });
 
+            console.log('📡 Resposta da API:', response.status);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const result = await response.json();
+            console.log('📋 Resultado da API:', result);
 
             if (result.success) {
+                console.log('✅ Pastas carregadas:', result.data.folders.length);
                 this.renderFolders(result.data.folders, path);
             } else {
-                this.showToast('Erro ao carregar pastas', 'error');
+                console.error('❌ Erro na resposta da API:', result.error);
+                this.showToast('Erro ao carregar pastas: ' + (result.error?.message || 'Erro desconhecido'), 'error');
             }
         } catch (error) {
-            console.error('Erro ao carregar pastas:', error);
-            this.showToast('Erro ao carregar pastas', 'error');
+            console.error('❌ Erro ao carregar pastas:', error);
+            this.showToast('Erro ao carregar pastas: ' + error.message, 'error');
         }
     }
 
@@ -1502,13 +1515,26 @@ class DeParaUI {
 
     // Renderizar lista de pastas
     renderFolders(folders, currentPath) {
-        document.getElementById('browser-path').value = currentPath;
+        console.log('🎨 Renderizando pastas:', folders?.length || 0, 'para o caminho:', currentPath);
+
+        const pathInput = document.getElementById('browser-path');
+        if (pathInput) {
+            pathInput.value = currentPath;
+        }
 
         const folderList = document.getElementById('folder-list');
+        if (!folderList) {
+            console.error('❌ Elemento folder-list não encontrado!');
+            return;
+        }
+
         if (!folders || folders.length === 0) {
+            console.log('📭 Nenhuma pasta encontrada');
             folderList.innerHTML = '<div class="empty">Nenhuma pasta encontrada</div>';
             return;
         }
+
+        console.log('📁 Renderizando pastas:', folders.map(f => f.name));
 
         folderList.innerHTML = folders.map(folder => `
             <div class="folder-item" data-path="${folder.path}">
@@ -1519,12 +1545,17 @@ class DeParaUI {
 
         // Configurar event listeners para os itens de pasta
         const folderItems = folderList.querySelectorAll('.folder-item');
+        console.log('🔗 Configurando event listeners para', folderItems.length, 'itens de pasta');
+
         folderItems.forEach(item => {
             item.addEventListener('click', () => {
                 const path = item.getAttribute('data-path');
+                console.log('📂 Clicado na pasta:', path);
                 this.navigateTo(path);
             });
         });
+
+        console.log('✅ Renderização completa');
     }
 
     // Navegar para uma pasta
