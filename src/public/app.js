@@ -1268,6 +1268,11 @@ class DeParaUI {
             if (typeof showScheduleModal === 'function') showScheduleModal();
         });
 
+        // Botões de ação rápida (interface antiga) - redirecionar para nova interface
+        this.addButtonListener('.action-move-btn', () => this.redirectToFileOperations('move'));
+        this.addButtonListener('.action-copy-btn', () => this.redirectToFileOperations('copy'));
+        this.addButtonListener('.action-delete-btn', () => this.redirectToFileOperations('delete'));
+
         // Botões de backup
         this.addButtonListener('.load-backups-btn', () => {
             if (typeof loadBackups === 'function') loadBackups();
@@ -1354,6 +1359,18 @@ class DeParaUI {
         if (element) {
             element.addEventListener('click', callback);
         }
+    }
+
+    // Redirecionar da interface antiga para a nova
+    redirectToFileOperations(operation) {
+        // Mudar para a aba de operações de arquivos
+        this.switchTab('fileops');
+
+        // Pré-selecionar a operação
+        setTimeout(() => {
+            this.selectOperation(operation);
+            this.showToast(`Use a nova interface abaixo para configurar a operação de ${operation}`, 'info');
+        }, 100);
     }
 
     // ==========================================
