@@ -833,7 +833,9 @@ class FileOperationsManager {
      * Agenda operação periódica
      */
     scheduleOperation(operationId, config) {
-        const { frequency, action, sourcePath, targetPath, options = {} } = config;
+        const { name, frequency, action, sourcePath, targetPath, options = {} } = config;
+        
+        logger.info(`Agendando operação: ${operationId}`, { name, frequency, action, sourcePath, targetPath });
 
         // Cancelar agendamento existente se houver
         if (this.schedules.has(operationId)) {
@@ -1391,11 +1393,13 @@ class FileOperationsManager {
     getScheduledOperations() {
         const operations = [];
         for (const [id, config] of this.operations) {
-            operations.push({
+            const operation = {
                 id,
                 ...config,
                 active: this.schedules.has(id)
-            });
+            };
+            logger.info(`Retornando operação: ${id}`, { name: operation.name, action: operation.action, frequency: operation.frequency });
+            operations.push(operation);
         }
         return operations;
     }

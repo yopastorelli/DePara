@@ -4979,6 +4979,8 @@ async function scheduleOperation() {
     const backup = document.getElementById('schedule-backup').checked;
     const preserveStructure = document.getElementById('schedule-preserve-structure').checked;
 
+    console.log('🔍 Campos capturados:', { name, action, frequency, sourcePath, targetPath });
+
     if (!name || !action || !frequency || !sourcePath) {
         showToast('Preencha todos os campos obrigatórios', 'error');
         return;
