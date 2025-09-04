@@ -467,6 +467,17 @@ router.post('/schedule', async (req, res) => {
     try {
         const { operationId, name, frequency, action, sourcePath, targetPath, options = {} } = req.body;
 
+        // Log detalhado dos dados recebidos
+        logger.info(`📥 Dados recebidos para agendamento:`, { 
+            operationId, 
+            name, 
+            frequency, 
+            action, 
+            sourcePath, 
+            targetPath, 
+            options 
+        });
+
         // Validação
         if (!frequency || !action || !sourcePath) {
             return res.status(400).json({
@@ -489,7 +500,8 @@ router.post('/schedule', async (req, res) => {
             options
         };
 
-        logger.info(`Criando operação agendada: ${id}`, { operationId, id, config });
+        logger.info(`🔧 Configuração criada:`, { id, config });
+        logger.info(`📝 Nome da operação: "${name}" (tipo: ${typeof name})`);
         fileOperationsManager.scheduleOperation(id, config);
 
         logger.info(`Operação agendada: ${id}`);
@@ -684,11 +696,12 @@ router.post('/schedule/:operationId/execute', strictRateLimiter, async (req, res
     try {
         const { operationId } = req.params;
         
-        logger.info(`Executando operação agendada imediatamente: ${operationId}`);
+        logger.info(`🚀 Executando operação agendada imediatamente: ${operationId}`);
         
         // Obter a operação agendada
         const operation = fileOperationsManager.getScheduledOperation(operationId);
         if (!operation) {
+            logger.error(`❌ Operação agendada não encontrada: ${operationId}`);
             return res.status(404).json({
                 error: {
                     message: 'Operação agendada não encontrada',
@@ -697,8 +710,18 @@ router.post('/schedule/:operationId/execute', strictRateLimiter, async (req, res
             });
         }
         
+        logger.info(`📋 Operação encontrada:`, { 
+            id: operation.id, 
+            name: operation.name, 
+            action: operation.action, 
+            sourcePath: operation.sourcePath, 
+            targetPath: operation.targetPath 
+        });
+        
         // Executar a operação imediatamente
+        logger.info(`⚡ Iniciando execução da operação: ${operationId}`);
         const result = await fileOperationsManager.executeScheduledOperationNow(operationId);
+        logger.info(`✅ Operação executada com sucesso: ${operationId}`, { result });
         
         res.status(200).json({
             success: true,

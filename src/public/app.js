@@ -5415,20 +5415,33 @@ async function executeScheduledOperation(operationId) {
         return;
     }
 
+    console.log(`🚀 Executando operação agendada: ${operationId}`);
+
     try {
         const response = await fetch(`/api/files/schedule/${operationId}/execute`, {
             method: 'POST'
         });
 
+        console.log(`📡 Resposta da API: ${response.status} ${response.statusText}`);
+
         if (response.ok) {
             const result = await response.json();
+            console.log('📋 Resultado da execução:', result);
+            
             if (result.success) {
-                console.log('✅ Operação executada com sucesso');
-                showToast('Operação executada com sucesso!', 'success', true);
+                console.log('✅ Operação executada com sucesso:', result);
+                showToast(`Operação executada com sucesso! ${result.message || ''}`, 'success', true);
+                
+                // Recarregar operações agendadas para mostrar status atualizado
+                if (typeof loadScheduledOperations === 'function') {
+                    loadScheduledOperations();
+                }
             } else {
                 throw new Error(result.error || 'Erro ao executar operação');
             }
         } else {
+            const errorText = await response.text();
+            console.error('❌ Erro HTTP:', response.status, errorText);
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
     } catch (error) {
