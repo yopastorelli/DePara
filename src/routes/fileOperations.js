@@ -569,7 +569,7 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
                 name = sanitizeString(name, {
                     field: 'name',
                     maxLength: 100,
-                    allowedChars: 'a-zA-Z0-9\\s\\-_()'
+                    allowedChars: 'a-zA-Z0-9\\s\\-_()&@'
                 });
             }
 
