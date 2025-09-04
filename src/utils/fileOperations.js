@@ -305,6 +305,42 @@ class FileOperationsManager {
     }
 
     /**
+     * Move arquivo com suporte a cross-device (copy + delete)
+     */
+    async moveFileCrossDevice(sourcePath, targetPath) {
+        try {
+            // Tentar rename primeiro (mais rápido para mesmo dispositivo)
+            await fs.rename(sourcePath, targetPath);
+            logger.info(`Arquivo movido com rename: ${sourcePath} -> ${targetPath}`);
+        } catch (error) {
+            if (error.code === 'EXDEV') {
+                // Cross-device link not permitted - usar copy + delete
+                logger.info(`Cross-device detectado, usando copy + delete: ${sourcePath} -> ${targetPath}`);
+                
+                // Copiar arquivo
+                await fs.copyFile(sourcePath, targetPath);
+                
+                // Verificar se a cópia foi bem-sucedida
+                const sourceStats = await fs.stat(sourcePath);
+                const targetStats = await fs.stat(targetPath);
+                
+                if (sourceStats.size === targetStats.size) {
+                    // Remover arquivo original
+                    await fs.unlink(sourcePath);
+                    logger.info(`Arquivo movido com copy + delete: ${sourcePath} -> ${targetPath}`);
+                } else {
+                    // Tamanhos diferentes - erro na cópia
+                    await fs.unlink(targetPath); // Limpar arquivo parcial
+                    throw new Error(`Erro na cópia: tamanhos diferentes (origem: ${sourceStats.size}, destino: ${targetStats.size})`);
+                }
+            } else {
+                // Outro tipo de erro
+                throw error;
+            }
+        }
+    }
+
+    /**
      * Executa operação de mover arquivo
      */
     async moveFile(sourcePath, targetPath, options = {}) {
@@ -345,8 +381,8 @@ class FileOperationsManager {
                 const targetDir = path.dirname(safeTargetPath);
                 await fs.mkdir(targetDir, { recursive: true });
 
-                // Mover o arquivo
-                await fs.rename(safeSourcePath, safeTargetPath);
+                // Mover o arquivo (com suporte a cross-device)
+                await this.moveFileCrossDevice(safeSourcePath, safeTargetPath);
             }
 
             // Verificar se moveu corretamente
@@ -414,8 +450,8 @@ class FileOperationsManager {
                     }
                 }
 
-                // Mover arquivo
-                await fs.rename(sourcePath, targetPath);
+                // Mover arquivo (com suporte a cross-device)
+                await this.moveFileCrossDevice(sourcePath, targetPath);
                 logger.info(`Arquivo movido: ${sourcePath} -> ${targetPath}`);
             }
         }

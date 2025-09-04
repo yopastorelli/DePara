@@ -4822,14 +4822,7 @@ function showScheduleModal() {
     document.body.classList.add('modal-open');
 }
 
-function closeScheduleModal() {
-    const modal = document.getElementById('schedule-modal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.classList.remove('modal-open');
-        console.log('✅ Modal de agendamento fechado');
-    }
-}
+// Função closeScheduleModal removida - usando window.closeScheduleModal
 
 function updateScheduleForm() {
     const action = document.getElementById('schedule-action').value;
@@ -4900,7 +4893,7 @@ async function scheduleOperation() {
         if (result.success) {
             const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
             showToast(`Operação "${name}" agendada com sucesso!${structureMsg}`, 'success', true);
-            closeScheduleModal();
+            window.closeScheduleModal();
             loadScheduledOperations();
         } else {
             showToast(result.error?.message || 'Erro ao agendar operação', 'error', true);
