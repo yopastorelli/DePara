@@ -2301,7 +2301,7 @@ class DeParaUI {
         if (selectBtn) {
             selectBtn.addEventListener('click', () => {
                 const targetTypeFromBtn = selectBtn.getAttribute('data-target-type');
-                this.selectCurrentFolder(targetTypeFromBtn, callback);
+                this.selectCurrentFolder(targetTypeFromBtn, callback || null);
             });
         }
     }
@@ -2328,19 +2328,27 @@ class DeParaUI {
                     <span class="material-icons">folder_open</span>
                     <p>Nenhuma pasta encontrada</p>
                     <small>Este diretório não contém subpastas ou o caminho não existe</small>
-                    <button class="btn btn-sm btn-outline" onclick="window.deParaUI.loadFoldersForBrowser('${currentPath}')" style="margin-top: 10px;">
+                    <button class="btn btn-sm btn-outline folder-retry-btn" style="margin-top: 10px;">
                         <span class="material-icons">refresh</span>
                         Tentar Novamente
                     </button>
                 </div>
             `;
+            
+            // Configurar event listener para o botão de tentar novamente
+            const retryBtn = folderList.querySelector('.folder-retry-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => {
+                    this.loadFoldersForBrowser(currentPath);
+                });
+            }
             return;
         }
 
         console.log('📁 Renderizando pastas:', folders.map(f => f.name));
 
         folderList.innerHTML = folders.map(folder => `
-            <div class="folder-item" data-path="${folder.path}" onclick="window.deParaUI.navigateTo('${folder.path}')">
+            <div class="folder-item" data-path="${folder.path}">
                 <div class="folder-icon">
                     <span class="material-icons">folder</span>
                 </div>
