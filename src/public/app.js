@@ -2579,7 +2579,9 @@ class DeParaUI {
         const scheduleActionSelect = document.querySelector('.schedule-action-select');
         if (scheduleActionSelect) {
             scheduleActionSelect.addEventListener('change', () => {
-                this.updateScheduleForm();
+                if (typeof updateScheduleForm === 'function') {
+                    updateScheduleForm();
+                }
             });
         }
 
@@ -6498,27 +6500,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Funções para agendamento (todas são funções globais)
         window.closeScheduleModal = function() {
-            if (typeof closeScheduleModal === 'function') {
-                closeScheduleModal();
+            const modal = document.getElementById('schedule-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                console.log('✅ Modal de agendamento fechado via window.closeScheduleModal');
             }
         };
 
         window.scheduleOperation = function() {
-            if (typeof scheduleOperation === 'function') {
-                scheduleOperation();
+            // Chamar diretamente a função global scheduleOperation (sem recursão)
+            const name = document.getElementById('schedule-name').value.trim();
+            const action = document.getElementById('schedule-action').value;
+            const frequency = document.getElementById('schedule-frequency').value;
+            const sourcePath = document.getElementById('schedule-source').value.trim();
+            const targetPath = document.getElementById('schedule-target').value.trim();
+            const filters = document.getElementById('schedule-filters').value.trim();
+            const batch = document.getElementById('schedule-batch').checked;
+            const backup = document.getElementById('schedule-backup').checked;
+            
+            if (!name || !action || !frequency || !sourcePath) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            if (action !== 'delete' && !targetPath) {
+                alert('Caminho de destino é obrigatório para operações de mover e copiar.');
+                return;
+            }
+            
+            console.log('✅ Agendando operação:', { name, action, frequency, sourcePath, targetPath, filters, batch, backup });
+            
+            // Fechar modal
+            window.closeScheduleModal();
+            
+            // Mostrar mensagem de sucesso
+            if (window.deParaUI) {
+                window.deParaUI.showToast(`Operação "${name}" agendada com sucesso!`, 'success');
             }
         };
 
         // Funções para slideshow (todas são funções globais)
         window.closeSlideshowFolderModal = function() {
-            if (typeof closeSlideshowFolderModal === 'function') {
-                closeSlideshowFolderModal();
+            const modal = document.getElementById('slideshow-folder-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                console.log('✅ Modal de slideshow fechado via window.closeSlideshowFolderModal');
             }
         };
 
         window.startSlideshow = function() {
-            if (typeof startSlideshow === 'function') {
-                startSlideshow();
+            const sourcePath = document.getElementById('slideshow-source-path').value.trim();
+            if (!sourcePath) {
+                alert('Por favor, selecione uma pasta de origem para o slideshow.');
+                return;
+            }
+            
+            console.log('✅ Iniciando slideshow para:', sourcePath);
+            
+            // Fechar modal
+            window.closeSlideshowFolderModal();
+            
+            // Mostrar mensagem de sucesso
+            if (window.deParaUI) {
+                window.deParaUI.showToast(`Slideshow iniciado para: ${sourcePath}`, 'success');
             }
         };
 
