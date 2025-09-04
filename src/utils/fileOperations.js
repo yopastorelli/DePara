@@ -1632,12 +1632,30 @@ class FileOperationsManager {
      * Obtém estatísticas das operações
      */
     getStats() {
+        // Obter atividades recentes (últimas 20 operações)
+        const recentActivities = Array.from(this.operations.values())
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .slice(0, 20)
+            .map(operation => ({
+                id: operation.id,
+                type: operation.type,
+                action: operation.action,
+                sourcePath: operation.sourcePath,
+                targetPath: operation.targetPath,
+                timestamp: operation.timestamp,
+                duration: operation.duration,
+                success: operation.success,
+                fileSize: operation.fileSize,
+                preserveStructure: operation.preserveStructure
+            }));
+
         return {
             scheduledOperations: this.schedules.size,
             totalOperations: this.operations.size,
             backupEnabled: this.backupConfig.enabled,
             backupDir: this.backupConfig.backupDir,
-            retentionDays: this.backupConfig.retentionDays
+            retentionDays: this.backupConfig.retentionDays,
+            activities: recentActivities
         };
     }
 

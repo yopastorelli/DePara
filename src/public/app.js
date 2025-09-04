@@ -444,12 +444,24 @@ class DeParaUI {
                             const totalGB = Math.round(drive.total / (1024 * 1024 * 1024));
                             diskElement.textContent = `${usedGB} GB / ${totalGB} GB`;
                         } else {
-                            // Mostrar múltiplos discos
+                            // Mostrar múltiplos discos com detalhes
                             const totalUsed = validDrives.reduce((sum, drive) => sum + drive.used, 0);
                             const totalSize = validDrives.reduce((sum, drive) => sum + drive.total, 0);
                             const usedGB = Math.round(totalUsed / (1024 * 1024 * 1024));
                             const totalGB = Math.round(totalSize / (1024 * 1024 * 1024));
+                            
+                            // Criar tooltip com detalhes por disco
+                            let tooltipText = `Total: ${usedGB} GB / ${totalGB} GB\n\nDetalhes por disco:\n`;
+                            validDrives.forEach((drive, index) => {
+                                const driveUsedGB = Math.round(drive.used / (1024 * 1024 * 1024));
+                                const driveTotalGB = Math.round(drive.total / (1024 * 1024 * 1024));
+                                const mountpoint = drive.mountpoint || drive.drive;
+                                tooltipText += `${index + 1}. ${mountpoint}: ${driveUsedGB} GB / ${driveTotalGB} GB (${drive.percentage}%)\n`;
+                            });
+                            
                             diskElement.textContent = `${usedGB} GB / ${totalGB} GB (${validDrives.length} discos)`;
+                            diskElement.title = tooltipText;
+                            diskElement.style.cursor = 'help';
                         }
                     } else {
                         diskElement.textContent = 'N/A';

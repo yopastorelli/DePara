@@ -472,22 +472,70 @@ function getDiskInfo() {
             const percentage = parseInt(parts[4]) || 0;
             const mountpoint = parts[5];
             
-            // Converter tamanhos para bytes (aproximado)
-            const totalBytes = parseSizeToBytes(total);
-            const usedBytes = parseSizeToBytes(used);
-            const freeBytes = parseSizeToBytes(available);
+            // Filtrar apenas discos reais (não tmpfs, devtmpfs, etc.)
+            const isRealDisk = !filesystem.includes('tmpfs') && 
+                              !filesystem.includes('devtmpfs') && 
+                              !filesystem.includes('overlay') &&
+                              !filesystem.includes('squashfs') &&
+                              !filesystem.includes('proc') &&
+                              !filesystem.includes('sysfs') &&
+                              !filesystem.includes('udev') &&
+                              !filesystem.includes('cgroup') &&
+                              !filesystem.includes('pstore') &&
+                              !filesystem.includes('bpf') &&
+                              !filesystem.includes('tracefs') &&
+                              !filesystem.includes('debugfs') &&
+                              !filesystem.includes('securityfs') &&
+                              !filesystem.includes('mqueue') &&
+                              !filesystem.includes('hugetlbfs') &&
+                              !filesystem.includes('configfs') &&
+                              !filesystem.includes('fusectl') &&
+                              !filesystem.includes('binfmt_misc') &&
+                              !filesystem.includes('systemd-1') &&
+                              !filesystem.includes('rpc_pipefs') &&
+                              !filesystem.includes('sunrpc') &&
+                              !filesystem.includes('selinuxfs') &&
+                              !filesystem.includes('autofs') &&
+                              !filesystem.includes('cgroup2') &&
+                              !filesystem.includes('efivarfs') &&
+                              !filesystem.includes('bpf') &&
+                              !filesystem.includes('tracefs') &&
+                              !filesystem.includes('debugfs') &&
+                              !filesystem.includes('securityfs') &&
+                              !filesystem.includes('mqueue') &&
+                              !filesystem.includes('hugetlbfs') &&
+                              !filesystem.includes('configfs') &&
+                              !filesystem.includes('fusectl') &&
+                              !filesystem.includes('binfmt_misc') &&
+                              !filesystem.includes('systemd-1') &&
+                              !filesystem.includes('rpc_pipefs') &&
+                              !filesystem.includes('sunrpc') &&
+                              !filesystem.includes('selinuxfs') &&
+                              !filesystem.includes('autofs') &&
+                              !filesystem.includes('cgroup2') &&
+                              !filesystem.includes('efivarfs') &&
+                              total !== '0' && 
+                              total !== '0B' &&
+                              parseSizeToBytes(total) > 1024 * 1024 * 1024; // Pelo menos 1GB
             
-            drives.push({
-              drive: filesystem,
-              mountpoint: mountpoint,
-              total: totalBytes,
-              free: freeBytes,
-              used: usedBytes,
-              percentage: percentage,
-              totalFormatted: total,
-              usedFormatted: used,
-              freeFormatted: available
-            });
+            if (isRealDisk) {
+              // Converter tamanhos para bytes (aproximado)
+              const totalBytes = parseSizeToBytes(total);
+              const usedBytes = parseSizeToBytes(used);
+              const freeBytes = parseSizeToBytes(available);
+              
+              drives.push({
+                drive: filesystem,
+                mountpoint: mountpoint,
+                total: totalBytes,
+                free: freeBytes,
+                used: usedBytes,
+                percentage: percentage,
+                totalFormatted: total,
+                usedFormatted: used,
+                freeFormatted: available
+              });
+            }
           }
         }
         
