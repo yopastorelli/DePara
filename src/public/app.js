@@ -6988,83 +6988,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         window.scheduleOperation = async function() {
-            // Chamar diretamente a função global scheduleOperation (sem recursão)
-            const name = document.getElementById('schedule-name').value.trim();
-            const action = document.getElementById('schedule-action').value;
-            const frequency = document.getElementById('schedule-frequency').value;
-            const sourcePath = document.getElementById('schedule-source').value.trim();
-            const targetPath = document.getElementById('schedule-target').value.trim();
-            const filters = document.getElementById('schedule-filters').value.trim();
-            const batch = document.getElementById('schedule-batch').checked;
-            const backup = document.getElementById('schedule-backup').checked;
-            
-            if (!name || !action || !frequency || !sourcePath) {
-                alert('Por favor, preencha todos os campos obrigatórios.');
-                return;
-            }
-            
-            if (action !== 'delete' && !targetPath) {
-                alert('Caminho de destino é obrigatório para operações de mover e copiar.');
-                return;
-            }
-            
-            console.log('✅ Agendando operação:', { name, action, frequency, sourcePath, targetPath, filters, batch, backup });
-            
-            try {
-                // Preparar dados para a API
-                const operationData = {
-                    name: name,
-                    action: action,
-                    frequency: frequency,
-                    sourcePath: sourcePath,
-                    targetPath: targetPath,
-                    options: {
-                        filters: filters,
-                        batch: batch,
-                        backup: backup,
-                        preserveStructure: document.getElementById('schedule-preserve-structure').checked
-                    }
-                };
-                
-                console.log('📡 Enviando dados para API:', operationData);
-                
-                // Chamar API para agendar operação
-                const response = await fetch('/api/files/schedule', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(operationData)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok && result.success) {
-                    console.log('✅ Operação agendada com sucesso:', result.data);
-                    
-                    // Fechar modal
-                    window.closeScheduleModal();
-                    
-                    // Mostrar mensagem de sucesso
-                    if (window.deParaUI) {
-                        window.deParaUI.showToast(`Operação "${name}" agendada com sucesso!`, 'success');
-                        
-                        // Recarregar operações agendadas se estivermos na aba correta
-                        if (window.deParaUI.currentTab === 'scheduled') {
-                            if (typeof loadScheduledOperations === 'function') {
-                                loadScheduledOperations();
-                            }
-                        }
-                    }
-                } else {
-                    console.error('❌ Erro ao agendar operação:', result.error);
-                    alert(`Erro ao agendar operação: ${result.error?.message || 'Erro desconhecido'}`);
-                }
-                
-            } catch (error) {
-                console.error('❌ Erro na requisição:', error);
-                alert(`Erro de conexão: ${error.message}`);
-            }
+            // Chamar a função global scheduleOperation que tem a lógica de edição correta
+            await scheduleOperation();
         };
 
         // Funções para slideshow (todas são funções globais)
