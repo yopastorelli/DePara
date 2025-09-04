@@ -2130,7 +2130,7 @@ class DeParaUI {
                 <div class="modal-body">
                     <div class="folder-browser">
                         <div class="current-path">
-                            <input type="text" id="browser-path" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User' : '/home/user'}" placeholder="Digite o caminho da pasta ou navegue">
+                            <input type="text" id="browser-path" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User' : '/home/yo'}" placeholder="Digite o caminho da pasta ou navegue">
                             <button class="btn btn-sm folder-browser-up-btn" title="Navegar para pasta pai">
                                 <span class="material-icons">arrow_upward</span>
                             </button>
@@ -2159,8 +2159,41 @@ class DeParaUI {
         // Configurar event listeners após criar o modal
         this.setupFolderBrowserEventListeners(modal, targetType);
 
+        // Obter diretório home do usuário automaticamente
+        this.setDefaultPath(modal);
+
         // Não carregar pastas automaticamente - permitir entrada manual
         console.log('📁 Modal de seleção de pasta criado - entrada manual habilitada');
+    }
+
+    // Definir caminho padrão baseado no sistema operacional
+    async setDefaultPath(modal) {
+        try {
+            // Tentar obter o diretório home via API
+            const response = await fetch('/api/status/system');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data.userHome) {
+                    const pathInput = modal.querySelector('#browser-path');
+                    if (pathInput) {
+                        pathInput.value = data.data.userHome;
+                        console.log('🏠 Diretório home detectado:', data.data.userHome);
+                        return;
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('⚠️ Não foi possível detectar diretório home via API, usando padrão');
+        }
+
+        // Fallback: usar caminho padrão baseado no sistema
+        const pathInput = modal.querySelector('#browser-path');
+        if (pathInput) {
+            const isWindows = navigator.userAgent.indexOf('Windows') > -1;
+            const defaultPath = isWindows ? 'C:\\Users\\User' : '/home/yo';
+            pathInput.value = defaultPath;
+            console.log('🏠 Usando caminho padrão:', defaultPath);
+        }
     }
 
     // Carregar pastas de um diretório (para o modal de navegação)

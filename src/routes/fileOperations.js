@@ -1621,8 +1621,34 @@ router.post('/list-folders', async (req, res) => {
         // Validar caminho usando fileOperationsManager
         const safePath = await fileOperationsManager.validateSafePath(path, 'read');
 
-        // Ler conteúdo do diretório
-        const entries = await fs.readdir(safePath, { withFileTypes: true });
+        // Verificar se o diretório existe antes de tentar lê-lo
+        let entries;
+        try {
+            entries = await fs.readdir(safePath, { withFileTypes: true });
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                // Diretório não existe - retornar lista vazia
+                const duration = Date.now() - startTime;
+                logger.endOperation('List Folders', duration, {
+                    folderCount: 0,
+                    path: safePath,
+                    note: 'Diretório não existe'
+                });
+
+                return res.json({
+                    success: true,
+                    data: {
+                        folders: [],
+                        currentPath: safePath,
+                        totalCount: 0,
+                        message: 'Diretório não existe ou está vazio'
+                    },
+                    timestamp: new Date().toISOString(),
+                    duration
+                });
+            }
+            throw error; // Re-throw outros erros
+        }
 
         // Filtrar apenas diretórios (pastas)
         const folders = entries

@@ -44,7 +44,8 @@ router.get('/', (req, res) => {
         loadAverage: os.loadavg(),
         totalMemory: os.totalmem(),
         freeMemory: os.freemem(),
-        uptime: os.uptime()
+        uptime: os.uptime(),
+        userHome: os.homedir()
       },
       performance: {
         memory: {

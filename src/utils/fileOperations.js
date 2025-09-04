@@ -205,6 +205,14 @@ async function validateSafePath(filePath, operation = 'read') {
           throw new Error(`Diretório pai não acessível: ${parentDir}`);
         }
       }
+      
+      // Para operações de leitura, permitir caminhos que não existem
+      // mas que são válidos para navegação (ex: /home/yo/Documents)
+      if (operation === 'read') {
+        logger.info(`Caminho não existe, mas permitindo para navegação: ${resolvedPath}`);
+        return resolvedPath;
+      }
+      
       throw new Error(`Caminho não existe: ${resolvedPath}`);
     }
 
