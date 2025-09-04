@@ -3983,16 +3983,199 @@ setupEventListeners() {
         });
     }
 
-    // Botão de system tray
-    const trayBtn = document.getElementById('tray-btn');
-    if (trayBtn) {
-        trayBtn.addEventListener('click', () => {
-            minimizeToTray();
-        });
+            // Botão de system tray
+        const trayBtn = document.getElementById('tray-btn');
+        if (trayBtn) {
+            trayBtn.addEventListener('click', () => {
+                minimizeToTray();
+            });
+        }
+
+        // Sistema de atualizações
+        this.setupUpdateEventListeners();
+
+        this.setupWorkflowEventListeners();
+}
+
+    // Sistema de Atualizações
+    setupUpdateEventListeners() {
+        // Botão verificar atualizações
+        const checkUpdatesBtn = document.getElementById('check-updates-btn');
+        if (checkUpdatesBtn) {
+            checkUpdatesBtn.addEventListener('click', () => {
+                this.checkForUpdates();
+            });
+        }
+
+        // Botão aplicar atualizações
+        const applyUpdatesBtn = document.getElementById('apply-updates-btn');
+        if (applyUpdatesBtn) {
+            applyUpdatesBtn.addEventListener('click', () => {
+                this.applyUpdates();
+            });
+        }
+
+        // Botão reiniciar aplicação
+        const restartAppBtn = document.getElementById('restart-app-btn');
+        if (restartAppBtn) {
+            restartAppBtn.addEventListener('click', () => {
+                this.restartApplication();
+            });
+        }
+
+        // Verificar atualizações automaticamente ao carregar
+        this.checkForUpdates();
     }
 
-    this.setupWorkflowEventListeners();
-}
+    // Verificar atualizações disponíveis
+    async checkForUpdates() {
+        try {
+            logger.info('🔍 Verificando atualizações...');
+            
+            const response = await fetch('/api/update/check');
+            const result = await response.json();
+
+            if (result.success) {
+                this.updateUpdateStatus(result.data);
+            } else {
+                logger.warn('⚠️ Erro ao verificar atualizações:', result.error);
+                this.updateUpdateStatus({
+                    hasUpdates: false,
+                    commitsAhead: 0,
+                    message: 'Erro ao verificar atualizações'
+                });
+            }
+        } catch (error) {
+            logger.error('❌ Erro ao verificar atualizações:', error);
+            this.updateUpdateStatus({
+                hasUpdates: false,
+                commitsAhead: 0,
+                message: 'Erro de conexão'
+            });
+        }
+    }
+
+    // Atualizar interface de status
+    updateUpdateStatus(data) {
+        const statusText = document.getElementById('update-status-text');
+        const versionText = document.getElementById('update-version-text');
+        const updateActions = document.getElementById('update-actions');
+        const updateMessage = document.getElementById('update-message');
+        const updateCommits = document.getElementById('update-commits');
+
+        if (statusText) {
+            statusText.textContent = data.message;
+        }
+
+        if (versionText) {
+            versionText.textContent = `Versão: ${data.currentVersion || 'Desconhecida'}`;
+        }
+
+        if (data.hasUpdates) {
+            if (updateActions) {
+                updateActions.style.display = 'block';
+            }
+            if (updateMessage) {
+                updateMessage.textContent = `Há ${data.commitsAhead} atualização(ões) disponível(is)`;
+            }
+            if (updateCommits) {
+                updateCommits.textContent = `${data.commitsAhead} commit(s) à frente`;
+            }
+        } else {
+            if (updateActions) {
+                updateActions.style.display = 'none';
+            }
+        }
+    }
+
+    // Aplicar atualizações
+    async applyUpdates() {
+        try {
+            logger.info('🔄 Aplicando atualizações...');
+            
+            const applyBtn = document.getElementById('apply-updates-btn');
+            if (applyBtn) {
+                applyBtn.disabled = true;
+                applyBtn.innerHTML = '<span class="material-icons">hourglass_empty</span> Aplicando...';
+            }
+
+            const response = await fetch('/api/update/apply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                logger.info('✅ Atualizações aplicadas com sucesso');
+                showToast('Atualizações aplicadas com sucesso!', 'success');
+                
+                // Mostrar botão de reiniciar
+                const restartBtn = document.getElementById('restart-app-btn');
+                if (restartBtn) {
+                    restartBtn.style.display = 'inline-flex';
+                }
+            } else {
+                logger.error('❌ Erro ao aplicar atualizações:', result.error);
+                showToast(result.error?.message || 'Erro ao aplicar atualizações', 'error');
+            }
+        } catch (error) {
+            logger.error('❌ Erro ao aplicar atualizações:', error);
+            showToast('Erro de conexão ao aplicar atualizações', 'error');
+        } finally {
+            const applyBtn = document.getElementById('apply-updates-btn');
+            if (applyBtn) {
+                applyBtn.disabled = false;
+                applyBtn.innerHTML = '<span class="material-icons">download</span> Aplicar Atualizações';
+            }
+        }
+    }
+
+    // Reiniciar aplicação
+    async restartApplication() {
+        try {
+            logger.info('🔄 Reiniciando aplicação...');
+            
+            const restartBtn = document.getElementById('restart-app-btn');
+            if (restartBtn) {
+                restartBtn.disabled = true;
+                restartBtn.innerHTML = '<span class="material-icons">hourglass_empty</span> Reiniciando...';
+            }
+
+            const response = await fetch('/api/update/restart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                logger.info('✅ Aplicação reiniciada com sucesso');
+                showToast('Aplicação reiniciada! Recarregando página...', 'success');
+                
+                // Recarregar página após um tempo
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                logger.error('❌ Erro ao reiniciar aplicação:', result.error);
+                showToast(result.error?.message || 'Erro ao reiniciar aplicação', 'error');
+            }
+        } catch (error) {
+            logger.error('❌ Erro ao reiniciar aplicação:', error);
+            showToast('Erro de conexão ao reiniciar aplicação', 'error');
+        } finally {
+            const restartBtn = document.getElementById('restart-app-btn');
+            if (restartBtn) {
+                restartBtn.disabled = false;
+                restartBtn.innerHTML = '<span class="material-icons">restart_alt</span> Reiniciar Aplicação';
+            }
+        }
+    }
 
     setupWorkflowEventListeners() {
         const filterType = document.getElementById('filter-type');

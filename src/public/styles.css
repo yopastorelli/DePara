@@ -3550,6 +3550,121 @@ body {
     animation: shake 0.3s ease-in-out;
 }
 
+/* Sistema de Atualizações */
+.update-settings {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+}
+
+.update-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.update-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.update-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.update-info .material-icons {
+    color: #6c757d;
+    font-size: 24px;
+}
+
+.update-details p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.update-version {
+    color: #6c757d;
+    font-size: 12px !important;
+}
+
+.update-actions {
+    padding: 15px;
+    background: #e8f5e8;
+    border-radius: 8px;
+    border: 1px solid #c3e6c3;
+}
+
+.update-available {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.update-available .material-icons {
+    color: #28a745;
+    font-size: 24px;
+}
+
+.update-commits {
+    color: #6c757d;
+    font-size: 12px;
+    margin: 0;
+}
+
+.update-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.update-settings-options {
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.update-settings-options h4 {
+    margin: 0 0 15px 0;
+    color: #495057;
+    font-size: 16px;
+}
+
+.update-settings-options .form-group {
+    margin-bottom: 15px;
+}
+
+.update-settings-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #495057;
+    cursor: pointer;
+}
+
+.update-settings-options input[type="checkbox"] {
+    margin: 0;
+}
+
+.update-settings-options select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
 /* Melhorias na responsividade para validação */
 @media (max-width: 768px) {
     .validation-message {

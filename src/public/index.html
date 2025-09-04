@@ -452,6 +452,71 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Sistema de Atualizações -->
+                <div class="update-settings">
+                    <h3>🔄 Sistema de Atualizações</h3>
+                    <div class="update-container">
+                        <div class="update-status">
+                            <div class="update-info">
+                                <span class="material-icons">info</span>
+                                <div class="update-details">
+                                    <p id="update-status-text">Verificando atualizações...</p>
+                                    <p id="update-version-text" class="update-version">Versão: Carregando...</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" id="check-updates-btn">
+                                <span class="material-icons">refresh</span>
+                                Verificar Atualizações
+                            </button>
+                        </div>
+
+                        <div class="update-actions" id="update-actions" style="display: none;">
+                            <div class="update-available">
+                                <span class="material-icons">system_update</span>
+                                <div>
+                                    <p id="update-message">Atualizações disponíveis!</p>
+                                    <p id="update-commits" class="update-commits"></p>
+                                </div>
+                            </div>
+                            <div class="update-buttons">
+                                <button class="btn btn-primary" id="apply-updates-btn">
+                                    <span class="material-icons">download</span>
+                                    Aplicar Atualizações
+                                </button>
+                                <button class="btn btn-secondary" id="restart-app-btn">
+                                    <span class="material-icons">restart_alt</span>
+                                    Reiniciar Aplicação
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="update-settings-options">
+                            <h4>Configurações de Atualização</h4>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="auto-check-updates" checked>
+                                    Verificar atualizações automaticamente
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="auto-apply-updates">
+                                    Aplicar atualizações automaticamente (recomendado apenas para desenvolvimento)
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>Frequência de verificação</label>
+                                <select id="update-check-frequency">
+                                    <option value="daily">Diariamente</option>
+                                    <option value="weekly" selected>Semanalmente</option>
+                                    <option value="monthly">Mensalmente</option>
+                                    <option value="manual">Manual</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
