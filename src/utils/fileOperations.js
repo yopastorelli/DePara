@@ -960,6 +960,19 @@ class FileOperationsManager {
     }
 
     /**
+     * Executar operação agendada imediatamente (wrapper)
+     */
+    async executeScheduledOperationNow(operationId) {
+        const operation = this.getScheduledOperation(operationId);
+        if (!operation) {
+            throw new Error(`Operação agendada não encontrada: ${operationId}`);
+        }
+
+        const { action, sourcePath, targetPath, options = {} } = operation;
+        return await this.executeScheduledOperation(operationId, action, sourcePath, targetPath, options);
+    }
+
+    /**
      * Executa operação em lote (todos os arquivos de uma pasta)
      */
     async executeBatchOperation(operationId, action, sourceDir, targetDir, options) {
@@ -1385,6 +1398,22 @@ class FileOperationsManager {
             });
         }
         return operations;
+    }
+
+    /**
+     * Obter uma operação agendada específica
+     */
+    getScheduledOperation(operationId) {
+        const config = this.operations.get(operationId);
+        if (!config) {
+            return null;
+        }
+        
+        return {
+            id: operationId,
+            ...config,
+            active: this.schedules.has(operationId)
+        };
     }
 
     /**

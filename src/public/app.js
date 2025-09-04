@@ -2050,10 +2050,28 @@ class DeParaUI {
         this.addButtonListener('#browse-target-btn', () => this.browsePathForSchedule('target'));
         
         // Botões de operações agendadas (event delegation)
-        this.addButtonListener('.cancel-scheduled-operation-btn', (e) => cancelScheduledOperation(e.target.getAttribute('data-operation-id')));
-        this.addButtonListener('.edit-scheduled-operation-btn', (e) => editScheduledOperation(e.target.getAttribute('data-operation-id')));
-        this.addButtonListener('.execute-scheduled-operation-btn', (e) => executeScheduledOperation(e.target.getAttribute('data-operation-id')));
-        this.addButtonListener('.toggle-scheduled-operation-btn', (e) => toggleScheduledOperation(e.target.getAttribute('data-operation-id')));
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.cancel-scheduled-operation-btn')) {
+                const btn = e.target.closest('.cancel-scheduled-operation-btn');
+                const operationId = btn.getAttribute('data-operation-id');
+                cancelScheduledOperation(operationId);
+            }
+            if (e.target.closest('.edit-scheduled-operation-btn')) {
+                const btn = e.target.closest('.edit-scheduled-operation-btn');
+                const operationId = btn.getAttribute('data-operation-id');
+                editScheduledOperation(operationId);
+            }
+            if (e.target.closest('.execute-scheduled-operation-btn')) {
+                const btn = e.target.closest('.execute-scheduled-operation-btn');
+                const operationId = btn.getAttribute('data-operation-id');
+                executeScheduledOperation(operationId);
+            }
+            if (e.target.closest('.toggle-scheduled-operation-btn')) {
+                const btn = e.target.closest('.toggle-scheduled-operation-btn');
+                const operationId = btn.getAttribute('data-operation-id');
+                toggleScheduledOperation(operationId);
+            }
+        });
         
         // Botão de reload da página
         this.addButtonListener('.reload-page-btn', () => window.location.reload());
@@ -2061,6 +2079,7 @@ class DeParaUI {
         // Botões de slideshow
         this.addButtonListener('.close-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
         this.addButtonListener('.cancel-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
+        this.addButtonListener('.close-slideshow-config-btn', () => window.closeSlideshowConfigModal());
         this.addButtonListener('.start-slideshow-btn', () => window.startSlideshow());
         this.addButtonListener('#slideshow-prev', () => this.previousSlide());
         this.addButtonListener('#slideshow-next', () => this.nextSlide());
@@ -6132,6 +6151,14 @@ function showSlideshowModal() {
 function closeSlideshowFolderModal() {
     document.getElementById('slideshow-folder-modal').style.display = 'none';
     resetSlideshowFolderForm();
+}
+
+function closeSlideshowConfigModal() {
+    const modal = document.getElementById('slideshow-config-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+    }
 }
 
 function resetSlideshowFolderForm() {

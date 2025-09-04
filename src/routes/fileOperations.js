@@ -691,6 +691,51 @@ router.get('/scheduled', async (req, res) => {
 });
 
 /**
+ * Executar operação agendada imediatamente
+ * POST /api/files/schedule/:operationId/execute
+ */
+router.post('/schedule/:operationId/execute', strictRateLimiter, async (req, res) => {
+    try {
+        const { operationId } = req.params;
+        
+        logger.info(`Executando operação agendada imediatamente: ${operationId}`);
+        
+        // Obter a operação agendada
+        const operation = fileOperationsManager.getScheduledOperation(operationId);
+        if (!operation) {
+            return res.status(404).json({
+                error: {
+                    message: 'Operação agendada não encontrada',
+                    details: `ID: ${operationId}`
+                }
+            });
+        }
+        
+        // Executar a operação imediatamente
+        const result = await fileOperationsManager.executeScheduledOperationNow(operationId);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                operationId,
+                result,
+                executedAt: new Date().toISOString()
+            },
+            message: 'Operação executada com sucesso'
+        });
+        
+    } catch (error) {
+        logger.operationError('Execute Scheduled Operation', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro ao executar operação agendada',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
  * Obter estatísticas das operações
  * GET /api/files/stats
  */
