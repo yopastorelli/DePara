@@ -11,7 +11,11 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
+
+// Carregar informações do package.json de forma segura
+const packageInfo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 
 // Importar módulos da aplicação
 const logger = require('./utils/logger');
@@ -121,7 +125,7 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: NODE_ENV,
-    version: require('../package.json').version
+    version: packageInfo.version
   });
 });
 

@@ -6,19 +6,19 @@ Este guia explica como instalar e executar o **DePara** no sistema operacional *
 
 ## 🚀 Instalação Rápida
 
-### **Opção 1: Instalação Automatizada (Recomendada)**
+### **Opção 1: Instalação Automatizada (Recomendada para Raspberry Pi 4)**
 
 ```bash
-# 1. Clonar o repositório
+# 1. Clonar o repositório (se ainda não clonado)
 git clone https://github.com/yopastorelli/DePara.git
 cd DePara
 
-# 2. Executar script de instalação
+# 2. Executar script de instalação otimizado
 chmod +x install-raspbian.sh
 ./install-raspbian.sh
 ```
 
-### **Opção 2: Instalação Manual**
+### **Opção 2: Instalação Manual (Passo a Passo)**
 
 ```bash
 # 1. Atualizar sistema
@@ -81,34 +81,85 @@ sudo ufw allow 3000/tcp
 sudo ufw enable
 ```
 
-## 🚀 Execução
+## 🚀 Execução no Raspberry Pi 4
 
-### **Modo Desenvolvimento**
+### **🔧 Configurações Otimizadas (Após Correções Recentes)**
+
+O sistema foi otimizado com as seguintes melhorias implementadas:
+
+- ✅ **CSP Compliance**: Removidos event handlers inline
+- ✅ **Sistema de Logging Estruturado**: Logs com emojis e metadados
+- ✅ **Controle de Carregamento**: Debouncing para evitar chamadas duplicadas
+- ✅ **Validação Visual**: Feedback em tempo real nos campos
+- ✅ **Performance Otimizada**: Controle de memória e recursos
+
+### **Modo Desenvolvimento (Recomendado para Testes)**
 
 ```bash
+# No diretório do projeto
+cd DePara
+
+# Executar em modo desenvolvimento
 npm run dev
 ```
 
-### **Modo Produção**
+### **Modo Produção (Otimizado para RP4)**
 
 ```bash
+# Configurar arquivo de ambiente otimizado
+cp env.example .env
+
+# Executar em produção
 npm start
 ```
 
-### **Como Serviço Systemd (Recomendado para Produção)**
+### **Execução como Serviço (Background)**
 
 ```bash
-# Habilitar serviço
+# Configurar como serviço do sistema
 sudo systemctl enable depara
-
-# Iniciar serviço
 sudo systemctl start depara
 
 # Verificar status
 sudo systemctl status depara
 
-# Ver logs
+# Ver logs em tempo real
 sudo journalctl -u depara -f
+```
+
+## 🧪 Teste no Raspberry Pi 4
+
+### **Teste Básico de Funcionalidade**
+
+```bash
+# 1. Verificar se aplicação está rodando
+curl http://localhost:3000/health
+
+# 2. Verificar logs da aplicação
+tail -f logs/app.log
+
+# 3. Testar interface web
+# Abrir navegador em: http://[IP_DO_RASPBERRY_PI]:3000
+
+# 4. Testar operações básicas
+# - Criar pastas de teste
+mkdir -p ~/depara/input ~/depara/output
+echo "teste de arquivo" > ~/depara/input/teste.txt
+
+# - Testar operação via interface web
+```
+
+### **Teste de Performance**
+
+```bash
+# Verificar uso de recursos durante operação
+htop &
+
+# Monitorar temperatura do CPU
+watch -n 1 vcgencmd measure_temp
+
+# Verificar logs de performance
+tail -f logs/app.log | grep -E "(PERFORMANCE|SUCCESS|ERROR)"
 ```
 
 ## 📊 Monitoramento de Recursos
@@ -324,21 +375,78 @@ sudo reboot
 
 ---
 
-## 📋 Checklist de Instalação
+## 📋 Checklist de Instalação para Raspberry Pi 4
 
-- [ ] Sistema Raspbian atualizado
-- [ ] Node.js 18.x instalado
+### **Pré-requisitos**
+- [ ] Raspberry Pi 4 com Raspbian OS atualizado
+- [ ] Conexão à internet
+- [ ] Pelo menos 1GB de espaço livre em disco
+
+### **Instalação**
+- [ ] Sistema Raspbian atualizado (`sudo apt update && sudo apt upgrade -y`)
+- [ ] Node.js 18.x instalado (versão otimizada para RP4)
 - [ ] Dependências do sistema instaladas
-- [ ] Repositório DePara clonado
-- [ ] Dependências npm instaladas
-- [ ] Arquivo .env configurado
-- [ ] Diretório de logs criado
-- [ ] Permissões configuradas
-- [ ] Serviço systemd criado (opcional)
-- [ ] Firewall configurado
-- [ ] Aplicação testada
-- [ ] Acesso remoto testado
+- [ ] Repositório DePara clonado ou transferido
+- [ ] Dependências npm instaladas (`npm install`)
+- [ ] Arquivo .env configurado (copiado de env.example)
+- [ ] Diretórios de logs e backups criados
+
+### **Configuração**
+- [ ] Permissões configuradas corretamente
+- [ ] Porta 3000 liberada no firewall (opcional)
+- [ ] Serviço systemd criado e configurado (opcional)
+
+### **Teste Final**
+- [ ] Aplicação inicializada com sucesso
+- [ ] Interface web acessível em `http://[IP_DO_RP4]:3000`
+- [ ] Operações básicas funcionando (mover/copiar/apagar)
+- [ ] Logs estruturados sendo gerados corretamente
+- [ ] Validação visual funcionando nos campos
+
+### **Comandos de Verificação Rápida**
+
+```bash
+# Status completo do sistema
+echo "=== STATUS DO SISTEMA ==="
+echo "IP do Raspberry Pi:"
+hostname -I
+echo ""
+echo "Status da aplicação:"
+sudo systemctl status depara 2>/dev/null || echo "Serviço não configurado"
+echo ""
+echo "Uso de recursos:"
+free -h | grep "Mem:"
+echo ""
+echo "Aplicação rodando:"
+curl -s http://localhost:3000/health | head -5 || echo "Aplicação não responde"
+echo ""
+echo "Logs recentes:"
+tail -5 logs/app.log 2>/dev/null || echo "Arquivo de log não encontrado"
+```
 
 ---
 
-**🍓 DePara no Raspbian** - Transformando dados com simplicidade e eficiência no Raspberry Pi! 🚀
+## 🚀 **Instruções Rápidas para Teste**
+
+```bash
+# 1. Transferir arquivos para o Raspberry Pi
+# (usar scp, rsync ou cartão SD)
+
+# 2. Executar instalação
+cd DePara
+chmod +x install-raspbian.sh
+./install-raspbian.sh
+
+# 3. Iniciar aplicação
+npm start
+
+# 4. Testar no navegador
+# http://[IP_DO_RASPBERRY_PI]:3000
+
+# 5. Verificar logs
+tail -f logs/app.log
+```
+
+---
+
+**🍓 DePara no Raspberry Pi 4** - Sistema totalmente otimizado com correções implementadas! 🚀

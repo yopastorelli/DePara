@@ -160,36 +160,40 @@
                                 <label for="source-path">Caminho de Origem:</label>
                                 <div class="input-group">
                                     <input type="text" id="source-path" class="form-input"
-                                           placeholder="/home/pi/Documents/origem" value="/home/pi/Documents/origem">
-                                    <button class="btn btn-sm" onclick="browseSourcePath()">
+                                           placeholder="/home/pi/Documents/origem" value="/home/pi/Documents/origem"
+                                           data-validation-type="path">
+                                    <button class="btn btn-sm browse-source-btn">
                                         <span class="material-icons">folder_open</span>
                                     </button>
                                 </div>
+                                <div class="validation-message"></div>
                             </div>
 
                             <div class="form-group">
                                 <label for="dest-path">Caminho de Destino:</label>
                                 <div class="input-group">
                                     <input type="text" id="dest-path" class="form-input"
-                                           placeholder="/home/pi/Documents/destino" value="/home/pi/Documents/destino">
-                                    <button class="btn btn-sm" onclick="browseDestPath()">
+                                           placeholder="/home/pi/Documents/destino" value="/home/pi/Documents/destino"
+                                           data-validation-type="path">
+                                    <button class="btn btn-sm browse-dest-btn">
                                         <span class="material-icons">folder_open</span>
                                     </button>
                                 </div>
+                                <div class="validation-message"></div>
                             </div>
 
                             <div class="form-group">
                                 <label>Operação:</label>
                                 <div class="operation-buttons">
-                                    <button class="btn btn-primary" id="move-btn" onclick="executeSimpleOperation('move')">
+                                    <button class="btn btn-primary simple-operation-btn" data-operation="move">
                                         <span class="material-icons">arrow_forward</span>
                                         Mover
                                     </button>
-                                    <button class="btn btn-secondary" id="copy-btn" onclick="executeSimpleOperation('copy')">
+                                    <button class="btn btn-secondary simple-operation-btn" data-operation="copy">
                                         <span class="material-icons">content_copy</span>
                                         Copiar
                                     </button>
-                                    <button class="btn btn-danger" id="delete-btn" onclick="executeSimpleOperation('delete')">
+                                    <button class="btn btn-danger simple-operation-btn" data-operation="delete">
                                         <span class="material-icons">delete</span>
                                         Apagar
                                     </button>
@@ -1219,7 +1223,7 @@
                 <div class="form-group">
                     <label>Caminho da Pasta:</label>
                     <input type="text" id="slideshow-folder-path" placeholder="/caminho/para/imagens"
-                           required onkeydown="if(event.key==='Enter') startSlideshow()">
+                           required class="slideshow-folder-input">
                     <small class="form-help">Digite o caminho completo da pasta contendo as imagens</small>
                 </div>
 

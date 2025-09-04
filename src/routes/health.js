@@ -65,7 +65,7 @@ router.get('/detailed', (req, res) => {
       timestamp: new Date().toISOString(),
       application: {
         name: 'DePara',
-        version: require('../../package.json').version,
+        version: process.env.npm_package_version || '1.0.0',
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || 'development',
         pid: process.pid

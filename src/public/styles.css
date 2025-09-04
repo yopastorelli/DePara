@@ -3260,3 +3260,89 @@ body {
         display: none !important;
     }
 }
+
+/* Estilos de Validação e Feedback Visual */
+.validation-message {
+    font-size: 12px;
+    margin-top: 4px;
+    min-height: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.validation-message.error {
+    color: #e74c3c;
+    opacity: 1;
+}
+
+.form-group.error .form-input {
+    border-color: #e74c3c;
+    box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.1);
+}
+
+.form-input.valid {
+    border-color: #27ae60;
+    box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.1);
+}
+
+.form-input.invalid {
+    border-color: #e74c3c;
+    box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.1);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+/* Estados dos botões de operação */
+.simple-operation-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #bdc3c7 !important;
+    border-color: #bdc3c7 !important;
+}
+
+.simple-operation-btn.disabled:hover {
+    background: #bdc3c7 !important;
+    border-color: #bdc3c7 !important;
+    transform: none !important;
+}
+
+/* Feedback visual para campos obrigatórios */
+.form-group label::after {
+    content: '';
+    margin-left: 4px;
+}
+
+.form-input[required] + .validation-message::before {
+    content: '* ';
+    color: #e74c3c;
+}
+
+/* Animações de feedback */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.form-group.error .form-input {
+    animation: shake 0.3s ease-in-out;
+}
+
+/* Melhorias na responsividade para validação */
+@media (max-width: 768px) {
+    .validation-message {
+        font-size: 11px;
+    }
+
+    .form-group.error .form-input {
+        box-shadow: 0 0 0 1px rgba(231, 76, 60, 0.3);
+    }
+
+    .form-input.valid {
+        box-shadow: 0 0 0 1px rgba(39, 174, 96, 0.3);
+    }
+}

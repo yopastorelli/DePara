@@ -2,6 +2,133 @@
 // @author yopastorelli
 // @version 2.0.0
 
+/**
+ * Sistema de Logging Estruturado para Frontend
+ */
+class Logger {
+    constructor() {
+        this.enableDebug = localStorage.getItem('depara-debug') === 'true';
+        this.logLevel = localStorage.getItem('depara-log-level') || 'info';
+        this.maxLogs = 100;
+        this.logs = [];
+    }
+
+    log(level, message, meta = {}) {
+        const logEntry = {
+            timestamp: new Date().toISOString(),
+            level,
+            message,
+            meta,
+            userAgent: navigator.userAgent,
+            url: window.location.href
+        };
+
+        // Adicionar ao histórico
+        this.logs.push(logEntry);
+        if (this.logs.length > this.maxLogs) {
+            this.logs.shift();
+        }
+
+        // Log no console com emoji e cores
+        const emoji = this.getLevelEmoji(level);
+        const color = this.getLevelColor(level);
+        const metaStr = Object.keys(meta).length > 0 ? ` | ${JSON.stringify(meta)}` : '';
+
+        console.log(`${color}${emoji} [${level.toUpperCase()}] ${message}${metaStr}${this.resetColor()}`);
+
+        // Enviar logs críticos para o servidor
+        if (level === 'error' || level === 'warn') {
+            this.sendLogToServer(logEntry);
+        }
+
+        return logEntry;
+    }
+
+    getLevelEmoji(level) {
+        const emojis = {
+            error: '❌',
+            warn: '⚠️',
+            info: 'ℹ️',
+            debug: '🔍',
+            success: '✅'
+        };
+        return emojis[level] || '📝';
+    }
+
+    getLevelColor(level) {
+        const colors = {
+            error: '\x1b[31m', // vermelho
+            warn: '\x1b[33m',  // amarelo
+            info: '\x1b[36m',  // ciano
+            debug: '\x1b[35m', // magenta
+            success: '\x1b[32m' // verde
+        };
+        return colors[level] || '';
+    }
+
+    resetColor() {
+        return '\x1b[0m';
+    }
+
+    error(message, meta = {}) {
+        return this.log('error', message, meta);
+    }
+
+    warn(message, meta = {}) {
+        return this.log('warn', message, meta);
+    }
+
+    info(message, meta = {}) {
+        return this.log('info', message, meta);
+    }
+
+    debug(message, meta = {}) {
+        if (this.enableDebug) {
+            return this.log('debug', message, meta);
+        }
+    }
+
+    success(message, meta = {}) {
+        return this.log('success', message, meta);
+    }
+
+    async sendLogToServer(logEntry) {
+        try {
+            await fetch('/api/logs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(logEntry)
+            });
+        } catch (error) {
+            // Silenciar erro para não criar loop
+            console.warn('Falha ao enviar log para servidor:', error);
+        }
+    }
+
+    getLogs() {
+        return this.logs;
+    }
+
+    clearLogs() {
+        this.logs = [];
+    }
+
+    setDebug(enabled) {
+        this.enableDebug = enabled;
+        localStorage.setItem('depara-debug', enabled.toString());
+    }
+
+    setLogLevel(level) {
+        this.logLevel = level;
+        localStorage.setItem('depara-log-level', level);
+    }
+}
+
+// Instância global do logger
+const logger = new Logger();
+
 class DeParaUI {
     constructor() {
         this.currentTab = 'dashboard';
@@ -9,67 +136,74 @@ class DeParaUI {
         this.folders = [];
         this.settings = {};
         this.currentWorkflowStep = 1;
+        this.isExecutingOperation = false;
         this.init();
     }
 
     async init() {
-        console.log('🚀 Inicializando DePara UI...');
+        logger.info('🚀 Inicializando DePara UI...', {
+            version: '2.0.0',
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+        });
+
+        const startTime = Date.now();
 
         try {
             // Configurar event listeners primeiro
             this.setupEventListeners();
-            console.log('✅ Event listeners configurados');
+            logger.success('Event listeners configurados');
 
             // Inicializar cache
             this.initializeCache();
-            console.log('✅ Cache inicializado');
+            logger.success('Cache inicializado');
 
             // Carregar configurações
             await this.loadSettings();
-            console.log('✅ Configurações carregadas');
+            logger.success('Configurações carregadas');
 
             // Carregar pastas
             await this.loadFolders();
-            console.log('✅ Pastas carregadas');
+            logger.success('Pastas carregadas');
 
             // Carregar workflows
             await this.loadWorkflows();
-            console.log('✅ Workflows carregados');
+            logger.success('Workflows carregados');
 
             // Iniciar monitoramento
             this.startMonitoring();
-            console.log('✅ Monitoramento iniciado');
+            logger.success('Monitoramento iniciado');
 
             // Testar conexão com API
             const apiOnline = await this.testApiConnection();
             if (apiOnline) {
                 this.showToast('DePara iniciado com sucesso!', 'success');
-                console.log('✅ API conectada');
+                logger.success('API conectada', { apiStatus: 'online' });
             } else {
                 this.showToast('API não está respondendo. Verifique se o servidor está rodando.', 'warning');
-                console.log('⚠️ API offline');
+                logger.warn('API offline', { apiStatus: 'offline' });
             }
 
             // Iniciar monitoramento do status da API
             this.updateApiStatus();
             setInterval(() => this.updateApiStatus(), 30000);
-            console.log('✅ Status da API sendo monitorado');
+            logger.success('Status da API sendo monitorado');
 
             // Iniciar auto-refresh da dashboard
             this.startDashboardAutoRefresh();
-            console.log('✅ Auto-refresh da dashboard iniciado');
+            logger.success('Auto-refresh da dashboard iniciado');
 
             // Inicializar gráficos
             this.initializeCharts();
-            console.log('✅ Gráficos inicializados');
+            logger.success('Gráficos inicializados');
 
             // Configurar atalhos de teclado
             this.setupKeyboardShortcuts();
-            console.log('✅ Atalhos de teclado configurados');
+            logger.success('Atalhos de teclado configurados');
 
             // Forçar atualização inicial da dashboard
             await this.updateDashboard();
-            console.log('✅ Dashboard atualizada');
+            logger.success('Dashboard atualizada');
 
             // Mostrar onboarding se necessário
             if (!localStorage.getItem('depara-onboarding-completed')) {
@@ -79,10 +213,34 @@ class DeParaUI {
             // Configurar event listeners para substituir violações de CSP
             this.setupCSPSafeEventListeners();
 
-            console.log('🎉 Inicialização completa!');
+            // Configurar validação de operações
+            this.setupOperationValidation();
+
+            const initDuration = Date.now() - startTime;
+            logger.success('🎉 Inicialização completa!', {
+                duration: `${initDuration}ms`,
+                components: [
+                    'eventListeners',
+                    'cache',
+                    'settings',
+                    'folders',
+                    'workflows',
+                    'monitoring',
+                    'apiConnection',
+                    'charts',
+                    'shortcuts',
+                    'dashboard',
+                    'validation'
+                ]
+            });
 
         } catch (error) {
-            console.error('❌ Erro durante inicialização:', error);
+            logger.error('❌ Erro durante inicialização', {
+                error: error.message,
+                stack: error.stack,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            });
             this.showToast('Erro na inicialização. Verifique o console.', 'error');
         }
     }
@@ -200,6 +358,482 @@ class DeParaUI {
         } catch (error) {
             console.warn('Erro ao carregar atividades:', error);
         }
+    }
+
+    // Atualizar display do status do sistema
+    updateSystemStatusDisplay(data) {
+        try {
+            logger.debug('📊 Atualizando display de status do sistema', {
+                memory: data.memory,
+                disk: data.disk,
+                activeOperations: data.activeOperations
+            });
+
+            // Atualizar uso de memória
+            const memoryElement = document.getElementById('memory-usage');
+            if (memoryElement && data.memory) {
+                const memoryUsage = data.memory.percentage || 0;
+                memoryElement.textContent = `${memoryUsage}%`;
+                logger.debug('✅ Memória atualizada', { memoryUsage });
+            }
+
+            // Atualizar uso de disco
+            const diskElement = document.getElementById('disk-usage');
+            if (diskElement && data.disk) {
+                const diskUsage = data.disk.percentage || 0;
+                diskElement.textContent = `${diskUsage}%`;
+                logger.debug('✅ Disco atualizado', { diskUsage });
+            }
+
+            // Atualizar operações ativas
+            const activeOpsElement = document.getElementById('active-ops');
+            if (activeOpsElement && data.activeOperations !== undefined) {
+                const activeOps = data.activeOperations || 0;
+                activeOpsElement.textContent = activeOps;
+                logger.debug('✅ Operações ativas atualizadas', { activeOps });
+            }
+
+        } catch (error) {
+            logger.error('❌ Erro ao atualizar display de status', {
+                error: error.message,
+                stack: error.stack,
+                data: data
+            });
+        }
+    }
+
+    // Atualizar display de atividades recentes
+    updateActivitiesDisplay(data) {
+        try {
+            logger.debug('📋 Atualizando display de atividades', {
+                activitiesCount: data?.activities?.length || 0,
+                hasData: !!data
+            });
+
+            const activityList = document.getElementById('recent-activity');
+            if (!activityList) {
+                logger.warn('⚠️ Elemento recent-activity não encontrado');
+                return;
+            }
+
+            // Se não há dados ou atividades
+            if (!data || !data.activities || data.activities.length === 0) {
+                activityList.innerHTML = `
+                    <div class="activity-item">
+                        <span class="material-icons">info</span>
+                        <span>Nenhuma atividade recente</span>
+                    </div>
+                `;
+                logger.info('ℹ️ Nenhuma atividade para exibir');
+                return;
+            }
+
+            // Renderizar atividades
+            const activitiesHtml = data.activities.slice(0, 10).map(activity => {
+                const icon = this.getActivityIcon(activity.type);
+                const timeAgo = this.formatTimeAgo(activity.timestamp);
+                return `
+                    <div class="activity-item">
+                        <span class="material-icons">${icon}</span>
+                        <div class="activity-details">
+                            <span class="activity-description">${activity.description || 'Atividade executada'}</span>
+                            <span class="activity-time">${timeAgo}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            activityList.innerHTML = activitiesHtml;
+            logger.success('✅ Atividades renderizadas', {
+                activitiesCount: data.activities.length,
+                displayedCount: Math.min(data.activities.length, 10)
+            });
+
+        } catch (error) {
+            logger.error('❌ Erro ao atualizar display de atividades', {
+                error: error.message,
+                stack: error.stack,
+                data: data
+            });
+        }
+    }
+
+    // Obter ícone apropriado para o tipo de atividade
+    getActivityIcon(type) {
+        const iconMap = {
+            'move': 'drive_file_move',
+            'copy': 'content_copy',
+            'delete': 'delete',
+            'backup': 'backup',
+            'error': 'error',
+            'success': 'check_circle',
+            'info': 'info'
+        };
+        return iconMap[type] || 'info';
+    }
+
+    // Formatar tempo relativo
+    formatTimeAgo(timestamp) {
+        if (!timestamp) return '';
+
+        const now = new Date();
+        const activityTime = new Date(timestamp);
+        const diffMs = now - activityTime;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'agora';
+        if (diffMins < 60) return `${diffMins}min atrás`;
+        if (diffHours < 24) return `${diffHours}h atrás`;
+        return `${diffDays}d atrás`;
+    }
+
+    // Navegar para caminho de origem
+    browseSourcePath() {
+        if (typeof this.showFolderBrowser === 'function') {
+            this.showFolderBrowser('source');
+        } else {
+            console.warn('Função showFolderBrowser não encontrada');
+            // Fallback: apenas focar no input
+            const input = document.getElementById('source-path');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }
+    }
+
+    // Navegar para caminho de destino
+    browseDestPath() {
+        if (typeof this.showFolderBrowser === 'function') {
+            this.showFolderBrowser('target');
+        } else {
+            console.warn('Função showFolderBrowser não encontrada');
+            // Fallback: apenas focar no input
+            const input = document.getElementById('dest-path');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }
+    }
+
+    // Executar operação simples
+    async executeSimpleOperation(action) {
+        if (this.isExecutingOperation) {
+            this.showToast('Operação já em andamento. Aguarde...', 'warning');
+            return;
+        }
+
+        const sourcePath = document.getElementById('source-path').value.trim();
+        const destPath = document.getElementById('dest-path').value.trim();
+        const recursive = document.getElementById('recursive-option').checked;
+        const backup = document.getElementById('backup-option').checked;
+
+        // Validação básica
+        if (!sourcePath) {
+            this.showToast('Digite o caminho de origem', 'error');
+            return;
+        }
+
+        if ((action === 'move' || action === 'copy') && !destPath) {
+            this.showToast('Digite o caminho de destino', 'error');
+            return;
+        }
+
+        // Marcar como executando
+        this.isExecutingOperation = true;
+
+        try {
+            // Mostrar resultado da operação
+            const resultDiv = document.getElementById('operation-result');
+            const resultIcon = document.getElementById('result-icon');
+            const resultText = document.getElementById('result-text');
+
+            if (resultDiv && resultIcon && resultText) {
+                resultDiv.style.display = 'block';
+                resultIcon.textContent = 'hourglass_empty';
+                resultText.textContent = 'Executando operação...';
+            }
+
+            // Preparar dados da operação
+            const operationData = {
+                action: action,
+                sourcePath: sourcePath,
+                targetPath: destPath,
+                recursive: recursive,
+                createBackup: backup
+            };
+
+            logger.info('🔄 Executando operação', {
+                operation: operationData.action,
+                sourcePath: operationData.sourcePath,
+                targetPath: operationData.targetPath,
+                recursive: operationData.recursive,
+                createBackup: operationData.createBackup
+            });
+
+            // Enviar para API
+            const response = await fetch('/api/files/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(operationData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Sucesso
+                if (resultDiv && resultIcon && resultText) {
+                    resultIcon.textContent = 'check_circle';
+                    resultText.textContent = `Operação concluída com sucesso! ${result.message || ''}`;
+                    resultDiv.className = 'operation-result success';
+                }
+                this.showToast('Operação executada com sucesso!', 'success');
+
+                logger.success('✅ Operação executada com sucesso', {
+                    operation: operationData.action,
+                    message: result.message,
+                    responseTime: Date.now() - Date.now() // TODO: calcular tempo real
+                });
+
+                // Atualizar contadores e atividades
+                await this.refreshDashboardData();
+
+            } else {
+                // Erro
+                const errorMsg = result.message || 'Erro desconhecido na operação';
+                if (resultDiv && resultIcon && resultText) {
+                    resultIcon.textContent = 'error';
+                    resultText.textContent = `Erro: ${errorMsg}`;
+                    resultDiv.className = 'operation-result error';
+                }
+                this.showToast(errorMsg, 'error');
+                logger.error('❌ Erro na operação', {
+                    operation: operationData.action,
+                    error: errorMsg,
+                    result: result,
+                    statusCode: response.status
+                });
+            }
+
+        } catch (error) {
+            const errorMsg = error.message || 'Erro de conexão';
+
+            logger.error('❌ Erro ao executar operação', {
+                operation: operation,
+                error: errorMsg,
+                stack: error.stack,
+                sourcePath: sourcePath,
+                destPath: destPath
+            });
+
+            const resultDiv = document.getElementById('operation-result');
+            const resultIcon = document.getElementById('result-icon');
+            const resultText = document.getElementById('result-text');
+
+            if (resultDiv && resultIcon && resultText) {
+                resultIcon.textContent = 'error';
+                resultText.textContent = `Erro: ${errorMsg}`;
+                resultDiv.className = 'operation-result error';
+            }
+
+            this.showToast(errorMsg, 'error');
+        } finally {
+            this.isExecutingOperation = false;
+            logger.debug('🔄 Operação finalizada', { operation });
+        }
+    }
+
+    // Iniciar slideshow
+    async startSlideshow() {
+        const folderPath = document.getElementById('slideshow-folder-path').value.trim();
+        const maxDepth = document.getElementById('slideshow-max-depth').value;
+
+        if (!folderPath) {
+            this.showToast('Digite o caminho da pasta', 'error');
+            return;
+        }
+
+        // Coletar extensões selecionadas
+        const selectedExtensions = [];
+        const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]:checked');
+        extensionCheckboxes.forEach(checkbox => {
+            selectedExtensions.push(checkbox.value);
+        });
+
+        if (selectedExtensions.length === 0) {
+            this.showToast('Selecione pelo menos uma extensão de arquivo', 'error');
+            return;
+        }
+
+        console.log('🎬 Iniciando slideshow:', { folderPath, selectedExtensions, maxDepth });
+
+        // Implementação do slideshow pode ser expandida aqui
+        this.showToast('Slideshow não implementado ainda', 'info');
+    }
+
+    // Validação de campos com feedback visual
+    validateField(field, type) {
+        const value = field.value.trim();
+        const validationDiv = field.parentNode.querySelector('.validation-message');
+        const fieldContainer = field.parentNode;
+
+        if (!validationDiv) return true;
+
+        let isValid = true;
+        let message = '';
+
+        switch (type) {
+            case 'name':
+                if (!value) {
+                    isValid = false;
+                    message = 'Nome é obrigatório';
+                } else if (value.length < 3) {
+                    isValid = false;
+                    message = 'Nome deve ter pelo menos 3 caracteres';
+                } else if (!/^[a-zA-Z0-9\s\-_]+$/.test(value)) {
+                    isValid = false;
+                    message = 'Nome contém caracteres inválidos';
+                }
+                break;
+
+            case 'path':
+                if (!value) {
+                    isValid = false;
+                    message = 'Caminho é obrigatório';
+                } else if (!/^[a-zA-Z0-9\s\-_\/\\:.]+$/.test(value)) {
+                    isValid = false;
+                    message = 'Caminho contém caracteres inválidos';
+                }
+                break;
+
+            case 'email':
+                if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                    isValid = false;
+                    message = 'Email inválido';
+                }
+                break;
+
+            default:
+                isValid = !!value;
+                message = 'Campo obrigatório';
+        }
+
+        // Atualizar feedback visual
+        if (isValid) {
+            validationDiv.textContent = '';
+            validationDiv.className = 'validation-message';
+            field.classList.remove('invalid');
+            field.classList.add('valid');
+            fieldContainer.classList.remove('error');
+        } else {
+            validationDiv.textContent = message;
+            validationDiv.className = 'validation-message error';
+            field.classList.remove('valid');
+            field.classList.add('invalid');
+            fieldContainer.classList.add('error');
+        }
+
+        return isValid;
+    }
+
+    // Validação de formulário completo
+    validateForm(formSelector) {
+        const form = document.querySelector(formSelector);
+        if (!form) return false;
+
+        const requiredFields = form.querySelectorAll('input[required], select[required], textarea[required]');
+        let isValid = true;
+
+        requiredFields.forEach(field => {
+            const fieldType = field.getAttribute('data-validation-type') || 'text';
+            if (!this.validateField(field, fieldType)) {
+                isValid = false;
+            }
+        });
+
+        return isValid;
+    }
+
+    // Validação em tempo real para campos de operação
+    setupOperationValidation() {
+        // Campos de origem e destino no dashboard
+        const sourcePath = document.getElementById('source-path');
+        const destPath = document.getElementById('dest-path');
+
+        if (sourcePath) {
+            sourcePath.addEventListener('blur', () => {
+                this.validateField(sourcePath, 'path');
+                this.updateOperationButtonsState();
+            });
+            sourcePath.addEventListener('input', () => {
+                // Limpar validação quando usuário começa a digitar
+                const validationDiv = sourcePath.parentNode.querySelector('.validation-message');
+                if (validationDiv) {
+                    validationDiv.textContent = '';
+                    validationDiv.className = 'validation-message';
+                    sourcePath.classList.remove('invalid', 'valid');
+                    sourcePath.parentNode.classList.remove('error');
+                }
+                // Atualizar estado dos botões
+                this.updateOperationButtonsState();
+            });
+        }
+
+        if (destPath) {
+            destPath.addEventListener('blur', () => {
+                this.validateField(destPath, 'path');
+                this.updateOperationButtonsState();
+            });
+            destPath.addEventListener('input', () => {
+                const validationDiv = destPath.parentNode.querySelector('.validation-message');
+                if (validationDiv) {
+                    validationDiv.textContent = '';
+                    validationDiv.className = 'validation-message';
+                    destPath.classList.remove('invalid', 'valid');
+                    destPath.parentNode.classList.remove('error');
+                }
+                // Atualizar estado dos botões
+                this.updateOperationButtonsState();
+            });
+        }
+    }
+
+    // Feedback visual para botões de operação
+    updateOperationButtonsState() {
+        const sourcePath = document.getElementById('source-path');
+        const destPath = document.getElementById('dest-path');
+        const operationButtons = document.querySelectorAll('.simple-operation-btn');
+
+        const hasSourcePath = sourcePath && sourcePath.value.trim();
+        const hasDestPath = destPath && destPath.value.trim();
+
+        operationButtons.forEach(btn => {
+            const operation = btn.getAttribute('data-operation');
+
+            if (operation === 'delete') {
+                // Delete só precisa do caminho de origem
+                btn.disabled = !hasSourcePath;
+                btn.title = hasSourcePath ? 'Executar operação de exclusão' : 'Digite o caminho de origem primeiro';
+            } else {
+                // Move e copy precisam de origem e destino
+                btn.disabled = !(hasSourcePath && hasDestPath);
+                btn.title = (hasSourcePath && hasDestPath) ?
+                    `Executar operação de ${operation}` :
+                    'Digite os caminhos de origem e destino primeiro';
+            }
+
+            // Feedback visual
+            if (btn.disabled) {
+                btn.classList.add('disabled');
+            } else {
+                btn.classList.remove('disabled');
+            }
+        });
     }
 
     // Atualizar contadores
@@ -1765,6 +2399,40 @@ class DeParaUI {
         if (nameInput) {
             nameInput.addEventListener('input', (e) => {
                 this.validateField(e.target, 'name');
+            });
+        }
+
+        // Botões de navegação de pastas no dashboard
+        const browseSourceBtn = document.querySelector('.browse-source-btn');
+        if (browseSourceBtn) {
+            browseSourceBtn.addEventListener('click', () => {
+                this.browseSourcePath();
+            });
+        }
+
+        const browseDestBtn = document.querySelector('.browse-dest-btn');
+        if (browseDestBtn) {
+            browseDestBtn.addEventListener('click', () => {
+                this.browseDestPath();
+            });
+        }
+
+        // Botões de operações simples
+        const simpleOperationBtns = document.querySelectorAll('.simple-operation-btn');
+        simpleOperationBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const operation = btn.getAttribute('data-operation');
+                this.executeSimpleOperation(operation);
+            });
+        });
+
+        // Input do slideshow com Enter
+        const slideshowFolderInput = document.querySelector('.slideshow-folder-input');
+        if (slideshowFolderInput) {
+            slideshowFolderInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    this.startSlideshow();
+                }
             });
         }
     }
@@ -4018,17 +4686,77 @@ let isLoadingTemplates = false;
 let isLoadingScheduledOperations = false;
 let isLoadingBackups = false;
 
+// Controle de carregamento com debouncing
+const loadingControl = {
+    templates: {
+        lastLoad: 0,
+        debounceMs: 1000,
+        isLoading: false
+    },
+    scheduledOperations: {
+        lastLoad: 0,
+        debounceMs: 1000,
+        isLoading: false
+    },
+    backups: {
+        lastLoad: 0,
+        debounceMs: 1000,
+        isLoading: false
+    }
+};
+
 // Controle de operações simples
 let isExecutingOperation = false;
 
+// Função helper para controle de carregamento com debouncing
+function shouldLoadData(type) {
+    const now = Date.now();
+    const control = loadingControl[type];
+
+    if (!control) return false;
+
+    // Se já está carregando, não permitir nova chamada
+    if (control.isLoading) {
+        console.log(`⚠️ ${type} já está carregando, pulando...`);
+        return false;
+    }
+
+    // Se carregou recentemente (debounce), não permitir
+    if (now - control.lastLoad < control.debounceMs) {
+        console.log(`⚠️ ${type} carregado recentemente, pulando (debounce)...`);
+        return false;
+    }
+
+    return true;
+}
+
+function markLoading(type, isLoading) {
+    const control = loadingControl[type];
+    if (control) {
+        control.isLoading = isLoading;
+        if (!isLoading) {
+            control.lastLoad = Date.now();
+        }
+    }
+}
+
+// Função helper para carregamento seguro com verificação
+function safeLoadData(type, loadFunction) {
+    if (shouldLoadData(type)) {
+        console.log(`🔄 Iniciando carregamento de ${type}...`);
+        loadFunction();
+    } else {
+        console.log(`⏭️ Pulando carregamento de ${type} (debounce ou já carregando)`);
+    }
+}
+
 // Load Templates
 async function loadTemplates() {
-    // Evitar chamadas simultâneas
-    if (isLoadingTemplates) {
-        console.log('⚠️ Carregamento de templates já em andamento, pulando...');
+    // Usar novo sistema de controle
+    if (!shouldLoadData('templates')) {
         return;
     }
-    isLoadingTemplates = true;
+    markLoading('templates', true);
 
     try {
         console.log('🔍 Carregando templates...');
@@ -4051,7 +4779,7 @@ async function loadTemplates() {
         renderTemplates([]);
     } finally {
         // Sempre liberar o flag de carregamento
-        isLoadingTemplates = false;
+        markLoading('templates', false);
     }
 }
 
@@ -4174,12 +4902,11 @@ function renderProgress(operations) {
 
 // Load Scheduled Operations
 async function loadScheduledOperations() {
-    // Evitar chamadas simultâneas
-    if (isLoadingScheduledOperations) {
-        console.log('⚠️ Carregamento de operações agendadas já em andamento, pulando...');
+    // Usar novo sistema de controle
+    if (!shouldLoadData('scheduledOperations')) {
         return;
     }
-    isLoadingScheduledOperations = true;
+    markLoading('scheduledOperations', true);
 
     try {
         const response = await fetch('/api/files/scheduled');
@@ -4192,7 +4919,7 @@ async function loadScheduledOperations() {
         console.error('Erro ao carregar operações agendadas:', error);
     } finally {
         // Sempre liberar o flag de carregamento
-        isLoadingScheduledOperations = false;
+        markLoading('scheduledOperations', false);
     }
 }
 
@@ -4244,12 +4971,11 @@ async function cancelScheduledOperation(operationId) {
 
 // Load Backups
 async function loadBackups() {
-    // Evitar chamadas simultâneas
-    if (isLoadingBackups) {
-        console.log('⚠️ Carregamento de backups já em andamento, pulando...');
+    // Usar novo sistema de controle
+    if (!shouldLoadData('backups')) {
         return;
     }
-    isLoadingBackups = true;
+    markLoading('backups', true);
 
     try {
         const response = await fetch('/api/files/backups');
@@ -4262,7 +4988,7 @@ async function loadBackups() {
         console.error('Erro ao carregar backups:', error);
     } finally {
         // Sempre liberar o flag de carregamento
-        isLoadingBackups = false;
+        markLoading('backups', false);
     }
 }
 
@@ -4295,10 +5021,10 @@ function initFileOperationsTab() {
         mutations.forEach((mutation) => {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                 if (fileopsTab.classList.contains('active')) {
-                    // Verificações de segurança antes de chamar as funções
-                    if (typeof loadTemplates === 'function') loadTemplates();
-                    if (typeof loadScheduledOperations === 'function') loadScheduledOperations();
-                    if (typeof loadBackups === 'function') loadBackups();
+                    // Usar carregamento seguro com controle de debouncing
+                    if (typeof loadTemplates === 'function') safeLoadData('templates', loadTemplates);
+                    if (typeof loadScheduledOperations === 'function') safeLoadData('scheduledOperations', loadScheduledOperations);
+                    if (typeof loadBackups === 'function') safeLoadData('backups', loadBackups);
                 }
             }
         });
@@ -4309,11 +5035,11 @@ function initFileOperationsTab() {
         attributeFilter: ['class']
     });
 
-    // Load initial data (com verificação de segurança)
+    // Load initial data (com controle de debouncing)
     setTimeout(() => {
-        if (typeof loadTemplates === 'function') loadTemplates();
-        if (typeof loadScheduledOperations === 'function') loadScheduledOperations();
-        if (typeof loadBackups === 'function') loadBackups();
+        if (typeof loadTemplates === 'function') safeLoadData('templates', loadTemplates);
+        if (typeof loadScheduledOperations === 'function') safeLoadData('scheduledOperations', loadScheduledOperations);
+        if (typeof loadBackups === 'function') safeLoadData('backups', loadBackups);
     }, 100);
 }
 
@@ -4326,8 +5052,8 @@ function initScheduledOperationsTab() {
         mutations.forEach((mutation) => {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                 if (scheduledTab.classList.contains('active')) {
-                    // Load data when tab becomes active
-                    loadScheduledOperations();
+                    // Load data when tab becomes active (com controle)
+                    safeLoadData('scheduledOperations', loadScheduledOperations);
                     loadProgress();
 
                     // Start auto-refresh for progress
@@ -4352,9 +5078,9 @@ function initScheduledOperationsTab() {
         attributeFilter: ['class']
     });
 
-    // Load initial data
+    // Load initial data (com controle)
     setTimeout(() => {
-        loadScheduledOperations();
+        safeLoadData('scheduledOperations', loadScheduledOperations);
         loadProgress();
     }, 100);
 }

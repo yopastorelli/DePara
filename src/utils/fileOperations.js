@@ -14,6 +14,9 @@ const execAsync = util.promisify(exec);
 
 const logger = require('./logger');
 
+// Evitar redeclarações desnecessárias
+const fsSync = require('fs');
+
 /**
  * Lista de arquivos e extensões que devem ser ignorados automaticamente
  * Inclui arquivos do sistema, temporários e de sincronização
@@ -181,7 +184,6 @@ async function validateSafePath(filePath, operation = 'read') {
 
   // Verificar se o caminho existe e é acessível
   try {
-    const fs = require('fs').promises;
     const stats = await fs.stat(resolvedPath);
 
     // Verificar se é um arquivo/pasta válida
@@ -194,7 +196,6 @@ async function validateSafePath(filePath, operation = 'read') {
     if (error.code === 'ENOENT') {
       // Caminho não existe - verificar se podemos criar
       if (operation === 'write' || operation === 'create') {
-        const fs = require('fs').promises;
         const parentDir = path.dirname(resolvedPath);
         try {
           await fs.access(parentDir);
@@ -781,7 +782,6 @@ class FileOperationsManager {
     async executeScheduledOperation(operationId, action, sourcePath, targetPath, options) {
         try {
             // Verificar se é uma operação em lote (pasta inteira)
-            const fs = require('fs').promises;
             const stats = await fs.stat(sourcePath);
             if (options.batch && stats.isDirectory()) {
                 await this.executeBatchOperation(operationId, action, sourcePath, targetPath, options);

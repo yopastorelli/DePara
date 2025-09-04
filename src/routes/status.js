@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
       timestamp: new Date().toISOString(),
       application: {
         name: 'DePara',
-        version: require('../../package.json').version,
+        version: process.env.npm_package_version || '1.0.0',
         description: 'Sistema de Conversão e Mapeamento de Dados',
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || 'development',

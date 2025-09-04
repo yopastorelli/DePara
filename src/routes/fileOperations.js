@@ -8,6 +8,9 @@
 
 const express = require('express');
 const router = express.Router();
+const fs = require('fs').promises;
+const fsSync = require('fs');
+const path = require('path');
 const fileOperationsManager = require('../utils/fileOperations');
 const fileTemplates = require('../utils/fileTemplates');
 const logger = require('../utils/logger');
@@ -24,7 +27,6 @@ const { sanitizeString, sanitizeFilePath, sanitizeIdentifier, ValidationError } 
 // Lista de pastas configuradas (armazenamento em memória por enquanto)
 const getDefaultConfiguredFolders = () => {
     const userHome = process.env.HOME || process.env.USERPROFILE || '/tmp';
-    const path = require('path');
 
     if (process.platform === 'win32') {
         return [
@@ -776,8 +778,6 @@ router.get('/backup-config', async (req, res) => {
  */
 router.get('/backups', async (req, res) => {
     try {
-        const fs = require('fs').promises;
-        const path = require('path');
 
         const backupDir = fileOperationsManager.backupConfig.backupDir;
 
@@ -1228,8 +1228,6 @@ router.get('/image/:imagePath(*)', async (req, res) => {
         const imagePath = '/' + req.params.imagePath;
 
         // Verificar se o arquivo existe e é uma imagem
-        const fs = require('fs').promises;
-        const path = require('path');
 
         const stats = await fs.stat(imagePath);
         if (!stats.isFile()) {
@@ -1254,7 +1252,6 @@ router.get('/image/:imagePath(*)', async (req, res) => {
         }
 
         // Verificar se não deve ser ignorado
-        const fileOperationsManager = require('../utils/fileOperations');
         if (fileOperationsManager.shouldIgnoreFile(path.dirname(imagePath), path.basename(imagePath))) {
             return res.status(403).json({
                 error: {
@@ -1280,7 +1277,7 @@ router.get('/image/:imagePath(*)', async (req, res) => {
         res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache por 1 hora
 
         // Stream do arquivo com gerenciamento adequado
-        const fileStream = require('fs').createReadStream(imagePath);
+        const fileStream = fsSync.createReadStream(imagePath);
 
         // Configurar timeout para evitar streams presos
         const streamTimeout = setTimeout(() => {
@@ -1578,7 +1575,7 @@ router.get('/image/:imagePath(*)', async (req, res) => {
         res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache por 1 hora
 
         // Stream do arquivo
-        const stream = require('fs').createReadStream(safePath);
+        const stream = fsSync.createReadStream(safePath);
         stream.pipe(res);
 
         stream.on('error', (error) => {
@@ -1633,7 +1630,7 @@ router.post('/list-folders', async (req, res) => {
             .filter(entry => !shouldIgnoreFile(entry.name)) // Não mostrar pastas ignoradas
             .map(entry => ({
                 name: entry.name,
-                path: require('path').join(safePath, entry.name)
+                path: path.join(safePath, entry.name)
             }))
             .sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabeticamente
 
