@@ -216,6 +216,9 @@ class DeParaUI {
             // Configurar validação de operações
             this.setupOperationValidation();
 
+            // Garantir que o campo de origem esteja sempre visível
+            this.ensureSourceFieldVisible();
+
             const initDuration = Date.now() - startTime;
             logger.success('🎉 Inicialização completa!', {
                 duration: `${initDuration}ms`,
@@ -757,6 +760,19 @@ class DeParaUI {
         });
 
         return isValid;
+    }
+
+    // Garantir que o campo de origem esteja sempre visível
+    ensureSourceFieldVisible() {
+        const sourceField = document.getElementById('source-folder-path');
+        const sourceFieldParent = sourceField?.parentElement;
+        
+        if (sourceFieldParent) {
+            sourceFieldParent.style.display = 'block';
+            console.log('✅ Campo de origem garantido como visível na inicialização');
+        } else {
+            console.warn('⚠️ Campo source-folder-path não encontrado');
+        }
     }
 
     // Validação em tempo real para campos de operação
@@ -2538,6 +2554,8 @@ class DeParaUI {
 
     // Selecionar operação
     selectOperation(operation) {
+        console.log('🎯 Selecionando operação:', operation);
+        
         // Remove classe active de todos os botões
         document.querySelectorAll('.operation-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -2550,6 +2568,19 @@ class DeParaUI {
         }
 
         this.currentConfig.operation = operation;
+
+        // Verificar se o campo de origem está visível
+        const sourceField = document.getElementById('source-folder-path');
+        const sourceFieldParent = sourceField?.parentElement;
+        console.log('🔍 Campo source-folder-path encontrado:', !!sourceField);
+        console.log('🔍 Campo source-folder-path visível:', sourceFieldParent?.style.display !== 'none');
+        console.log('🔍 Campo source-folder-path display:', sourceFieldParent?.style.display);
+
+        // Garantir que o campo de origem esteja sempre visível
+        if (sourceFieldParent) {
+            sourceFieldParent.style.display = 'block';
+            console.log('✅ Campo de origem forçado a ser visível');
+        }
 
         // Controla a visibilidade e obrigatoriedade do campo destino
         const targetField = document.getElementById('target-folder-path').parentElement;
