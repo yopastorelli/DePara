@@ -1101,15 +1101,19 @@
                         <label>Frequência</label>
                         <select id="schedule-frequency" required>
                             <option value="">Selecione frequência</option>
-                            <option value="30s">30 segundos</option>
-                            <option value="1m">1 minuto</option>
-                            <option value="5m">5 minutos</option>
-                            <option value="15m">15 minutos</option>
-                            <option value="30m">30 minutos</option>
-                            <option value="1h">1 hora</option>
-                            <option value="6h">6 horas</option>
-                            <option value="12h">12 horas</option>
-                            <option value="1d">Diariamente</option>
+                            <option value="30s">⏱️ 30 segundos</option>
+                            <option value="1m">⏱️ 1 minuto</option>
+                            <option value="5m">⏱️ 5 minutos</option>
+                            <option value="15m">⏱️ 15 minutos</option>
+                            <option value="30m">⏱️ 30 minutos</option>
+                            <option value="1h">⏰ 1 hora</option>
+                            <option value="6h">⏰ 6 horas</option>
+                            <option value="12h">⏰ 12 horas</option>
+                            <option value="1d" selected>📅 Diariamente</option>
+                            <option value="1w">📅 Semanalmente</option>
+                            <option value="1M">📅 Mensalmente</option>
+                            <option value="on-startup">🚀 Na inicialização</option>
+                            <option value="manual">👤 Manual (apenas quando solicitado)</option>
                         </select>
                     </div>
                 </div>
@@ -1127,9 +1131,28 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Filtros (opcional)</label>
-                    <input type="text" id="schedule-filters" placeholder="*.txt,*.csv">
-                    <small class="form-help">Extensões separadas por vírgula (ex: *.txt,*.csv)</small>
+                    <label>Filtros de Arquivos (opcional)</label>
+                    <input type="text" id="schedule-filters" placeholder="*.jpg,*.png,*.pdf">
+                    
+                    <!-- Botões de filtros rápidos -->
+                    <div class="filter-buttons" style="margin-top: 8px;">
+                        <button type="button" class="filter-btn" data-filter="*.jpg,*.png,*.gif,*.bmp">🖼️ Imagens</button>
+                        <button type="button" class="filter-btn" data-filter="*.pdf,*.doc,*.docx">📄 Documentos</button>
+                        <button type="button" class="filter-btn" data-filter="*.txt,*.csv,*.log">📝 Texto</button>
+                        <button type="button" class="filter-btn" data-filter="*.mp4,*.avi,*.mkv">🎬 Vídeos</button>
+                        <button type="button" class="filter-btn" data-filter="*.mp3,*.wav,*.flac">🎵 Áudio</button>
+                        <button type="button" class="filter-btn" data-filter="!*.tmp,!*.log,!*.bak">🚫 Excluir Temp</button>
+                        <button type="button" class="filter-btn" data-filter="">🗂️ Todos</button>
+                    </div>
+                    
+                    <small class="form-help">
+                        <strong>Exemplos:</strong><br>
+                        • <code>*.jpg,*.png</code> - Apenas imagens<br>
+                        • <code>*.pdf,*.doc</code> - Apenas documentos<br>
+                        • <code>*.txt</code> - Apenas arquivos de texto<br>
+                        • <code>!*.tmp,!*.log</code> - Excluir arquivos temporários<br>
+                        • Deixe vazio para processar todos os arquivos
+                    </small>
                 </div>
 
                 <div class="form-group">

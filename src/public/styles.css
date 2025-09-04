@@ -3117,6 +3117,37 @@ body {
     cursor: pointer;
     padding: 6px;
     border-radius: 4px;
+}
+
+/* Filter buttons for schedule modal */
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.filter-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.filter-btn:hover {
+    background: #e9ecef;
+    border-color: #007bff;
+    transform: translateY(-1px);
+}
+
+.filter-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
     transition: background-color 0.2s ease;
 }
 

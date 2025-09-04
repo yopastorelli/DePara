@@ -2041,6 +2041,9 @@ class DeParaUI {
         this.addButtonListener('.close-schedule-btn', () => window.closeScheduleModal());
         this.addButtonListener('.cancel-schedule-btn', () => window.closeScheduleModal());
         this.addButtonListener('.schedule-operation-btn', () => window.scheduleOperation());
+        
+        // Botões de filtros rápidos
+        this.addButtonListener('.filter-btn', (e) => this.selectFilter(e));
 
         // Botões de slideshow
         this.addButtonListener('.close-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
@@ -2373,6 +2376,27 @@ class DeParaUI {
         const currentPath = document.getElementById('browser-path').value;
         const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
         this.loadFoldersForBrowser(parentPath);
+    }
+
+    // Selecionar filtro rápido
+    selectFilter(event) {
+        const button = event.target;
+        const filter = button.getAttribute('data-filter');
+        const filterInput = document.getElementById('schedule-filters');
+        
+        if (filterInput) {
+            filterInput.value = filter;
+            
+            // Remover classe active de todos os botões
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Adicionar classe active ao botão clicado
+            button.classList.add('active');
+            
+            console.log('✅ Filtro selecionado:', filter);
+        }
     }
 
     // Função auxiliar para preencher campo com múltiplas tentativas
@@ -4761,23 +4785,48 @@ async function executeFileOperation() {
 function showScheduleModal() {
     const modal = document.getElementById('schedule-modal');
 
-    // Reset form
-    document.getElementById('schedule-name').value = '';
-    document.getElementById('schedule-action').value = '';
-    document.getElementById('schedule-frequency').value = '';
-    document.getElementById('schedule-source').value = '';
-    document.getElementById('schedule-target').value = '';
-    document.getElementById('schedule-filters').value = '';
-    document.getElementById('schedule-batch').checked = true;
-    document.getElementById('schedule-backup').checked = false;
+    // Preencher com dados da operação atual se disponível
+    if (window.deParaUI && window.deParaUI.currentConfig) {
+        const config = window.deParaUI.currentConfig;
+        
+        // Preencher campos com valores atuais
+        document.getElementById('schedule-name').value = config.operationName || '';
+        document.getElementById('schedule-action').value = config.operation || '';
+        document.getElementById('schedule-frequency').value = '1d'; // Padrão: diariamente
+        document.getElementById('schedule-source').value = config.sourcePath || '';
+        document.getElementById('schedule-target').value = config.targetPath || '';
+        document.getElementById('schedule-filters').value = config.fileFilters || '';
+        document.getElementById('schedule-batch').checked = true;
+        document.getElementById('schedule-backup').checked = false;
+        
+        console.log('✅ Modal preenchido com configuração atual:', config);
+    } else {
+        // Reset form se não há configuração
+        document.getElementById('schedule-name').value = '';
+        document.getElementById('schedule-action').value = '';
+        document.getElementById('schedule-frequency').value = '';
+        document.getElementById('schedule-source').value = '';
+        document.getElementById('schedule-target').value = '';
+        document.getElementById('schedule-filters').value = '';
+        document.getElementById('schedule-batch').checked = true;
+        document.getElementById('schedule-backup').checked = false;
+        
+        console.log('⚠️ Nenhuma configuração atual encontrada, modal resetado');
+    }
 
     updateScheduleForm();
 
     modal.style.display = 'flex';
+    document.body.classList.add('modal-open');
 }
 
 function closeScheduleModal() {
-    document.getElementById('schedule-modal').style.display = 'none';
+    const modal = document.getElementById('schedule-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+        console.log('✅ Modal de agendamento fechado');
+    }
 }
 
 function updateScheduleForm() {
@@ -6376,9 +6425,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         window.showScheduleModal = function() {
-            // Chamar diretamente a função global showScheduleModal
-            if (typeof showScheduleModal === 'function') {
-                showScheduleModal();
+            // Chamar diretamente a função global showScheduleModal (sem recursão)
+            const modal = document.getElementById('schedule-modal');
+            if (modal) {
+                modal.style.display = 'block';
+                document.body.classList.add('modal-open');
+            } else {
+                console.error('❌ Modal de agendamento não encontrado');
+                this.showToast('Erro: Modal de agendamento não encontrado', 'error');
             }
         };
 
