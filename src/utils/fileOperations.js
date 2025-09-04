@@ -14,6 +14,23 @@ const execAsync = util.promisify(exec);
 
 const logger = require('./logger');
 
+/**
+ * Função utilitária para corrigir permissões de arquivos/diretórios
+ * Necessária para sistemas NTFS que criam arquivos como root
+ * @param {string} filePath - Caminho do arquivo/diretório
+ * @param {string} permissions - Permissões (padrão: 755)
+ */
+async function fixFilePermissions(filePath, permissions = '755') {
+    try {
+        // Executar chmod para corrigir permissões
+        await execAsync(`chmod ${permissions} "${filePath}"`);
+        logger.debug(`✅ Permissões corrigidas: ${filePath} (${permissions})`);
+    } catch (error) {
+        // Log como aviso, não como erro, pois não é crítico
+        logger.warn(`⚠️ Não foi possível corrigir permissões de ${filePath}: ${error.message}`);
+    }
+}
+
 // Evitar redeclarações desnecessárias
 const fsSync = require('fs');
 
@@ -418,6 +435,9 @@ class FileOperationsManager {
             const targetStats = await fs.stat(targetPath);
             await fs.access(targetPath, fs.constants.R_OK);
             
+            // Corrigir permissões do arquivo de destino
+            await fixFilePermissions(targetPath);
+            
             logger.info(`✅ Arquivo movido com rename: ${sourcePath} -> ${targetPath} (${targetStats.size} bytes)`);
         } catch (error) {
             if (error.code === 'EXDEV') {
@@ -439,6 +459,10 @@ class FileOperationsManager {
                         
                         // Se chegou até aqui, a cópia foi bem-sucedida
                         await fs.unlink(sourcePath);
+                        
+                        // Corrigir permissões do arquivo de destino
+                        await fixFilePermissions(targetPath);
+                        
                         logger.info(`✅ Arquivo movido com copy + delete: ${sourcePath} -> ${targetPath} (${targetStats.size} bytes)`);
                     } catch (accessError) {
                         // Arquivo de destino não é legível
@@ -626,9 +650,15 @@ class FileOperationsManager {
                 // Garantir que o diretório de destino existe
                 const targetDir = path.dirname(safeTargetPath);
                 await fs.mkdir(targetDir, { recursive: true });
+                
+                // Corrigir permissões do diretório criado
+                await fixFilePermissions(targetDir);
 
                 // Copiar o arquivo
                 await fs.copyFile(safeSourcePath, safeTargetPath);
+                
+                // Corrigir permissões do arquivo copiado
+                await fixFilePermissions(safeTargetPath);
             }
 
             // Verificar se copiou corretamente
@@ -669,6 +699,9 @@ class FileOperationsManager {
 
         // Garantir que o diretório de destino existe
         await fs.mkdir(targetDir, { recursive: true });
+        
+        // Corrigir permissões do diretório criado
+        await fixFilePermissions(targetDir);
 
         // Ler conteúdo do diretório
         const entries = await fs.readdir(sourceDir, { withFileTypes: true });
@@ -698,6 +731,10 @@ class FileOperationsManager {
 
                 // Copiar arquivo
                 await fs.copyFile(sourcePath, targetPath);
+                
+                // Corrigir permissões do arquivo copiado
+                await fixFilePermissions(targetPath);
+                
                 logger.info(`Arquivo copiado: ${sourcePath} -> ${targetPath}`);
             }
         }
@@ -827,6 +864,9 @@ class FileOperationsManager {
             const backupPath = path.join(this.backupConfig.backupDir, backupFileName);
 
             await fs.copyFile(filePath, backupPath);
+            
+            // Corrigir permissões do arquivo de backup
+            await fixFilePermissions(backupPath);
 
             logger.info(`Backup criado: ${backupPath}`);
 
