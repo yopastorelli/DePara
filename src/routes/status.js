@@ -472,53 +472,31 @@ function getDiskInfo() {
             const percentage = parseInt(parts[4]) || 0;
             const mountpoint = parts[5];
             
-            // Filtrar apenas discos reais (não tmpfs, devtmpfs, etc.)
-            const isRealDisk = !filesystem.includes('tmpfs') && 
-                              !filesystem.includes('devtmpfs') && 
-                              !filesystem.includes('overlay') &&
-                              !filesystem.includes('squashfs') &&
-                              !filesystem.includes('proc') &&
-                              !filesystem.includes('sysfs') &&
-                              !filesystem.includes('udev') &&
-                              !filesystem.includes('cgroup') &&
-                              !filesystem.includes('pstore') &&
-                              !filesystem.includes('bpf') &&
-                              !filesystem.includes('tracefs') &&
-                              !filesystem.includes('debugfs') &&
-                              !filesystem.includes('securityfs') &&
-                              !filesystem.includes('mqueue') &&
-                              !filesystem.includes('hugetlbfs') &&
-                              !filesystem.includes('configfs') &&
-                              !filesystem.includes('fusectl') &&
-                              !filesystem.includes('binfmt_misc') &&
-                              !filesystem.includes('systemd-1') &&
-                              !filesystem.includes('rpc_pipefs') &&
-                              !filesystem.includes('sunrpc') &&
-                              !filesystem.includes('selinuxfs') &&
-                              !filesystem.includes('autofs') &&
-                              !filesystem.includes('cgroup2') &&
-                              !filesystem.includes('efivarfs') &&
-                              !filesystem.includes('bpf') &&
-                              !filesystem.includes('tracefs') &&
-                              !filesystem.includes('debugfs') &&
-                              !filesystem.includes('securityfs') &&
-                              !filesystem.includes('mqueue') &&
-                              !filesystem.includes('hugetlbfs') &&
-                              !filesystem.includes('configfs') &&
-                              !filesystem.includes('fusectl') &&
-                              !filesystem.includes('binfmt_misc') &&
-                              !filesystem.includes('systemd-1') &&
-                              !filesystem.includes('rpc_pipefs') &&
-                              !filesystem.includes('sunrpc') &&
-                              !filesystem.includes('selinuxfs') &&
-                              !filesystem.includes('autofs') &&
-                              !filesystem.includes('cgroup2') &&
-                              !filesystem.includes('efivarfs') &&
-                              total !== '0' && 
-                              total !== '0B' &&
-                              parseSizeToBytes(total) > 1024 * 1024 * 1024; // Pelo menos 1GB
+            // Filtrar apenas discos reais - lista mais rigorosa
+            const virtualFilesystems = [
+                'tmpfs', 'devtmpfs', 'overlay', 'squashfs', 'proc', 'sysfs', 'udev',
+                'cgroup', 'pstore', 'bpf', 'tracefs', 'debugfs', 'securityfs', 'mqueue',
+                'hugetlbfs', 'configfs', 'fusectl', 'binfmt_misc', 'systemd-1', 'rpc_pipefs',
+                'sunrpc', 'selinuxfs', 'autofs', 'cgroup2', 'efivarfs', 'devpts', 'none',
+                'ramfs', 'rootfs', 'shm', 'run', 'var', 'tmp', 'boot', 'efi'
+            ];
             
-            if (isRealDisk) {
+            const isVirtualFS = virtualFilesystems.some(vfs => 
+                filesystem.includes(vfs) || mountpoint.includes(vfs)
+            );
+            
+            // Apenas discos físicos reais
+            const isPhysicalDisk = filesystem.startsWith('/dev/') && 
+                                  (filesystem.includes('sd') || 
+                                   filesystem.includes('nvme') || 
+                                   filesystem.includes('mmcblk') ||
+                                   filesystem.includes('hd')) &&
+                                  !isVirtualFS &&
+                                  total !== '0' && 
+                                  total !== '0B' &&
+                                  parseSizeToBytes(total) > 1024 * 1024 * 1024; // Pelo menos 1GB
+            
+            if (isPhysicalDisk) {
               // Converter tamanhos para bytes (aproximado)
               const totalBytes = parseSizeToBytes(total);
               const usedBytes = parseSizeToBytes(used);
