@@ -2061,6 +2061,11 @@ class DeParaUI {
                 const operationId = btn.getAttribute('data-operation-id');
                 editScheduledOperation(operationId);
             }
+            if (e.target.closest('.duplicate-scheduled-operation-btn')) {
+                const btn = e.target.closest('.duplicate-scheduled-operation-btn');
+                const operationId = btn.getAttribute('data-operation-id');
+                duplicateScheduledOperation(operationId);
+            }
             if (e.target.closest('.execute-scheduled-operation-btn')) {
                 const btn = e.target.closest('.execute-scheduled-operation-btn');
                 const operationId = btn.getAttribute('data-operation-id');
@@ -4944,6 +4949,9 @@ function updateOperationSummary() {
 }
 
 async function scheduleOperation() {
+    const modal = document.getElementById('schedule-modal');
+    const isEditing = modal.dataset.editingOperationId;
+    
     const name = document.getElementById('schedule-name').value.trim();
     const action = document.getElementById('schedule-action').value;
     const frequency = document.getElementById('schedule-frequency').value;
@@ -4966,7 +4974,7 @@ async function scheduleOperation() {
 
     try {
         const requestData = {
-            operationId: `ui_${Date.now()}`,
+            operationId: isEditing || `ui_${Date.now()}`,
             frequency,
             action,
             sourcePath,
@@ -4988,8 +4996,13 @@ async function scheduleOperation() {
             };
         }
 
-        const response = await fetch('/api/files/schedule', {
-            method: 'POST',
+        const url = isEditing ? `/api/files/schedule/${isEditing}` : '/api/files/schedule';
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        console.log(`${isEditing ? '✏️ Editando' : '➕ Criando'} operação:`, requestData);
+
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -5000,11 +5013,13 @@ async function scheduleOperation() {
 
         if (result.success) {
             const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
-            showToast(`Operação "${name}" agendada com sucesso!${structureMsg}`, 'success', true);
+            const actionMsg = isEditing ? 'editada' : 'agendada';
+            showToast(`Operação "${name}" ${actionMsg} com sucesso!${structureMsg}`, 'success', true);
             window.closeScheduleModal();
             loadScheduledOperations();
         } else {
-            showToast(result.error?.message || 'Erro ao agendar operação', 'error', true);
+            const actionMsg = isEditing ? 'editar' : 'agendar';
+            showToast(result.error?.message || `Erro ao ${actionMsg} operação`, 'error', true);
         }
 
     } catch (error) {
@@ -5275,6 +5290,9 @@ function renderScheduledOperations(operations) {
                 <button class="btn btn-sm btn-primary edit-scheduled-operation-btn" data-operation-id="${op.id}" title="Editar operação">
                     <span class="material-icons">edit</span>
                 </button>
+                <button class="btn btn-sm btn-info duplicate-scheduled-operation-btn" data-operation-id="${op.id}" title="Duplicar operação">
+                    <span class="material-icons">content_copy</span>
+                </button>
                 <button class="btn btn-sm btn-success execute-scheduled-operation-btn" data-operation-id="${op.id}" title="Executar agora">
                     <span class="material-icons">play_arrow</span>
                 </button>
@@ -5390,8 +5408,140 @@ async function toggleScheduledOperation(operationId) {
 // Editar operação agendada
 async function editScheduledOperation(operationId) {
     console.log('🔧 Editando operação:', operationId);
-    // TODO: Implementar modal de edição
-    showToast('Funcionalidade de edição em desenvolvimento', 'info', true);
+    
+    try {
+        // Obter dados da operação
+        const response = await fetch(`/api/files/schedule/${operationId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error?.message || 'Erro ao obter operação');
+        }
+        
+        const operation = result.data;
+        console.log('📋 Dados da operação para edição:', operation);
+        
+        // Abrir modal de edição
+        showEditOperationModal(operation);
+        
+    } catch (error) {
+        console.error('❌ Erro ao obter operação para edição:', error);
+        showToast('Erro ao carregar operação para edição: ' + error.message, 'error', true);
+    }
+}
+
+// Mostrar modal de edição de operação
+function showEditOperationModal(operation) {
+    const modal = document.getElementById('schedule-modal');
+    
+    // Preencher campos com dados da operação
+    document.getElementById('schedule-name').value = operation.name || '';
+    document.getElementById('schedule-action').value = operation.action || '';
+    document.getElementById('schedule-frequency').value = operation.frequency || '1d';
+    document.getElementById('schedule-source').value = operation.sourcePath || '';
+    document.getElementById('schedule-target').value = operation.targetPath || '';
+    document.getElementById('schedule-filters').value = operation.fileFilters || '';
+    document.getElementById('schedule-batch').checked = operation.batch !== false;
+    document.getElementById('schedule-backup').checked = operation.backup === true;
+    
+    // Adicionar ID da operação ao modal para identificação
+    modal.dataset.editingOperationId = operation.id;
+    
+    // Alterar título do modal
+    const modalTitle = modal.querySelector('.modal-header h3');
+    if (modalTitle) {
+        modalTitle.textContent = 'Editar Operação';
+    }
+    
+    // Alterar texto do botão
+    const submitBtn = modal.querySelector('.schedule-operation-btn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Salvar Alterações';
+    }
+    
+    updateScheduleForm();
+    updateOperationSummary();
+    
+    modal.style.display = 'flex';
+    document.body.classList.add('modal-open');
+    
+    console.log('✅ Modal de edição aberto para operação:', operation.id);
+}
+
+// Duplicar operação agendada
+async function duplicateScheduledOperation(operationId) {
+    console.log('📋 Duplicando operação:', operationId);
+    
+    try {
+        // Obter dados da operação
+        const response = await fetch(`/api/files/schedule/${operationId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error?.message || 'Erro ao obter operação');
+        }
+        
+        const operation = result.data;
+        console.log('📋 Dados da operação para duplicação:', operation);
+        
+        // Modificar nome para indicar que é uma cópia
+        const duplicatedOperation = {
+            ...operation,
+            name: `${operation.name} (Cópia)`,
+            id: `duplicate_${Date.now()}` // Novo ID
+        };
+        
+        // Abrir modal de duplicação
+        showDuplicateOperationModal(duplicatedOperation);
+        
+    } catch (error) {
+        console.error('❌ Erro ao obter operação para duplicação:', error);
+        showToast('Erro ao carregar operação para duplicação: ' + error.message, 'error', true);
+    }
+}
+
+// Mostrar modal de duplicação de operação
+function showDuplicateOperationModal(operation) {
+    const modal = document.getElementById('schedule-modal');
+    
+    // Preencher campos com dados da operação
+    document.getElementById('schedule-name').value = operation.name || '';
+    document.getElementById('schedule-action').value = operation.action || '';
+    document.getElementById('schedule-frequency').value = operation.frequency || '1d';
+    document.getElementById('schedule-source').value = operation.sourcePath || '';
+    document.getElementById('schedule-target').value = operation.targetPath || '';
+    document.getElementById('schedule-filters').value = operation.fileFilters || '';
+    document.getElementById('schedule-batch').checked = operation.batch !== false;
+    document.getElementById('schedule-backup').checked = operation.backup === true;
+    
+    // Adicionar ID da operação ao modal para identificação
+    modal.dataset.editingOperationId = operation.id;
+    
+    // Alterar título do modal
+    const modalTitle = modal.querySelector('.modal-header h3');
+    if (modalTitle) {
+        modalTitle.textContent = 'Duplicar Operação';
+    }
+    
+    // Alterar texto do botão
+    const submitBtn = modal.querySelector('.schedule-operation-btn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Duplicar Operação';
+    }
+    
+    updateScheduleForm();
+    updateOperationSummary();
+    
+    modal.style.display = 'flex';
+    document.body.classList.add('modal-open');
+    
+    console.log('✅ Modal de duplicação aberto para operação:', operation.id);
 }
 
 // Load Backups
@@ -6708,6 +6858,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modal) {
                 modal.style.display = 'none';
                 document.body.classList.remove('modal-open');
+                
+                // Limpar estado de edição
+                delete modal.dataset.editingOperationId;
+                
+                // Restaurar título e botão originais
+                const modalTitle = modal.querySelector('.modal-header h3');
+                if (modalTitle) {
+                    modalTitle.textContent = 'Agendar Operação';
+                }
+                
+                const submitBtn = modal.querySelector('.schedule-operation-btn');
+                if (submitBtn) {
+                    submitBtn.textContent = 'Agendar';
+                }
+                
                 console.log('✅ Modal de agendamento fechado via window.closeScheduleModal');
             }
         };
