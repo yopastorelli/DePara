@@ -1648,12 +1648,28 @@ class DeParaUI {
         const selectedPath = document.getElementById('browser-path').value;
 
         if (targetType === 'source') {
-            this.currentConfig.sourcePath = selectedPath;
-            document.getElementById('source-folder-path').value = selectedPath;
-            this.showToast(`Pasta de origem selecionada: ${selectedPath}`, 'success');
+            // Verificar se existe o campo simples ou o campo complexo
+            let sourceField = document.getElementById('source-path'); // Campo simples
+            if (!sourceField) {
+                sourceField = document.getElementById('source-folder-path'); // Campo complexo
+                if (sourceField) {
+                    this.currentConfig.sourcePath = selectedPath;
+                }
+            }
+            if (sourceField) {
+                sourceField.value = selectedPath;
+                this.showToast(`Pasta de origem selecionada: ${selectedPath}`, 'success');
+            }
         } else if (targetType === 'target') {
-            document.getElementById('target-folder-path').value = selectedPath;
-            this.showToast(`Pasta de destino selecionada: ${selectedPath}`, 'success');
+            // Verificar se existe o campo simples ou o campo complexo
+            let targetField = document.getElementById('dest-path'); // Campo simples
+            if (!targetField) {
+                targetField = document.getElementById('target-folder-path'); // Campo complexo
+            }
+            if (targetField) {
+                targetField.value = selectedPath;
+                this.showToast(`Pasta de destino selecionada: ${selectedPath}`, 'success');
+            }
         }
 
         // Fechar modal
@@ -5722,19 +5738,31 @@ function setOperationButtonsDisabled(disabled) {
 
 // Navegar para caminho de origem
 function browseSourcePath() {
-    const input = document.getElementById('source-path');
-    if (input) {
-        input.focus();
-        input.select();
+    if (window.deParaUI && typeof window.deParaUI.showFolderBrowser === 'function') {
+        window.deParaUI.showFolderBrowser('source');
+    } else {
+        console.warn('Função showFolderBrowser não encontrada');
+        // Fallback: apenas focar no input
+        const input = document.getElementById('source-path');
+        if (input) {
+            input.focus();
+            input.select();
+        }
     }
 }
 
 // Navegar para caminho de destino
 function browseDestPath() {
-    const input = document.getElementById('dest-path');
-    if (input) {
-        input.focus();
-        input.select();
+    if (window.deParaUI && typeof window.deParaUI.showFolderBrowser === 'function') {
+        window.deParaUI.showFolderBrowser('target');
+    } else {
+        console.warn('Função showFolderBrowser não encontrada');
+        // Fallback: apenas focar no input
+        const input = document.getElementById('dest-path');
+        if (input) {
+            input.focus();
+            input.select();
+        }
     }
 }
 
