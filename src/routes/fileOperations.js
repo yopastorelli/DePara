@@ -696,7 +696,8 @@ router.post('/schedule/:operationId/execute', strictRateLimiter, async (req, res
     try {
         const { operationId } = req.params;
         
-        logger.info(`🚀 Executando operação agendada imediatamente: ${operationId}`);
+        logger.info(`🚀 EXECUTANDO OPERAÇÃO AGENDADA IMEDIATAMENTE: ${operationId}`);
+        logger.info(`🔍 ROTA CHAMADA: POST /api/files/schedule/${operationId}/execute`);
         
         // Obter a operação agendada
         const operation = fileOperationsManager.getScheduledOperation(operationId);
