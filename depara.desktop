@@ -10,4 +10,3 @@ StartupNotify=true
 Categories=Utility;FileManager;
 Keywords=files;manager;sync;backup;
 StartupWMClass=DePara
-MimeType=inode/directory;
