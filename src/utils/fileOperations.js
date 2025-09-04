@@ -31,6 +31,56 @@ async function fixFilePermissions(filePath, permissions = '755') {
     }
 }
 
+/**
+ * Função para executar operações de arquivo com sudo quando necessário
+ * @param {string} sourcePath - Caminho de origem
+ * @param {string} targetPath - Caminho de destino
+ * @param {string} operation - Tipo de operação (copy, move)
+ */
+async function executeFileOperationWithSudo(sourcePath, targetPath, operation) {
+    try {
+        if (operation === 'copy') {
+            // Tentar cópia normal primeiro
+            await fs.copyFile(sourcePath, targetPath);
+            logger.debug(`✅ Cópia normal bem-sucedida: ${sourcePath} -> ${targetPath}`);
+        } else if (operation === 'move') {
+            // Tentar rename primeiro
+            await fs.rename(sourcePath, targetPath);
+            logger.debug(`✅ Move normal bem-sucedido: ${sourcePath} -> ${targetPath}`);
+        }
+        
+        // Corrigir permissões após operação bem-sucedida
+        await fixFilePermissions(targetPath);
+        
+    } catch (error) {
+        if (error.code === 'EPERM') {
+            logger.warn(`⚠️ EPERM detectado, tentando com sudo: ${sourcePath} -> ${targetPath}`);
+            
+            try {
+                if (operation === 'copy') {
+                    // Usar sudo cp para copiar
+                    await execAsync(`sudo cp "${sourcePath}" "${targetPath}"`);
+                    logger.info(`✅ Cópia com sudo bem-sucedida: ${sourcePath} -> ${targetPath}`);
+                } else if (operation === 'move') {
+                    // Usar sudo mv para mover
+                    await execAsync(`sudo mv "${sourcePath}" "${targetPath}"`);
+                    logger.info(`✅ Move com sudo bem-sucedido: ${sourcePath} -> ${targetPath}`);
+                }
+                
+                // Corrigir permissões após operação com sudo
+                await fixFilePermissions(targetPath);
+                
+            } catch (sudoError) {
+                logger.error(`❌ Erro mesmo com sudo: ${sudoError.message}`);
+                throw new Error(`Operação falhou mesmo com sudo: ${sudoError.message}`);
+            }
+        } else {
+            // Re-throw outros erros
+            throw error;
+        }
+    }
+}
+
 // Evitar redeclarações desnecessárias
 const fsSync = require('fs');
 
@@ -429,14 +479,11 @@ class FileOperationsManager {
     async moveFileCrossDevice(sourcePath, targetPath) {
         try {
             // Tentar rename primeiro (mais rápido para mesmo dispositivo)
-            await fs.rename(sourcePath, targetPath);
+            await executeFileOperationWithSudo(sourcePath, targetPath, 'move');
             
             // Validar que o arquivo chegou ao destino
             const targetStats = await fs.stat(targetPath);
             await fs.access(targetPath, fs.constants.R_OK);
-            
-            // Corrigir permissões do arquivo de destino
-            await fixFilePermissions(targetPath);
             
             logger.info(`✅ Arquivo movido com rename: ${sourcePath} -> ${targetPath} (${targetStats.size} bytes)`);
         } catch (error) {
@@ -444,8 +491,12 @@ class FileOperationsManager {
                 // Cross-device link not permitted - usar copy + delete
                 logger.info(`Cross-device detectado, usando copy + delete: ${sourcePath} -> ${targetPath}`);
                 
-                // Copiar arquivo
-                await fs.copyFile(sourcePath, targetPath);
+                // Garantir que o diretório de destino existe
+                const targetDir = path.dirname(targetPath);
+                await fs.mkdir(targetDir, { recursive: true });
+                
+                // Copiar arquivo com suporte a sudo
+                await executeFileOperationWithSudo(sourcePath, targetPath, 'copy');
                 
                 // Verificar se a cópia foi bem-sucedida
                 const sourceStats = await fs.stat(sourcePath);
@@ -459,9 +510,6 @@ class FileOperationsManager {
                         
                         // Se chegou até aqui, a cópia foi bem-sucedida
                         await fs.unlink(sourcePath);
-                        
-                        // Corrigir permissões do arquivo de destino
-                        await fixFilePermissions(targetPath);
                         
                         logger.info(`✅ Arquivo movido com copy + delete: ${sourcePath} -> ${targetPath} (${targetStats.size} bytes)`);
                     } catch (accessError) {
@@ -654,11 +702,8 @@ class FileOperationsManager {
                 // Corrigir permissões do diretório criado
                 await fixFilePermissions(targetDir);
 
-                // Copiar o arquivo
-                await fs.copyFile(safeSourcePath, safeTargetPath);
-                
-                // Corrigir permissões do arquivo copiado
-                await fixFilePermissions(safeTargetPath);
+                // Copiar o arquivo com suporte a sudo
+                await executeFileOperationWithSudo(safeSourcePath, safeTargetPath, 'copy');
             }
 
             // Verificar se copiou corretamente
@@ -729,11 +774,8 @@ class FileOperationsManager {
                     }
                 }
 
-                // Copiar arquivo
-                await fs.copyFile(sourcePath, targetPath);
-                
-                // Corrigir permissões do arquivo copiado
-                await fixFilePermissions(targetPath);
+                // Copiar arquivo com suporte a sudo
+                await executeFileOperationWithSudo(sourcePath, targetPath, 'copy');
                 
                 logger.info(`Arquivo copiado: ${sourcePath} -> ${targetPath}`);
             }
