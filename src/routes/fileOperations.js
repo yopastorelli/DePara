@@ -1605,9 +1605,9 @@ router.post('/list-folders', async (req, res) => {
     const startTime = Date.now();
 
     try {
-        const { path } = req.body;
+        const { path: requestedPath } = req.body;
 
-        if (!path || typeof path !== 'string') {
+        if (!requestedPath || typeof requestedPath !== 'string') {
             return res.status(400).json({
                 error: {
                     message: 'Parâmetro path é obrigatório e deve ser uma string',
@@ -1616,10 +1616,10 @@ router.post('/list-folders', async (req, res) => {
             });
         }
 
-        logger.startOperation('List Folders', { path });
+        logger.startOperation('List Folders', { path: requestedPath });
 
         // Validar caminho usando fileOperationsManager
-        const safePath = await fileOperationsManager.validateSafePath(path, 'read');
+        const safePath = await fileOperationsManager.validateSafePath(requestedPath, 'read');
 
         // Verificar se o diretório existe antes de tentar lê-lo
         let entries;

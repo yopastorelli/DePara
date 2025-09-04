@@ -78,6 +78,16 @@ router.get('/', (req, res) => {
 });
 
 /**
+ * Status do sistema (alias para a rota principal)
+ * GET /api/status/system
+ */
+router.get('/system', (req, res) => {
+  // Redirecionar para a rota principal que já contém todas as informações do sistema
+  req.url = '/';
+  router.handle(req, res);
+});
+
+/**
  * Status detalhado de recursos
  * GET /api/status/resources
  */
