@@ -9,10 +9,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Detectar usuário atual
+CURRENT_USER=$(whoami)
+USER_HOME="/home/$CURRENT_USER"
+
 # Diretórios
-DEPARA_DIR="/home/pi/DePara"
-APPLICATIONS_DIR="/home/pi/.local/share/applications"
-DESKTOP_DIR="/home/pi/Desktop"
+DEPARA_DIR="$USER_HOME/DePara"
+APPLICATIONS_DIR="$USER_HOME/.local/share/applications"
+DESKTOP_DIR="$USER_HOME/Desktop"
 SYSTEMD_DIR="/etc/systemd/system"
 
 # Função para log
@@ -90,8 +94,20 @@ remove_symlinks() {
     # Remover links do PATH
     sudo rm -f /usr/local/bin/depara
     sudo rm -f /usr/local/bin/depara-status
+    sudo rm -f /usr/local/bin/depara-update
+    sudo rm -f /usr/local/bin/depara-check
     
     success "Links simbólicos removidos"
+}
+
+# Remover configurações de atualização automática
+remove_auto_update() {
+    log "Removendo configurações de atualização automática..."
+    
+    # Remover jobs do cron
+    crontab -l 2>/dev/null | grep -v "check-updates.sh" | crontab - 2>/dev/null || true
+    
+    success "Configurações de atualização automática removidas"
 }
 
 # Remover diretório do projeto (opcional)
@@ -129,6 +145,7 @@ main() {
     remove_systemd_service
     remove_desktop_files
     remove_symlinks
+    remove_auto_update
     remove_project_directory
     
     echo ""

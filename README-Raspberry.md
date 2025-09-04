@@ -51,6 +51,31 @@ O DePara será iniciado automaticamente:
 2. **No login do usuário** (via autostart)
 3. **Com indicador visual** na barra de status
 
+## 🔄 Atualização Automática
+
+O DePara inclui sistema de atualização automática:
+
+1. **Verificação diária** de atualizações (via cron)
+2. **Notificações** quando há atualizações disponíveis
+3. **Backup automático** antes de atualizar
+4. **Restauração** em caso de falha na atualização
+
+### Configuração de Atualização Automática
+
+```bash
+# Verificar se há atualizações
+depara-check
+
+# Atualizar manualmente
+depara-update
+
+# Ver logs de verificação
+tail -f /home/yo/DePara/logs/update-check.log
+
+# Ver logs de atualização
+tail -f /home/yo/DePara/logs/update.log
+```
+
 ## 🛠️ Comandos Disponíveis
 
 ### Comandos Básicos
@@ -70,6 +95,22 @@ depara status
 
 # Abrir no navegador
 depara open
+```
+
+### Comandos de Atualização
+
+```bash
+# Verificar atualizações disponíveis
+depara-check
+
+# Atualizar DePara automaticamente
+depara-update
+
+# Criar backup da versão atual
+depara-update backup
+
+# Restaurar backup
+depara-update restore /caminho/do/backup
 ```
 
 ### Comando de Status

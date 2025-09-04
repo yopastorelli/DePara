@@ -10,10 +10,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Detectar usuário atual
+CURRENT_USER=$(whoami)
+USER_HOME="/home/$CURRENT_USER"
+
 # Diretórios
-DEPARA_DIR="/home/pi/DePara"
-DESKTOP_DIR="/home/pi/Desktop"
-APPLICATIONS_DIR="/home/pi/.local/share/applications"
+DEPARA_DIR="$USER_HOME/DePara"
+DESKTOP_DIR="$USER_HOME/Desktop"
+APPLICATIONS_DIR="$USER_HOME/.local/share/applications"
 SYSTEMD_DIR="/etc/systemd/system"
 
 # Função para log
@@ -39,7 +43,7 @@ warning() {
 # Verificar se está rodando como root
 check_root() {
     if [ "$EUID" -eq 0 ]; then
-        error "Não execute este script como root. Execute como usuário 'pi'"
+        error "Não execute este script como root. Execute como usuário '$CURRENT_USER'"
         exit 1
     fi
 }
@@ -110,8 +114,11 @@ setup_desktop_file() {
     # Criar diretório de aplicações se não existir
     mkdir -p "$APPLICATIONS_DIR"
     
-    # Copiar arquivo .desktop
+    # Copiar arquivo .desktop e ajustar caminhos
     cp "$DEPARA_DIR/depara.desktop" "$APPLICATIONS_DIR/"
+    
+    # Ajustar caminhos no arquivo .desktop
+    sed -i "s|/home/pi/DePara|$DEPARA_DIR|g" "$APPLICATIONS_DIR/depara.desktop"
     
     # Atualizar banco de dados de aplicações
     update-desktop-database "$APPLICATIONS_DIR" 2>/dev/null || true
@@ -126,8 +133,14 @@ setup_desktop_file() {
 setup_systemd_service() {
     log "Configurando serviço systemd..."
     
-    # Copiar arquivo de serviço
+    # Copiar arquivo de serviço e ajustar usuário
     sudo cp "$DEPARA_DIR/depara.service" "$SYSTEMD_DIR/"
+    
+    # Ajustar usuário no arquivo de serviço
+    sudo sed -i "s/User=pi/User=$CURRENT_USER/g" "$SYSTEMD_DIR/depara.service"
+    sudo sed -i "s/Group=pi/Group=$CURRENT_USER/g" "$SYSTEMD_DIR/depara.service"
+    sudo sed -i "s|WorkingDirectory=/home/pi/DePara|WorkingDirectory=$DEPARA_DIR|g" "$SYSTEMD_DIR/depara.service"
+    sudo sed -i "s|ReadWritePaths=/home/pi/DePara|ReadWritePaths=$DEPARA_DIR|g" "$SYSTEMD_DIR/depara.service"
     
     # Recarregar systemd
     sudo systemctl daemon-reload
@@ -160,12 +173,33 @@ EOF
     success "Inicialização automática configurada"
 }
 
+# Configurar atualização automática
+setup_auto_update() {
+    log "Configurando atualização automática..."
+    
+    # Tornar scripts executáveis
+    chmod +x "$DEPARA_DIR/update-depara.sh"
+    chmod +x "$DEPARA_DIR/check-updates.sh"
+    
+    # Criar link no PATH
+    sudo ln -sf "$DEPARA_DIR/update-depara.sh" /usr/local/bin/depara-update
+    sudo ln -sf "$DEPARA_DIR/check-updates.sh" /usr/local/bin/depara-check
+    
+    # Configurar cron para verificar atualizações diariamente
+    CRON_JOB="0 2 * * * $DEPARA_DIR/check-updates.sh >> $DEPARA_DIR/logs/cron.log 2>&1"
+    
+    # Adicionar ao crontab se não existir
+    (crontab -l 2>/dev/null | grep -v "check-updates.sh"; echo "$CRON_JOB") | crontab - 2>/dev/null || true
+    
+    success "Atualização automática configurada"
+}
+
 # Criar ícone na barra de status
 create_status_indicator() {
     log "Criando indicador de status..."
     
     # Criar script de status
-    cat > "$DEPARA_DIR/status-indicator.sh" << 'EOF'
+    cat > "$DEPARA_DIR/status-indicator.sh" << EOF
 #!/bin/bash
 
 # Indicador de status do DePara
@@ -185,7 +219,7 @@ open_depara() {
     if pgrep -f "node.*main.js" > /dev/null; then
         xdg-open "http://localhost:3000"
     else
-        /home/pi/DePara/start-depara.sh start
+        $DEPARA_DIR/start-depara.sh start
         sleep 3
         xdg-open "http://localhost:3000"
     fi
@@ -204,12 +238,12 @@ show_menu() {
     echo ""
     read -p "Escolha uma opção: " choice
     
-    case $choice in
+    case \$choice in
         1) open_depara ;;
         2) check_status ;;
-        3) /home/pi/DePara/start-depara.sh start ;;
-        4) /home/pi/DePara/start-depara.sh stop ;;
-        5) /home/pi/DePara/start-depara.sh restart ;;
+        3) $DEPARA_DIR/start-depara.sh start ;;
+        4) $DEPARA_DIR/start-depara.sh stop ;;
+        5) $DEPARA_DIR/start-depara.sh restart ;;
         6) exit 0 ;;
         *) echo "Opção inválida" ;;
     esac
@@ -272,6 +306,7 @@ main() {
     setup_desktop_file
     setup_systemd_service
     setup_autostart
+    setup_auto_update
     create_status_indicator
     
     # Teste
@@ -283,11 +318,13 @@ main() {
     echo -e "${GREEN}================================${NC}"
     echo ""
     echo -e "${BLUE}Comandos disponíveis:${NC}"
-    echo "  depara start    - Iniciar DePara"
-    echo "  depara stop     - Parar DePara"
-    echo "  depara status   - Ver status"
-    echo "  depara open     - Abrir no navegador"
-    echo "  depara-status   - Menu de status"
+    echo "  depara start      - Iniciar DePara"
+    echo "  depara stop       - Parar DePara"
+    echo "  depara status     - Ver status"
+    echo "  depara open       - Abrir no navegador"
+    echo "  depara-status     - Menu de status"
+    echo "  depara-update     - Atualizar DePara"
+    echo "  depara-check      - Verificar atualizações"
     echo ""
     echo -e "${BLUE}Para iniciar o DePara agora:${NC}"
     echo "  depara start"
