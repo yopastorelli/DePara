@@ -1454,6 +1454,25 @@ class FileOperationsManager {
                 nameType: typeof config.name 
             });
             
+            // Migração: corrigir operações antigas sem nome
+            if (!config.name || config.name === undefined) {
+                logger.info(`🔧 Migrando operação antiga sem nome: ${id}`);
+                const migratedConfig = {
+                    ...config,
+                    name: `${config.action.toUpperCase()} - ${config.frequency}`
+                };
+                
+                // Salvar configuração migrada
+                this.operations.set(id, migratedConfig);
+                logger.info(`✅ Operação migrada: ${id}`, { 
+                    oldName: config.name, 
+                    newName: migratedConfig.name 
+                });
+                
+                // Usar configuração migrada
+                config.name = migratedConfig.name;
+            }
+            
             const operation = {
                 id,
                 ...config,
