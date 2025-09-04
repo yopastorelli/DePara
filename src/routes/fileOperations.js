@@ -563,10 +563,19 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
         const { operationId } = req.params;
         const { name, frequency, action, sourcePath, targetPath, options = {} } = req.body;
 
+        // Log detalhado dos dados recebidos para debug
+        logger.info(`📝 Editando operação agendada: ${operationId}`, { 
+            operationId, 
+            body: req.body,
+            params: req.params
+        });
+
         // Sanitização e validação robusta dos parâmetros
+        let sanitizedName, sanitizedFrequency, sanitizedAction, sanitizedSourcePath, sanitizedTargetPath;
+        
         try {
             if (name !== undefined) {
-                name = sanitizeString(name, {
+                sanitizedName = sanitizeString(name, {
                     field: 'name',
                     maxLength: 100,
                     allowedChars: 'a-zA-Z0-9\\s\\-_()&@'
@@ -574,7 +583,7 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
             }
 
             if (frequency !== undefined) {
-                frequency = sanitizeString(frequency, {
+                sanitizedFrequency = sanitizeString(frequency, {
                     field: 'frequency',
                     maxLength: 10,
                     allowedChars: '0-9mhdw'
@@ -582,20 +591,20 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
             }
 
             if (action !== undefined) {
-                action = sanitizeString(action, {
+                sanitizedAction = sanitizeString(action, {
                     field: 'action',
                     maxLength: 10,
                     allowedChars: 'a-z'
                 });
                 // Validar ação específica
                 const validActions = ['move', 'copy', 'delete'];
-                if (!validActions.includes(action)) {
-                    throw new ValidationError(`Ação inválida. Deve ser uma das seguintes: ${validActions.join(', ')}`, 'action', action);
+                if (!validActions.includes(sanitizedAction)) {
+                    throw new ValidationError(`Ação inválida. Deve ser uma das seguintes: ${validActions.join(', ')}`, 'action', sanitizedAction);
                 }
             }
 
             if (sourcePath !== undefined) {
-                sourcePath = sanitizeFilePath(sourcePath, {
+                sanitizedSourcePath = sanitizeFilePath(sourcePath, {
                     field: 'sourcePath',
                     allowAbsolute: true,
                     allowRelative: true
@@ -603,7 +612,7 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
             }
 
             if (targetPath !== undefined) {
-                targetPath = sanitizeFilePath(targetPath, {
+                sanitizedTargetPath = sanitizeFilePath(targetPath, {
                     field: 'targetPath',
                     allowAbsolute: true,
                     allowRelative: true
@@ -621,12 +630,24 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
 
         // Preparar nova configuração (apenas campos fornecidos)
         const newConfig = {};
-        if (name !== undefined) newConfig.name = name;
-        if (frequency !== undefined) newConfig.frequency = frequency;
-        if (action !== undefined) newConfig.action = action;
-        if (sourcePath !== undefined) newConfig.sourcePath = sourcePath;
-        if (targetPath !== undefined) newConfig.targetPath = targetPath;
+        if (sanitizedName !== undefined) newConfig.name = sanitizedName;
+        if (sanitizedFrequency !== undefined) newConfig.frequency = sanitizedFrequency;
+        if (sanitizedAction !== undefined) newConfig.action = sanitizedAction;
+        if (sanitizedSourcePath !== undefined) newConfig.sourcePath = sanitizedSourcePath;
+        if (sanitizedTargetPath !== undefined) newConfig.targetPath = sanitizedTargetPath;
         if (options !== undefined) newConfig.options = options;
+
+        logger.info(`🔧 Configuração preparada para edição:`, { 
+            operationId, 
+            newConfig,
+            sanitizedFields: {
+                name: sanitizedName,
+                frequency: sanitizedFrequency,
+                action: sanitizedAction,
+                sourcePath: sanitizedSourcePath,
+                targetPath: sanitizedTargetPath
+            }
+        });
 
         // Verificar se pelo menos um campo foi fornecido
         if (Object.keys(newConfig).length === 0) {

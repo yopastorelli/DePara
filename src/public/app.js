@@ -7026,7 +7026,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 const requestData = {
-                    operationId,
                     name,
                     frequency,
                     action,
@@ -7038,6 +7037,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         preserveStructure
                     }
                 };
+
+                // Para criação nova, incluir operationId no corpo
+                if (!isEditing) {
+                    requestData.operationId = operationId;
+                }
 
                 if (action === 'move' || action === 'copy') {
                     requestData.targetPath = targetPath;
