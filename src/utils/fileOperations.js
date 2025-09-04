@@ -873,7 +873,22 @@ class FileOperationsManager {
         const intervalMs = this.parseFrequency(frequency);
 
         // Salvar a operação independentemente do tipo de frequência
+        logger.info(`💾 Salvando operação: ${operationId}`, { 
+            config: config, 
+            configKeys: Object.keys(config),
+            name: config.name,
+            nameType: typeof config.name 
+        });
         this.operations.set(operationId, config);
+        
+        // Verificar se foi salva corretamente
+        const savedConfig = this.operations.get(operationId);
+        logger.info(`✅ Operação salva: ${operationId}`, { 
+            savedConfig: savedConfig, 
+            savedKeys: Object.keys(savedConfig),
+            savedName: savedConfig.name,
+            savedNameType: typeof savedConfig.name 
+        });
 
         // Agendar apenas se não for manual
         if (intervalMs >= 0) {
@@ -1429,13 +1444,28 @@ class FileOperationsManager {
      */
     getScheduledOperations() {
         const operations = [];
+        logger.info(`📋 Total de operações armazenadas: ${this.operations.size}`);
+        
         for (const [id, config] of this.operations) {
+            logger.info(`🔍 Processando operação: ${id}`, { 
+                config: config, 
+                configKeys: Object.keys(config),
+                name: config.name,
+                nameType: typeof config.name 
+            });
+            
             const operation = {
                 id,
                 ...config,
                 active: this.schedules.has(id)
             };
-            logger.info(`Retornando operação: ${id}`, { name: operation.name, action: operation.action, frequency: operation.frequency });
+            
+            logger.info(`📤 Retornando operação: ${id}`, { 
+                name: operation.name, 
+                action: operation.action, 
+                frequency: operation.frequency,
+                operationKeys: Object.keys(operation)
+            });
             operations.push(operation);
         }
         return operations;
