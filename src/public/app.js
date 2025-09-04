@@ -4990,8 +4990,18 @@ async function scheduleOperation() {
     }
 
     try {
+        // Gerar ID correto baseado no contexto
+        let operationId;
+        if (isEditing) {
+            // Edição: usar ID existente
+            operationId = isEditing;
+        } else {
+            // Criação nova: gerar novo ID
+            operationId = `ui_${Date.now()}`;
+        }
+        
         const requestData = {
-            operationId: isEditing || `ui_${Date.now()}`,
+            operationId,
             frequency,
             action,
             sourcePath,
@@ -5017,6 +5027,7 @@ async function scheduleOperation() {
         const method = isEditing ? 'PUT' : 'POST';
         
         console.log(`${isEditing ? '✏️ Editando' : '➕ Criando'} operação:`, requestData);
+        console.log('🔍 Contexto:', { isEditing, operationId, modalDataset: modal.dataset });
 
         const response = await fetch(url, {
             method: method,
@@ -5277,6 +5288,8 @@ async function loadScheduledOperations() {
         const result = await response.json();
 
         if (result.success) {
+            console.log('📋 Operações agendadas recebidas:', result.data);
+            console.log('📊 Total de operações:', result.data.length);
             renderScheduledOperations(result.data);
         }
     } catch (error) {

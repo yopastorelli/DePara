@@ -488,6 +488,7 @@ router.post('/schedule', async (req, res) => {
             options
         };
 
+        logger.info(`Criando operação agendada: ${id}`, { operationId, id, config });
         fileOperationsManager.scheduleOperation(id, config);
 
         logger.info(`Operação agendada: ${id}`);
@@ -620,6 +621,7 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
             newConfig
         });
 
+        logger.info(`Editando operação agendada: ${operationId}`, { operationId, newConfig });
         const result = fileOperationsManager.editScheduledOperation(operationId, newConfig);
 
         const duration = Date.now() - Date.now();
