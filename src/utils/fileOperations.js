@@ -1308,6 +1308,11 @@ class FileOperationsManager {
 // Instância singleton
 const fileOperationsManager = new FileOperationsManager();
 
+// Adicionar funções utilitárias ao objeto exportado
+fileOperationsManager.validateSafePath = validateSafePath;
+fileOperationsManager.shouldIgnoreFile = shouldIgnoreFile;
+fileOperationsManager.filterIgnoredFiles = filterIgnoredFiles;
+
 // Cleanup ao encerrar
 process.on('SIGTERM', () => {
     fileOperationsManager.stopAllScheduledOperations();

@@ -1462,7 +1462,7 @@ router.post('/list-images', async (req, res) => {
         });
 
         // Validar caminho
-        const safePath = await validateSafePath(folderPath, 'read');
+        const safePath = await fileOperationsManager.validateSafePath(folderPath, 'read');
 
         // Função auxiliar para listar imagens recursivamente
         async function listImagesRecursively(dirPath, imageList = []) {
@@ -1477,7 +1477,7 @@ router.post('/list-images', async (req, res) => {
                         await listImagesRecursively(fullPath, imageList);
                     } else if (entry.isFile()) {
                         // Verificar se arquivo deve ser ignorado
-                        const shouldIgnore = shouldIgnoreFile(entry.name);
+                        const shouldIgnore = fileOperationsManager.shouldIgnoreFile(entry.name);
                         if (shouldIgnore) {
                             continue; // Pular arquivos ignorados
                         }
@@ -1544,7 +1544,7 @@ router.get('/image/:imagePath(*)', async (req, res) => {
         const imagePath = req.params.imagePath;
 
         // Validar caminho da imagem
-        const safePath = await validateSafePath(imagePath, 'read');
+        const safePath = await fileOperationsManager.validateSafePath(imagePath, 'read');
 
         // Verificar se o arquivo existe
         const stats = await fs.stat(safePath);
@@ -1618,8 +1618,8 @@ router.post('/list-folders', async (req, res) => {
 
         logger.startOperation('List Folders', { path });
 
-        // Validar caminho
-        const safePath = await validateSafePath(path, 'read');
+        // Validar caminho usando fileOperationsManager
+        const safePath = await fileOperationsManager.validateSafePath(path, 'read');
 
         // Ler conteúdo do diretório
         const entries = await fs.readdir(safePath, { withFileTypes: true });
@@ -1627,7 +1627,7 @@ router.post('/list-folders', async (req, res) => {
         // Filtrar apenas diretórios (pastas)
         const folders = entries
             .filter(entry => entry.isDirectory())
-            .filter(entry => !shouldIgnoreFile(entry.name)) // Não mostrar pastas ignoradas
+            .filter(entry => !fileOperationsManager.shouldIgnoreFile(entry.name)) // Não mostrar pastas ignoradas
             .map(entry => ({
                 name: entry.name,
                 path: path.join(safePath, entry.name)
