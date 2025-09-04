@@ -789,6 +789,15 @@ class DeParaUI {
             }
         }
     }
+    
+    // Embaralhar array (algoritmo Fisher-Yates)
+    shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
 
     // Validação em tempo real para campos de operação
     setupOperationValidation() {
@@ -3196,7 +3205,11 @@ class DeParaUI {
                 return;
             }
 
-            this.showToast(`✅ ${this.slideshowImages.length} imagens encontradas`, 'success');
+            // Embaralhar as imagens para ordem aleatória
+            this.shuffleArray(this.slideshowImages);
+            console.log('🎲 Imagens embaralhadas para ordem aleatória');
+
+            this.showToast(`✅ ${this.slideshowImages.length} imagens encontradas (ordem aleatória)`, 'success');
             this.startSlideshowViewer();
 
         } catch (error) {
@@ -3234,6 +3247,12 @@ class DeParaUI {
         // Atualizar contador e nome do arquivo
         counterElement.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
         filenameElement.textContent = currentImage.name;
+        
+        // Atualizar caminho completo da imagem no rodapé
+        const pathElement = document.getElementById('slideshow-path');
+        if (pathElement) {
+            pathElement.textContent = currentImage.path;
+        }
 
         // Mostrar loading
         loadingElement.style.display = 'block';
@@ -7044,9 +7063,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fechar modal
             window.closeSlideshowFolderModal();
             
-            // Mostrar mensagem de sucesso
+            // Chamar a função que realmente inicia o slideshow
             if (window.deParaUI) {
-                window.deParaUI.showToast(`Slideshow iniciado para: ${sourcePath}`, 'success');
+                window.deParaUI.startSlideshowFromModal();
+            } else {
+                // Fallback para função global
+                startSlideshow();
             }
         };
 
