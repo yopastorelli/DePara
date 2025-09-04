@@ -346,7 +346,7 @@ class DeParaUI {
     // Atualizar status do sistema
     async updateSystemStatus() {
         try {
-            const response = await fetch('/api/health');
+            const response = await fetch('/api/status/resources');
             if (response.ok) {
                 const data = await response.json();
                 this.updateSystemStatusDisplay(data);
@@ -433,19 +433,31 @@ class DeParaUI {
             if (diskElement && data.disk && data.disk.drives) {
                 const drives = data.disk.drives;
                 if (drives.length > 0) {
-                    // Mostrar o primeiro disco (geralmente o principal)
-                    const mainDrive = drives[0];
-                    if (mainDrive.total > 0) {
-                        const usedGB = Math.round(mainDrive.used / (1024 * 1024 * 1024));
-                        const totalGB = Math.round(mainDrive.total / (1024 * 1024 * 1024));
-                        diskElement.textContent = `${usedGB} GB / ${totalGB} GB`;
+                    // Filtrar apenas discos válidos (com tamanho > 0)
+                    const validDrives = drives.filter(drive => drive.total > 0);
+                    
+                    if (validDrives.length > 0) {
+                        if (validDrives.length === 1) {
+                            // Mostrar apenas um disco
+                            const drive = validDrives[0];
+                            const usedGB = Math.round(drive.used / (1024 * 1024 * 1024));
+                            const totalGB = Math.round(drive.total / (1024 * 1024 * 1024));
+                            diskElement.textContent = `${usedGB} GB / ${totalGB} GB`;
+                        } else {
+                            // Mostrar múltiplos discos
+                            const totalUsed = validDrives.reduce((sum, drive) => sum + drive.used, 0);
+                            const totalSize = validDrives.reduce((sum, drive) => sum + drive.total, 0);
+                            const usedGB = Math.round(totalUsed / (1024 * 1024 * 1024));
+                            const totalGB = Math.round(totalSize / (1024 * 1024 * 1024));
+                            diskElement.textContent = `${usedGB} GB / ${totalGB} GB (${validDrives.length} discos)`;
+                        }
                     } else {
                         diskElement.textContent = 'N/A';
                     }
                 } else {
                     diskElement.textContent = 'N/A';
                 }
-                logger.debug('✅ Disco atualizado', { drives });
+                logger.debug('✅ Disco atualizado', { drives, validDrives: drives.filter(d => d.total > 0) });
             }
 
             // Atualizar operações ativas - buscar operações agendadas
