@@ -107,19 +107,65 @@ show_status() {
     fi
 }
 
+# Função para minimizar para system tray
+minimize_to_tray() {
+    if check_depara_status; then
+        log "📱 Minimizando DePara para system tray..."
+        
+        # Tentar usar wmctrl para minimizar janelas do navegador
+        if command -v wmctrl &> /dev/null; then
+            # Minimizar todas as janelas do Chromium/Chrome/Firefox que contenham "DePara" ou "localhost:3000"
+            wmctrl -l | grep -E "(DePara|localhost:3000|Chromium|Chrome|Firefox)" | awk '{print $1}' | while read window_id; do
+                wmctrl -i -r "$window_id" -b add,hidden 2>/dev/null
+            done
+            log "✅ DePara minimizado para system tray"
+        else
+            log "⚠️ wmctrl não encontrado. Instalando..."
+            sudo apt update && sudo apt install -y wmctrl
+            if command -v wmctrl &> /dev/null; then
+                log "✅ wmctrl instalado. Execute novamente: $0 minimize"
+            else
+                log "❌ Não foi possível instalar wmctrl"
+            fi
+        fi
+    else
+        log "❌ DePara não está rodando. Execute: $0 start"
+    fi
+}
+
+# Função para restaurar do system tray
+restore_from_tray() {
+    if check_depara_status; then
+        log "📱 Restaurando DePara do system tray..."
+        
+        if command -v wmctrl &> /dev/null; then
+            # Restaurar todas as janelas do navegador que contenham "DePara" ou "localhost:3000"
+            wmctrl -l | grep -E "(DePara|localhost:3000|Chromium|Chrome|Firefox)" | awk '{print $1}' | while read window_id; do
+                wmctrl -i -r "$window_id" -b remove,hidden 2>/dev/null
+                wmctrl -i -a "$window_id" 2>/dev/null
+            done
+            log "✅ DePara restaurado do system tray"
+        else
+            log "❌ wmctrl não encontrado. Execute: $0 open"
+        fi
+    else
+        log "❌ DePara não está rodando. Execute: $0 start"
+    fi
+}
+
 # Função para abrir no navegador
 open_browser() {
     if check_depara_status; then
         log "🌐 Abrindo DePara no navegador..."
         
-        # Tentar abrir em janela dedicada do Chromium
+        # Tentar abrir em janela dedicada do Chromium (sem flags inseguras)
         if command -v chromium-browser &> /dev/null; then
             log "🚀 Abrindo em janela dedicada do Chromium..."
-            chromium-browser --new-window --app="http://localhost:3000" --disable-web-security --user-data-dir="/tmp/depara-browser" 2>/dev/null &
-        # Tentar abrir em janela dedicada do Chrome
+            chromium-browser --new-window --app="http://localhost:3000" --user-data-dir="/tmp/depara-browser" --no-first-run --no-default-browser-check --disable-extensions 2>/dev/null &
+        # Tentar abrir em janela dedicada do Chrome (sem flags inseguras)
         elif command -v google-chrome &> /dev/null; then
             log "🚀 Abrindo em janela dedicada do Chrome..."
-            google-chrome --new-window --app="http://localhost:3000" --disable-web-security --user-data-dir="/tmp/depara-browser" 2>/dev/null &
+            google-chrome --new-window --app="http://localhost:3000" --user-data-dir="/tmp/depara-browser" --no-first-run --no-default-browser-check --disable-extensions 2>/dev/null &
         # Tentar abrir em janela dedicada do Firefox
         elif command -v firefox &> /dev/null; then
             log "🚀 Abrindo em janela dedicada do Firefox..."
@@ -147,6 +193,8 @@ show_help() {
     echo "  restart   - Reiniciar o DePara"
     echo "  status    - Mostrar status do DePara"
     echo "  open      - Abrir DePara no navegador"
+    echo "  minimize  - Minimizar para system tray"
+    echo "  restore   - Restaurar do system tray"
     echo "  help      - Mostrar esta ajuda"
     echo ""
     echo "Exemplos:"
@@ -181,6 +229,12 @@ case "$1" in
         ;;
     open)
         open_browser
+        ;;
+    minimize)
+        minimize_to_tray
+        ;;
+    restore)
+        restore_from_tray
         ;;
     help|--help|-h)
         show_help
