@@ -715,8 +715,39 @@ router.post('/schedule/:operationId/execute', strictRateLimiter, async (req, res
             name: operation.name, 
             action: operation.action, 
             sourcePath: operation.sourcePath, 
-            targetPath: operation.targetPath 
+            targetPath: operation.targetPath,
+            options: operation.options
         });
+        
+        // Verificar se os caminhos existem
+        try {
+            const sourceStats = await fs.stat(operation.sourcePath);
+            logger.info(`📁 Origem existe: ${operation.sourcePath}`, { 
+                isDirectory: sourceStats.isDirectory(),
+                isFile: sourceStats.isFile(),
+                size: sourceStats.size
+            });
+        } catch (sourceError) {
+            logger.error(`❌ Origem não existe: ${operation.sourcePath}`, { error: sourceError.message });
+            return res.status(400).json({
+                success: false,
+                error: `Origem não existe: ${operation.sourcePath}`
+            });
+        }
+        
+        try {
+            const targetStats = await fs.stat(operation.targetPath);
+            logger.info(`📁 Destino existe: ${operation.targetPath}`, { 
+                isDirectory: targetStats.isDirectory(),
+                isFile: targetStats.isFile()
+            });
+        } catch (targetError) {
+            logger.error(`❌ Destino não existe: ${operation.targetPath}`, { error: targetError.message });
+            return res.status(400).json({
+                success: false,
+                error: `Destino não existe: ${operation.targetPath}`
+            });
+        }
         
         // Executar a operação imediatamente
         logger.info(`⚡ Iniciando execução da operação: ${operationId}`);
