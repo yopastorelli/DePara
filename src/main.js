@@ -22,7 +22,6 @@ const logger = require('./utils/logger');
 const routes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter, normalRateLimiter, strictRateLimiter } = require('./middleware/rateLimiter');
-const fs = require('fs').promises;
 
 // Configurações da aplicação
 const PORT = process.env.PORT || 3000;
@@ -44,10 +43,10 @@ async function initializeDirectories() {
 
     for (const dir of directories) {
         try {
-            await fs.access(dir);
+            await fs.promises.access(dir);
             console.log(`✅ Diretório existe: ${dir}`);
         } catch {
-            await fs.mkdir(dir, { recursive: true });
+            await fs.promises.mkdir(dir, { recursive: true });
             console.log(`📁 Diretório criado: ${dir}`);
         }
     }
