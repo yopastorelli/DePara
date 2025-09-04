@@ -31,29 +31,34 @@ router.get('/check', async (req, res) => {
                 });
             }
 
-            // Verificar se há commits à frente
-            exec('git rev-list HEAD..origin/main --count', (error, stdout, stderr) => {
-                if (error) {
-                    logger.warn('⚠️ Erro ao contar commits:', error.message);
-                    return res.status(500).json({
-                        success: false,
-                        error: {
-                            message: 'Erro ao contar commits',
-                            details: error.message
-                        }
-                    });
-                }
+                    // Verificar se há commits à frente
+        exec('git rev-list HEAD..origin/main --count', (error, stdout, stderr) => {
+            if (error) {
+                logger.warn('⚠️ Erro ao contar commits:', error.message);
+                return res.status(500).json({
+                    success: false,
+                    error: {
+                        message: 'Erro ao contar commits',
+                        details: error.message
+                    }
+                });
+            }
 
-                const commitsAhead = parseInt(stdout.trim()) || 0;
-                const hasUpdates = commitsAhead > 0;
+            const commitsAhead = parseInt(stdout.trim()) || 0;
+            const hasUpdates = commitsAhead > 0;
 
-                logger.info(`📊 Verificação de atualizações: ${commitsAhead} commits à frente`);
+            // Obter versão atual
+            exec('git rev-parse --short HEAD', (versionError, versionStdout, versionStderr) => {
+                const currentVersion = versionError ? 'unknown' : versionStdout.trim();
+
+                logger.info(`📊 Verificação de atualizações: ${commitsAhead} commits à frente, versão: ${currentVersion}`);
 
                 res.status(200).json({
                     success: true,
                     data: {
                         hasUpdates,
                         commitsAhead,
+                        currentVersion,
                         lastChecked: new Date().toISOString(),
                         message: hasUpdates ? 
                             `Há ${commitsAhead} atualização(ões) disponível(is)` : 
@@ -62,6 +67,7 @@ router.get('/check', async (req, res) => {
                     timestamp: new Date().toISOString()
                 });
             });
+        });
         });
 
     } catch (error) {
