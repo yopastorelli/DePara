@@ -2362,19 +2362,24 @@ class DeParaUI {
     // Selecionar pasta atual
     selectCurrentFolder(targetType) {
         const selectedPath = document.getElementById('browser-path').value;
+        console.log('🎯 Selecionando pasta:', selectedPath, 'para tipo:', targetType);
 
         if (targetType === 'source') {
             // Verificar se existe o campo simples ou o campo complexo
             let sourceField = document.getElementById('source-path'); // Campo simples
             if (!sourceField) {
                 sourceField = document.getElementById('source-folder-path'); // Campo complexo
-                if (sourceField) {
-                    this.currentConfig.sourcePath = selectedPath;
-                }
+                console.log('🔍 Campo source-folder-path encontrado:', !!sourceField);
             }
+            
             if (sourceField) {
                 sourceField.value = selectedPath;
+                this.currentConfig.sourcePath = selectedPath;
+                console.log('✅ Campo preenchido com:', selectedPath);
                 this.showToast(`Pasta de origem selecionada: ${selectedPath}`, 'success');
+            } else {
+                console.error('❌ Campo de pasta de origem não encontrado');
+                this.showToast('Erro: Campo de pasta de origem não encontrado', 'error');
             }
         } else if (targetType === 'target') {
             // Verificar se existe o campo simples ou o campo complexo

@@ -1654,10 +1654,21 @@ router.post('/list-folders', async (req, res) => {
         const folders = entries
             .filter(entry => entry.isDirectory())
             .filter(entry => !fileOperationsManager.shouldIgnoreFile(entry.name)) // Não mostrar pastas ignoradas
-            .map(entry => ({
-                name: entry.name,
-                path: path.join(safePath, entry.name)
-            }))
+            .map(entry => {
+                try {
+                    const folderPath = path.join(safePath, entry.name);
+                    return {
+                        name: entry.name,
+                        path: folderPath
+                    };
+                } catch (error) {
+                    logger.error(`Erro ao processar pasta ${entry.name}:`, error);
+                    return {
+                        name: entry.name,
+                        path: `${safePath}/${entry.name}` // Fallback manual
+                    };
+                }
+            })
             .sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabeticamente
 
         const duration = Date.now() - startTime;

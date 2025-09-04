@@ -160,6 +160,7 @@ async function validateSafePath(filePath, operation = 'read') {
 
   // Para aplicações locais, permitir acesso apenas a diretórios seguros
   const allowedBasePaths = [
+    '/', // Diretório raiz
     '/home',
     '/usr/local',
     '/opt',
