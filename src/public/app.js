@@ -6988,8 +6988,103 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         window.scheduleOperation = async function() {
-            // Chamar a função global scheduleOperation que tem a lógica de edição correta
-            await scheduleOperation();
+            // Implementar lógica de agendamento diretamente aqui para evitar loop infinito
+            const modal = document.getElementById('schedule-modal');
+            const isEditing = modal.dataset.editingOperationId;
+            
+            const name = document.getElementById('schedule-name').value.trim();
+            const action = document.getElementById('schedule-action').value;
+            const frequency = document.getElementById('schedule-frequency').value;
+            const sourcePath = document.getElementById('schedule-source').value.trim();
+            const targetPath = document.getElementById('schedule-target').value.trim();
+            const filters = document.getElementById('schedule-filters').value.trim();
+            const batch = document.getElementById('schedule-batch').checked;
+            const backup = document.getElementById('schedule-backup').checked;
+            const preserveStructure = document.getElementById('schedule-preserve-structure').checked;
+
+            console.log('🔍 Campos capturados:', { name, action, frequency, sourcePath, targetPath });
+
+            if (!name || !action || !frequency || !sourcePath) {
+                showToast('Preencha todos os campos obrigatórios', 'error');
+                return;
+            }
+
+            if ((action === 'move' || action === 'copy') && !targetPath) {
+                showToast('Caminho de destino é obrigatório', 'error');
+                return;
+            }
+
+            try {
+                // Gerar ID correto baseado no contexto
+                let operationId;
+                if (isEditing) {
+                    // Edição: usar ID existente
+                    operationId = isEditing;
+                } else {
+                    // Criação nova: gerar novo ID
+                    operationId = `ui_${Date.now()}`;
+                }
+                
+                const requestData = {
+                    operationId,
+                    name,
+                    frequency,
+                    action,
+                    sourcePath,
+                    options: {
+                        batch,
+                        backupBeforeMove: action === 'move' ? backup : false,
+                        forceBackup: action === 'delete' ? backup : false,
+                        preserveStructure
+                    }
+                };
+
+                if (action === 'move' || action === 'copy') {
+                    requestData.targetPath = targetPath;
+                }
+
+                // Processar filtros - sempre criar objeto filters, mesmo se vazio
+                if (filters && filters.trim()) {
+                    // Filtro especificado - processar extensões
+                    requestData.options.filters = {
+                        extensions: filters.split(',').map(ext => ext.trim().replace('*.', ''))
+                    };
+                } else {
+                    // Filtro vazio - não aplicar filtros (aceitar todos os arquivos)
+                    requestData.options.filters = {};
+                }
+
+                const url = isEditing ? `/api/files/schedule/${isEditing}` : '/api/files/schedule';
+                const method = isEditing ? 'PUT' : 'POST';
+                
+                console.log(`${isEditing ? '✏️ Editando' : '➕ Criando'} operação:`, requestData);
+                console.log('🔍 Contexto:', { isEditing, operationId, modalDataset: modal.dataset });
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
+                    const actionMsg = isEditing ? 'editada' : 'agendada';
+                    showToast(`Operação "${name}" ${actionMsg} com sucesso!${structureMsg}`, 'success', true);
+                    window.closeScheduleModal();
+                    loadScheduledOperations();
+                } else {
+                    const actionMsg = isEditing ? 'editar' : 'agendar';
+                    showToast(result.error?.message || `Erro ao ${actionMsg} operação`, 'error', true);
+                }
+
+            } catch (error) {
+                console.error('Erro ao agendar operação:', error);
+                showToast('Erro ao agendar operação', 'error');
+            }
         };
 
         // Funções para slideshow (todas são funções globais)
