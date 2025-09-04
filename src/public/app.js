@@ -2042,8 +2042,13 @@ class DeParaUI {
         this.addButtonListener('.cancel-schedule-btn', () => window.closeScheduleModal());
         this.addButtonListener('.schedule-operation-btn', () => window.scheduleOperation());
         
-        // Botões de filtros rápidos
-        this.addButtonListener('.filter-btn', (e) => this.selectFilter(e));
+        // Botões de filtros rápidos (event delegation)
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.filter-btn')) {
+                const btn = e.target.closest('.filter-btn');
+                this.selectFilter({ target: btn });
+            }
+        });
         
         // Botões de navegação de pastas no modal de agendamento
         this.addButtonListener('#browse-source-btn', () => this.browsePathForSchedule('source'));
@@ -2428,6 +2433,10 @@ class DeParaUI {
         const filter = button.getAttribute('data-filter');
         const filterInput = document.getElementById('schedule-filters');
         
+        console.log('🔍 Botão de filtro clicado:', button);
+        console.log('🔍 Filtro obtido:', filter);
+        console.log('🔍 Campo de input encontrado:', !!filterInput);
+        
         if (filterInput) {
             filterInput.value = filter;
             
@@ -2440,6 +2449,14 @@ class DeParaUI {
             button.classList.add('active');
             
             console.log('✅ Filtro selecionado:', filter);
+            console.log('✅ Campo atualizado com:', filterInput.value);
+            
+            // Atualizar resumo da operação se estiver visível
+            if (typeof updateOperationSummary === 'function') {
+                updateOperationSummary();
+            }
+        } else {
+            console.error('❌ Campo de filtros não encontrado!');
         }
     }
 
