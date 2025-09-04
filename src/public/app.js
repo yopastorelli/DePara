@@ -444,33 +444,33 @@ class DeParaUI {
                             const totalGB = Math.round(drive.total / (1024 * 1024 * 1024));
                             diskElement.textContent = `${usedGB} GB / ${totalGB} GB`;
                         } else {
-                            // Mostrar discos individualmente (não agrupados)
-                            const firstDrive = validDrives[0];
-                            const usedGB = Math.round(firstDrive.used / (1024 * 1024 * 1024));
-                            const totalGB = Math.round(firstDrive.total / (1024 * 1024 * 1024));
-                            const mountpoint = firstDrive.mountpoint || firstDrive.drive;
+                            // Mostrar todos os discos em uma lista
+                            let diskText = '';
+                            let tooltipText = `Discos detectados (${validDrives.length}):\n\n`;
                             
-                            // Se há mais de um disco, mostrar o primeiro + indicador
-                            if (validDrives.length > 1) {
-                                diskElement.textContent = `${usedGB} GB / ${totalGB} GB (${mountpoint}) +${validDrives.length - 1}`;
+                            validDrives.forEach((drive, index) => {
+                                const driveUsedGB = Math.round(drive.used / (1024 * 1024 * 1024));
+                                const driveTotalGB = Math.round(drive.total / (1024 * 1024 * 1024));
+                                const driveMountpoint = drive.mountpoint || drive.drive;
                                 
-                                // Tooltip com todos os discos
-                                let tooltipText = `Discos detectados:\n\n`;
-                                validDrives.forEach((drive, index) => {
-                                    const driveUsedGB = Math.round(drive.used / (1024 * 1024 * 1024));
-                                    const driveTotalGB = Math.round(drive.total / (1024 * 1024 * 1024));
-                                    const driveMountpoint = drive.mountpoint || drive.drive;
-                                    tooltipText += `${index + 1}. ${driveMountpoint}: ${driveUsedGB} GB / ${driveTotalGB} GB (${drive.percentage}%)\n`;
-                                });
+                                // Adicionar ao tooltip
+                                tooltipText += `${index + 1}. ${driveMountpoint}: ${driveUsedGB} GB / ${driveTotalGB} GB (${drive.percentage}%)\n`;
                                 
-                                diskElement.title = tooltipText;
-                                diskElement.style.cursor = 'help';
-                            } else {
-                                // Apenas um disco
-                                diskElement.textContent = `${usedGB} GB / ${totalGB} GB (${mountpoint})`;
-                                diskElement.title = `${mountpoint}: ${usedGB} GB / ${totalGB} GB (${firstDrive.percentage}%)`;
-                                diskElement.style.cursor = 'help';
+                                // Adicionar ao texto principal (máximo 3 discos visíveis)
+                                if (index < 3) {
+                                    if (index > 0) diskText += ' | ';
+                                    diskText += `${driveUsedGB} GB / ${driveTotalGB} GB (${driveMountpoint})`;
+                                }
+                            });
+                            
+                            // Se há mais de 3 discos, adicionar contador
+                            if (validDrives.length > 3) {
+                                diskText += ` +${validDrives.length - 3}`;
                             }
+                            
+                            diskElement.textContent = diskText;
+                            diskElement.title = tooltipText;
+                            diskElement.style.cursor = 'help';
                         }
                     } else {
                         diskElement.textContent = 'N/A';
