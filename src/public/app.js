@@ -2044,6 +2044,10 @@ class DeParaUI {
         
         // Botões de filtros rápidos
         this.addButtonListener('.filter-btn', (e) => this.selectFilter(e));
+        
+        // Botões de navegação de pastas no modal de agendamento
+        this.addButtonListener('#browse-source-btn', () => this.browsePathForSchedule('source'));
+        this.addButtonListener('#browse-target-btn', () => this.browsePathForSchedule('target'));
 
         // Botões de slideshow
         this.addButtonListener('.close-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
@@ -2134,7 +2138,7 @@ class DeParaUI {
     }
 
     // Mostrar navegador de pastas
-    async showFolderBrowser(targetType) {
+    async showFolderBrowser(targetType, callback = null) {
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.style.display = 'flex';
@@ -2297,8 +2301,7 @@ class DeParaUI {
         if (selectBtn) {
             selectBtn.addEventListener('click', () => {
                 const targetTypeFromBtn = selectBtn.getAttribute('data-target-type');
-                this.selectCurrentFolder(targetTypeFromBtn);
-                modal.remove();
+                this.selectCurrentFolder(targetTypeFromBtn, callback);
             });
         }
     }
@@ -2399,6 +2402,26 @@ class DeParaUI {
         }
     }
 
+    // Navegar e selecionar pasta para o modal de agendamento
+    browsePathForSchedule(type) {
+        const currentPath = type === 'source' 
+            ? document.getElementById('schedule-source').value || '/home/yo'
+            : document.getElementById('schedule-target').value || '/home/yo';
+            
+        console.log(`🔍 Abrindo navegador de pastas para ${type}:`, currentPath);
+        
+        // Usar a função existente de navegação de pastas
+        this.showFolderBrowser(currentPath, (selectedPath) => {
+            if (type === 'source') {
+                document.getElementById('schedule-source').value = selectedPath;
+                console.log('✅ Pasta de origem selecionada:', selectedPath);
+            } else {
+                document.getElementById('schedule-target').value = selectedPath;
+                console.log('✅ Pasta de destino selecionada:', selectedPath);
+            }
+        });
+    }
+
     // Função auxiliar para preencher campo com múltiplas tentativas
     fillFieldWithRetry(field, value, fieldName) {
         if (!field) return false;
@@ -2433,9 +2456,17 @@ class DeParaUI {
     }
 
     // Selecionar pasta atual
-    selectCurrentFolder(targetType) {
+    selectCurrentFolder(targetType, callback = null) {
         const selectedPath = document.getElementById('browser-path').value;
         console.log('🎯 Selecionando pasta:', selectedPath, 'para tipo:', targetType);
+        
+        // Se há um callback, usar ele em vez da lógica padrão
+        if (callback && typeof callback === 'function') {
+            callback(selectedPath);
+            // Fechar modal
+            document.querySelector('.folder-browser-modal').closest('.modal').remove();
+            return;
+        }
 
         if (targetType === 'source') {
             // Verificar se existe o campo complexo primeiro (mais comum)
@@ -2583,6 +2614,17 @@ class DeParaUI {
                     updateScheduleForm();
                 }
             });
+        }
+        
+        // Event listeners para atualizar resumo da operação
+        const scheduleSourceInput = document.getElementById('schedule-source');
+        const scheduleTargetInput = document.getElementById('schedule-target');
+        
+        if (scheduleSourceInput) {
+            scheduleSourceInput.addEventListener('input', updateOperationSummary);
+        }
+        if (scheduleTargetInput) {
+            scheduleTargetInput.addEventListener('input', updateOperationSummary);
         }
 
         // Input de validação de nome
@@ -4792,7 +4834,7 @@ function showScheduleModal() {
         const config = window.deParaUI.currentConfig;
         
         // Preencher campos com valores atuais
-        document.getElementById('schedule-name').value = config.operationName || '';
+        document.getElementById('schedule-name').value = config.operationName || `Operação ${config.operation || 'arquivo'}`;
         document.getElementById('schedule-action').value = config.operation || '';
         document.getElementById('schedule-frequency').value = '1d'; // Padrão: diariamente
         document.getElementById('schedule-source').value = config.sourcePath || '';
@@ -4806,7 +4848,7 @@ function showScheduleModal() {
         // Reset form se não há configuração
         document.getElementById('schedule-name').value = '';
         document.getElementById('schedule-action').value = '';
-        document.getElementById('schedule-frequency').value = '';
+        document.getElementById('schedule-frequency').value = '1d'; // Padrão: diariamente
         document.getElementById('schedule-source').value = '';
         document.getElementById('schedule-target').value = '';
         document.getElementById('schedule-filters').value = '';
@@ -4832,6 +4874,28 @@ function updateScheduleForm() {
         targetGroup.style.display = 'none';
     } else {
         targetGroup.style.display = 'block';
+    }
+    
+    // Atualizar resumo da operação
+    updateOperationSummary();
+}
+
+function updateOperationSummary() {
+    const action = document.getElementById('schedule-action').value;
+    const source = document.getElementById('schedule-source').value;
+    const target = document.getElementById('schedule-target').value;
+    const summaryDiv = document.getElementById('operation-summary');
+    
+    // Mostrar resumo apenas se há dados suficientes
+    if (action && source) {
+        summaryDiv.style.display = 'block';
+        
+        // Atualizar conteúdo do resumo
+        document.getElementById('summary-action').textContent = action.toUpperCase();
+        document.getElementById('summary-source').textContent = source;
+        document.getElementById('summary-target').textContent = target || (action === 'delete' ? 'N/A' : 'Não definido');
+    } else {
+        summaryDiv.style.display = 'none';
     }
 }
 

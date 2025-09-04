@@ -1080,6 +1080,22 @@
             </div>
 
             <div class="modal-body">
+                <!-- Resumo da Operação -->
+                <div class="operation-summary" id="operation-summary" style="display: none;">
+                    <h4>📋 Resumo da Operação</h4>
+                    <div class="summary-content">
+                        <div class="summary-item">
+                            <strong>Ação:</strong> <span id="summary-action">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <strong>Origem:</strong> <span id="summary-source">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <strong>Destino:</strong> <span id="summary-target">-</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>Nome da Operação</label>
                     <input type="text" id="schedule-name" placeholder="Ex: Backup diário" required>
@@ -1120,13 +1136,23 @@
 
                 <div class="form-group">
                     <label>Caminho de Origem</label>
-                    <input type="text" id="schedule-source" placeholder="/origem" required>
+                    <div class="path-input-group">
+                        <input type="text" id="schedule-source" placeholder="/origem" required>
+                        <button type="button" class="btn btn-secondary btn-sm" id="browse-source-btn">
+                            <span class="material-icons">folder_open</span>
+                        </button>
+                    </div>
                     <small class="form-help">Pasta ou arquivo de origem</small>
                 </div>
 
                 <div class="form-group" id="schedule-target-group">
                     <label>Caminho de Destino</label>
-                    <input type="text" id="schedule-target" placeholder="/destino">
+                    <div class="path-input-group">
+                        <input type="text" id="schedule-target" placeholder="/destino">
+                        <button type="button" class="btn btn-secondary btn-sm" id="browse-target-btn">
+                            <span class="material-icons">folder_open</span>
+                        </button>
+                    </div>
                     <small class="form-help">Pasta ou arquivo de destino</small>
                 </div>
 
