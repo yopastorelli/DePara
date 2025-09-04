@@ -2375,37 +2375,99 @@ class DeParaUI {
         this.loadFoldersForBrowser(parentPath);
     }
 
+    // Função auxiliar para preencher campo com múltiplas tentativas
+    fillFieldWithRetry(field, value, fieldName) {
+        if (!field) return false;
+        
+        // Tentativa 1: Método direto
+        field.value = value;
+        console.log(`🔄 Tentativa 1 - ${fieldName}:`, field.value);
+        
+        if (field.value === value) {
+            console.log(`✅ ${fieldName} preenchido com sucesso`);
+            return true;
+        }
+        
+        // Tentativa 2: Disparar eventos
+        field.value = value;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+        field.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log(`🔄 Tentativa 2 - ${fieldName} (com eventos):`, field.value);
+        
+        if (field.value === value) {
+            console.log(`✅ ${fieldName} preenchido com eventos`);
+            return true;
+        }
+        
+        // Tentativa 3: Forçar com setTimeout
+        setTimeout(() => {
+            field.value = value;
+            console.log(`🔄 Tentativa 3 - ${fieldName} (timeout):`, field.value);
+        }, 50);
+        
+        return field.value === value;
+    }
+
     // Selecionar pasta atual
     selectCurrentFolder(targetType) {
         const selectedPath = document.getElementById('browser-path').value;
         console.log('🎯 Selecionando pasta:', selectedPath, 'para tipo:', targetType);
 
         if (targetType === 'source') {
-            // Verificar se existe o campo simples ou o campo complexo
-            let sourceField = document.getElementById('source-path'); // Campo simples
+            // Verificar se existe o campo complexo primeiro (mais comum)
+            let sourceField = document.getElementById('source-folder-path'); // Campo complexo
             if (!sourceField) {
-                sourceField = document.getElementById('source-folder-path'); // Campo complexo
+                sourceField = document.getElementById('source-path'); // Campo simples
+                console.log('🔍 Campo source-path encontrado:', !!sourceField);
+            } else {
                 console.log('🔍 Campo source-folder-path encontrado:', !!sourceField);
             }
             
             if (sourceField) {
-                sourceField.value = selectedPath;
-                this.currentConfig.sourcePath = selectedPath;
-                console.log('✅ Campo preenchido com:', selectedPath);
-                this.showToast(`Pasta de origem selecionada: ${selectedPath}`, 'success');
+                // Usar função auxiliar para preencher com múltiplas tentativas
+                const success = this.fillFieldWithRetry(sourceField, selectedPath, 'source-folder-path');
+                
+                if (success) {
+                    this.currentConfig.sourcePath = selectedPath;
+                    console.log('✅ Campo de origem preenchido com sucesso');
+                    this.showToast(`Pasta de origem selecionada: ${selectedPath}`, 'success');
+                } else {
+                    console.error('❌ Falha ao preencher campo de origem');
+                    this.showToast('Erro: Falha ao preencher campo de origem', 'error');
+                }
             } else {
                 console.error('❌ Campo de pasta de origem não encontrado');
+                console.error('❌ Tentou source-folder-path:', !!document.getElementById('source-folder-path'));
+                console.error('❌ Tentou source-path:', !!document.getElementById('source-path'));
                 this.showToast('Erro: Campo de pasta de origem não encontrado', 'error');
             }
         } else if (targetType === 'target') {
-            // Verificar se existe o campo simples ou o campo complexo
-            let targetField = document.getElementById('dest-path'); // Campo simples
+            // Verificar se existe o campo complexo primeiro (mais comum)
+            let targetField = document.getElementById('target-folder-path'); // Campo complexo
             if (!targetField) {
-                targetField = document.getElementById('target-folder-path'); // Campo complexo
+                targetField = document.getElementById('dest-path'); // Campo simples
+                console.log('🔍 Campo dest-path encontrado:', !!targetField);
+            } else {
+                console.log('🔍 Campo target-folder-path encontrado:', !!targetField);
             }
+            
             if (targetField) {
-                targetField.value = selectedPath;
-                this.showToast(`Pasta de destino selecionada: ${selectedPath}`, 'success');
+                // Usar função auxiliar para preencher com múltiplas tentativas
+                const success = this.fillFieldWithRetry(targetField, selectedPath, 'target-folder-path');
+                
+                if (success) {
+                    this.currentConfig.targetPath = selectedPath;
+                    console.log('✅ Campo de destino preenchido com sucesso');
+                    this.showToast(`Pasta de destino selecionada: ${selectedPath}`, 'success');
+                } else {
+                    console.error('❌ Falha ao preencher campo de destino');
+                    this.showToast('Erro: Falha ao preencher campo de destino', 'error');
+                }
+            } else {
+                console.error('❌ Campo de pasta de destino não encontrado');
+                console.error('❌ Tentou target-folder-path:', !!document.getElementById('target-folder-path'));
+                console.error('❌ Tentou dest-path:', !!document.getElementById('dest-path'));
+                this.showToast('Erro: Campo de pasta de destino não encontrado', 'error');
             }
         }
 
