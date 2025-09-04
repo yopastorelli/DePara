@@ -2130,13 +2130,20 @@ class DeParaUI {
                 <div class="modal-body">
                     <div class="folder-browser">
                         <div class="current-path">
-                            <input type="text" id="browser-path" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User' : '/home/user'}" readonly>
-                            <button class="btn btn-sm folder-browser-up-btn">
+                            <input type="text" id="browser-path" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User' : '/home/user'}" placeholder="Digite o caminho da pasta ou navegue">
+                            <button class="btn btn-sm folder-browser-up-btn" title="Navegar para pasta pai">
                                 <span class="material-icons">arrow_upward</span>
+                            </button>
+                            <button class="btn btn-sm folder-browser-refresh-btn" title="Atualizar lista de pastas">
+                                <span class="material-icons">refresh</span>
                             </button>
                         </div>
                         <div class="folder-list" id="folder-list">
-                            <div class="loading">Carregando pastas...</div>
+                            <div class="empty-state">
+                                <span class="material-icons">folder_open</span>
+                                <p>Digite o caminho da pasta ou clique em "Atualizar" para navegar</p>
+                                <small>Você pode inserir o caminho manualmente ou navegar pelas pastas</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2152,13 +2159,13 @@ class DeParaUI {
         // Configurar event listeners após criar o modal
         this.setupFolderBrowserEventListeners(modal, targetType);
 
-        const defaultPath = navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\Users\\User' : '/home/user';
-        await this.loadFolders(defaultPath);
+        // Não carregar pastas automaticamente - permitir entrada manual
+        console.log('📁 Modal de seleção de pasta criado - entrada manual habilitada');
     }
 
-    // Carregar pastas de um diretório
-    async loadFolders(path) {
-        console.log('🔍 Iniciando carregamento de pastas para:', path);
+    // Carregar pastas de um diretório (para o modal de navegação)
+    async loadFoldersForBrowser(path) {
+        console.log('🔍 Iniciando carregamento de pastas para navegação:', path);
 
         try {
             const response = await fetch('/api/files/list-folders', {
@@ -2203,6 +2210,30 @@ class DeParaUI {
             upBtn.addEventListener('click', () => this.goUp());
         }
 
+        // Botão atualizar/refresh
+        const refreshBtn = modal.querySelector('.folder-browser-refresh-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                const currentPath = document.getElementById('browser-path').value;
+                if (currentPath) {
+                    this.loadFoldersForBrowser(currentPath);
+                }
+            });
+        }
+
+        // Permitir entrada manual no campo de caminho
+        const pathInput = modal.querySelector('#browser-path');
+        if (pathInput) {
+            pathInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const path = pathInput.value.trim();
+                    if (path) {
+                        this.loadFoldersForBrowser(path);
+                    }
+                }
+            });
+        }
+
         // Botão cancelar
         const cancelBtn = modal.querySelector('.folder-browser-cancel-btn');
         if (cancelBtn) {
@@ -2237,16 +2268,34 @@ class DeParaUI {
 
         if (!folders || folders.length === 0) {
             console.log('📭 Nenhuma pasta encontrada');
-            folderList.innerHTML = '<div class="empty">Nenhuma pasta encontrada</div>';
+            folderList.innerHTML = `
+                <div class="empty-state">
+                    <span class="material-icons">folder_open</span>
+                    <p>Nenhuma pasta encontrada</p>
+                    <small>Este diretório não contém subpastas ou o caminho não existe</small>
+                    <button class="btn btn-sm btn-outline" onclick="window.deParaUI.loadFoldersForBrowser('${currentPath}')" style="margin-top: 10px;">
+                        <span class="material-icons">refresh</span>
+                        Tentar Novamente
+                    </button>
+                </div>
+            `;
             return;
         }
 
         console.log('📁 Renderizando pastas:', folders.map(f => f.name));
 
         folderList.innerHTML = folders.map(folder => `
-            <div class="folder-item" data-path="${folder.path}">
-                <span class="material-icons">folder</span>
-                <span class="folder-name">${folder.name}</span>
+            <div class="folder-item" data-path="${folder.path}" onclick="window.deParaUI.navigateTo('${folder.path}')">
+                <div class="folder-icon">
+                    <span class="material-icons">folder</span>
+                </div>
+                <div class="folder-info">
+                    <div class="folder-name">${folder.name}</div>
+                    <div class="folder-path">${folder.path}</div>
+                </div>
+                <div class="folder-actions">
+                    <span class="material-icons">chevron_right</span>
+                </div>
             </div>
         `).join('');
 
@@ -2267,14 +2316,14 @@ class DeParaUI {
 
     // Navegar para uma pasta
     navigateTo(path) {
-        this.loadFolders(path);
+        this.loadFoldersForBrowser(path);
     }
 
     // Voltar um nível
     goUp() {
         const currentPath = document.getElementById('browser-path').value;
         const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
-        this.loadFolders(parentPath);
+        this.loadFoldersForBrowser(parentPath);
     }
 
     // Selecionar pasta atual
