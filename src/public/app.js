@@ -218,6 +218,9 @@ class DeParaUI {
 
             // Garantir que o campo de origem esteja sempre visível
             this.ensureSourceFieldVisible();
+            
+            // Carregar pasta salva do slideshow
+            this.loadSlideshowSavedPath();
 
             const initDuration = Date.now() - startTime;
             logger.success('🎉 Inicialização completa!', {
@@ -772,6 +775,18 @@ class DeParaUI {
             console.log('✅ Campo de origem garantido como visível na inicialização');
         } else {
             console.warn('⚠️ Campo source-folder-path não encontrado');
+        }
+    }
+    
+    // Carregar pasta salva do slideshow
+    loadSlideshowSavedPath() {
+        const savedPath = localStorage.getItem('slideshowSelectedPath');
+        if (savedPath) {
+            const slideshowField = document.getElementById('slideshow-folder-path');
+            if (slideshowField) {
+                slideshowField.value = savedPath;
+                console.log('📂 Pasta do slideshow carregada na inicialização:', savedPath);
+            }
         }
     }
 
@@ -6336,6 +6351,13 @@ function showSlideshowModal() {
     const modal = document.getElementById('slideshow-folder-modal');
     modal.style.display = 'flex';
 
+    // Carregar pasta salva do localStorage
+    const savedPath = localStorage.getItem('slideshowSelectedPath');
+    if (savedPath) {
+        document.getElementById('slideshow-folder-path').value = savedPath;
+        console.log('📂 Pasta do slideshow carregada:', savedPath);
+    }
+
     // Focus no campo de pasta
     setTimeout(() => {
         document.getElementById('slideshow-folder-path').focus();
@@ -6356,7 +6378,12 @@ function closeSlideshowConfigModal() {
 }
 
 function resetSlideshowFolderForm() {
-    document.getElementById('slideshow-folder-path').value = '';
+    // Não limpar o campo de pasta se houver uma pasta salva
+    const savedPath = localStorage.getItem('slideshowSelectedPath');
+    if (!savedPath) {
+        document.getElementById('slideshow-folder-path').value = '';
+    }
+    
     document.getElementById('slideshow-max-depth').value = '3';
 
     // Resetar checkboxes de extensões
@@ -7002,11 +7029,15 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         window.startSlideshow = function() {
-            const sourcePath = document.getElementById('slideshow-source-path').value.trim();
+            const sourcePath = document.getElementById('slideshow-folder-path').value.trim();
             if (!sourcePath) {
                 alert('Por favor, selecione uma pasta de origem para o slideshow.');
                 return;
             }
+            
+            // Salvar pasta selecionada no localStorage
+            localStorage.setItem('slideshowSelectedPath', sourcePath);
+            console.log('💾 Pasta do slideshow salva:', sourcePath);
             
             console.log('✅ Iniciando slideshow para:', sourcePath);
             
