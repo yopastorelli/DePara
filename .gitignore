@@ -45,3 +45,6 @@ coverage/
 # Arquivos de lock (opcional)
 # package-lock.json
 # yarn.lock
+
+# Dados de persistência
+src/data/

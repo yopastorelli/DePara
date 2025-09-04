@@ -253,6 +253,10 @@ class FileOperationsManager {
     constructor() {
         this.operations = new Map();
         this.schedules = new Map();
+        
+        // Persistência de operações agendadas
+        this.persistenceFile = path.join(__dirname, '..', 'data', 'scheduled-operations.json');
+        this.dataDir = path.join(__dirname, '..', 'data');
 
         // Configurações otimizadas para Raspberry Pi
         this.maxConcurrentOperations = process.env.MAX_CONCURRENT_OPERATIONS || 2; // Reduzido para RPi
@@ -274,6 +278,9 @@ class FileOperationsManager {
 
             // Inicializar diretório de backup
             await this.ensureBackupDirectory();
+
+            // Carregar operações agendadas salvas
+            await this.loadScheduledOperations();
 
             logger.info('Gerenciador de operações de arquivos inicializado com sucesso');
         } catch (error) {
@@ -301,6 +308,94 @@ class FileOperationsManager {
         } catch {
             await fs.mkdir(this.backupConfig.backupDir, { recursive: true });
             logger.info(`Diretório de backup criado: ${this.backupConfig.backupDir}`);
+        }
+    }
+
+    /**
+     * Carrega operações agendadas do arquivo de persistência
+     */
+    async loadScheduledOperations() {
+        try {
+            // Garantir que o diretório de dados existe
+            await fs.mkdir(this.dataDir, { recursive: true });
+            
+            // Verificar se o arquivo de persistência existe
+            try {
+                await fs.access(this.persistenceFile);
+            } catch (error) {
+                // Arquivo não existe - criar arquivo vazio
+                await this.saveScheduledOperations();
+                logger.info('Arquivo de persistência de operações agendadas criado');
+                return;
+            }
+            
+            // Ler arquivo de persistência
+            const data = await fs.readFile(this.persistenceFile, 'utf8');
+            const savedOperations = JSON.parse(data);
+            
+            logger.info(`Carregando ${savedOperations.length} operações agendadas do arquivo de persistência`);
+            
+            // Restaurar operações
+            for (const operation of savedOperations) {
+                const { id, config } = operation;
+                
+                // Restaurar configuração
+                this.operations.set(id, config);
+                
+                // Reagendar se não for manual
+                const intervalMs = this.parseFrequency(config.frequency);
+                if (intervalMs > 0) {
+                    const intervalId = setInterval(async () => {
+                        try {
+                            await this.executeScheduledOperation(id, config.action, config.sourcePath, config.targetPath, config.options || {});
+                        } catch (error) {
+                            logger.error(`Erro na operação agendada ${id}:`, error);
+                        }
+                    }, intervalMs);
+                    
+                    this.schedules.set(id, intervalId);
+                    logger.info(`Operação reagendada: ${id} - ${config.frequency}`);
+                } else if (intervalMs === 0) {
+                    // Executar imediatamente para 'on-startup'
+                    logger.info(`Executando operação de inicialização: ${id}`);
+                    this.executeScheduledOperation(id, config.action, config.sourcePath, config.targetPath, config.options || {}).catch(error => {
+                        logger.error(`Erro na operação de inicialização ${id}:`, error);
+                    });
+                } else {
+                    // Frequência manual - apenas salvar
+                    logger.info(`Operação manual restaurada: ${id}`);
+                }
+            }
+            
+            logger.info(`✅ ${savedOperations.length} operações agendadas carregadas e reagendadas`);
+            
+        } catch (error) {
+            logger.error('Erro ao carregar operações agendadas:', error);
+        }
+    }
+
+    /**
+     * Salva operações agendadas no arquivo de persistência
+     */
+    async saveScheduledOperations() {
+        try {
+            // Garantir que o diretório de dados existe
+            await fs.mkdir(this.dataDir, { recursive: true });
+            
+            // Converter Map para array
+            const operationsArray = Array.from(this.operations.entries()).map(([id, config]) => ({
+                id,
+                config,
+                timestamp: new Date().toISOString()
+            }));
+            
+            // Salvar no arquivo
+            await fs.writeFile(this.persistenceFile, JSON.stringify(operationsArray, null, 2), 'utf8');
+            
+            logger.info(`✅ ${operationsArray.length} operações agendadas salvas no arquivo de persistência`);
+            
+        } catch (error) {
+            logger.error('Erro ao salvar operações agendadas:', error);
         }
     }
 
@@ -775,6 +870,11 @@ class FileOperationsManager {
             // Frequência manual - apenas salvar, não agendar
             logger.info(`Operação salva para execução manual: ${operationId} - ${frequency}`);
         }
+        
+        // Salvar operações agendadas no arquivo de persistência
+        this.saveScheduledOperations().catch(error => {
+            logger.error('Erro ao salvar operações agendadas:', error);
+        });
     }
 
     /**
@@ -786,6 +886,11 @@ class FileOperationsManager {
             this.schedules.delete(operationId);
             this.operations.delete(operationId);
             logger.info(`Agendamento cancelado: ${operationId}`);
+            
+            // Salvar operações agendadas no arquivo de persistência
+            this.saveScheduledOperations().catch(error => {
+                logger.error('Erro ao salvar operações agendadas após cancelamento:', error);
+            });
         }
     }
 
