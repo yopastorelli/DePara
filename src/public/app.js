@@ -2180,7 +2180,7 @@ class DeParaUI {
         document.body.appendChild(modal);
 
         // Configurar event listeners após criar o modal
-        this.setupFolderBrowserEventListeners(modal, targetType);
+        this.setupFolderBrowserEventListeners(modal, targetType, callback);
 
         // Obter diretório home do usuário automaticamente
         this.setDefaultPath(modal);
@@ -2253,7 +2253,7 @@ class DeParaUI {
     }
 
     // Configurar event listeners para o navegador de pastas
-    setupFolderBrowserEventListeners(modal, targetType) {
+    setupFolderBrowserEventListeners(modal, targetType, callback = null) {
         // Botão fechar
         const closeBtn = modal.querySelector('.folder-browser-close-btn');
         if (closeBtn) {
@@ -2301,7 +2301,7 @@ class DeParaUI {
         if (selectBtn) {
             selectBtn.addEventListener('click', () => {
                 const targetTypeFromBtn = selectBtn.getAttribute('data-target-type');
-                this.selectCurrentFolder(targetTypeFromBtn, callback || null);
+                this.selectCurrentFolder(targetTypeFromBtn, callback);
             });
         }
     }
