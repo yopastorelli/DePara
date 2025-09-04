@@ -5002,6 +5002,7 @@ async function scheduleOperation() {
         
         const requestData = {
             operationId,
+            name,
             frequency,
             action,
             sourcePath,
@@ -5311,7 +5312,8 @@ function renderScheduledOperations(operations) {
     container.innerHTML = operations.map(op => `
         <div class="operation-item ${op.active ? 'active' : 'paused'}">
             <div class="operation-info">
-                <h4>${op.action.toUpperCase()} - ${op.frequency}</h4>
+                <h4>${op.name || `${op.action.toUpperCase()} - ${op.frequency}`}</h4>
+                <p class="operation-details">${op.action.toUpperCase()} - ${op.frequency}</p>
                 <p><strong>Origem:</strong> ${op.sourcePath}</p>
                 ${op.targetPath ? `<p><strong>Destino:</strong> ${op.targetPath}</p>` : ''}
                 <p><strong>Status:</strong> ${op.active ? 'Ativa' : 'Pausada'}</p>

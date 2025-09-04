@@ -465,7 +465,7 @@ router.post('/execute', normalRateLimiter, async (req, res) => {
  */
 router.post('/schedule', async (req, res) => {
     try {
-        const { operationId, frequency, action, sourcePath, targetPath, options = {} } = req.body;
+        const { operationId, name, frequency, action, sourcePath, targetPath, options = {} } = req.body;
 
         // Validação
         if (!frequency || !action || !sourcePath) {
@@ -481,6 +481,7 @@ router.post('/schedule', async (req, res) => {
         const id = operationId || `scheduled_${Date.now()}`;
 
         const config = {
+            name,
             frequency,
             action,
             sourcePath,
@@ -548,10 +549,18 @@ router.delete('/schedule/:operationId', strictRateLimiter, async (req, res) => {
 router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
     try {
         const { operationId } = req.params;
-        const { frequency, action, sourcePath, targetPath, options = {} } = req.body;
+        const { name, frequency, action, sourcePath, targetPath, options = {} } = req.body;
 
         // Sanitização e validação robusta dos parâmetros
         try {
+            if (name !== undefined) {
+                name = sanitizeString(name, {
+                    field: 'name',
+                    maxLength: 100,
+                    allowedChars: 'a-zA-Z0-9\\s\\-_()'
+                });
+            }
+
             if (frequency !== undefined) {
                 frequency = sanitizeString(frequency, {
                     field: 'frequency',
@@ -600,6 +609,7 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
 
         // Preparar nova configuração (apenas campos fornecidos)
         const newConfig = {};
+        if (name !== undefined) newConfig.name = name;
         if (frequency !== undefined) newConfig.frequency = frequency;
         if (action !== undefined) newConfig.action = action;
         if (sourcePath !== undefined) newConfig.sourcePath = sourcePath;
@@ -611,7 +621,7 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
             return res.status(400).json({
                 error: {
                     message: 'Nenhum campo para atualização fornecido',
-                    details: 'Forneça pelo menos um dos campos: frequency, action, sourcePath, targetPath, options'
+                    details: 'Forneça pelo menos um dos campos: name, frequency, action, sourcePath, targetPath, options'
                 }
             });
         }
