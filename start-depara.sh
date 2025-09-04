@@ -116,7 +116,8 @@ minimize_to_tray() {
         if command -v wmctrl &> /dev/null; then
             # Minimizar todas as janelas do Chromium/Chrome/Firefox que contenham "DePara" ou "localhost:3000"
             wmctrl -l | grep -E "(DePara|localhost:3000|Chromium|Chrome|Firefox)" | awk '{print $1}' | while read window_id; do
-                wmctrl -i -r "$window_id" -b add,hidden 2>/dev/null
+                wmctrl -i -r "$window_id" -b add,hidden,below 2>/dev/null
+                wmctrl -i -r "$window_id" -b add,sticky 2>/dev/null
             done
             log "✅ DePara minimizado para system tray"
         else

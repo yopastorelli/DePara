@@ -19,7 +19,7 @@ router.post('/minimize', async (req, res) => {
         logger.info('📱 Minimizando aplicação para system tray...');
 
         // Executar comando para minimizar janelas do navegador
-        const command = `wmctrl -l | grep -E "(DePara|localhost:3000|Chromium|Chrome|Firefox)" | awk '{print $1}' | while read window_id; do wmctrl -i -r "$window_id" -b add,hidden 2>/dev/null; done`;
+        const command = `wmctrl -l | grep -E "(DePara|localhost:3000|Chromium|Chrome|Firefox)" | awk '{print $1}' | while read window_id; do wmctrl -i -r "$window_id" -b add,hidden,below 2>/dev/null; done`;
 
         exec(command, (error, stdout, stderr) => {
             if (error) {
