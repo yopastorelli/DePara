@@ -111,10 +111,25 @@ show_status() {
 open_browser() {
     if check_depara_status; then
         log "🌐 Abrindo DePara no navegador..."
-        xdg-open "http://localhost:3000" 2>/dev/null || \
-        chromium-browser "http://localhost:3000" 2>/dev/null || \
-        firefox "http://localhost:3000" 2>/dev/null || \
-        log "⚠️ Não foi possível abrir o navegador automaticamente"
+        
+        # Tentar abrir em janela dedicada do Chromium
+        if command -v chromium-browser &> /dev/null; then
+            log "🚀 Abrindo em janela dedicada do Chromium..."
+            chromium-browser --new-window --app="http://localhost:3000" --disable-web-security --user-data-dir="/tmp/depara-browser" 2>/dev/null &
+        # Tentar abrir em janela dedicada do Chrome
+        elif command -v google-chrome &> /dev/null; then
+            log "🚀 Abrindo em janela dedicada do Chrome..."
+            google-chrome --new-window --app="http://localhost:3000" --disable-web-security --user-data-dir="/tmp/depara-browser" 2>/dev/null &
+        # Tentar abrir em janela dedicada do Firefox
+        elif command -v firefox &> /dev/null; then
+            log "🚀 Abrindo em janela dedicada do Firefox..."
+            firefox --new-window "http://localhost:3000" 2>/dev/null &
+        # Fallback para xdg-open
+        else
+            log "⚠️ Navegador dedicado não encontrado, usando xdg-open..."
+            xdg-open "http://localhost:3000" 2>/dev/null || \
+            log "⚠️ Não foi possível abrir o navegador automaticamente"
+        fi
     else
         log "❌ DePara não está rodando. Execute: $0 start"
     fi
