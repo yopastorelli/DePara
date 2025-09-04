@@ -2048,6 +2048,15 @@ class DeParaUI {
         // Botões de navegação de pastas no modal de agendamento
         this.addButtonListener('#browse-source-btn', () => this.browsePathForSchedule('source'));
         this.addButtonListener('#browse-target-btn', () => this.browsePathForSchedule('target'));
+        
+        // Botões de operações agendadas (event delegation)
+        this.addButtonListener('.cancel-scheduled-operation-btn', (e) => cancelScheduledOperation(e.target.getAttribute('data-operation-id')));
+        this.addButtonListener('.edit-scheduled-operation-btn', (e) => editScheduledOperation(e.target.getAttribute('data-operation-id')));
+        this.addButtonListener('.execute-scheduled-operation-btn', (e) => executeScheduledOperation(e.target.getAttribute('data-operation-id')));
+        this.addButtonListener('.toggle-scheduled-operation-btn', (e) => toggleScheduledOperation(e.target.getAttribute('data-operation-id')));
+        
+        // Botão de reload da página
+        this.addButtonListener('.reload-page-btn', () => window.location.reload());
 
         // Botões de slideshow
         this.addButtonListener('.close-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
@@ -4034,7 +4043,7 @@ class DeParaUI {
                     O servidor Node.js precisa estar rodando para carregar as pastas.<br>
                     Execute: <code style="background: #f5f5f5; padding: 2px 4px; border-radius: 3px;">node src/main.js</code>
                 </small>
-                <button class="btn btn-primary" onclick="window.location.reload()" style="margin-top: 10px;">
+                <button class="btn btn-primary reload-page-btn" style="margin-top: 10px;">
                     <span class="material-icons">refresh</span>
                     Tentar Novamente
                 </button>
@@ -5236,8 +5245,17 @@ function renderScheduledOperations(operations) {
                 <p><strong>Status:</strong> ${op.active ? 'Ativa' : 'Pausada'}</p>
             </div>
             <div class="operation-actions">
-                <button class="btn btn-sm btn-danger" onclick="cancelScheduledOperation('${op.id}')">
-                    Cancelar
+                <button class="btn btn-sm btn-primary edit-scheduled-operation-btn" data-operation-id="${op.id}" title="Editar operação">
+                    <span class="material-icons">edit</span>
+                </button>
+                <button class="btn btn-sm btn-success execute-scheduled-operation-btn" data-operation-id="${op.id}" title="Executar agora">
+                    <span class="material-icons">play_arrow</span>
+                </button>
+                <button class="btn btn-sm btn-warning toggle-scheduled-operation-btn" data-operation-id="${op.id}" data-active="${op.active}" title="${op.active ? 'Pausar' : 'Retomar'} operação">
+                    <span class="material-icons">${op.active ? 'pause' : 'play_arrow'}</span>
+                </button>
+                <button class="btn btn-sm btn-danger cancel-scheduled-operation-btn" data-operation-id="${op.id}" title="Cancelar operação">
+                    <span class="material-icons">delete</span>
                 </button>
             </div>
         </div>
@@ -5263,6 +5281,90 @@ async function cancelScheduledOperation(operationId) {
         console.error('Erro ao cancelar operação:', error);
         showToast('Erro ao cancelar operação', 'error');
     }
+}
+
+// Executar operação agendada imediatamente
+async function executeScheduledOperation(operationId) {
+    if (!operationId) {
+        console.error('❌ ID da operação não fornecido');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/files/schedule/${operationId}/execute`, {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Operação executada com sucesso');
+                showToast('Operação executada com sucesso!', 'success', true);
+            } else {
+                throw new Error(result.error || 'Erro ao executar operação');
+            }
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+    } catch (error) {
+        console.error('❌ Erro ao executar operação:', error);
+        showToast('Erro ao executar operação: ' + error.message, 'error', true);
+    }
+}
+
+// Pausar/Retomar operação agendada
+async function toggleScheduledOperation(operationId) {
+    if (!operationId) {
+        console.error('❌ ID da operação não fornecido');
+        return;
+    }
+
+    try {
+        // Primeiro, obter o status atual da operação
+        const response = await fetch(`/api/files/schedule/${operationId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || 'Erro ao obter operação');
+        }
+
+        const currentStatus = result.data.active;
+        const newStatus = !currentStatus;
+
+        // Atualizar o status
+        const updateResponse = await fetch(`/api/files/schedule/${operationId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ active: newStatus })
+        });
+
+        if (updateResponse.ok) {
+            const updateResult = await updateResponse.json();
+            if (updateResult.success) {
+                console.log(`✅ Operação ${newStatus ? 'retomada' : 'pausada'} com sucesso`);
+                showToast(`Operação ${newStatus ? 'retomada' : 'pausada'} com sucesso!`, 'success', true);
+                // Recarregar operações agendadas
+                loadScheduledOperations();
+            } else {
+                throw new Error(updateResult.error || 'Erro ao atualizar operação');
+            }
+        } else {
+            throw new Error(`HTTP ${updateResponse.status}: ${updateResponse.statusText}`);
+        }
+    } catch (error) {
+        console.error('❌ Erro ao alterar status da operação:', error);
+        showToast('Erro ao alterar status da operação: ' + error.message, 'error', true);
+    }
+}
+
+// Editar operação agendada
+async function editScheduledOperation(operationId) {
+    console.log('🔧 Editando operação:', operationId);
+    // TODO: Implementar modal de edição
+    showToast('Funcionalidade de edição em desenvolvimento', 'info', true);
 }
 
 // Load Backups

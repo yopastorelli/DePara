@@ -3217,6 +3217,32 @@ body {
     word-break: break-all;
 }
 
+/* Scheduled operations buttons */
+.operation-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.operation-actions .btn {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.operation-actions .btn .material-icons {
+    font-size: 16px;
+}
+
+.operation-actions .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 .extension-selector label:hover {
     background: rgba(102, 126, 234, 0.1);
 }
