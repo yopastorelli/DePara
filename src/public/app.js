@@ -2827,9 +2827,13 @@ class DeParaUI {
 
     // Configurar operação completa (para agendamento)
     configureOperation() {
-        const sourcePath = this.currentConfig.sourcePath;
+        // Obter valores atuais dos campos
+        const sourcePath = document.getElementById('source-folder-path')?.value.trim() || this.currentConfig.sourcePath;
         const operation = this.currentConfig.operation;
-        const targetPath = document.getElementById('target-folder-path').value.trim();
+        const targetPath = document.getElementById('target-folder-path')?.value.trim() || '';
+
+        console.log('🔧 Configurando operação:', { sourcePath, operation, targetPath });
+        console.log('🔧 currentConfig atual:', this.currentConfig);
 
         if (!sourcePath) {
             this.showToast('Selecione uma pasta de origem', 'error');
@@ -2846,8 +2850,12 @@ class DeParaUI {
             return;
         }
 
-        // Salva a configuração atual
+        // Atualizar configuração atual com valores dos campos
+        this.currentConfig.sourcePath = sourcePath;
+        this.currentConfig.operation = operation;
         this.currentConfig.targetPath = targetPath;
+
+        console.log('✅ Configuração atualizada:', this.currentConfig);
 
         this.showToast(`Operação configurada: ${operation} de ${sourcePath}`, 'success');
 
@@ -5567,7 +5575,9 @@ function showToast(message, type = 'info', showSystemNotification = false) {
     // Show system notification for important messages
     if (showSystemNotification && (type === 'success' || type === 'error')) {
         const title = type === 'success' ? 'Operação Concluída' : 'Erro na Operação';
-        showSystemNotification(title, message);
+        if (typeof showSystemNotification === 'function') {
+            showSystemNotification(title, message);
+        }
     }
 
     // Auto remove after 5 seconds

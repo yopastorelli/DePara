@@ -665,32 +665,6 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
 });
 
 /**
- * Listar operações agendadas
- * GET /api/files/scheduled
- */
-router.get('/scheduled', async (req, res) => {
-    try {
-        const operations = fileOperationsManager.getScheduledOperations();
-
-        res.status(200).json({
-            success: true,
-            data: operations,
-            count: operations.length,
-            timestamp: new Date().toISOString()
-        });
-
-    } catch (error) {
-        logger.operationError('File Operations List', error);
-        res.status(500).json({
-            error: {
-                message: 'Erro ao listar operações',
-                details: error.message
-            }
-        });
-    }
-});
-
-/**
  * Executar operação agendada imediatamente
  * POST /api/files/schedule/:operationId/execute
  */
@@ -734,6 +708,33 @@ router.post('/schedule/:operationId/execute', strictRateLimiter, async (req, res
         });
     }
 });
+
+/**
+ * Listar operações agendadas
+ * GET /api/files/scheduled
+ */
+router.get('/scheduled', async (req, res) => {
+    try {
+        const operations = fileOperationsManager.getScheduledOperations();
+
+        res.status(200).json({
+            success: true,
+            data: operations,
+            count: operations.length,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        logger.operationError('File Operations List', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro ao listar operações',
+                details: error.message
+            }
+        });
+    }
+});
+
 
 /**
  * Obter estatísticas das operações
