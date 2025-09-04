@@ -149,80 +149,6 @@
                     </div>
                 </div>
 
-                <!-- Simple File Operations Card -->
-                <div class="card file-operations-card">
-                    <div class="card-header">
-                        <h3>Operações Simples de Arquivos</h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="file-operations-form">
-                            <div class="form-group">
-                                <label for="source-path">Caminho de Origem:</label>
-                                <div class="input-group">
-                                    <input type="text" id="source-path" class="form-input"
-                                           placeholder="/home/pi/Documents/origem" value="/home/pi/Documents/origem"
-                                           data-validation-type="path">
-                                    <button class="btn btn-sm browse-source-btn">
-                                        <span class="material-icons">folder_open</span>
-                                    </button>
-                                </div>
-                                <div class="validation-message"></div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="dest-path">Caminho de Destino:</label>
-                                <div class="input-group">
-                                    <input type="text" id="dest-path" class="form-input"
-                                           placeholder="/home/pi/Documents/destino" value="/home/pi/Documents/destino"
-                                           data-validation-type="path">
-                                    <button class="btn btn-sm browse-dest-btn">
-                                        <span class="material-icons">folder_open</span>
-                                    </button>
-                                </div>
-                                <div class="validation-message"></div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Operação:</label>
-                                <div class="operation-buttons">
-                                    <button class="btn btn-primary simple-operation-btn" data-operation="move">
-                                        <span class="material-icons">arrow_forward</span>
-                                        Mover
-                                    </button>
-                                    <button class="btn btn-secondary simple-operation-btn" data-operation="copy">
-                                        <span class="material-icons">content_copy</span>
-                                        Copiar
-                                    </button>
-                                    <button class="btn btn-danger simple-operation-btn" data-operation="delete">
-                                        <span class="material-icons">delete</span>
-                                        Apagar
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Opções:</label>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="recursive-option" checked>
-                                        <span>Incluir subpastas</span>
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="backup-option" checked>
-                                        <span>Fazer backup antes</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="operation-result" id="operation-result" style="display: none;">
-                                <div class="result-content">
-                                    <span class="material-icons" id="result-icon">info</span>
-                                    <div id="result-text">Operação em andamento...</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Usage Chart Card -->
                 <div class="card chart-card">
@@ -445,26 +371,6 @@
                 <!-- Quick Actions -->
                 <div class="fileops-actions">
                     <div class="action-cards">
-                        <div class="action-card action-move-card">
-                            <span class="material-icons">drive_file_move</span>
-                            <h3>Mover Arquivo</h3>
-                            <p>Move arquivo com backup automático</p>
-                        </div>
-                        <div class="action-card action-copy-card">
-                            <span class="material-icons">content_copy</span>
-                            <h3>Copiar Arquivo</h3>
-                            <p>Copia arquivo preservando original</p>
-                        </div>
-                        <div class="action-card action-delete-card">
-                            <span class="material-icons">delete_forever</span>
-                            <h3>Apagar Arquivo</h3>
-                            <p>Remove arquivo com backup</p>
-                        </div>
-                        <div class="action-card action-schedule-card">
-                            <span class="material-icons">schedule</span>
-                            <h3>Agendar Operação</h3>
-                            <p>Configure operações automáticas</p>
-                        </div>
                         <div class="action-card action-slideshow-card">
                             <span class="material-icons">slideshow</span>
                             <h3>Slideshow</h3>
@@ -473,53 +379,7 @@
                     </div>
                 </div>
 
-                <!-- Templates Section -->
-                <div class="templates-section">
-                    <h3>Templates Pré-configurados</h3>
-                    <div class="template-categories" id="template-categories">
-                        <!-- Templates serão carregados dinamicamente -->
-                    </div>
-                </div>
 
-                <!-- Scheduled Operations -->
-                <div class="scheduled-operations">
-                    <h3>Operações Agendadas</h3>
-                    <div class="operations-list" id="scheduled-operations-list">
-                        <!-- Operações agendadas serão carregadas dinamicamente -->
-                    </div>
-                </div>
-
-                <!-- Ignored Files Info -->
-                <div class="ignored-files-section">
-                    <h3>🛡️ Arquivos Protegidos</h3>
-                    <p>Arquivos ignorados automaticamente para proteger sincronização</p>
-                    <div class="ignored-files-info" id="ignored-files-info">
-                        <button class="btn btn-secondary show-ignored-btn">
-                            <span class="material-icons">info</span>
-                            Ver Arquivos Ignorados
-                        </button>
-                        <div class="ignored-summary">
-                            <span class="material-icons">sync</span>
-                            <strong>Resilio Sync:</strong> .sync, .!sync, .rsls, etc.
-                        </div>
-                        <div class="ignored-summary">
-                            <span class="material-icons">computer</span>
-                            <strong>Sistema:</strong> Thumbs.db, .DS_Store, etc.
-                        </div>
-                        <div class="ignored-summary">
-                            <span class="material-icons">access_time</span>
-                            <strong>Temporários:</strong> *.tmp, *.bak, etc.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Backups -->
-                <div class="backups-section">
-                    <h3>Backups Recentes</h3>
-                    <div class="backups-list" id="backups-list">
-                        <!-- Backups serão carregados dinamicamente -->
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -530,45 +390,15 @@
             <div class="settings-container">
                 <h2>Configurações do Sistema</h2>
 
-                <!-- Configuração Rápida de Pastas -->
-                <div class="quick-folders-section">
-                    <h3>🚀 Configuração Rápida de Pastas</h3>
-                    <p>Crie pastas comuns automaticamente com um clique:</p>
+                <!-- Gerenciamento de Pastas -->
+                <div class="folders-management-section">
+                    <h3>📁 Gerenciamento de Pastas</h3>
+                    <p>Configure e gerencie as pastas do sistema</p>
 
-                    <div class="quick-folders-grid">
-                        <div class="quick-folder-card quick-folder-documents">
-                            <div class="folder-icon">📄</div>
-                            <h4>Documentos</h4>
-                            <p>Entrada e saída de documentos</p>
-                            <small>Cria: ~/Documents/Entrada, ~/Documents/Saida</small>
-                        </div>
-
-                        <div class="quick-folder-card quick-folder-backup">
-                            <div class="folder-icon">💾</div>
-                            <h4>Backup</h4>
-                            <p>Sistema de backup automático</p>
-                            <small>Cria: ~/Backup/Diario, ~/Backup/Semanal</small>
-                        </div>
-
-                        <div class="quick-folder-card quick-folder-media">
-                            <div class="folder-icon">🖼️</div>
-                            <h4>Mídia</h4>
-                            <p>Fotos, vídeos e mídia</p>
-                            <small>Cria: ~/Media/Fotos, ~/Media/Videos</small>
-                        </div>
-
-                        <div class="quick-folder-card quick-folder-temp">
-                            <div class="folder-icon">🗂️</div>
-                            <h4>Temporário</h4>
-                            <p>Arquivos temporários</p>
-                            <small>Cria: ~/Temp/Processamento, ~/Temp/Lixeira</small>
-                        </div>
-                    </div>
-
-                    <div class="quick-actions">
-                        <button class="btn btn-outline folder-manager-btn">
+                    <div class="folder-actions">
+                        <button class="btn btn-primary folder-manager-btn">
                             <span class="material-icons">create_new_folder</span>
-                            Criar Pasta Personalizada
+                            Gerenciar Pastas
                         </button>
                         <button class="btn btn-secondary refresh-folders-btn">
                             <span class="material-icons">refresh</span>
@@ -590,27 +420,11 @@
                     </div>
                 </div>
 
-                <!-- Lista de Workflows Configurados -->
-                <div class="workflows-list-section">
-                    <h3>⚙️ Workflows Configurados</h3>
-                    <div id="workflows-list" class="workflows-list">
-                        <!-- Workflows serão carregadas dinamicamente -->
-                        <div class="empty-state">
-                            <span class="material-icons">workflow</span>
-                            <p>Nenhum workflow configurado</p>
-                            <small>Use o modal de workflow para criar</small>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Configurações Avançadas -->
-                <div class="advanced-settings">
-                    <h3>⚙️ Configurações Avançadas</h3>
+                <!-- Configurações do Sistema -->
+                <div class="system-settings">
+                    <h3>⚙️ Configurações do Sistema</h3>
                     <div class="settings-form">
-                        <div class="form-group">
-                            <label>Porta da Aplicação</label>
-                            <input type="number" id="app-port" value="3000" min="1024" max="65535">
-                        </div>
                         <div class="form-group">
                             <label>Nível de Log</label>
                             <select id="log-level">
@@ -627,10 +441,6 @@
                                 <option value="production" selected>Produção</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>Diretório de Logs</label>
-                            <input type="text" id="log-directory" value="logs/">
-                        </div>
                         <button class="btn btn-primary save-settings-btn">
                             <span class="material-icons">save</span>
                             Salvar Configurações
@@ -641,7 +451,7 @@
         </div>
     </main>
 
-    <!-- Modal de Configuração de Fluxo de Trabalho -->
+    <!-- Modal removido para simplificação -->
     <div id="workflow-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">

@@ -58,6 +58,7 @@ body {
 .nav {
     display: flex;
     gap: 8px;
+    margin-left: 20px;
 }
 
 .nav-btn {

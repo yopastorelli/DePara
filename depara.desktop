@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DePara
+Comment=Gerenciador de Arquivos e Operações
+Exec=/home/pi/DePara/start-depara.sh open
+Icon=/home/pi/DePara/src/public/favicon.ico
+Terminal=false
+StartupNotify=true
+Categories=Utility;FileManager;
+Keywords=files;manager;sync;backup;
+StartupWMClass=DePara
+MimeType=inode/directory;

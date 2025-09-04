@@ -1,0 +1,35 @@
+[Unit]
+Description=DePara - Gerenciador de Arquivos
+Documentation=https://github.com/seu-usuario/DePara
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/DePara
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=depara
+
+# Variáveis de ambiente
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+# Configurações de segurança
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/pi/DePara
+
+# Limites de recursos
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

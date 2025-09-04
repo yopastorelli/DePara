@@ -117,9 +117,8 @@ router.get('/resources', (req, res) => {
         usage: process.cpuUsage()
       },
       disk: {
-        // Informações básicas de disco (Windows)
         platform: os.platform(),
-        note: 'Informações detalhadas de disco requerem bibliotecas específicas do sistema'
+        drives: getDiskInfo()
       },
       network: {
         interfaces: os.networkInterfaces()
@@ -411,6 +410,126 @@ function generatePerformanceRecommendations() {
   }
 
   return recommendations;
+}
+
+function getDiskInfo() {
+  try {
+    const { execSync } = require('child_process');
+    const platform = os.platform();
+    
+    if (platform === 'win32') {
+      // Windows - usar wmic para obter informações de disco
+      try {
+        const output = execSync('wmic logicaldisk get size,freespace,caption', { encoding: 'utf8' });
+        const lines = output.split('\n').filter(line => line.trim() && !line.includes('Caption'));
+        const drives = [];
+        
+        for (const line of lines) {
+          const parts = line.trim().split(/\s+/);
+          if (parts.length >= 3) {
+            const caption = parts[0];
+            const freeSpace = parseInt(parts[1]) || 0;
+            const totalSize = parseInt(parts[2]) || 0;
+            
+            if (totalSize > 0) {
+              drives.push({
+                drive: caption,
+                total: totalSize,
+                free: freeSpace,
+                used: totalSize - freeSpace,
+                percentage: Math.round(((totalSize - freeSpace) / totalSize) * 100)
+              });
+            }
+          }
+        }
+        
+        return drives;
+      } catch (error) {
+        logger.warn('Erro ao obter informações de disco no Windows:', error.message);
+        return [{
+          drive: 'C:',
+          total: 0,
+          free: 0,
+          used: 0,
+          percentage: 0,
+          error: 'Não foi possível obter informações de disco'
+        }];
+      }
+    } else {
+      // Linux/Unix - usar df
+      try {
+        const output = execSync('df -h', { encoding: 'utf8' });
+        const lines = output.split('\n').slice(1); // Pular cabeçalho
+        const drives = [];
+        
+        for (const line of lines) {
+          const parts = line.trim().split(/\s+/);
+          if (parts.length >= 6) {
+            const filesystem = parts[0];
+            const total = parts[1];
+            const used = parts[2];
+            const available = parts[3];
+            const percentage = parseInt(parts[4]) || 0;
+            const mountpoint = parts[5];
+            
+            // Converter tamanhos para bytes (aproximado)
+            const totalBytes = parseSizeToBytes(total);
+            const usedBytes = parseSizeToBytes(used);
+            const freeBytes = parseSizeToBytes(available);
+            
+            drives.push({
+              drive: filesystem,
+              mountpoint: mountpoint,
+              total: totalBytes,
+              free: freeBytes,
+              used: usedBytes,
+              percentage: percentage,
+              totalFormatted: total,
+              usedFormatted: used,
+              freeFormatted: available
+            });
+          }
+        }
+        
+        return drives;
+      } catch (error) {
+        logger.warn('Erro ao obter informações de disco no Linux:', error.message);
+        return [{
+          drive: '/',
+          total: 0,
+          free: 0,
+          used: 0,
+          percentage: 0,
+          error: 'Não foi possível obter informações de disco'
+        }];
+      }
+    }
+  } catch (error) {
+    logger.error('Erro geral ao obter informações de disco:', error);
+    return [{
+      drive: 'Unknown',
+      total: 0,
+      free: 0,
+      used: 0,
+      percentage: 0,
+      error: error.message
+    }];
+  }
+}
+
+function parseSizeToBytes(sizeStr) {
+  if (!sizeStr) return 0;
+  
+  const size = parseFloat(sizeStr);
+  const unit = sizeStr.slice(-1).toUpperCase();
+  
+  switch (unit) {
+    case 'K': return size * 1024;
+    case 'M': return size * 1024 * 1024;
+    case 'G': return size * 1024 * 1024 * 1024;
+    case 'T': return size * 1024 * 1024 * 1024 * 1024;
+    default: return size;
+  }
 }
 
 module.exports = router;

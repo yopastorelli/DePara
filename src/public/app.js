@@ -334,6 +334,9 @@ class DeParaUI {
             // Atualizar contadores
             await this.updateCounters();
 
+            // Carregar operações agendadas para o dashboard
+            await this.loadDashboardScheduledOperations();
+
             console.log('Dashboard atualizada automaticamente');
         } catch (error) {
             console.warn('Erro ao atualizar dashboard:', error);
@@ -366,6 +369,48 @@ class DeParaUI {
         }
     }
 
+    // Carregar operações agendadas para o dashboard
+    async loadDashboardScheduledOperations() {
+        try {
+            const response = await fetch('/api/files/scheduled');
+            if (response.ok) {
+                const data = await response.json();
+                this.updateDashboardScheduledOperations(data.data || []);
+            }
+        } catch (error) {
+            console.warn('Erro ao carregar operações agendadas para dashboard:', error);
+        }
+    }
+
+    // Atualizar exibição de operações agendadas no dashboard
+    updateDashboardScheduledOperations(operations) {
+        const container = document.querySelector('#dashboard .scheduled-operations .operations-list');
+        if (!container) return;
+
+        if (operations.length === 0) {
+            container.innerHTML = '<p class="empty-state">Nenhuma operação agendada</p>';
+            return;
+        }
+
+        container.innerHTML = operations.slice(0, 5).map(op => `
+            <div class="operation-item ${op.active ? 'active' : 'paused'}">
+                <div class="operation-info">
+                    <h4>${op.name || 'Operação sem nome'}</h4>
+                    <p>${op.action} - ${op.frequency}</p>
+                </div>
+                <div class="operation-status">
+                    <span class="status-badge ${op.active ? 'active' : 'paused'}">
+                        ${op.active ? 'Ativa' : 'Pausada'}
+                    </span>
+                </div>
+            </div>
+        `).join('');
+
+        if (operations.length > 5) {
+            container.innerHTML += `<p class="more-operations">+${operations.length - 5} operações adicionais</p>`;
+        }
+    }
+
     // Atualizar display do status do sistema
     updateSystemStatusDisplay(data) {
         try {
@@ -385,18 +430,28 @@ class DeParaUI {
 
             // Atualizar uso de disco
             const diskElement = document.getElementById('disk-usage');
-            if (diskElement && data.disk) {
-                const diskUsage = data.disk.percentage || 0;
-                diskElement.textContent = `${diskUsage}%`;
-                logger.debug('✅ Disco atualizado', { diskUsage });
+            if (diskElement && data.disk && data.disk.drives) {
+                const drives = data.disk.drives;
+                if (drives.length > 0) {
+                    // Mostrar o primeiro disco (geralmente o principal)
+                    const mainDrive = drives[0];
+                    if (mainDrive.total > 0) {
+                        const usedGB = Math.round(mainDrive.used / (1024 * 1024 * 1024));
+                        const totalGB = Math.round(mainDrive.total / (1024 * 1024 * 1024));
+                        diskElement.textContent = `${usedGB} GB / ${totalGB} GB`;
+                    } else {
+                        diskElement.textContent = 'N/A';
+                    }
+                } else {
+                    diskElement.textContent = 'N/A';
+                }
+                logger.debug('✅ Disco atualizado', { drives });
             }
 
-            // Atualizar operações ativas
+            // Atualizar operações ativas - buscar operações agendadas
             const activeOpsElement = document.getElementById('active-ops');
-            if (activeOpsElement && data.activeOperations !== undefined) {
-                const activeOps = data.activeOperations || 0;
-                activeOpsElement.textContent = activeOps;
-                logger.debug('✅ Operações ativas atualizadas', { activeOps });
+            if (activeOpsElement) {
+                this.updateActiveOperationsCount();
             }
 
         } catch (error) {
@@ -890,6 +945,28 @@ class DeParaUI {
             }
         } catch (error) {
             console.warn('Erro ao atualizar contadores:', error);
+        }
+    }
+
+    // Atualizar contador de operações ativas
+    async updateActiveOperationsCount() {
+        try {
+            const response = await fetch('/api/files/scheduled');
+            if (response.ok) {
+                const data = await response.json();
+                const activeOps = data.data ? data.data.length : 0;
+                const activeOpsElement = document.getElementById('active-ops');
+                if (activeOpsElement) {
+                    activeOpsElement.textContent = activeOps;
+                    logger.debug('✅ Operações ativas atualizadas', { activeOps });
+                }
+            }
+        } catch (error) {
+            logger.warn('Erro ao atualizar contador de operações ativas:', error);
+            const activeOpsElement = document.getElementById('active-ops');
+            if (activeOpsElement) {
+                activeOpsElement.textContent = '0';
+            }
         }
     }
 
