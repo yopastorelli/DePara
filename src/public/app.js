@@ -5054,10 +5054,15 @@ async function scheduleOperation() {
             requestData.targetPath = targetPath;
         }
 
-        if (filters) {
+        // Processar filtros - sempre criar objeto filters, mesmo se vazio
+        if (filters && filters.trim()) {
+            // Filtro especificado - processar extensões
             requestData.options.filters = {
                 extensions: filters.split(',').map(ext => ext.trim().replace('*.', ''))
             };
+        } else {
+            // Filtro vazio - não aplicar filtros (aceitar todos os arquivos)
+            requestData.options.filters = {};
         }
 
         const url = isEditing ? `/api/files/schedule/${isEditing}` : '/api/files/schedule';

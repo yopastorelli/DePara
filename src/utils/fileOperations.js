@@ -1157,7 +1157,14 @@ class FileOperationsManager {
                         const fileName = path.basename(filePath);
 
                         // Aplicar filtros se configurados
+                        logger.debug(`🔍 Aplicando filtros para: ${fileName}`, { 
+                            filters: options.filters, 
+                            hasFilters: !!options.filters,
+                            filterKeys: options.filters ? Object.keys(options.filters) : []
+                        });
+                        
                         if (!this.matchesFilters(fileName, options.filters, filePath)) {
+                            logger.debug(`🚫 Arquivo rejeitado pelos filtros: ${fileName}`);
                             return { status: 'skipped', reason: 'filter mismatch' };
                         }
 
@@ -1442,15 +1449,26 @@ class FileOperationsManager {
     matchesFilters(filename, filters = {}, filePath = '') {
         // Primeiro, verificar se deve ser ignorado (sempre)
         if (this.shouldIgnoreFile(filePath, filename)) {
+            logger.debug(`🚫 Arquivo ignorado: ${filename}`);
             return false;
         }
 
-        if (!filters || Object.keys(filters).length === 0) return true;
+        // Se não há filtros definidos, aceitar todos os arquivos
+        if (!filters || Object.keys(filters).length === 0) {
+            logger.debug(`✅ Sem filtros - aceitando: ${filename}`);
+            return true;
+        }
 
         // Filtro por extensão
         if (filters.extensions && filters.extensions.length > 0) {
             const ext = path.extname(filename).toLowerCase().slice(1);
-            if (!filters.extensions.includes(ext)) return false;
+            const isAllowed = filters.extensions.includes(ext);
+            
+            logger.debug(`🔍 Filtro de extensão: ${filename} (${ext}) - Permitido: ${isAllowed} (${filters.extensions.join(', ')})`);
+            
+            if (!isAllowed) {
+                return false;
+            }
         }
 
         // Filtro por tamanho (se conseguir obter)
@@ -1461,9 +1479,12 @@ class FileOperationsManager {
         // Filtro por padrão de nome
         if (filters.pattern) {
             const regex = new RegExp(filters.pattern, 'i');
-            if (!regex.test(filename)) return false;
+            const matches = regex.test(filename);
+            logger.debug(`🔍 Filtro de padrão: ${filename} - Corresponde: ${matches} (${filters.pattern})`);
+            if (!matches) return false;
         }
 
+        logger.debug(`✅ Arquivo aprovado pelos filtros: ${filename}`);
         return true;
     }
 
