@@ -4934,7 +4934,7 @@ function showScheduleModal() {
         const config = window.deParaUI.currentConfig;
         
         // Preencher campos com valores atuais
-        document.getElementById('schedule-name').value = config.operationName || `Operação ${config.operation || 'arquivo'}`;
+        document.getElementById('schedule-name').value = config.name || `Operação ${config.operation || 'arquivo'}`;
         document.getElementById('schedule-action').value = config.operation || '';
         document.getElementById('schedule-frequency').value = '1d'; // Padrão: diariamente
         document.getElementById('schedule-source').value = config.sourcePath || '';
@@ -5271,13 +5271,22 @@ async function applyTemplate(category, name) {
 async function loadProgress() {
     try {
         const response = await fetch('/api/files/progress');
+        
+        if (!response.ok) {
+            // Se a resposta não for OK, não logar erro (pode ser normal)
+            return;
+        }
+        
         const result = await response.json();
 
         if (result.success) {
             renderProgress(result.data);
         }
     } catch (error) {
-        console.error('Erro ao carregar progresso:', error);
+        // Só logar erro se não for erro de conexão (que é normal quando não há operações ativas)
+        if (!error.message.includes('Failed to fetch') && !error.message.includes('ERR_CONNECTION_REFUSED')) {
+            console.error('Erro ao carregar progresso:', error);
+        }
     }
 }
 
@@ -5345,7 +5354,9 @@ function renderScheduledOperations(operations) {
         return;
     }
 
-    container.innerHTML = operations.map(op => `
+    container.innerHTML = operations.map(op => {
+        console.log('🔍 Renderizando operação:', { id: op.id, name: op.name, action: op.action, frequency: op.frequency });
+        return `
         <div class="operation-item ${op.active ? 'active' : 'paused'}">
             <div class="operation-info">
                 <h4>${op.name || `${op.action.toUpperCase()} - ${op.frequency}`}</h4>
@@ -5372,7 +5383,8 @@ function renderScheduledOperations(operations) {
                 </button>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 async function cancelScheduledOperation(operationId) {
