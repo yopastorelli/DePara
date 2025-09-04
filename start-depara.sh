@@ -10,9 +10,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Diretório do projeto
-DEPARA_DIR="/home/pi/DePara"
-LOG_FILE="/home/pi/DePara/logs/depara-startup.log"
+# Detectar usuário atual e diretório do projeto
+CURRENT_USER=$(whoami)
+USER_HOME="/home/$CURRENT_USER"
+DEPARA_DIR="$USER_HOME/DePara"
+LOG_FILE="$DEPARA_DIR/logs/depara-startup.log"
 
 # Função para log
 log() {
