@@ -202,8 +202,15 @@ async function validateSafePath(filePath, operation = 'read') {
           await fs.access(parentDir);
           return resolvedPath;
         } catch (parentError) {
-          logger.error(`Erro ao acessar diretório pai: ${parentDir}`, parentError);
-          throw new Error(`Diretório pai não acessível: ${parentDir}`);
+          logger.warn(`Diretório pai não existe: ${parentDir}, criando automaticamente...`);
+          try {
+            await fs.mkdir(parentDir, { recursive: true });
+            logger.info(`✅ Diretório criado com sucesso: ${parentDir}`);
+            return resolvedPath;
+          } catch (createError) {
+            logger.error(`Erro ao criar diretório pai: ${parentDir}`, createError);
+            throw new Error(`Não foi possível criar diretório pai: ${parentDir}`);
+          }
         }
       }
       
