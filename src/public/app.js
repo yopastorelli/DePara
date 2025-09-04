@@ -4939,7 +4939,14 @@ function showScheduleModal() {
         document.getElementById('schedule-frequency').value = '1d'; // Padrão: diariamente
         document.getElementById('schedule-source').value = config.sourcePath || '';
         document.getElementById('schedule-target').value = config.targetPath || '';
-        document.getElementById('schedule-filters').value = config.fileFilters || '';
+        
+        // Carregar filtros de extensões corretamente
+        let filtersValue = '';
+        if (config.options && config.options.filters && config.options.filters.extensions) {
+            filtersValue = config.options.filters.extensions.map(ext => `*.${ext}`).join(', ');
+        }
+        document.getElementById('schedule-filters').value = filtersValue;
+        
         document.getElementById('schedule-batch').checked = true;
         document.getElementById('schedule-backup').checked = false;
         
@@ -5541,9 +5548,21 @@ function showEditOperationModal(operation) {
     document.getElementById('schedule-frequency').value = operation.frequency || '1d';
     document.getElementById('schedule-source').value = operation.sourcePath || '';
     document.getElementById('schedule-target').value = operation.targetPath || '';
-    document.getElementById('schedule-filters').value = operation.fileFilters || '';
+    
+    // Carregar filtros de extensões corretamente
+    let filtersValue = '';
+    if (operation.options && operation.options.filters && operation.options.filters.extensions) {
+        filtersValue = operation.options.filters.extensions.map(ext => `*.${ext}`).join(', ');
+        console.log('🔍 Filtros carregados para edição:', {
+            original: operation.options.filters.extensions,
+            formatted: filtersValue
+        });
+    }
+    document.getElementById('schedule-filters').value = filtersValue;
+    
     document.getElementById('schedule-batch').checked = operation.batch !== false;
     document.getElementById('schedule-backup').checked = operation.backup === true;
+    document.getElementById('schedule-preserve-structure').checked = operation.options?.preserveStructure !== false;
     
     // Adicionar ID da operação ao modal para identificação
     modal.dataset.editingOperationId = operation.id;
@@ -5614,9 +5633,17 @@ function showDuplicateOperationModal(operation) {
     document.getElementById('schedule-frequency').value = operation.frequency || '1d';
     document.getElementById('schedule-source').value = operation.sourcePath || '';
     document.getElementById('schedule-target').value = operation.targetPath || '';
-    document.getElementById('schedule-filters').value = operation.fileFilters || '';
+    
+    // Carregar filtros de extensões corretamente
+    let filtersValue = '';
+    if (operation.options && operation.options.filters && operation.options.filters.extensions) {
+        filtersValue = operation.options.filters.extensions.map(ext => `*.${ext}`).join(', ');
+    }
+    document.getElementById('schedule-filters').value = filtersValue;
+    
     document.getElementById('schedule-batch').checked = operation.batch !== false;
     document.getElementById('schedule-backup').checked = operation.backup === true;
+    document.getElementById('schedule-preserve-structure').checked = operation.options?.preserveStructure !== false;
     
     // Adicionar ID da operação ao modal para identificação
     modal.dataset.editingOperationId = operation.id;
@@ -7002,7 +7029,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const backup = document.getElementById('schedule-backup').checked;
             const preserveStructure = document.getElementById('schedule-preserve-structure').checked;
 
-            console.log('🔍 Campos capturados:', { name, action, frequency, sourcePath, targetPath });
+            console.log('🔍 Campos capturados:', { name, action, frequency, sourcePath, targetPath, filters });
 
             if (!name || !action || !frequency || !sourcePath) {
                 showToast('Preencha todos os campos obrigatórios', 'error');
