@@ -711,18 +711,34 @@ class FileOperationsManager {
 
         const intervalMs = this.parseFrequency(frequency);
 
-        const intervalId = setInterval(async () => {
-            try {
-                await this.executeScheduledOperation(operationId, action, sourcePath, targetPath, options);
-            } catch (error) {
-                logger.error(`Erro na operação agendada ${operationId}:`, error);
-            }
-        }, intervalMs);
-
-        this.schedules.set(operationId, intervalId);
+        // Salvar a operação independentemente do tipo de frequência
         this.operations.set(operationId, config);
 
-        logger.info(`Operação agendada: ${operationId} - ${frequency}`);
+        // Agendar apenas se não for manual
+        if (intervalMs >= 0) {
+            if (intervalMs === 0) {
+                // Executar imediatamente para 'on-startup'
+                logger.info(`Operação agendada para execução imediata: ${operationId} - ${frequency}`);
+                this.executeScheduledOperation(operationId, action, sourcePath, targetPath, options).catch(error => {
+                    logger.error(`Erro na operação imediata ${operationId}:`, error);
+                });
+            } else {
+                // Agendar com intervalo
+                const intervalId = setInterval(async () => {
+                    try {
+                        await this.executeScheduledOperation(operationId, action, sourcePath, targetPath, options);
+                    } catch (error) {
+                        logger.error(`Erro na operação agendada ${operationId}:`, error);
+                    }
+                }, intervalMs);
+
+                this.schedules.set(operationId, intervalId);
+                logger.info(`Operação agendada: ${operationId} - ${frequency} (${intervalMs}ms)`);
+            }
+        } else {
+            // Frequência manual - apenas salvar, não agendar
+            logger.info(`Operação salva para execução manual: ${operationId} - ${frequency}`);
+        }
     }
 
     /**
@@ -1182,7 +1198,16 @@ class FileOperationsManager {
      * Converte frequência para milissegundos
      */
     parseFrequency(frequency) {
-        const match = frequency.match(/^(\d+)([smhd])$/);
+        // Frequências especiais
+        if (frequency === 'on-startup') {
+            return 0; // Executar apenas uma vez na inicialização
+        }
+        if (frequency === 'manual') {
+            return -1; // Não agendar automaticamente
+        }
+        
+        // Frequências com regex
+        const match = frequency.match(/^(\d+)([smhdwM])$/);
         if (!match) return 60000; // padrão 1 minuto
 
         const value = parseInt(match[1]);
@@ -1193,6 +1218,8 @@ class FileOperationsManager {
             case 'm': return value * 60 * 1000;   // minutos
             case 'h': return value * 60 * 60 * 1000; // horas
             case 'd': return value * 24 * 60 * 60 * 1000; // dias
+            case 'w': return value * 7 * 24 * 60 * 60 * 1000; // semanas
+            case 'M': return value * 30 * 24 * 60 * 60 * 1000; // meses (aproximado)
             default: return 60000;
         }
     }
