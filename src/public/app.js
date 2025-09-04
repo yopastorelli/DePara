@@ -4002,6 +4002,9 @@ let isLoadingTemplates = false;
 let isLoadingScheduledOperations = false;
 let isLoadingBackups = false;
 
+// Controle de operações simples
+let isExecutingOperation = false;
+
 // Load Templates
 async function loadTemplates() {
     // Evitar chamadas simultâneas
@@ -5601,8 +5604,165 @@ function updateDynamicPaths() {
     }
 }
 
-// Executar quando o DOM estiver carregado
-document.addEventListener('DOMContentLoaded', updateDynamicPaths);
+// Executar quando o DOM estiver carregado (já feito em updateSimplePaths)
+
+// ===========================================
+// FUNÇÕES DE OPERAÇÕES SIMPLES DE ARQUIVOS
+// ===========================================
+
+// Executar operação simples
+async function executeSimpleOperation(action) {
+    if (isExecutingOperation) {
+        showToast('Operação já em andamento. Aguarde...', 'warning');
+        return;
+    }
+
+    const sourcePath = document.getElementById('source-path').value.trim();
+    const destPath = document.getElementById('dest-path').value.trim();
+    const recursive = document.getElementById('recursive-option').checked;
+    const backup = document.getElementById('backup-option').checked;
+
+    // Validação básica
+    if (!sourcePath) {
+        showToast('Digite o caminho de origem', 'error');
+        return;
+    }
+
+    if ((action === 'move' || action === 'copy') && !destPath) {
+        showToast('Digite o caminho de destino', 'error');
+        return;
+    }
+
+    // Mostrar resultado da operação
+    const resultDiv = document.getElementById('operation-result');
+    const resultIcon = document.getElementById('result-icon');
+    const resultText = document.getElementById('result-text');
+
+    resultDiv.style.display = 'block';
+    resultIcon.textContent = 'hourglass_empty';
+    resultText.textContent = 'Executando operação...';
+
+    // Desabilitar botões durante execução
+    setOperationButtonsDisabled(true);
+    isExecutingOperation = true;
+
+    try {
+        const options = {
+            batch: recursive,
+            backupBeforeMove: backup,
+            preserveStructure: true
+        };
+
+        console.log(`🔄 Executando operação: ${action}`, { sourcePath, destPath, options });
+
+        let response;
+        if (action === 'delete') {
+            response = await fetch('/api/files/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: action,
+                    sourcePath: sourcePath,
+                    options: options
+                })
+            });
+        } else {
+            response = await fetch('/api/files/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: action,
+                    sourcePath: sourcePath,
+                    targetPath: destPath,
+                    options: options
+                })
+            });
+        }
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            resultIcon.textContent = 'check_circle';
+            resultText.textContent = `✅ Operação ${action} executada com sucesso!`;
+            showToast(`Operação ${action} concluída!`, 'success');
+
+            // Atualizar atividades recentes
+            if (typeof loadRecentActivities === 'function') {
+                loadRecentActivities();
+            }
+        } else {
+            resultIcon.textContent = 'error';
+            resultText.textContent = `❌ Erro: ${result.error?.message || 'Erro desconhecido'}`;
+            showToast(result.error?.message || 'Erro na operação', 'error');
+        }
+
+    } catch (error) {
+        console.error('Erro na operação:', error);
+        resultIcon.textContent = 'error';
+        resultText.textContent = `❌ Erro de conexão: ${error.message}`;
+        showToast('Erro de conexão com o servidor', 'error');
+    } finally {
+        // Reabilitar botões
+        setOperationButtonsDisabled(false);
+        isExecutingOperation = false;
+    }
+}
+
+// Desabilitar/Habilitar botões de operação
+function setOperationButtonsDisabled(disabled) {
+    const buttons = ['move-btn', 'copy-btn', 'delete-btn'];
+    buttons.forEach(btnId => {
+        const button = document.getElementById(btnId);
+        if (button) {
+            button.disabled = disabled;
+            button.style.opacity = disabled ? '0.6' : '1';
+        }
+    });
+}
+
+// Navegar para caminho de origem
+function browseSourcePath() {
+    const input = document.getElementById('source-path');
+    if (input) {
+        input.focus();
+        input.select();
+    }
+}
+
+// Navegar para caminho de destino
+function browseDestPath() {
+    const input = document.getElementById('dest-path');
+    if (input) {
+        input.focus();
+        input.select();
+    }
+}
+
+// Atualizar caminhos baseados na plataforma (versão simplificada)
+function updateSimplePaths() {
+    const isWindows = navigator.userAgent.indexOf('Windows') > -1;
+    const userName = 'user'; // Valor padrão simples
+
+    const sourceInput = document.getElementById('source-path');
+    const destInput = document.getElementById('dest-path');
+
+    if (sourceInput && sourceInput.value.includes('/home/user')) {
+        sourceInput.value = isWindows ?
+            'C:\\Users\\User\\Documents\\origem' :
+            '/home/user/Documents/origem';
+    }
+
+    if (destInput && destInput.value.includes('/home/user')) {
+        destInput.value = isWindows ?
+            'C:\\Users\\User\\Documents\\destino' :
+            '/home/user/Documents/destino';
+    }
+}
+
+// Inicializar caminhos quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    updateSimplePaths();
+});
 
 // Adicionar animação CSS
 const style = document.createElement('style');
@@ -5610,6 +5770,92 @@ style.textContent = `
     @keyframes slideOutRight {
         from { transform: translateX(0); opacity: 1; }
         to { transform: translateX(100%); opacity: 0; }
+    }
+
+    /* Estilos para operações simples */
+    .file-operations-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .file-operations-form .form-group {
+        margin: 0;
+    }
+
+    .file-operations-form .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .file-operations-form .input-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .file-operations-form .input-group .form-input {
+        flex: 1;
+    }
+
+    .file-operations-form .input-group .btn {
+        flex-shrink: 0;
+        padding: 8px;
+        min-width: 36px;
+    }
+
+    .operation-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .operation-buttons .btn {
+        flex: 1;
+        min-width: 100px;
+    }
+
+    .checkbox-group {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+    }
+
+    .operation-result {
+        padding: 12px;
+        border-radius: 6px;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+    }
+
+    .result-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .result-content .material-icons {
+        font-size: 20px;
+    }
+
+    .result-content.success {
+        background: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+
+    .result-content.error {
+        background: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
     }
 `;
 document.head.appendChild(style);

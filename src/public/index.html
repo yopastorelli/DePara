@@ -149,32 +149,74 @@
                     </div>
                 </div>
 
-                <!-- Quick Actions Card -->
-                <div class="card actions-card">
+                <!-- Simple File Operations Card -->
+                <div class="card file-operations-card">
                     <div class="card-header">
-                        <h3>Ações Rápidas</h3>
+                        <h3>Operações Simples de Arquivos</h3>
                     </div>
                     <div class="card-content">
-                        <button class="action-btn action-move-btn">
-                            <span class="material-icons">drive_file_move</span>
-                            Mover Arquivo
-                        </button>
-                        <button class="action-btn action-copy-btn">
-                            <span class="material-icons">content_copy</span>
-                            Copiar Arquivo
-                        </button>
-                        <button class="action-btn action-delete-btn">
-                            <span class="material-icons">delete_forever</span>
-                            Apagar Arquivo
-                        </button>
-                        <button class="action-btn action-schedule-btn">
-                            <span class="material-icons">schedule</span>
-                            Agendar Operação
-                        </button>
-                        <button class="action-btn action-slideshow-btn">
-                            <span class="material-icons">slideshow</span>
-                            Slideshow de Imagens
-                        </button>
+                        <div class="file-operations-form">
+                            <div class="form-group">
+                                <label for="source-path">Caminho de Origem:</label>
+                                <div class="input-group">
+                                    <input type="text" id="source-path" class="form-input"
+                                           placeholder="/home/pi/Documents/origem" value="/home/pi/Documents/origem">
+                                    <button class="btn btn-sm" onclick="browseSourcePath()">
+                                        <span class="material-icons">folder_open</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dest-path">Caminho de Destino:</label>
+                                <div class="input-group">
+                                    <input type="text" id="dest-path" class="form-input"
+                                           placeholder="/home/pi/Documents/destino" value="/home/pi/Documents/destino">
+                                    <button class="btn btn-sm" onclick="browseDestPath()">
+                                        <span class="material-icons">folder_open</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Operação:</label>
+                                <div class="operation-buttons">
+                                    <button class="btn btn-primary" id="move-btn" onclick="executeSimpleOperation('move')">
+                                        <span class="material-icons">arrow_forward</span>
+                                        Mover
+                                    </button>
+                                    <button class="btn btn-secondary" id="copy-btn" onclick="executeSimpleOperation('copy')">
+                                        <span class="material-icons">content_copy</span>
+                                        Copiar
+                                    </button>
+                                    <button class="btn btn-danger" id="delete-btn" onclick="executeSimpleOperation('delete')">
+                                        <span class="material-icons">delete</span>
+                                        Apagar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Opções:</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="recursive-option" checked>
+                                        <span>Incluir subpastas</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="backup-option" checked>
+                                        <span>Fazer backup antes</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="operation-result" id="operation-result" style="display: none;">
+                                <div class="result-content">
+                                    <span class="material-icons" id="result-icon">info</span>
+                                    <div id="result-text">Operação em andamento...</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
