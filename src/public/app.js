@@ -3046,6 +3046,13 @@ class DeParaUI {
     }
 
     async loadFolders() {
+        // Evitar chamadas simultâneas
+        if (this.isLoadingFolders) {
+            console.log('⚠️ Carregamento de pastas já em andamento, pulando...');
+            return;
+        }
+        this.isLoadingFolders = true;
+
         try {
             console.log('🔍 Carregando pastas da API...');
             const response = await fetch('/api/files/folders');
@@ -3068,6 +3075,9 @@ class DeParaUI {
                 this.folders = [];
                 this.renderConfiguredFolders();
             }
+        } finally {
+            // Sempre liberar o flag de carregamento
+            this.isLoadingFolders = false;
         }
     }
 
@@ -3097,11 +3107,19 @@ class DeParaUI {
     renderConfiguredFolders() {
         console.log('🔄 Iniciando renderConfiguredFolders com', this.folders?.length || 0, 'pastas');
 
+        // Verificar se já está renderizando para evitar loops
+        if (this.isRenderingFolders) {
+            console.log('⚠️ Renderização já em andamento, pulando...');
+            return;
+        }
+        this.isRenderingFolders = true;
+
         const foldersList = document.getElementById('folders-list');
         console.log('📍 Elemento folders-list encontrado:', !!foldersList);
 
         if (!foldersList) {
             console.warn('⚠️ Elemento folders-list não encontrado');
+            this.isRenderingFolders = false;
             return;
         }
 
@@ -3116,6 +3134,7 @@ class DeParaUI {
                     <small>Use a configuração rápida acima ou crie manualmente</small>
                 </div>
             `;
+            this.isRenderingFolders = false;
             return;
         }
 
@@ -3144,6 +3163,9 @@ class DeParaUI {
 
         // Adicionar event listeners para os botões (evita CSP violation)
         this.addFolderEventListeners();
+
+        // Liberar flag de renderização
+        this.isRenderingFolders = false;
     }
 
     getFolderTypeLabel(type) {
@@ -3337,7 +3359,10 @@ class DeParaUI {
                 this.loadWorkflows();
                 break;
             case 'folders':
-                this.loadFolders();
+                // Não recarregar pastas se já foram carregadas na inicialização
+                if (!this.folders || this.folders.length === 0) {
+                    this.loadFolders();
+                }
                 break;
             case 'settings':
                 this.loadSettings();
