@@ -3997,8 +3997,20 @@ async function scheduleOperation() {
     }
 }
 
+// Controle de carregamento para evitar chamadas simultâneas
+let isLoadingTemplates = false;
+let isLoadingScheduledOperations = false;
+let isLoadingBackups = false;
+
 // Load Templates
 async function loadTemplates() {
+    // Evitar chamadas simultâneas
+    if (isLoadingTemplates) {
+        console.log('⚠️ Carregamento de templates já em andamento, pulando...');
+        return;
+    }
+    isLoadingTemplates = true;
+
     try {
         console.log('🔍 Carregando templates...');
         const response = await fetch('/api/files/templates');
@@ -4018,6 +4030,9 @@ async function loadTemplates() {
     } catch (error) {
         console.error('❌ Erro ao carregar templates:', error);
         renderTemplates([]);
+    } finally {
+        // Sempre liberar o flag de carregamento
+        isLoadingTemplates = false;
     }
 }
 
@@ -4140,6 +4155,13 @@ function renderProgress(operations) {
 
 // Load Scheduled Operations
 async function loadScheduledOperations() {
+    // Evitar chamadas simultâneas
+    if (isLoadingScheduledOperations) {
+        console.log('⚠️ Carregamento de operações agendadas já em andamento, pulando...');
+        return;
+    }
+    isLoadingScheduledOperations = true;
+
     try {
         const response = await fetch('/api/files/scheduled');
         const result = await response.json();
@@ -4149,6 +4171,9 @@ async function loadScheduledOperations() {
         }
     } catch (error) {
         console.error('Erro ao carregar operações agendadas:', error);
+    } finally {
+        // Sempre liberar o flag de carregamento
+        isLoadingScheduledOperations = false;
     }
 }
 
@@ -4200,6 +4225,13 @@ async function cancelScheduledOperation(operationId) {
 
 // Load Backups
 async function loadBackups() {
+    // Evitar chamadas simultâneas
+    if (isLoadingBackups) {
+        console.log('⚠️ Carregamento de backups já em andamento, pulando...');
+        return;
+    }
+    isLoadingBackups = true;
+
     try {
         const response = await fetch('/api/files/backups');
         const result = await response.json();
@@ -4209,6 +4241,9 @@ async function loadBackups() {
         }
     } catch (error) {
         console.error('Erro ao carregar backups:', error);
+    } finally {
+        // Sempre liberar o flag de carregamento
+        isLoadingBackups = false;
     }
 }
 
