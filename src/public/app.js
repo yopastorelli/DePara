@@ -3969,22 +3969,30 @@ class DeParaUI {
     }
 
     // Event Listeners
-    setupEventListeners() {
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.switchTab(e.target.closest('.nav-btn').dataset.tab);
-            });
+setupEventListeners() {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            this.switchTab(e.target.closest('.nav-btn').dataset.tab);
         });
+    });
 
-        const fileInput = document.getElementById('file-input');
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                this.handleFileUpload(e.target.files[0]);
-            });
-        }
-
-        this.setupWorkflowEventListeners();
+    const fileInput = document.getElementById('file-input');
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            this.handleFileUpload(e.target.files[0]);
+        });
     }
+
+    // Botão de system tray
+    const trayBtn = document.getElementById('tray-btn');
+    if (trayBtn) {
+        trayBtn.addEventListener('click', () => {
+            minimizeToTray();
+        });
+    }
+
+    this.setupWorkflowEventListeners();
+}
 
     setupWorkflowEventListeners() {
         const filterType = document.getElementById('filter-type');
@@ -4966,6 +4974,33 @@ function showFileOperationModal(action) {
 
 function closeFileOperationModal() {
     document.getElementById('file-operation-modal').style.display = 'none';
+}
+
+// Função para minimizar para system tray
+async function minimizeToTray() {
+    try {
+        logger.info('📱 Minimizando aplicação para system tray...');
+        
+        const response = await fetch('/api/tray/minimize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            logger.info('✅ Aplicação minimizada para system tray');
+            showToast('Aplicação minimizada para system tray', 'success');
+        } else {
+            logger.warn('⚠️ Erro ao minimizar para system tray:', result.error);
+            showToast(result.error?.message || 'Erro ao minimizar para system tray', 'error');
+        }
+    } catch (error) {
+        logger.error('❌ Erro ao minimizar para system tray:', error);
+        showToast('Erro ao minimizar para system tray', 'error');
+    }
 }
 
 async function executeFileOperation() {

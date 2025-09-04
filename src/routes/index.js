@@ -13,6 +13,7 @@ const logger = require('../utils/logger');
 const healthRoutes = require('./health');
 const statusRoutes = require('./status');
 const fileOperationsRoutes = require('./fileOperations');
+const trayRoutes = require('./tray');
 
 // Middleware de logging para todas as rotas
 router.use((req, res, next) => {
@@ -95,6 +96,7 @@ router.get('/docs', (req, res) => {
 router.use('/health', healthRoutes);
 router.use('/status', statusRoutes);
 router.use('/files', fileOperationsRoutes);
+router.use('/tray', trayRoutes);
 
 // Rota padrão da API
 router.get('/', (req, res) => {

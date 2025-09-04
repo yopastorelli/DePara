@@ -1605,6 +1605,37 @@ body {
     100% { transform: rotate(360deg); }
 }
 
+/* Header Actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+}
+
+/* Header Tray Button */
+.tray-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tray-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.tray-btn:active {
+    transform: scale(0.95);
+}
+
 /* Header Help Button */
 .help-btn {
     background: rgba(255, 255, 255, 0.1);
@@ -1614,7 +1645,6 @@ body {
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.3s ease;
-    margin-left: 16px;
 }
 
 .help-btn:hover {
