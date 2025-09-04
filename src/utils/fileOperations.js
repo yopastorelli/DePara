@@ -406,7 +406,12 @@ class FileOperationsManager {
         try {
             // Tentar rename primeiro (mais rápido para mesmo dispositivo)
             await fs.rename(sourcePath, targetPath);
-            logger.info(`Arquivo movido com rename: ${sourcePath} -> ${targetPath}`);
+            
+            // Validar que o arquivo chegou ao destino
+            const targetStats = await fs.stat(targetPath);
+            await fs.access(targetPath, fs.constants.R_OK);
+            
+            logger.info(`✅ Arquivo movido com rename: ${sourcePath} -> ${targetPath} (${targetStats.size} bytes)`);
         } catch (error) {
             if (error.code === 'EXDEV') {
                 // Cross-device link not permitted - usar copy + delete
@@ -419,12 +424,22 @@ class FileOperationsManager {
                 const sourceStats = await fs.stat(sourcePath);
                 const targetStats = await fs.stat(targetPath);
                 
-                if (sourceStats.size === targetStats.size) {
-                    // Remover arquivo original
-                    await fs.unlink(sourcePath);
-                    logger.info(`Arquivo movido com copy + delete: ${sourcePath} -> ${targetPath}`);
+                // Validação robusta: tamanho, existência e integridade
+                if (sourceStats.size === targetStats.size && targetStats.size > 0) {
+                    // Verificação adicional: tentar ler o arquivo de destino
+                    try {
+                        await fs.access(targetPath, fs.constants.R_OK);
+                        
+                        // Se chegou até aqui, a cópia foi bem-sucedida
+                        await fs.unlink(sourcePath);
+                        logger.info(`✅ Arquivo movido com copy + delete: ${sourcePath} -> ${targetPath} (${targetStats.size} bytes)`);
+                    } catch (accessError) {
+                        // Arquivo de destino não é legível
+                        await fs.unlink(targetPath); // Limpar arquivo corrompido
+                        throw new Error(`Arquivo de destino não é legível: ${targetPath}`);
+                    }
                 } else {
-                    // Tamanhos diferentes - erro na cópia
+                    // Tamanhos diferentes ou arquivo vazio - erro na cópia
                     await fs.unlink(targetPath); // Limpar arquivo parcial
                     throw new Error(`Erro na cópia: tamanhos diferentes (origem: ${sourceStats.size}, destino: ${targetStats.size})`);
                 }
@@ -482,6 +497,19 @@ class FileOperationsManager {
 
             // Verificar se moveu corretamente
             const targetStats = await fs.stat(safeTargetPath);
+            
+            // Validação adicional: verificar se o arquivo é legível
+            await fs.access(safeTargetPath, fs.constants.R_OK);
+            
+            // Verificar se o arquivo original foi removido (para operações de move)
+            try {
+                await fs.access(safeSourcePath, fs.constants.F_OK);
+                // Se chegou aqui, o arquivo original ainda existe - isso é um problema para move
+                logger.warn(`⚠️ Arquivo original ainda existe após move: ${safeSourcePath}`);
+            } catch (notFoundError) {
+                // Arquivo original não existe mais - isso é correto para move
+                logger.info(`✅ Arquivo original removido com sucesso: ${safeSourcePath}`);
+            }
 
             const duration = Date.now() - startTime;
             logger.endOperation('File Move', duration, {
@@ -948,16 +976,25 @@ class FileOperationsManager {
      * Executa operação agendada
      */
     async executeScheduledOperation(operationId, action, sourcePath, targetPath, options) {
+        logger.info(`🚀 Iniciando execução agendada: ${operationId}`, { action, sourcePath, targetPath, options });
+        
         try {
             // Verificar se é uma operação em lote (pasta inteira)
             const stats = await fs.stat(sourcePath);
+            logger.info(`📁 Tipo de operação: ${stats.isDirectory() ? 'diretório' : 'arquivo'}`, { sourcePath });
+            
             if (options.batch && stats.isDirectory()) {
+                logger.info(`📦 Executando operação em lote: ${sourcePath} -> ${targetPath}`);
                 await this.executeBatchOperation(operationId, action, sourcePath, targetPath, options);
             } else {
+                logger.info(`📄 Executando operação em arquivo único: ${sourcePath} -> ${targetPath}`);
                 await this.executeSingleOperation(operationId, action, sourcePath, targetPath, options);
             }
+            
+            logger.info(`✅ Execução agendada concluída: ${operationId}`);
         } catch (error) {
-            logger.error(`Erro na execução agendada ${operationId}:`, error);
+            logger.error(`❌ Erro na execução agendada ${operationId}:`, error);
+            throw error; // Re-throw para que o erro seja propagado
         }
     }
 
