@@ -6962,35 +6962,35 @@ async function startSlideshow() {
         window.deParaUI.startSlideshowFromModal();
     } else {
         // Fallback para implementação antiga
-        const folderPath = document.getElementById('slideshow-folder-path').value.trim();
-        const maxDepth = document.getElementById('slideshow-max-depth').value;
+    const folderPath = document.getElementById('slideshow-folder-path').value.trim();
+    const maxDepth = document.getElementById('slideshow-max-depth').value;
 
-        if (!folderPath) {
-            showToast('Digite o caminho da pasta', 'error');
-            return;
-        }
+    if (!folderPath) {
+        showToast('Digite o caminho da pasta', 'error');
+        return;
+    }
 
-        // Coletar extensões selecionadas
-        const selectedExtensions = [];
-        const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]:checked');
-        extensionCheckboxes.forEach(checkbox => {
-            selectedExtensions.push(checkbox.value);
-        });
+    // Coletar extensões selecionadas
+    const selectedExtensions = [];
+    const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]:checked');
+    extensionCheckboxes.forEach(checkbox => {
+        selectedExtensions.push(checkbox.value);
+    });
 
-        if (selectedExtensions.length === 0) {
-            showToast('Selecione pelo menos uma extensão de arquivo', 'error');
-            return;
-        }
+    if (selectedExtensions.length === 0) {
+        showToast('Selecione pelo menos uma extensão de arquivo', 'error');
+        return;
+    }
 
-        try {
-            // Fechar modal de seleção
-            closeSlideshowFolderModal();
+    try {
+        // Fechar modal de seleção
+        closeSlideshowFolderModal();
 
-            // Mostrar slideshow
-            showSlideshow(folderPath, selectedExtensions, maxDepth);
-        } catch (error) {
-            console.error('Erro ao iniciar slideshow:', error);
-            showToast('Erro ao iniciar slideshow', 'error');
+        // Mostrar slideshow
+        showSlideshow(folderPath, selectedExtensions, maxDepth);
+    } catch (error) {
+        console.error('Erro ao iniciar slideshow:', error);
+        showToast('Erro ao iniciar slideshow', 'error');
         }
     }
 }
