@@ -141,6 +141,9 @@ class DeParaUI {
     }
 
     async init() {
+        // Carregar configurações do slideshow
+        this.loadSlideshowConfig();
+        
         logger.info('🚀 Inicializando DePara UI...', {
             version: '2.0.0',
             userAgent: navigator.userAgent,
@@ -3030,6 +3033,76 @@ class DeParaUI {
     currentSlideIndex = 0;
     slideshowInterval = null;
     slideshowPlaying = false;
+    slideshowConfig = {
+        interval: 3,
+        random: false,
+        preload: true,
+        extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
+        recursive: true
+    };
+    preloadedImages = new Map();
+
+    // Carregar configurações do slideshow do localStorage
+    loadSlideshowConfig() {
+        const saved = localStorage.getItem('slideshowConfig');
+        if (saved) {
+            try {
+                this.slideshowConfig = { ...this.slideshowConfig, ...JSON.parse(saved) };
+                console.log('📋 Configurações do slideshow carregadas:', this.slideshowConfig);
+            } catch (error) {
+                console.warn('⚠️ Erro ao carregar configurações do slideshow:', error);
+            }
+        }
+    }
+
+    // Salvar configurações do slideshow no localStorage
+    saveSlideshowConfig() {
+        try {
+            localStorage.setItem('slideshowConfig', JSON.stringify(this.slideshowConfig));
+            console.log('💾 Configurações do slideshow salvas:', this.slideshowConfig);
+        } catch (error) {
+            console.warn('⚠️ Erro ao salvar configurações do slideshow:', error);
+        }
+    }
+
+    // Aplicar configurações do modal para o objeto de configuração
+    applySlideshowConfigFromModal() {
+        const interval = parseInt(document.getElementById('slideshow-interval').value) || 3;
+        const random = document.getElementById('slideshow-random').checked;
+        const preload = document.getElementById('slideshow-preload').checked;
+        const recursive = document.getElementById('slideshow-recursive').checked;
+        
+        // Coletar extensões selecionadas
+        const extensionCheckboxes = document.querySelectorAll('.extensions-list input[type="checkbox"]');
+        const extensions = Array.from(extensionCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        this.slideshowConfig = {
+            interval: Math.max(1, Math.min(60, interval)),
+            random,
+            preload,
+            extensions: extensions.length > 0 ? extensions : ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
+            recursive
+        };
+
+        this.saveSlideshowConfig();
+        console.log('⚙️ Configurações aplicadas:', this.slideshowConfig);
+    }
+
+    // Aplicar configurações salvas ao modal
+    applySlideshowConfigToModal() {
+        document.getElementById('slideshow-interval').value = this.slideshowConfig.interval;
+        document.getElementById('slideshow-random').checked = this.slideshowConfig.random;
+        document.getElementById('slideshow-preload').checked = this.slideshowConfig.preload;
+        document.getElementById('slideshow-recursive').checked = this.slideshowConfig.recursive;
+
+        // Aplicar extensões selecionadas
+        const extensionCheckboxes = document.querySelectorAll('.extensions-list input[type="checkbox"]');
+        extensionCheckboxes.forEach(cb => {
+            cb.checked = this.slideshowConfig.extensions.includes(cb.value);
+        });
+    }
 
     // Adicionar event listeners para slideshow
     addSlideshowEventListeners() {
@@ -3094,6 +3167,18 @@ class DeParaUI {
 
     // Abrir modal de slideshow
     showSlideshowModal() {
+        // Carregar configurações salvas
+        this.loadSlideshowConfig();
+        
+        // Aplicar configurações ao modal
+        this.applySlideshowConfigToModal();
+        
+        // Carregar pasta salva
+        const savedPath = localStorage.getItem('slideshowSelectedPath');
+        if (savedPath) {
+            document.getElementById('slideshow-folder-path').value = savedPath;
+        }
+        
         document.getElementById('slideshow-modal').style.display = 'flex';
     }
 
@@ -3255,30 +3340,20 @@ class DeParaUI {
     // Iniciar slideshow a partir do modal
     async startSlideshowFromModal() {
         const folderPath = document.getElementById('slideshow-folder-path').value.trim();
-        const interval = parseInt(document.getElementById('slideshow-interval').value) || 3;
-        const recursive = document.getElementById('slideshow-recursive').checked;
-
-        // Coletar extensões selecionadas
-        const extensions = [];
-        document.querySelectorAll('.extensions-list input:checked').forEach(checkbox => {
-            extensions.push(checkbox.value);
-        });
 
         if (!folderPath) {
             this.showToast('Selecione uma pasta com imagens', 'error');
             return;
         }
 
-        if (extensions.length === 0) {
-            this.showToast('Selecione pelo menos uma extensão de imagem', 'error');
-            return;
-        }
+        // Aplicar configurações do modal
+        this.applySlideshowConfigFromModal();
 
         // Fechar modal de configuração
         this.closeSlideshowModal();
 
         // Iniciar carregamento das imagens
-        await this.loadSlideshowImages(folderPath, extensions, recursive, interval);
+        await this.loadSlideshowImages(folderPath, this.slideshowConfig.extensions, this.slideshowConfig.recursive, this.slideshowConfig.interval);
     }
 
     // Carregar imagens do slideshow
@@ -3315,16 +3390,60 @@ class DeParaUI {
                 return;
             }
 
-            // Embaralhar as imagens para ordem aleatória
-            this.shuffleArray(this.slideshowImages);
-            console.log('🎲 Imagens embaralhadas para ordem aleatória');
+            // Aplicar modo aleatório se configurado
+            if (this.slideshowConfig.random) {
+                this.shuffleArray(this.slideshowImages);
+                console.log('🎲 Imagens embaralhadas para ordem aleatória');
+            }
 
-            this.showToast(`✅ ${this.slideshowImages.length} imagens encontradas (ordem aleatória)`, 'success');
+            // Limpar cache de pré-carregamento
+            this.preloadedImages.clear();
+
+            const modeText = this.slideshowConfig.random ? ' (ordem aleatória)' : ' (ordem sequencial)';
+            this.showToast(`✅ ${this.slideshowImages.length} imagens encontradas${modeText}`, 'success');
             this.startSlideshowViewer();
 
         } catch (error) {
             console.error('Erro ao carregar imagens:', error);
             this.showToast('Erro ao carregar imagens: ' + error.message, 'error');
+        }
+    }
+
+    // Pré-carregar imagem
+    preloadImage(imagePath) {
+        return new Promise((resolve, reject) => {
+            if (this.preloadedImages.has(imagePath)) {
+                resolve(this.preloadedImages.get(imagePath));
+                return;
+            }
+
+            const img = new Image();
+            img.onload = () => {
+                this.preloadedImages.set(imagePath, img);
+                console.log('🖼️ Imagem pré-carregada:', imagePath);
+                resolve(img);
+            };
+            img.onerror = () => {
+                console.warn('⚠️ Erro ao pré-carregar imagem:', imagePath);
+                reject(new Error('Erro ao carregar imagem'));
+            };
+            img.src = imagePath;
+        });
+    }
+
+    // Pré-carregar próxima imagem se habilitado
+    async preloadNextImage() {
+        if (!this.slideshowConfig.preload || this.slideshowImages.length <= 1) {
+            return;
+        }
+
+        const nextIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
+        const nextImagePath = this.slideshowImages[nextIndex];
+
+        try {
+            await this.preloadImage(nextImagePath);
+        } catch (error) {
+            console.warn('Erro ao pré-carregar próxima imagem:', error);
         }
     }
 
@@ -3339,7 +3458,7 @@ class DeParaUI {
     }
 
     // Atualizar exibição do slide atual
-    updateSlideDisplay() {
+    async updateSlideDisplay() {
         const imageElement = document.getElementById('slideshow-image');
         const counterElement = document.getElementById('slideshow-counter');
         const filenameElement = document.getElementById('slideshow-filename');
@@ -3364,29 +3483,40 @@ class DeParaUI {
             pathElement.textContent = currentImage.path;
         }
 
-        // Mostrar loading
-        loadingElement.style.display = 'block';
-        imageElement.style.display = 'none';
-        errorElement.style.display = 'none';
-
-        // Carregar imagem através da API
-        setTimeout(() => {
+        // Verificar se a imagem já está pré-carregada
+        const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
+        
+        if (this.preloadedImages.has(imageUrl)) {
+            // Usar imagem pré-carregada
             loadingElement.style.display = 'none';
-            imageElement.src = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
+            imageElement.src = imageUrl;
             imageElement.style.display = 'block';
+            errorElement.style.display = 'none';
+            console.log('⚡ Usando imagem pré-carregada');
+        } else {
+            // Mostrar loading e carregar imagem
+            loadingElement.style.display = 'block';
+            imageElement.style.display = 'none';
+            errorElement.style.display = 'none';
 
-            // Manipular erro de carregamento
-            imageElement.onerror = () => {
+            try {
+                // Tentar carregar a imagem
+                await this.preloadImage(imageUrl);
+                
+                loadingElement.style.display = 'none';
+                imageElement.src = imageUrl;
+                imageElement.style.display = 'block';
+                errorElement.style.display = 'none';
+            } catch (error) {
+                console.error('Erro ao carregar imagem:', error);
                 loadingElement.style.display = 'none';
                 imageElement.style.display = 'none';
                 errorElement.style.display = 'block';
-            };
+            }
+        }
 
-            imageElement.onload = () => {
-                // Imagem carregada com sucesso
-                errorElement.style.display = 'none';
-            };
-        }, 300);
+        // Pré-carregar próxima imagem em background
+        this.preloadNextImage();
     }
 
     // Próximo slide
@@ -3426,9 +3556,11 @@ class DeParaUI {
         this.stopAutoPlay(); // Parar qualquer intervalo existente
 
         if (this.slideshowPlaying && this.slideshowImages.length > 1) {
+            const intervalMs = this.slideshowConfig.interval * 1000;
             this.autoPlayInterval = setInterval(() => {
                 this.nextSlide();
-            }, this.slideshowInterval);
+            }, intervalMs);
+            console.log(`⏰ Auto-play iniciado com intervalo de ${this.slideshowConfig.interval}s`);
         }
     }
 
@@ -6986,6 +7118,10 @@ function startAutoAdvance() {
         clearInterval(slideshowInterval);
     }
 
+    // Usar configurações do UI se disponível
+    const interval = window.deParaUI?.slideshowConfig?.interval || 3;
+    const intervalMs = interval * 1000;
+
     slideshowInterval = setInterval(() => {
         if (currentImageIndex < slideshowImages.length - 1) {
             nextImage();
@@ -6993,7 +7129,9 @@ function startAutoAdvance() {
             // Loop back to first image
             loadImage(0);
         }
-    }, 5000); // Change image every 5 seconds
+    }, intervalMs);
+    
+    console.log(`⏰ Auto-advance iniciado com intervalo de ${interval}s`);
 }
 
 function stopAutoAdvance() {

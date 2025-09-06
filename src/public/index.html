@@ -1216,7 +1216,24 @@
                 <div class="slideshow-settings">
                     <div class="setting-row">
                         <label for="slideshow-interval">Intervalo (segundos):</label>
-                        <input type="number" id="slideshow-interval" value="3" min="1" max="30">
+                        <input type="number" id="slideshow-interval" value="3" min="1" max="60">
+                        <small class="form-help">Tempo entre transições automáticas (1-60 segundos)</small>
+                    </div>
+
+                    <div class="setting-row">
+                        <label for="slideshow-random">
+                            <input type="checkbox" id="slideshow-random">
+                            Modo aleatório
+                        </label>
+                        <small class="form-help">Exibir imagens em ordem aleatória</small>
+                    </div>
+
+                    <div class="setting-row">
+                        <label for="slideshow-preload">
+                            <input type="checkbox" id="slideshow-preload" checked>
+                            Pré-carregar próxima imagem
+                        </label>
+                        <small class="form-help">Carrega a próxima imagem em background para evitar lag</small>
                     </div>
 
                     <div class="setting-row">
