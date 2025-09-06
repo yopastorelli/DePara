@@ -150,6 +150,9 @@ class DeParaUI {
             timestamp: new Date().toISOString()
         });
 
+        // Mostrar splash screen
+        this.showSplashScreen();
+
         const startTime = Date.now();
 
         try {
@@ -251,6 +254,29 @@ class DeParaUI {
                 timestamp: new Date().toISOString()
             });
             this.showToast('Erro na inicialização. Verifique o console.', 'error');
+        } finally {
+            // Esconder splash screen após inicialização
+            setTimeout(() => this.hideSplashScreen(), 2000);
+        }
+    }
+
+    // Mostrar splash screen
+    showSplashScreen() {
+        const splashScreen = document.getElementById('splash-screen');
+        if (splashScreen) {
+            splashScreen.style.display = 'flex';
+            splashScreen.classList.remove('hidden');
+        }
+    }
+
+    // Esconder splash screen
+    hideSplashScreen() {
+        const splashScreen = document.getElementById('splash-screen');
+        if (splashScreen) {
+            splashScreen.classList.add('hidden');
+            setTimeout(() => {
+                splashScreen.style.display = 'none';
+            }, 500);
         }
     }
 

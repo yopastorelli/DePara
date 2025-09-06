@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="900" height="900" viewBox="0 0 900 900" xmlns="http://www.w3.org/2000/svg">
+  
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5E7CF4"/>
+      <stop offset="100%" stop-color="#8A5CF6"/>
+    </linearGradient>
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="100%" height="100%" fill="none"/>
+  <g transform="translate(190,130)">
+    
+    <g id="braces" transform="scale(2.4)" stroke="url(#grad1)" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#softShadow)">
+      <!-- Left brace -->
+      <path d="M 30 15 Q 10 25 30 35 Q 50 45 30 55 Q 10 65 30 85" stroke-width="16"/>
+      <!-- Right brace -->
+      <path d="M 130 15 Q 150 25 130 35 Q 110 45 130 55 Q 150 65 130 85" stroke-width="16"/>
+    </g>
+    
+    
+    <g id="miniIcons" transform="translate(0,260)" stroke="url(#grad1)" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Move: right arrow -->
+      <path d="M 25 0 L 75 0"/>
+      <path d="M 60 -15 L 80 0 L 60 15"/>
+      <!-- Copy: overlapping squares -->
+      <rect x="105" y="-15" width="28" height="28" rx="4"/>
+      <rect x="118" y="-2" width="28" height="28" rx="4"/>
+      <!-- Delete: trash can -->
+      <rect x="170" y="-10" width="32" height="24" rx="4"/>
+      <path d="M 166 -10 H 206"/>
+      <path d="M 176 -18 H 196"/>
+    </g>
+    
+  </g>
+  <text x="450" y="640" text-anchor="middle"
+        font-family="Segoe UI, Inter, Montserrat, system-ui, -apple-system, sans-serif"
+        font-size="140" font-weight="800" fill="url(#grad1)" letter-spacing="1.2">
+    DePara
+  </text>
+  <text x="450" y="690" text-anchor="middle"
+        font-family="Segoe UI, Inter, Montserrat, system-ui, -apple-system, sans-serif"
+        font-size="34" font-weight="600" fill="#8A5CF6" opacity="0.9" letter-spacing="3">
+    mover • copiar • apagar
+  </text>
+</svg>

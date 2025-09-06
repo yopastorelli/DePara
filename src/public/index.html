@@ -3,18 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DePara - Sistema de Conversão e Mapeamento de Dados</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>DePara - Gerenciador de Arquivos e Operações</title>
+    
+    <!-- Favicon e Manifest -->
+    <link rel="icon" type="image/x-icon" href="/favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    <link rel="manifest" href="/favicon/site.webmanifest">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">
+                <img src="/logos/depara_logo_stacked.svg" alt="DePara" class="splash-logo-image">
+            </div>
+            <div class="splash-text">
+                <h1>DePara</h1>
+                <p>Gerenciador de Arquivos e Operações</p>
+                <div class="splash-subtitle">mover • copiar • apagar</div>
+            </div>
+            <div class="splash-loader">
+                <div class="loader-spinner"></div>
+                <p>Carregando...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="header">
         <div class="header-content">
             <div class="logo">
-                <span class="material-icons">data_object</span>
-                <h1>DePara</h1>
+                <img src="/logos/depara_logo_horizontal.svg" alt="DePara" class="logo-image">
             </div>
             <nav class="nav">
                 <button class="nav-btn active" data-tab="dashboard">
@@ -1193,6 +1221,9 @@
     <div id="slideshow-config-modal" class="modal" style="display: none;">
         <div class="modal-content slideshow-modal-content">
             <div class="modal-header">
+                <div class="modal-logo">
+                    <img src="/logos/depara_logo_stacked.svg" alt="DePara" class="modal-logo-image">
+                </div>
                 <h3>Configurar Slideshow</h3>
                 <button class="modal-close close-slideshow-config-btn" title="Fechar">
                     <span class="material-icons">close</span>
