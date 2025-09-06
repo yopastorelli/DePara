@@ -149,16 +149,22 @@ router.post('/restart', async (req, res) => {
     try {
         logger.info('🔄 Reiniciando aplicação após atualização...');
 
-        // Parar DePara atual
-        exec('pkill -f "node.*main.js"', (error, stdout, stderr) => {
+        // Parar DePara atual (compatível com Windows e Linux)
+        const isWindows = process.platform === 'win32';
+        const stopCommand = isWindows ? 'taskkill /F /IM node.exe' : 'pkill -f "node.*main.js"';
+        
+        exec(stopCommand, (error, stdout, stderr) => {
             if (error) {
                 logger.warn('⚠️ Erro ao parar DePara:', error.message);
             }
 
             // Aguardar um pouco
             setTimeout(() => {
-                // Iniciar DePara novamente
-                exec('nohup npm start > /dev/null 2>&1 &', (error, stdout, stderr) => {
+                // Iniciar DePara novamente (compatível com Windows e Linux)
+                const isWindows = process.platform === 'win32';
+                const startCommand = isWindows ? 'npm start' : 'nohup npm start > /dev/null 2>&1 &';
+                
+                exec(startCommand, (error, stdout, stderr) => {
                     if (error) {
                         logger.error('❌ Erro ao reiniciar DePara:', error.message);
                         return res.status(500).json({
