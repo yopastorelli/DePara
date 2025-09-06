@@ -3179,12 +3179,12 @@ class DeParaUI {
             document.getElementById('slideshow-folder-path').value = savedPath;
         }
         
-        document.getElementById('slideshow-modal').style.display = 'flex';
+        document.getElementById('slideshow-config-modal').style.display = 'flex';
     }
 
     // Fechar modal de slideshow
     closeSlideshowModal() {
-        document.getElementById('slideshow-modal').style.display = 'none';
+        document.getElementById('slideshow-config-modal').style.display = 'none';
     }
 
     // Navegar para pasta de slideshow
@@ -3392,8 +3392,8 @@ class DeParaUI {
 
             // Aplicar modo aleatório se configurado
             if (this.slideshowConfig.random) {
-                this.shuffleArray(this.slideshowImages);
-                console.log('🎲 Imagens embaralhadas para ordem aleatória');
+            this.shuffleArray(this.slideshowImages);
+            console.log('🎲 Imagens embaralhadas para ordem aleatória');
             }
 
             // Limpar cache de pré-carregamento
@@ -3495,17 +3495,17 @@ class DeParaUI {
             console.log('⚡ Usando imagem pré-carregada');
         } else {
             // Mostrar loading e carregar imagem
-            loadingElement.style.display = 'block';
-            imageElement.style.display = 'none';
-            errorElement.style.display = 'none';
+        loadingElement.style.display = 'block';
+        imageElement.style.display = 'none';
+        errorElement.style.display = 'none';
 
             try {
                 // Tentar carregar a imagem
                 await this.preloadImage(imageUrl);
                 
-                loadingElement.style.display = 'none';
+            loadingElement.style.display = 'none';
                 imageElement.src = imageUrl;
-                imageElement.style.display = 'block';
+            imageElement.style.display = 'block';
                 errorElement.style.display = 'none';
             } catch (error) {
                 console.error('Erro ao carregar imagem:', error);
@@ -6931,36 +6931,41 @@ function resetSlideshowFolderForm() {
 }
 
 async function startSlideshow() {
-    const folderPath = document.getElementById('slideshow-folder-path').value.trim();
-    const maxDepth = document.getElementById('slideshow-max-depth').value;
+    // Usar a implementação da classe DeParaUI
+    if (window.deParaUI) {
+        window.deParaUI.startSlideshowFromModal();
+    } else {
+        // Fallback para implementação antiga
+        const folderPath = document.getElementById('slideshow-folder-path').value.trim();
+        const maxDepth = document.getElementById('slideshow-max-depth').value;
 
-    if (!folderPath) {
-        showToast('Digite o caminho da pasta', 'error');
-        return;
-    }
+        if (!folderPath) {
+            showToast('Digite o caminho da pasta', 'error');
+            return;
+        }
 
-    // Coletar extensões selecionadas
-    const selectedExtensions = [];
-    const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]:checked');
-    extensionCheckboxes.forEach(checkbox => {
-        selectedExtensions.push(checkbox.value);
-    });
+        // Coletar extensões selecionadas
+        const selectedExtensions = [];
+        const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]:checked');
+        extensionCheckboxes.forEach(checkbox => {
+            selectedExtensions.push(checkbox.value);
+        });
 
-    if (selectedExtensions.length === 0) {
-        showToast('Selecione pelo menos uma extensão de arquivo', 'error');
-        return;
-    }
+        if (selectedExtensions.length === 0) {
+            showToast('Selecione pelo menos uma extensão de arquivo', 'error');
+            return;
+        }
 
-    try {
-        // Fechar modal de seleção
-        closeSlideshowFolderModal();
+        try {
+            // Fechar modal de seleção
+            closeSlideshowFolderModal();
 
-        // Mostrar slideshow
-        showSlideshow(folderPath, selectedExtensions, maxDepth);
-
-    } catch (error) {
-        console.error('Erro ao iniciar slideshow:', error);
-        showToast('Erro ao iniciar slideshow', 'error');
+            // Mostrar slideshow
+            showSlideshow(folderPath, selectedExtensions, maxDepth);
+        } catch (error) {
+            console.error('Erro ao iniciar slideshow:', error);
+            showToast('Erro ao iniciar slideshow', 'error');
+        }
     }
 }
 
