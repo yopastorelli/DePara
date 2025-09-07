@@ -3463,6 +3463,11 @@ class DeParaUI {
             return;
         }
 
+        // Limitar pré-carregamento para evitar sobrecarga
+        if (this.preloadedImages.size >= 3) {
+            return; // Máximo 3 imagens pré-carregadas
+        }
+
         const nextIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
         const nextImagePath = this.slideshowImages[nextIndex];
 
