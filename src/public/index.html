@@ -404,7 +404,7 @@
                 <!-- Quick Actions -->
                 <div class="fileops-actions">
                     <div class="action-cards">
-                        <div class="action-card action-slideshow-card" onclick="window.deParaUI.showSlideshowModal()">
+                        <div class="action-card action-slideshow-card" onclick="if(window.deParaUI) window.deParaUI.showSlideshowModal(); else showSlideshowModal();">
                             <span class="material-icons">slideshow</span>
                             <h3>Slideshow</h3>
                             <p>Visualize imagens em slideshow</p>

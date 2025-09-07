@@ -4773,7 +4773,11 @@ setupEventListeners() {
         const slideshowCard = document.querySelector('.action-slideshow-card');
         if (slideshowCard) {
             slideshowCard.addEventListener('click', () => {
-                window.showSlideshowModal();
+                if (window.deParaUI) {
+                    window.deParaUI.showSlideshowModal();
+                } else {
+                    window.showSlideshowModal();
+                }
             });
         }
 
