@@ -1681,7 +1681,7 @@ router.post('/list-images', async (req, res) => {
         images.sort((a, b) => a.name.localeCompare(b.name));
 
         // Limitar número de imagens para performance do slideshow
-        const maxImages = 200; // Máximo 200 imagens para evitar travamento
+        const maxImages = 50; // Máximo 50 imagens para evitar travamento
         const limitedImages = images.slice(0, maxImages);
         
         if (images.length > maxImages) {

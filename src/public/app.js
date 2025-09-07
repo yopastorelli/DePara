@@ -3463,9 +3463,9 @@ class DeParaUI {
             return;
         }
 
-        // Limitar pré-carregamento para evitar sobrecarga
-        if (this.preloadedImages.size >= 3) {
-            return; // Máximo 3 imagens pré-carregadas
+        // Limitar pré-carregamento para apenas 1 imagem (próxima)
+        if (this.preloadedImages.size >= 1) {
+            return; // Máximo 1 imagem pré-carregada
         }
 
         const nextIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
