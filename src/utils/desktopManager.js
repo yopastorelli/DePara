@@ -63,23 +63,23 @@ class DesktopManager {
         try {
             logger.info('🖥️ Criando arquivo .desktop...');
 
-            // Detectar navegador
-            const browser = await this.detectBrowser();
-            if (!browser) {
-                throw new Error('Nenhum navegador compatível encontrado');
-            }
+        // Detectar navegador
+        const browser = await this.detectBrowser();
+        if (!browser) {
+            throw new Error('Nenhum navegador compatível encontrado');
+        }
 
-            // Criar diretório se não existir
-            if (!fs.existsSync(this.desktopPath)) {
-                fs.mkdirSync(this.desktopPath, { recursive: true });
-            }
+        // Criar diretório se não existir
+        if (!fs.existsSync(this.desktopPath)) {
+            fs.mkdirSync(this.desktopPath, { recursive: true });
+        }
 
-            // Verificar se ícone existe
-            const iconExists = fs.existsSync(this.iconPath);
-            const iconPath = iconExists ? this.iconPath : 'applications-utilities';
+        // Verificar se ícone existe
+        const iconExists = fs.existsSync(this.iconPath);
+        const iconPath = iconExists ? this.iconPath : 'applications-utilities';
 
-            // Conteúdo do arquivo .desktop
-            const desktopContent = `[Desktop Entry]
+        // Conteúdo do arquivo .desktop com comando correto para janela dedicada
+        const desktopContent = `[Desktop Entry]
 Version=1.0
 Type=Application
 Name=DePara
