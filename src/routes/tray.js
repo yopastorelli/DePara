@@ -97,6 +97,85 @@ router.post('/restore', async (req, res) => {
 });
 
 /**
+ * Abrir aplicação em janela dedicada
+ * POST /api/tray/open-dedicated
+ */
+router.post('/open-dedicated', async (req, res) => {
+    try {
+        logger.info('🪟 Abrindo aplicação em janela dedicada...');
+
+        // Detectar navegador disponível
+        const browsers = [
+            'firefox --new-window --app=http://localhost:3000',
+            'chromium-browser --new-window --app=http://localhost:3000',
+            'google-chrome --new-window --app=http://localhost:3000',
+            'firefox http://localhost:3000',
+            'chromium-browser http://localhost:3000'
+        ];
+
+        let browserFound = false;
+        let command = '';
+
+        // Verificar qual navegador está disponível
+        for (const browserCmd of browsers) {
+            const browserName = browserCmd.split(' ')[0];
+            exec(`which ${browserName}`, (error, stdout, stderr) => {
+                if (!error && stdout.trim() !== '' && !browserFound) {
+                    browserFound = true;
+                    command = browserCmd;
+                    
+                    // Executar comando do navegador
+                    exec(command, (error, stdout, stderr) => {
+                        if (error) {
+                            logger.warn('⚠️ Erro ao abrir janela dedicada:', error.message);
+                            return res.status(500).json({
+                                success: false,
+                                error: {
+                                    message: 'Erro ao abrir janela dedicada',
+                                    details: error.message
+                                }
+                            });
+                        }
+
+                        logger.info('✅ Aplicação aberta em janela dedicada');
+                        res.status(200).json({
+                            success: true,
+                            message: 'Aplicação aberta em janela dedicada',
+                            browser: browserName,
+                            timestamp: new Date().toISOString()
+                        });
+                    });
+                }
+            });
+        }
+
+        // Se nenhum navegador for encontrado
+        setTimeout(() => {
+            if (!browserFound) {
+                logger.warn('⚠️ Nenhum navegador compatível encontrado');
+                res.status(500).json({
+                    success: false,
+                    error: {
+                        message: 'Nenhum navegador compatível encontrado',
+                        details: 'Instale Firefox ou Chromium para usar janela dedicada'
+                    }
+                });
+            }
+        }, 2000);
+
+    } catch (error) {
+        logger.operationError('Tray Open Dedicated', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                message: 'Erro interno ao abrir janela dedicada',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
  * Verificar se wmctrl está disponível
  * GET /api/tray/status
  */

@@ -15,6 +15,7 @@ const statusRoutes = require('./status');
 const fileOperationsRoutes = require('./fileOperations');
 const trayRoutes = require('./tray');
 const updateRoutes = require('./update');
+const desktopRoutes = require('./desktop');
 
 // Middleware de logging para todas as rotas
 router.use((req, res, next) => {
@@ -99,6 +100,7 @@ router.use('/status', statusRoutes);
 router.use('/files', fileOperationsRoutes);
 router.use('/tray', trayRoutes);
 router.use('/update', updateRoutes);
+router.use('/desktop', desktopRoutes);
 
 // Rota padrão da API
 router.get('/', (req, res) => {
