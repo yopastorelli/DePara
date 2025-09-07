@@ -14,51 +14,14 @@ sleep 2
 echo "📥 Atualizando código..."
 git pull origin main
 
-# 3. Corrigir método preloadImage
-echo "🔧 Corrigindo método preloadImage..."
+# 3. Corrigir método preloadNextImage
+echo "🔧 Corrigindo método preloadNextImage..."
 python3 -c "
 import re
 
 # Ler arquivo
 with open('src/public/app.js', 'r') as f:
     content = f.read()
-
-# Método preloadImage corrigido
-preloadImage = '''    // Pré-carregar imagem
-    preloadImage(imagePath) {
-        return new Promise((resolve, reject) => {
-            // Se imagePath for um objeto, extrair o path
-            let actualPath = imagePath;
-            if (typeof imagePath === 'object' && imagePath.path) {
-                actualPath = imagePath.path;
-            }
-            
-            if (this.preloadedImages.has(actualPath)) {
-                resolve(this.preloadedImages.get(actualPath));
-                return;
-            }
-
-            const img = new Image();
-            img.onload = () => {
-                this.preloadedImages.set(actualPath, img);
-                console.log('🖼️ Imagem pré-carregada:', actualPath);
-                resolve(img);
-            };
-            img.onerror = () => {
-                console.warn('⚠️ Erro ao pré-carregar imagem:', actualPath);
-                reject(new Error('Erro ao carregar imagem'));
-            };
-            img.src = actualPath;
-        });
-    }'''
-
-# Substituir método preloadImage
-pattern = r'preloadImage\(imagePath\) \{[^}]*\}'
-if re.search(pattern, content, re.DOTALL):
-    content = re.sub(pattern, preloadImage, content, flags=re.DOTALL)
-    print('✅ preloadImage substituído')
-else:
-    print('❌ preloadImage não encontrado')
 
 # Método preloadNextImage corrigido
 preloadNextImage = '''    // Pré-carregar próxima imagem se habilitado
@@ -73,10 +36,10 @@ preloadNextImage = '''    // Pré-carregar próxima imagem se habilitado
         }
         
         const nextIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
-        const nextImage = this.slideshowImages[nextIndex];
+        const nextImagePath = this.slideshowImages[nextIndex];
         
-        // Construir URL correta da imagem
-        const imageUrl = \`/api/files/image/\${encodeURIComponent(nextImage.path)}\`;
+        // Construir URL corretamente
+        const imageUrl = \`/api/files/image/\${encodeURIComponent(nextImagePath.path)}\`;
         
         try {
             await this.preloadImage(imageUrl);
@@ -86,10 +49,10 @@ preloadNextImage = '''    // Pré-carregar próxima imagem se habilitado
     }'''
 
 # Substituir método preloadNextImage
-pattern2 = r'preloadNextImage\(\) \{[^}]*\}'
-if re.search(pattern2, content, re.DOTALL):
-    content = re.sub(pattern2, preloadNextImage, content, flags=re.DOTALL)
-    print('✅ preloadNextImage substituído')
+pattern = r'async preloadNextImage\(\) \{[^}]*\}'
+if re.search(pattern, content, re.DOTALL):
+    content = re.sub(pattern, preloadNextImage, content, flags=re.DOTALL)
+    print('✅ preloadNextImage corrigido')
 else:
     print('❌ preloadNextImage não encontrado')
 
@@ -97,11 +60,11 @@ else:
 with open('src/public/app.js', 'w') as f:
     f.write(content)
 
-print('✅ Correções aplicadas no app.js')
+print('✅ Correção aplicada no app.js')
 "
 
-# 4. Corrigir problema de múltiplas instâncias
-echo "🔧 Corrigindo problema de múltiplas instâncias..."
+# 4. Corrigir método preloadImage também
+echo "🔧 Corrigindo método preloadImage..."
 python3 -c "
 import re
 
@@ -109,62 +72,66 @@ import re
 with open('src/public/app.js', 'r') as f:
     content = f.read()
 
-# Método startSlideshowFromModal corrigido
-startSlideshowFromModal = '''    // Iniciar slideshow a partir do modal
-    async startSlideshowFromModal() {
-        // Verificar se já está rodando
-        if (this.slideshowImages && this.slideshowImages.length > 0) {
-            console.log('⚠️ Slideshow já está rodando, fechando primeiro...');
-            this.closeSlideshowViewer();
-            // Aguardar um pouco para garantir que fechou
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        const folderPath = document.getElementById('slideshow-folder-path').value.trim();
+# Método preloadImage corrigido
+preloadImage = '''    // Pré-carregar imagem
+    preloadImage(imagePath) {
+        return new Promise((resolve, reject) => {
+            if (this.preloadedImages.has(imagePath)) {
+                resolve(this.preloadedImages.get(imagePath));
+                return;
+            }
 
-        if (!folderPath) {
-            this.showToast('Selecione uma pasta com imagens', 'error');
-            return;
-        }
-
-        // Aplicar configurações do modal
-        this.applySlideshowConfigFromModal();
-
-        // Fechar modal de configuração
-        this.closeSlideshowModal();
-
-        // Iniciar carregamento das imagens
-        await this.loadSlideshowImages(folderPath, this.slideshowConfig.extensions, this.slideshowConfig.recursive, this.slideshowConfig.interval);
+            const img = new Image();
+            img.onload = () => {
+                this.preloadedImages.set(imagePath, img);
+                console.log('🖼️ Imagem pré-carregada:', imagePath);
+                resolve(img);
+            };
+            img.onerror = () => {
+                console.warn('⚠️ Erro ao pré-carregar imagem:', imagePath);
+                reject(new Error('Erro ao carregar imagem'));
+            };
+            img.src = imagePath;
+        });
     }'''
 
-# Substituir método startSlideshowFromModal
-pattern3 = r'startSlideshowFromModal\(\) \{[^}]*\}'
-if re.search(pattern3, content, re.DOTALL):
-    content = re.sub(pattern3, startSlideshowFromModal, content, flags=re.DOTALL)
-    print('✅ startSlideshowFromModal substituído')
+# Substituir método preloadImage
+pattern = r'preloadImage\(imagePath\) \{[^}]*\}'
+if re.search(pattern, content, re.DOTALL):
+    content = re.sub(pattern, preloadImage, content, flags=re.DOTALL)
+    print('✅ preloadImage corrigido')
 else:
-    print('❌ startSlideshowFromModal não encontrado')
+    print('❌ preloadImage não encontrado')
 
 # Salvar arquivo
 with open('src/public/app.js', 'w') as f:
     f.write(content)
 
-print('✅ Correções de múltiplas instâncias aplicadas')
+print('✅ Correção aplicada no app.js')
 "
 
-# 5. Instalar dependências
+# 5. Verificar sintaxe
+echo "🔍 Verificando sintaxe..."
+if node -c src/public/app.js; then
+    echo "✅ Sintaxe OK!"
+else
+    echo "❌ Erro de sintaxe"
+    exit 1
+fi
+
+# 6. Instalar dependências
 echo "📦 Instalando dependências..."
 npm install
 
-# 6. Iniciar DePara
+# 7. Iniciar DePara
 echo "▶️ Iniciando DePara..."
 npm start &
 
-# 7. Aguardar inicialização
+# 8. Aguardar inicialização
 echo "⏳ Aguardando inicialização..."
 sleep 5
 
-# 8. Verificar status
+# 9. Verificar status
 echo "✅ Verificando status..."
 if curl -s http://localhost:3000/api/health > /dev/null; then
     echo "✅ DePara funcionando!"

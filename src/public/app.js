@@ -3483,8 +3483,11 @@ class DeParaUI {
         const nextIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
         const nextImagePath = this.slideshowImages[nextIndex];
 
+        // Construir URL corretamente
+        const imageUrl = `/api/files/image/${encodeURIComponent(nextImagePath.path)}`;
+
         try {
-            await this.preloadImage(nextImagePath);
+            await this.preloadImage(imageUrl);
         } catch (error) {
             console.warn('Erro ao pré-carregar próxima imagem:', error);
         }
@@ -3593,9 +3596,9 @@ class DeParaUI {
             
             img.onload = () => {
                 console.log('✅ Imagem carregada com sucesso:', imageUrl);
-                loadingElement.style.display = 'none';
+            loadingElement.style.display = 'none';
                 imageElement.src = imageUrl;
-                imageElement.style.display = 'block';
+            imageElement.style.display = 'block';
                 errorElement.style.display = 'none';
                 
                 // Pré-carregar próxima imagem
@@ -3608,7 +3611,7 @@ class DeParaUI {
                 imageElement.style.display = 'none';
                 errorElement.style.display = 'block';
             };
-            
+
             img.src = imageUrl;
             
         } catch (error) {
@@ -4850,7 +4853,7 @@ setupEventListeners() {
                 if (window.deParaUI) {
                     window.deParaUI.showSlideshowModal();
                 } else {
-                    window.showSlideshowModal();
+                window.showSlideshowModal();
                 }
             });
         }
