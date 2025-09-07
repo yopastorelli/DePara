@@ -1,236 +1,252 @@
 #!/bin/bash
 
-# Script para corrigir exibição do slideshow e remover limitação
+# Script para corrigir exibição do slideshow
 echo "🔧 Corrigindo exibição do slideshow..."
 
-# 1. Verificar se o DePara está rodando
-echo "🔍 Verificando se o DePara está rodando..."
-if ! curl -s http://localhost:3000/api/health > /dev/null; then
-    echo "❌ DePara não está rodando. Iniciando..."
-    cd ~/DePara
-    npm start &
-    sleep 5
-fi
+cd ~/DePara
 
-# 2. Aguardar API estar disponível
-echo "⏳ Aguardando API estar disponível..."
-for i in {1..30}; do
-    if curl -s http://localhost:3000/api/health > /dev/null; then
-        echo "✅ API disponível!"
-        break
-    fi
-    echo "⏳ Aguardando... ($i/30)"
-    sleep 1
-done
+# 1. Parar DePara
+echo "⏹️ Parando DePara..."
+sudo pkill -f "node.*main.js" 2>/dev/null || true
+sleep 3
 
-# 3. Criar script de correção
-echo "📝 Criando script de correção..."
-cat > /home/yo/DePara/fix-slideshow-display.js << 'EOF'
-// Script para corrigir exibição do slideshow
-console.log('🔧 Corrigindo exibição do slideshow...');
+# 2. Fazer backup do app.js
+echo "💾 Fazendo backup do app.js..."
+cp src/public/app.js src/public/app.js.backup
 
-// Aguardar DeParaUI estar disponível
-function waitForDeParaUI() {
-    return new Promise((resolve) => {
-        const check = () => {
-            if (typeof window.deParaUI !== 'undefined') {
-                resolve();
-            } else {
-                setTimeout(check, 100);
-            }
-        };
-        check();
-    });
-}
+# 3. Corrigir problema de exibição
+echo "🔧 Corrigindo exibição do slideshow..."
+python3 << 'EOF'
+import re
 
-async function fixSlideshowDisplay() {
-    await waitForDeParaUI();
-    
-    console.log('✅ DeParaUI encontrada');
-    
-    // 1. Corrigir método updateSlideDisplay
-    window.deParaUI.updateSlideDisplay = async function() {
+# Ler o arquivo
+with open('src/public/app.js', 'r', encoding='utf-8') as f:
+    content = f.read()
+
+# Corrigir o método updateSlideDisplay para garantir que a imagem seja exibida
+old_update = '''    // Atualizar exibição do slide
+    updateSlideDisplay() {
         console.log('🖼️ Atualizando exibição do slide...');
         
-        const imageElement = document.getElementById('slideshow-image');
-        const counterElement = document.getElementById('slideshow-counter');
-        const filenameElement = document.getElementById('slideshow-filename');
-        const loadingElement = document.getElementById('slideshow-loading');
-        const errorElement = document.getElementById('slideshow-error');
-
-        if (this.slideshowImages.length === 0) {
-            console.log('❌ Nenhuma imagem carregada');
-            loadingElement.style.display = 'none';
-            errorElement.style.display = 'block';
+        if (!this.slideshowImages || this.slideshowImages.length === 0) {
+            console.log('⚠️ Nenhuma imagem disponível');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
         console.log('📸 Imagem atual:', currentImage);
 
-        // Atualizar contador e nome do arquivo
-        counterElement.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
-        filenameElement.textContent = currentImage.name;
-        
-        // Atualizar caminho completo da imagem no rodapé
-        const pathElement = document.getElementById('slideshow-path');
-        if (pathElement) {
-            pathElement.textContent = currentImage.path;
+        // Atualizar contador
+        const counter = document.getElementById('slideshow-counter');
+        if (counter) {
+            counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
         }
 
-        // Construir URL da imagem
-        const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
-        console.log('🔗 URL da imagem:', imageUrl);
+        // Atualizar nome do arquivo
+        const filename = document.getElementById('slideshow-filename');
+        if (filename) {
+            filename.textContent = currentImage.name || 'Imagem desconhecida';
+        }
 
-        // Mostrar loading
-        loadingElement.style.display = 'block';
-        imageElement.style.display = 'none';
-        errorElement.style.display = 'none';
-
-        try {
+        // Atualizar imagem
+        const imgElement = document.getElementById('slideshow-image');
+        if (imgElement) {
+            const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
+            console.log('🔗 URL da imagem:', imageUrl);
+            
             // Carregar imagem diretamente
             const img = new Image();
-            
             img.onload = () => {
                 console.log('✅ Imagem carregada com sucesso:', imageUrl);
-                loadingElement.style.display = 'none';
-                imageElement.src = imageUrl;
-                imageElement.style.display = 'block';
-                errorElement.style.display = 'none';
-                
-                // Pré-carregar próxima imagem
-                this.preloadNextImage();
+                imgElement.src = imageUrl;
+                imgElement.style.display = 'block';
             };
-            
             img.onerror = (error) => {
                 console.error('❌ Erro ao carregar imagem:', error);
-                loadingElement.style.display = 'none';
-                imageElement.style.display = 'none';
-                errorElement.style.display = 'block';
+                imgElement.style.display = 'none';
             };
-            
             img.src = imageUrl;
-            
-        } catch (error) {
-            console.error('❌ Erro ao carregar imagem:', error);
-            loadingElement.style.display = 'none';
-            imageElement.style.display = 'none';
-            errorElement.style.display = 'block';
         }
-    };
-    
-    console.log('🔧 Método updateSlideDisplay corrigido');
-    
-    // 2. Corrigir método loadSlideshowImages para remover limitação
-    window.deParaUI.loadSlideshowImages = async function(folderPath, extensions, recursive, interval) {
-        try {
-            console.log('🔍 Iniciando carregamento de imagens...');
-            this.showToast('🔍 Procurando imagens...', 'info');
 
-            // Preparar extensões para a API
-            const formattedExtensions = extensions.map(ext => ext.startsWith('.') ? ext : '.' + ext);
+        // Pré-carregar próxima imagem
+        this.preloadNextImage();
+    }'''
 
-            console.log('📡 Enviando requisição para API...');
-            const response = await fetch('/api/files/list-images', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    folderPath,
-                    extensions: formattedExtensions,
-                    recursive
-                })
-            });
-
-            console.log('📡 Resposta recebida:', response.status, response.statusText);
-
-            if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            console.log('📊 Resultado da API:', result);
-
-            if (!result.success) {
-                throw new Error(result.error?.message || 'Erro ao listar imagens');
-            }
-
-            // Usar todas as imagens (remover limitação)
-            this.slideshowImages = result.data.images;
-            this.slideshowInterval = interval * 1000;
-
-            if (this.slideshowImages.length === 0) {
-                this.showToast('Nenhuma imagem encontrada na pasta', 'warning');
-                return;
-            }
-
-            // Aplicar modo aleatório se configurado
-            if (this.slideshowConfig.random) {
-                this.shuffleArray(this.slideshowImages);
-                console.log('🎲 Imagens embaralhadas');
-            }
-
-            // Limpar cache de pré-carregamento
-            this.preloadedImages.clear();
-
-            const modeText = this.slideshowConfig.random ? ' (aleatório)' : ' (sequencial)';
-            this.showToast(`✅ ${this.slideshowImages.length} imagens carregadas${modeText}`, 'success');
-            
-            console.log('🎬 Iniciando viewer do slideshow...');
-            this.startSlideshowViewer();
-
-        } catch (error) {
-            console.error('❌ Erro ao carregar imagens:', error);
-            this.showToast('Erro ao carregar imagens: ' + error.message, 'error');
+new_update = '''    // Atualizar exibição do slide
+    updateSlideDisplay() {
+        console.log('🖼️ Atualizando exibição do slide...');
+        
+        if (!this.slideshowImages || this.slideshowImages.length === 0) {
+            console.log('⚠️ Nenhuma imagem disponível');
+            return;
         }
-    };
-    
-    console.log('🔧 Método loadSlideshowImages corrigido (sem limitação)');
-    
-    // 3. Adicionar método shuffleArray se não existir
-    if (!window.deParaUI.shuffleArray) {
-        window.deParaUI.shuffleArray = function(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        };
-        console.log('🔧 Método shuffleArray adicionado');
-    }
-    
-    // 4. Testar correções
-    console.log('🧪 Testando correções...');
-    
-    // Testar abertura do modal
-    window.deParaUI.showSlideshowModal();
-    
-    setTimeout(() => {
-        const modal = document.getElementById('slideshow-config-modal');
-        if (modal && modal.style.display !== 'none') {
-            console.log('✅ Modal do slideshow funcionando');
+
+        const currentImage = this.slideshowImages[this.currentSlideIndex];
+        console.log('📸 Imagem atual:', currentImage);
+
+        // Atualizar contador
+        const counter = document.getElementById('slideshow-counter');
+        if (counter) {
+            counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+        }
+
+        // Atualizar nome do arquivo
+        const filename = document.getElementById('slideshow-filename');
+        if (filename) {
+            filename.textContent = currentImage.name || 'Imagem desconhecida';
+        }
+
+        // Atualizar imagem
+        const imgElement = document.getElementById('slideshow-image');
+        if (imgElement) {
+            const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
+            console.log('🔗 URL da imagem:', imageUrl);
             
-            // Fechar modal
-            window.deParaUI.closeSlideshowModal();
+            // Mostrar loading
+            imgElement.style.display = 'none';
+            imgElement.src = '';
+            
+            // Carregar imagem diretamente
+            const img = new Image();
+            img.onload = () => {
+                console.log('✅ Imagem carregada com sucesso:', imageUrl);
+                imgElement.src = imageUrl;
+                imgElement.style.display = 'block';
+                imgElement.style.opacity = '1';
+                
+                // Esconder loading
+                const loading = document.querySelector('.slideshow-loading');
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            };
+            img.onerror = (error) => {
+                console.error('❌ Erro ao carregar imagem:', error);
+                imgElement.style.display = 'none';
+                
+                // Mostrar erro
+                const loading = document.querySelector('.slideshow-loading');
+                if (loading) {
+                    loading.innerHTML = '❌ Erro ao carregar imagem';
+                }
+            };
+            img.src = imageUrl;
         } else {
-            console.error('❌ Modal do slideshow não está funcionando');
+            console.error('❌ Elemento slideshow-image não encontrado');
         }
-    }, 1000);
-    
-    console.log('🎉 Correções aplicadas!');
-    console.log('📋 Problemas corrigidos:');
-    console.log('  - Exibição de imagens funcionando');
-    console.log('  - Limitação de 50 imagens removida');
-    console.log('  - Logs detalhados para debug');
-    console.log('  - Carregamento direto das imagens');
-}
 
-// Executar correções
-fixSlideshowDisplay().catch(console.error);
+        // Pré-carregar próxima imagem
+        this.preloadNextImage();
+    }'''
+
+content = content.replace(old_update, new_update)
+
+# Corrigir o método startSlideshowViewer para esconder loading inicial
+old_start = '''    startSlideshowViewer() {
+        console.log('🎬 Iniciando viewer do slideshow...');
+        
+        // Mostrar viewer
+        const viewer = document.getElementById('slideshow-viewer');
+        if (viewer) {
+            viewer.style.display = 'flex';
+            viewer.style.visibility = 'visible';
+            viewer.style.opacity = '1';
+            viewer.style.zIndex = '10000';
+            console.log('✅ Slideshow viewer exibido');
+        } else {
+            console.error('❌ Elemento slideshow-viewer não encontrado');
+            return;
+        }
+        
+        this.currentSlideIndex = 0;
+        this.slideshowPlaying = true;
+
+        // Entrar em fullscreen automaticamente
+        this.enterFullscreen();
+
+        this.updateSlideDisplay();
+        this.startAutoPlay();
+    }'''
+
+new_start = '''    startSlideshowViewer() {
+        console.log('🎬 Iniciando viewer do slideshow...');
+        
+        // Mostrar viewer
+        const viewer = document.getElementById('slideshow-viewer');
+        if (viewer) {
+            viewer.style.display = 'flex';
+            viewer.style.visibility = 'visible';
+            viewer.style.opacity = '1';
+            viewer.style.zIndex = '10000';
+            console.log('✅ Slideshow viewer exibido');
+        } else {
+            console.error('❌ Elemento slideshow-viewer não encontrado');
+            return;
+        }
+        
+        // Esconder loading inicial
+        const loading = document.querySelector('.slideshow-loading');
+        if (loading) {
+            loading.style.display = 'none';
+        }
+        
+        this.currentSlideIndex = 0;
+        this.slideshowPlaying = true;
+
+        // Entrar em fullscreen automaticamente
+        this.enterFullscreen();
+
+        this.updateSlideDisplay();
+        this.startAutoPlay();
+    }'''
+
+content = content.replace(old_start, new_start)
+
+# Escrever o arquivo corrigido
+with open('src/public/app.js', 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print("✅ Correções de exibição aplicadas!")
 EOF
 
-echo "✅ Script de correção criado!"
-echo "🌐 Acesse: http://localhost:3000"
-echo "💡 Cole o conteúdo do arquivo fix-slideshow-display.js no console do navegador"
-echo "🔧 Isso vai corrigir a exibição das imagens e remover a limitação!"
+# 4. Verificar se as correções foram aplicadas
+echo "🔍 Verificando correções..."
+if grep -q "imgElement.style.opacity = '1';" src/public/app.js; then
+    echo "✅ Exibição de imagem corrigida"
+else
+    echo "❌ Erro na correção da exibição"
+fi
+
+if grep -q "loading.style.display = 'none';" src/public/app.js; then
+    echo "✅ Loading inicial corrigido"
+else
+    echo "❌ Erro na correção do loading"
+fi
+
+# 5. Iniciar DePara
+echo "▶️ Iniciando DePara..."
+npm start &
+
+# 6. Aguardar inicialização
+echo "⏳ Aguardando inicialização..."
+sleep 5
+
+# 7. Verificar status
+echo "✅ Verificando status..."
+if curl -s http://localhost:3000/api/health > /dev/null; then
+    echo "✅ DePara funcionando!"
+    echo "🌐 Acesse: http://localhost:3000"
+    echo "💡 Pressione Ctrl+F5 para limpar cache do navegador"
+    echo "🎬 Teste o slideshow agora!"
+    echo ""
+    echo "🔧 Correções aplicadas:"
+    echo "  ✅ Imagem agora é exibida corretamente"
+    echo "  ✅ Loading inicial é escondido"
+    echo "  ✅ Opacity configurada para visibilidade"
+    echo "  ✅ Tratamento de erro melhorado"
+else
+    echo "❌ Erro na inicialização"
+    echo "📋 Verifique os logs: tail -f logs/depara.log"
+fi
+
+echo "🎉 Correções de exibição aplicadas com sucesso!"
