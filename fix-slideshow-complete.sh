@@ -1,260 +1,305 @@
 #!/bin/bash
 
-# Script para corrigir slideshow completamente
-# Autor: yopastorelli
-# Versão: 1.0.0
+# Script completo para corrigir slideshow - carregamento e fullscreen
+echo "🔧 Corrigindo slideshow completamente..."
 
-echo "🎬 Corrigindo slideshow completamente..."
+cd ~/DePara
 
-# 1. Verificar se o DePara está rodando
-echo "🔍 Verificando se o DePara está rodando..."
-if ! curl -s http://localhost:3000/api/health > /dev/null; then
-    echo "❌ DePara não está rodando. Iniciando..."
-    cd ~/DePara
-    npm start &
-    sleep 5
+# 1. Parar DePara
+echo "⏹️ Parando DePara..."
+sudo pkill -f "node.*main.js" 2>/dev/null || true
+sleep 2
+
+# 2. Atualizar código
+echo "📥 Atualizando código..."
+git pull origin main
+
+# 3. Corrigir método updateSlideDisplay com fullscreen
+echo "🔧 Corrigindo método updateSlideDisplay..."
+cat > /tmp/fix_slideshow_complete.js << 'EOF'
+    // Atualizar exibição do slide atual
+    async updateSlideDisplay() {
+        console.log('🖼️ Atualizando exibição do slide...');
+        
+        const imageElement = document.getElementById('slideshow-image');
+        const counterElement = document.getElementById('slideshow-counter');
+        const filenameElement = document.getElementById('slideshow-filename');
+        const loadingElement = document.getElementById('slideshow-loading');
+        const errorElement = document.getElementById('slideshow-error');
+
+        if (this.slideshowImages.length === 0) {
+            console.log('❌ Nenhuma imagem carregada');
+            loadingElement.style.display = 'none';
+            errorElement.style.display = 'block';
+            return;
+        }
+
+        const currentImage = this.slideshowImages[this.currentSlideIndex];
+        console.log('📸 Imagem atual:', currentImage);
+
+        // Atualizar contador e nome do arquivo
+        counterElement.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+        filenameElement.textContent = currentImage.name;
+        
+        // Atualizar caminho completo da imagem no rodapé
+        const pathElement = document.getElementById('slideshow-path');
+        if (pathElement) {
+            pathElement.textContent = currentImage.path;
+        }
+
+        // Construir URL da imagem
+        const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
+        console.log('🔗 URL da imagem:', imageUrl);
+
+        // Mostrar loading
+        loadingElement.style.display = 'block';
+        imageElement.style.display = 'none';
+        errorElement.style.display = 'none';
+
+        // Carregar imagem diretamente
+        const img = new Image();
+        
+        img.onload = () => {
+            console.log('✅ Imagem carregada com sucesso:', imageUrl);
+            loadingElement.style.display = 'none';
+            imageElement.src = imageUrl;
+            imageElement.style.display = 'block';
+            errorElement.style.display = 'none';
+            
+            // Pré-carregar próxima imagem
+            this.preloadNextImage();
+        };
+        
+        img.onerror = (error) => {
+            console.error('❌ Erro ao carregar imagem:', error);
+            loadingElement.style.display = 'none';
+            imageElement.style.display = 'none';
+            errorElement.style.display = 'block';
+        };
+        
+        img.src = imageUrl;
+    }
+EOF
+
+# 4. Corrigir método startSlideshowViewer com fullscreen
+echo "🔧 Corrigindo método startSlideshowViewer..."
+cat > /tmp/fix_startSlideshowViewer.js << 'EOF'
+    // Iniciar viewer do slideshow
+    startSlideshowViewer() {
+        console.log('🎬 Iniciando viewer do slideshow...');
+        
+        // Mostrar viewer
+        const viewer = document.getElementById('slideshow-viewer');
+        if (viewer) {
+            viewer.style.display = 'flex';
+        }
+        
+        this.currentSlideIndex = 0;
+        this.slideshowPlaying = true;
+
+        // Entrar em fullscreen automaticamente
+        this.enterFullscreen();
+
+        this.updateSlideDisplay();
+        this.startAutoPlay();
+    }
+
+    // Entrar em fullscreen
+    enterFullscreen() {
+        console.log('🖥️ Entrando em fullscreen...');
+        
+        const viewer = document.getElementById('slideshow-viewer');
+        if (!viewer) return;
+
+        // Tentar diferentes métodos de fullscreen
+        if (viewer.requestFullscreen) {
+            viewer.requestFullscreen().catch(err => {
+                console.warn('Erro ao entrar em fullscreen:', err);
+            });
+        } else if (viewer.webkitRequestFullscreen) {
+            viewer.webkitRequestFullscreen();
+        } else if (viewer.mozRequestFullScreen) {
+            viewer.mozRequestFullScreen();
+        } else if (viewer.msRequestFullscreen) {
+            viewer.msRequestFullscreen();
+        } else {
+            console.warn('Fullscreen não suportado neste navegador');
+        }
+    }
+
+    // Sair do fullscreen
+    exitFullscreen() {
+        console.log('🖥️ Saindo do fullscreen...');
+        
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+EOF
+
+# 5. Aplicar correções no app.js
+echo "🔧 Aplicando correções no app.js..."
+python3 -c "
+import re
+
+# Ler arquivo
+with open('src/public/app.js', 'r') as f:
+    content = f.read()
+
+# Ler correções
+with open('/tmp/fix_slideshow_complete.js', 'r') as f:
+    updateSlideDisplay = f.read()
+
+with open('/tmp/fix_startSlideshowViewer.js', 'r') as f:
+    startSlideshowViewer = f.read()
+
+# Substituir updateSlideDisplay
+pattern1 = r'async updateSlideDisplay\(\) \{[^}]*\}'
+if re.search(pattern1, content, re.DOTALL):
+    content = re.sub(pattern1, updateSlideDisplay, content, flags=re.DOTALL)
+    print('✅ updateSlideDisplay substituído')
+else:
+    print('❌ updateSlideDisplay não encontrado')
+
+# Substituir startSlideshowViewer
+pattern2 = r'startSlideshowViewer\(\) \{[^}]*\}'
+if re.search(pattern2, content, re.DOTALL):
+    content = re.sub(pattern2, startSlideshowViewer, content, flags=re.DOTALL)
+    print('✅ startSlideshowViewer substituído')
+else:
+    print('❌ startSlideshowViewer não encontrado')
+
+# Salvar arquivo
+with open('src/public/app.js', 'w') as f:
+    f.write(content)
+
+print('✅ Correções aplicadas no app.js')
+"
+
+# 6. Remover limitação de 50 imagens
+echo "🔧 Removendo limitação de 50 imagens..."
+sed -i '/const maxImages = 50/d' src/routes/fileOperations.js
+sed -i '/const limitedImages = images\.slice(0, maxImages)/d' src/routes/fileOperations.js
+sed -i '/if (images\.length > maxImages)/d' src/routes/fileOperations.js
+sed -i '/logger\.warn.*limitando/d' src/routes/fileOperations.js
+sed -i '/}/d' src/routes/fileOperations.js
+
+# Substituir retorno da API
+sed -i 's/images: limitedImages,/images: images,/' src/routes/fileOperations.js
+sed -i 's/totalCount: limitedImages\.length,/totalCount: images.length,/' src/routes/fileOperations.js
+sed -i 's/limited: images\.length > maxImages/limited: false/' src/routes/fileOperations.js
+
+echo "✅ Limitação de 50 imagens removida"
+
+# 7. Adicionar CSS para fullscreen
+echo "🔧 Adicionando CSS para fullscreen..."
+cat >> src/public/styles.css << 'EOF'
+
+/* Slideshow Fullscreen */
+.slideshow-viewer:-webkit-full-screen {
+    background: #000;
+    width: 100vw;
+    height: 100vh;
+}
+
+.slideshow-viewer:-moz-full-screen {
+    background: #000;
+    width: 100vw;
+    height: 100vh;
+}
+
+.slideshow-viewer:fullscreen {
+    background: #000;
+    width: 100vw;
+    height: 100vh;
+}
+
+.slideshow-viewer:-webkit-full-screen .slideshow-content {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slideshow-viewer:-moz-full-screen .slideshow-content {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slideshow-viewer:fullscreen .slideshow-content {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slideshow-viewer:-webkit-full-screen .slideshow-image-container {
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+.slideshow-viewer:-moz-full-screen .slideshow-image-container {
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+.slideshow-viewer:fullscreen .slideshow-image-container {
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+.slideshow-viewer:-webkit-full-screen #slideshow-image {
+    max-width: 100vw;
+    max-height: 100vh;
+    object-fit: contain;
+}
+
+.slideshow-viewer:-moz-full-screen #slideshow-image {
+    max-width: 100vw;
+    max-height: 100vh;
+    object-fit: contain;
+}
+
+.slideshow-viewer:fullscreen #slideshow-image {
+    max-width: 100vw;
+    max-height: 100vh;
+    object-fit: contain;
+}
+EOF
+
+echo "✅ CSS para fullscreen adicionado"
+
+# 8. Instalar dependências
+echo "📦 Instalando dependências..."
+npm install
+
+# 9. Iniciar DePara
+echo "▶️ Iniciando DePara..."
+npm start &
+
+# 10. Aguardar inicialização
+echo "⏳ Aguardando inicialização..."
+sleep 5
+
+# 11. Verificar status
+echo "✅ Verificando status..."
+if curl -s http://localhost:3000/api/health > /dev/null; then
+    echo "✅ DePara funcionando!"
+    echo "🌐 Acesse: http://localhost:3000"
+    echo "🎬 Teste o slideshow agora!"
+    echo "📋 O slideshow deve entrar em fullscreen automaticamente"
+    echo "📋 As imagens devem carregar e exibir corretamente"
+else
+    echo "❌ Erro na inicialização"
+    echo "📋 Verifique os logs: tail -f logs/depara.log"
 fi
 
-# 2. Aguardar API estar disponível
-echo "⏳ Aguardando API estar disponível..."
-for i in {1..30}; do
-    if curl -s http://localhost:3000/api/health > /dev/null; then
-        echo "✅ API disponível!"
-        break
-    fi
-    echo "⏳ Aguardando... ($i/30)"
-    sleep 1
-done
-
-# 3. Criar script de teste do slideshow
-echo "📝 Criando script de teste do slideshow..."
-cat > /home/yo/DePara/test-slideshow-fix.js << 'EOF'
-// Script para testar e corrigir slideshow
-console.log('🎬 Testando slideshow...');
-
-// Aguardar DeParaUI estar disponível
-function waitForDeParaUI() {
-    return new Promise((resolve) => {
-        const check = () => {
-            if (typeof window.deParaUI !== 'undefined') {
-                resolve();
-            } else {
-                setTimeout(check, 100);
-            }
-        };
-        check();
-    });
-}
-
-async function testSlideshow() {
-    await waitForDeParaUI();
-    
-    console.log('✅ DeParaUI encontrada');
-    
-    // 1. Testar configurações
-    console.log('🔧 Testando configurações...');
-    window.deParaUI.loadSlideshowConfig();
-    console.log('📋 Configurações atuais:', window.deParaUI.slideshowConfig);
-    
-    // 2. Testar elementos HTML
-    console.log('🔍 Verificando elementos HTML...');
-    const elements = [
-        'slideshow-config-modal',
-        'slideshow-interval',
-        'slideshow-random',
-        'slideshow-preload',
-        'slideshow-recursive'
-    ];
-    
-    elements.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            console.log('✅', id, 'encontrado');
-        } else {
-            console.error('❌', id, 'não encontrado');
-        }
-    });
-    
-    // 3. Testar abertura do modal
-    console.log('🧪 Testando abertura do modal...');
-    window.deParaUI.showSlideshowModal();
-    
-    // Aguardar um pouco
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 4. Verificar se o modal abriu
-    const modal = document.getElementById('slideshow-config-modal');
-    if (modal && modal.style.display !== 'none') {
-        console.log('✅ Modal do slideshow aberto com sucesso');
-        
-        // 5. Testar configurações no modal
-        console.log('🔧 Testando configurações no modal...');
-        
-        // Definir valores de teste
-        document.getElementById('slideshow-interval').value = '5';
-        document.getElementById('slideshow-random').checked = true;
-        document.getElementById('slideshow-preload').checked = true;
-        document.getElementById('slideshow-recursive').checked = true;
-        
-        // Aplicar configurações
-        window.deParaUI.applySlideshowConfigFromModal();
-        console.log('📊 Configurações aplicadas:', window.deParaUI.slideshowConfig);
-        
-        // 6. Testar salvamento
-        window.deParaUI.saveSlideshowConfig();
-        const saved = localStorage.getItem('slideshowConfig');
-        console.log('💾 Configurações salvas:', saved ? JSON.parse(saved) : 'Nenhuma');
-        
-        // 7. Fechar modal
-        window.deParaUI.closeSlideshowModal();
-        console.log('✅ Modal fechado');
-        
-    } else {
-        console.error('❌ Modal do slideshow não abriu');
-    }
-    
-    // 8. Testar carregamento de imagens
-    console.log('🖼️ Testando carregamento de imagens...');
-    
-    // Simular pasta de teste
-    const testPath = '/home/yo/Pictures';
-    console.log('📁 Testando pasta:', testPath);
-    
-    // Tentar carregar imagens
-    try {
-        const response = await fetch('/api/files/list', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                path: testPath,
-                extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
-                recursive: true
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success && result.data.images.length > 0) {
-            console.log('✅ Imagens encontradas:', result.data.images.length);
-            console.log('📸 Primeiras 3 imagens:', result.data.images.slice(0, 3));
-        } else {
-            console.warn('⚠️ Nenhuma imagem encontrada na pasta de teste');
-        }
-        
-    } catch (error) {
-        console.error('❌ Erro ao carregar imagens:', error);
-    }
-    
-    console.log('🎉 Teste do slideshow concluído!');
-}
-
-// Executar teste
-testSlideshow().catch(console.error);
-EOF
-
-# 4. Criar script de correção do slideshow
-echo "📝 Criando script de correção do slideshow..."
-cat > /home/yo/DePara/fix-slideshow.js << 'EOF'
-// Script para corrigir slideshow
-console.log('🔧 Corrigindo slideshow...');
-
-// Aguardar DeParaUI estar disponível
-function waitForDeParaUI() {
-    return new Promise((resolve) => {
-        const check = () => {
-            if (typeof window.deParaUI !== 'undefined') {
-                resolve();
-            } else {
-                setTimeout(check, 100);
-            }
-        };
-        check();
-    });
-}
-
-async function fixSlideshow() {
-    await waitForDeParaUI();
-    
-    console.log('✅ DeParaUI encontrada, corrigindo slideshow...');
-    
-    // 1. Corrigir configurações padrão
-    window.deParaUI.slideshowConfig = {
-        interval: 5,
-        random: false,
-        preload: true,
-        extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
-        recursive: true
-    };
-    
-    // 2. Salvar configurações
-    window.deParaUI.saveSlideshowConfig();
-    console.log('💾 Configurações corrigidas e salvas');
-    
-    // 3. Verificar se o botão do slideshow está funcionando
-    const slideshowCard = document.querySelector('.action-slideshow-card');
-    if (slideshowCard) {
-        console.log('✅ Botão do slideshow encontrado');
-        
-        // Adicionar event listener se não existir
-        if (!slideshowCard.onclick) {
-            slideshowCard.onclick = () => {
-                console.log('🎬 Abrindo modal do slideshow...');
-                window.deParaUI.showSlideshowModal();
-            };
-            console.log('🔧 Event listener adicionado ao botão do slideshow');
-        }
-    } else {
-        console.error('❌ Botão do slideshow não encontrado');
-    }
-    
-    // 4. Verificar métodos do slideshow
-    const methods = [
-        'loadSlideshowConfig',
-        'saveSlideshowConfig',
-        'applySlideshowConfigFromModal',
-        'applySlideshowConfigToModal',
-        'startSlideshowFromModal',
-        'loadSlideshowImages',
-        'preloadImage',
-        'preloadNextImage',
-        'updateSlideDisplay',
-        'startAutoPlay'
-    ];
-    
-    methods.forEach(method => {
-        if (typeof window.deParaUI[method] === 'function') {
-            console.log('✅', method, 'OK');
-        } else {
-            console.error('❌', method, 'não encontrado');
-        }
-    });
-    
-    // 5. Testar abertura do modal
-    console.log('🧪 Testando abertura do modal...');
-    window.deParaUI.showSlideshowModal();
-    
-    setTimeout(() => {
-        const modal = document.getElementById('slideshow-config-modal');
-        if (modal && modal.style.display !== 'none') {
-            console.log('✅ Modal do slideshow funcionando');
-            
-            // Fechar modal
-            window.deParaUI.closeSlideshowModal();
-        } else {
-            console.error('❌ Modal do slideshow não está funcionando');
-        }
-    }, 1000);
-    
-    console.log('🎉 Correção do slideshow concluída!');
-}
-
-// Executar correção
-fixSlideshow().catch(console.error);
-EOF
-
-echo "✅ Scripts de correção criados!"
-echo "🌐 Acesse: http://localhost:3000"
-echo "💡 Cole o conteúdo do arquivo test-slideshow-fix.js no console do navegador para testar"
-echo "🔧 Cole o conteúdo do arquivo fix-slideshow.js no console do navegador para corrigir"
+echo "🎉 Correção completa do slideshow concluída!"

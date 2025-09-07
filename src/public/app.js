@@ -3491,12 +3491,60 @@ class DeParaUI {
 
     // Iniciar viewer do slideshow
     startSlideshowViewer() {
-        document.getElementById('slideshow-viewer').style.display = 'flex';
+        console.log('🎬 Iniciando viewer do slideshow...');
+        
+        // Mostrar viewer
+        const viewer = document.getElementById('slideshow-viewer');
+        if (viewer) {
+            viewer.style.display = 'flex';
+        }
+        
         this.currentSlideIndex = 0;
         this.slideshowPlaying = true;
 
+        // Entrar em fullscreen automaticamente
+        this.enterFullscreen();
+
         this.updateSlideDisplay();
         this.startAutoPlay();
+    }
+
+    // Entrar em fullscreen
+    enterFullscreen() {
+        console.log('🖥️ Entrando em fullscreen...');
+        
+        const viewer = document.getElementById('slideshow-viewer');
+        if (!viewer) return;
+
+        // Tentar diferentes métodos de fullscreen
+        if (viewer.requestFullscreen) {
+            viewer.requestFullscreen().catch(err => {
+                console.warn('Erro ao entrar em fullscreen:', err);
+            });
+        } else if (viewer.webkitRequestFullscreen) {
+            viewer.webkitRequestFullscreen();
+        } else if (viewer.mozRequestFullScreen) {
+            viewer.mozRequestFullScreen();
+        } else if (viewer.msRequestFullscreen) {
+            viewer.msRequestFullscreen();
+        } else {
+            console.warn('Fullscreen não suportado neste navegador');
+        }
+    }
+
+    // Sair do fullscreen
+    exitFullscreen() {
+        console.log('🖥️ Saindo do fullscreen...');
+        
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
     }
 
     // Atualizar exibição do slide atual
