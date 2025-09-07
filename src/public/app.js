@@ -3215,6 +3215,8 @@ class DeParaUI {
 
     // Navegar para pasta de slideshow
     browseSlideshowFolder() {
+        console.log('📁 Abrindo seletor de pasta...');
+        
         // Criar um modal personalizado para seleção de pasta
         const modal = document.createElement('div');
         modal.className = 'modal';
@@ -3222,7 +3224,7 @@ class DeParaUI {
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 600px; width: 90%;">
                 <div class="modal-header">
-                    <h3>Selecionar Pasta</h3>
+                    <h3>Selecionar Pasta para Slideshow</h3>
                     <button class="modal-close slideshow-folder-close-btn">
                         <span class="material-icons">close</span>
                     </button>
@@ -3232,7 +3234,7 @@ class DeParaUI {
                         <label for="folder-path-input">Caminho da pasta:</label>
                         <div class="input-group">
                             <input type="text" id="folder-path-input" class="form-input"
-                                   placeholder="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User\\\\Pictures' : '/home/user/Pictures'}" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User\\\\Pictures' : '/home/user/Pictures'}">
+                                   placeholder="/home/user/Pictures" value="/mnt">
                             <button class="btn btn-outline slideshow-folder-test-btn">
                                 <span class="material-icons">check</span>
                                 Testar
@@ -3245,10 +3247,10 @@ class DeParaUI {
                     <div class="folder-suggestions">
                         <h4>Pastas comuns:</h4>
                         <div class="suggestion-buttons">
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User\\\\Pictures' : '/home/user/Pictures'}">~/Pictures</button>
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User\\\\Downloads' : '/home/user/Downloads'}">~/Downloads</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/mnt">/mnt</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/yo/Pictures">~/Pictures</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/yo/Downloads">~/Downloads</button>
                             <button class="btn btn-sm slideshow-suggestion-btn" data-path="/media">/media</button>
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="./">Diretório atual</button>
                         </div>
                     </div>
                 </div>
@@ -3385,11 +3387,13 @@ class DeParaUI {
     // Carregar imagens do slideshow
     async loadSlideshowImages(folderPath, extensions, recursive, interval) {
         try {
+            console.log('🔍 Iniciando carregamento de imagens...');
             this.showToast('🔍 Procurando imagens...', 'info');
 
             // Preparar extensões para a API
             const formattedExtensions = extensions.map(ext => ext.startsWith('.') ? ext : '.' + ext);
 
+            console.log('📡 Enviando requisição para API...');
             const response = await fetch('/api/files/list-images', {
                 method: 'POST',
                 headers: {
@@ -3402,7 +3406,14 @@ class DeParaUI {
                 })
             });
 
+            console.log('📡 Resposta recebida:', response.status, response.statusText);
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
+            }
+
             const result = await response.json();
+            console.log('📊 Resultado da API:', result);
 
             if (!result.success) {
                 throw new Error(result.error?.message || 'Erro ao listar imagens');
