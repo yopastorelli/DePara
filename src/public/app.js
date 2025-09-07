@@ -3234,7 +3234,7 @@ class DeParaUI {
                         <label for="folder-path-input">Caminho da pasta:</label>
                         <div class="input-group">
                             <input type="text" id="folder-path-input" class="form-input"
-                                   placeholder="/home/user/Pictures" value="/mnt">
+                                   placeholder="Digite o caminho da pasta" value="">
                             <button class="btn btn-outline slideshow-folder-test-btn">
                                 <span class="material-icons">check</span>
                                 Testar
@@ -3251,6 +3251,7 @@ class DeParaUI {
                             <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/yo/Pictures">~/Pictures</button>
                             <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/yo/Downloads">~/Downloads</button>
                             <button class="btn btn-sm slideshow-suggestion-btn" data-path="/media">/media</button>
+                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/yo/Desktop">~/Desktop</button>
                         </div>
                     </div>
                 </div>
