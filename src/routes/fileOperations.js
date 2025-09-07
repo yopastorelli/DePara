@@ -1680,13 +1680,8 @@ router.post('/list-images', async (req, res) => {
         // Ordenar por nome do arquivo
         images.sort((a, b) => a.name.localeCompare(b.name));
 
-        // Limitar número de imagens para performance do slideshow
-        const maxImages = 50; // Máximo 50 imagens para evitar travamento
-        const limitedImages = images.slice(0, maxImages);
-        
-        if (images.length > maxImages) {
-            logger.warn(`⚠️ Limitando imagens de ${images.length} para ${maxImages} para melhor performance do slideshow`);
-        }
+        // Usar todas as imagens encontradas (remover limitação)
+        logger.info(`📸 Encontradas ${images.length} imagens para slideshow`);
 
         const duration = Date.now() - startTime;
         logger.endOperation('List Images', duration, {
@@ -1697,11 +1692,11 @@ router.post('/list-images', async (req, res) => {
         res.json({
             success: true,
             data: {
-                images: limitedImages,
-                totalCount: limitedImages.length,
+                images: images,
+                totalCount: images.length,
                 originalCount: images.length,
                 folderPath: safePath,
-                limited: images.length > maxImages
+                limited: false
             },
             timestamp: new Date().toISOString(),
             duration

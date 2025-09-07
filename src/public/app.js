@@ -3501,6 +3501,8 @@ class DeParaUI {
 
     // Atualizar exibição do slide atual
     async updateSlideDisplay() {
+        console.log('🖼️ Atualizando exibição do slide...');
+        
         const imageElement = document.getElementById('slideshow-image');
         const counterElement = document.getElementById('slideshow-counter');
         const filenameElement = document.getElementById('slideshow-filename');
@@ -3508,12 +3510,14 @@ class DeParaUI {
         const errorElement = document.getElementById('slideshow-error');
 
         if (this.slideshowImages.length === 0) {
+            console.log('❌ Nenhuma imagem carregada');
             loadingElement.style.display = 'none';
             errorElement.style.display = 'block';
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
+        console.log('📸 Imagem atual:', currentImage);
 
         // Atualizar contador e nome do arquivo
         counterElement.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
@@ -3525,40 +3529,45 @@ class DeParaUI {
             pathElement.textContent = currentImage.path;
         }
 
-        // Verificar se a imagem já está pré-carregada
+        // Construir URL da imagem
         const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
-        
-        if (this.preloadedImages.has(imageUrl)) {
-            // Usar imagem pré-carregada
-            loadingElement.style.display = 'none';
-            imageElement.src = imageUrl;
-            imageElement.style.display = 'block';
-            errorElement.style.display = 'none';
-            console.log('⚡ Usando imagem pré-carregada');
-        } else {
-            // Mostrar loading e carregar imagem
+        console.log('🔗 URL da imagem:', imageUrl);
+
+        // Mostrar loading
         loadingElement.style.display = 'block';
         imageElement.style.display = 'none';
         errorElement.style.display = 'none';
 
-            try {
-                // Tentar carregar a imagem
-                await this.preloadImage(imageUrl);
-                
-            loadingElement.style.display = 'none';
+        try {
+            // Carregar imagem diretamente
+            const img = new Image();
+            
+            img.onload = () => {
+                console.log('✅ Imagem carregada com sucesso:', imageUrl);
+                loadingElement.style.display = 'none';
                 imageElement.src = imageUrl;
-            imageElement.style.display = 'block';
+                imageElement.style.display = 'block';
                 errorElement.style.display = 'none';
-            } catch (error) {
-                console.error('Erro ao carregar imagem:', error);
+                
+                // Pré-carregar próxima imagem
+                this.preloadNextImage();
+            };
+            
+            img.onerror = (error) => {
+                console.error('❌ Erro ao carregar imagem:', error);
                 loadingElement.style.display = 'none';
                 imageElement.style.display = 'none';
                 errorElement.style.display = 'block';
-            }
+            };
+            
+            img.src = imageUrl;
+            
+        } catch (error) {
+            console.error('❌ Erro ao carregar imagem:', error);
+            loadingElement.style.display = 'none';
+            imageElement.style.display = 'none';
+            errorElement.style.display = 'block';
         }
-
-        // Pré-carregar próxima imagem em background
-        this.preloadNextImage();
     }
 
     // Próximo slide
