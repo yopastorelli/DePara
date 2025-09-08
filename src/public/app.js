@@ -3278,6 +3278,16 @@ class DeParaUI {
     browseSlideshowFolder() {
         console.log('📁 Abrindo seletor de pasta para slideshow...');
         
+        // Verificar se o campo existe antes de criar o input
+        const slideshowField = document.getElementById('slideshow-folder-path');
+        console.log('🔍 Campo slideshow encontrado ANTES da seleção:', slideshowField);
+        
+        if (!slideshowField) {
+            console.error('❌ Campo slideshow-folder-path não encontrado no DOM');
+            this.showToast('Erro: campo não encontrado no DOM', 'error');
+            return;
+        }
+        
         // Usar diálogo nativo para seleção de pasta
         const input = document.createElement('input');
         input.type = 'file';
@@ -3288,27 +3298,46 @@ class DeParaUI {
         
         input.addEventListener('change', (event) => {
             const files = event.target.files;
+            console.log('📁 Arquivos selecionados:', files);
+            
             if (files && files.length > 0) {
                 // Pegar o caminho da primeira pasta selecionada
                 const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
                 
                 console.log('📁 Pasta selecionada para slideshow:', fullPath);
+                console.log('📁 Caminho original:', files[0].path);
+                console.log('📁 Caminho webkit:', files[0].webkitRelativePath);
                 
-                // Atualizar o campo de pasta do slideshow
+                // Verificar novamente se o campo existe
                 const slideshowField = document.getElementById('slideshow-folder-path');
-                console.log('🔍 Campo slideshow encontrado:', slideshowField);
+                console.log('🔍 Campo slideshow encontrado APÓS seleção:', slideshowField);
+                
                 if (slideshowField) {
+                    // Forçar atualização do valor
                     slideshowField.value = fullPath;
+                    
+                    // Disparar evento de input para garantir que o valor seja reconhecido
+                    slideshowField.dispatchEvent(new Event('input', { bubbles: true }));
+                    slideshowField.dispatchEvent(new Event('change', { bubbles: true }));
+                    
                     console.log('✅ Campo slideshow atualizado:', slideshowField.value);
+                    console.log('✅ Valor do campo após atualização:', slideshowField.value);
+                    console.log('✅ Campo visível:', slideshowField.offsetParent !== null);
+                    console.log('✅ Campo display:', window.getComputedStyle(slideshowField).display);
+                    
                     this.showToast(`Pasta selecionada: ${fullPath}`, 'success');
                 } else {
-                    console.error('❌ Campo slideshow-folder-path não encontrado');
-                    this.showToast('Erro: campo não encontrado', 'error');
+                    console.error('❌ Campo slideshow-folder-path não encontrado após seleção');
+                    this.showToast('Erro: campo não encontrado após seleção', 'error');
                 }
+            } else {
+                console.log('⚠️ Nenhum arquivo selecionado');
             }
             
             // Remover o input após uso
-            document.body.removeChild(input);
+            if (document.body.contains(input)) {
+                document.body.removeChild(input);
+            }
         });
         
         // Adicionar ao DOM e clicar
