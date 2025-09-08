@@ -823,23 +823,7 @@ body {
     gap: 10px;
 }
 
-.slideshow-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    padding: 12px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-.slideshow-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
-}
+/* CSS antigo removido - usando botões estáticos */
 
 .slideshow-content {
     flex: 1;
@@ -3197,18 +3181,7 @@ body {
     margin-left: 10px;
 }
 
-.slideshow-organization-controls .slideshow-btn {
-    background: rgba(255, 0, 0, 0.1);
-    border: 1px solid rgba(255, 0, 0, 0.3);
-    opacity: 0.6;
-    transition: all 0.3s ease;
-}
-
-.slideshow-organization-controls .slideshow-btn:hover {
-    background: rgba(255, 0, 0, 0.2);
-    opacity: 1;
-    transform: scale(1.1);
-}
+/* CSS antigo removido - usando botões estáticos */
 
 .slideshow-organization-controls .slideshow-hide-btn {
     background: rgba(255, 165, 0, 0.1);
@@ -3500,11 +3473,7 @@ body {
         bottom: 20px;
     }
 
-    .slideshow-btn {
-        font-size: 36px;
-        width: 50px;
-        height: 50px;
-    }
+    /* CSS antigo removido - usando botões estáticos */
 
     .slideshow-info {
         min-width: 100px;
@@ -3541,11 +3510,7 @@ body {
         gap: 16px;
     }
 
-    .slideshow-btn {
-        font-size: 30px;
-        width: 44px;
-        height: 44px;
-    }
+    /* CSS antigo removido - usando botões estáticos */
 
     .slideshow-info {
         min-width: 80px;
