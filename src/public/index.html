@@ -71,6 +71,48 @@
         #dynamic-slideshow-controls button:after {
             display: none !important;
         }
+        
+        /* Garantir que emojis sejam exibidos corretamente */
+        #dynamic-slideshow-controls button {
+            font-family: Arial, sans-serif !important;
+            font-size: 24px !important;
+            line-height: 1 !important;
+        }
+        
+        /* Remover qualquer interferência de Material Icons */
+        #dynamic-slideshow-controls .material-icons {
+            display: none !important;
+        }
+        
+        /* Forçar exibição de emojis - sobrescrever qualquer CSS conflitante */
+        #dynamic-slideshow-controls button {
+            font-family: Arial, sans-serif !important;
+            font-size: 24px !important;
+            line-height: 1 !important;
+            background: rgba(0, 0, 0, 0.7) !important;
+            border: none !important;
+            color: white !important;
+            padding: 12px !important;
+            border-radius: 50% !important;
+            width: 48px !important;
+            height: 48px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            z-index: 1000000 !important;
+        }
+        
+        /* Garantir que o texto dos botões seja visível */
+        #dynamic-slideshow-controls button * {
+            display: none !important;
+        }
+        
+        #dynamic-slideshow-controls button {
+            text-indent: 0 !important;
+            white-space: nowrap !important;
+        }
     </style>
     
     <!-- Styles -->
