@@ -3191,6 +3191,14 @@ class DeParaUI {
             });
         }
 
+        // Botão de pasta principal
+        const mainFolderBtn = document.querySelector('.slideshow-main-folder-btn');
+        if (mainFolderBtn) {
+            mainFolderBtn.addEventListener('click', () => {
+                this.useMainFolder();
+            });
+        }
+
         // Viewer de slideshow
         const prevBtn = document.querySelector('.slideshow-prev-btn');
         if (prevBtn) {
@@ -3270,11 +3278,19 @@ class DeParaUI {
                 
                 console.log('📁 Pasta selecionada para slideshow:', fullPath);
                 
+                // CORREÇÃO: Se a pasta selecionada pode estar vazia, usar a pasta pai
+                let finalPath = fullPath;
+                if (fullPath.includes('@Bfore 2001@') || fullPath.includes('@2021@') || fullPath.includes('@2022@') || fullPath.includes('@2023@')) {
+                    const parentPath = fullPath.replace(/\/@[^@]+@$/, '');
+                    console.log(`🔄 Pasta selecionada pode estar vazia, usando pasta pai: ${parentPath}`);
+                    finalPath = parentPath;
+                }
+                
                 // Atualizar o campo de pasta do slideshow
                 const slideshowField = document.getElementById('slideshow-folder-path');
                 if (slideshowField) {
-                    slideshowField.value = fullPath;
-                    this.showToast(`Pasta selecionada: ${fullPath}`, 'success');
+                    slideshowField.value = finalPath;
+                    this.showToast(`Pasta selecionada: ${finalPath}`, 'success');
                 }
             }
             
@@ -3285,6 +3301,25 @@ class DeParaUI {
         // Adicionar ao DOM e clicar
         document.body.appendChild(input);
         input.click();
+    }
+
+    // Usar pasta principal com todas as imagens
+    useMainFolder() {
+        console.log('📁 Usando pasta principal...');
+        
+        const mainPath = '/mnt/lytspot/@SYNC@/_@@PICZ & VIDEOS LYT @@_/_@LYT PicZ por ANO@_';
+        
+        // Atualizar o campo de pasta do slideshow
+        const slideshowField = document.getElementById('slideshow-folder-path');
+        if (slideshowField) {
+            slideshowField.value = mainPath;
+            this.showToast(`Pasta principal selecionada: ${mainPath}`, 'success');
+        }
+        
+        // Atualizar configuração
+        this.slideshowConfig.folderPath = mainPath;
+        this.saveSlideshowConfig();
+        this.applySlideshowConfig();
     }
 
     // Configurar event listeners para o modal de seleção de pasta do slideshow
