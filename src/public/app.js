@@ -3352,189 +3352,12 @@ class DeParaUI {
         input.click();
     }
 
-    // Mostrar modal para entrada de caminho
-    showPathInputModal(message, callback) {
-        console.log('📝 Criando modal para entrada de caminho:', message);
-        
-        // Criar modal
-        const modal = document.createElement('div');
-        modal.id = 'path-input-modal';
-        modal.style.cssText = `
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            background: rgba(0, 0, 0, 0.8) !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 999999 !important;
-        `;
-        
-        // Criar conteúdo do modal
-        const modalContent = document.createElement('div');
-        modalContent.style.cssText = `
-            background: white !important;
-            padding: 30px !important;
-            border-radius: 10px !important;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
-            max-width: 500px !important;
-            width: 90% !important;
-            text-align: center !important;
-        `;
-        
-        // Título
-        const title = document.createElement('h3');
-        title.textContent = 'Selecionar Pasta';
-        title.style.cssText = `
-            margin: 0 0 20px 0 !important;
-            color: #333 !important;
-            font-size: 18px !important;
-        `;
-        
-        // Mensagem
-        const messageEl = document.createElement('p');
-        messageEl.textContent = message;
-        messageEl.style.cssText = `
-            margin: 0 0 20px 0 !important;
-            color: #666 !important;
-            font-size: 14px !important;
-        `;
-        
-        // Input
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.placeholder = 'Digite o caminho da pasta...';
-        input.style.cssText = `
-            width: 100% !important;
-            padding: 12px !important;
-            border: 2px solid #ddd !important;
-            border-radius: 5px !important;
-            font-size: 14px !important;
-            margin-bottom: 20px !important;
-            box-sizing: border-box !important;
-        `;
-        
-        // Botões
-        const buttonContainer = document.createElement('div');
-        buttonContainer.style.cssText = `
-            display: flex !important;
-            gap: 10px !important;
-            justify-content: center !important;
-        `;
-        
-        const confirmBtn = document.createElement('button');
-        confirmBtn.textContent = 'Confirmar';
-        confirmBtn.style.cssText = `
-            background: #007bff !important;
-            color: white !important;
-            border: none !important;
-            padding: 10px 20px !important;
-            border-radius: 5px !important;
-            cursor: pointer !important;
-            font-size: 14px !important;
-        `;
-        
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = 'Cancelar';
-        cancelBtn.style.cssText = `
-            background: #6c757d !important;
-            color: white !important;
-            border: none !important;
-            padding: 10px 20px !important;
-            border-radius: 5px !important;
-            cursor: pointer !important;
-            font-size: 14px !important;
-        `;
-        
-        // Event listeners
-        let closeModal = () => {
-            document.body.removeChild(modal);
-        };
-        
-        // Fechar com ESC
-        const handleKeyPress = (e) => {
-            if (e.key === 'Escape') {
-                closeModal();
-                callback('');
-            } else if (e.key === 'Enter') {
-                const path = input.value.trim();
-                closeModal();
-                callback(path);
-            }
-        };
-        
-        document.addEventListener('keydown', handleKeyPress);
-        
-        // Atualizar closeModal para limpar event listener
-        closeModal = () => {
-            document.removeEventListener('keydown', handleKeyPress);
-            document.body.removeChild(modal);
-        };
-        
-        confirmBtn.addEventListener('click', () => {
-            const path = input.value.trim();
-            closeModal();
-            callback(path);
-        });
-        
-        cancelBtn.addEventListener('click', () => {
-            closeModal();
-            callback('');
-        });
-        
-        // Montar modal
-        buttonContainer.appendChild(confirmBtn);
-        buttonContainer.appendChild(cancelBtn);
-        
-        modalContent.appendChild(title);
-        modalContent.appendChild(messageEl);
-        modalContent.appendChild(input);
-        modalContent.appendChild(buttonContainer);
-        
-        modal.appendChild(modalContent);
-        document.body.appendChild(modal);
-        
-        // Focar no input
-        setTimeout(() => {
-            input.focus();
-        }, 100);
-        
-        console.log('✅ Modal de entrada de caminho criado');
-    }
 
     // Navegar para pasta de fotos excluídas
     browseDeletedFolder() {
-        console.log('🚀 INÍCIO browseDeletedFolder()');
         console.log('📁 Abrindo seletor de pasta para fotos excluídas...');
         
-        // Detectar se estamos no Electron
-        const isElectron = navigator.userAgent.toLowerCase().includes('electron');
-        console.log('🔍 Ambiente detectado:', isElectron ? 'Electron' : 'Browser');
-        
-        if (isElectron) {
-            // No Electron, usar modal personalizado
-            console.log('⚡ Electron detectado - usando modal personalizado');
-            this.showPathInputModal('Digite o caminho da pasta de fotos excluídas:', (path) => {
-                if (path && path.trim() !== '') {
-                    const deletedField = document.getElementById('slideshow-deleted-folder');
-                    if (deletedField) {
-                        deletedField.value = path;
-                        this.showToast(`Pasta de fotos excluídas: ${path}`, 'success');
-                        console.log('✅ Campo atualizado via modal:', deletedField.value);
-                    } else {
-                        console.error('❌ Campo não encontrado');
-                        this.showToast('Erro: campo não encontrado', 'error');
-                    }
-                } else {
-                    this.showToast('Seleção cancelada', 'info');
-                }
-            });
-            return;
-        }
-        
-        // Usar diálogo nativo para seleção de pasta (apenas no browser)
+        // Usar o mesmo método que funciona para o slideshow principal
         const input = document.createElement('input');
         input.type = 'file';
         input.webkitdirectory = true;
@@ -3542,89 +3365,20 @@ class DeParaUI {
         input.multiple = false;
         input.style.display = 'none';
         
-        // Timeout para detectar se o evento não dispara
-        let eventFired = false;
-        const timeout = setTimeout(() => {
-            if (!eventFired) {
-                console.log('⏰ Timeout - evento change não disparou, usando prompt');
-                document.body.removeChild(input);
-                const manualPath = prompt('Digite o caminho da pasta de fotos excluídas:');
-                if (manualPath && manualPath.trim() !== '') {
-                    const deletedField = document.getElementById('slideshow-deleted-folder');
-                    if (deletedField) {
-                        deletedField.value = manualPath;
-                        this.showToast(`Pasta de fotos excluídas: ${manualPath}`, 'success');
-                        console.log('✅ Campo atualizado via timeout prompt:', deletedField.value);
-                    }
-                }
-            }
-        }, 3000);
-        
         input.addEventListener('change', (event) => {
-            eventFired = true;
-            clearTimeout(timeout);
-            console.log('🔄 EVENTO change disparado para deleted folder');
             const files = event.target.files;
-            console.log('📁 Arquivos selecionados:', files.length);
             if (files && files.length > 0) {
-                // Pegar o caminho da primeira pasta selecionada
-                let fullPath = '';
-                
-                if (files[0].path) {
-                    // Electron/Desktop - usar path completo
-                    fullPath = files[0].path;
-                } else if (files[0].webkitRelativePath) {
-                    // Browser - extrair pasta do webkitRelativePath
-                    const pathParts = files[0].webkitRelativePath.split('/');
-                    if (pathParts.length > 1) {
-                        // Para webkitRelativePath, a primeira parte é a pasta selecionada
-                        fullPath = pathParts[0];
-                    } else {
-                        // Se só tem uma parte, usar o nome do arquivo como pasta
-                        fullPath = files[0].name;
-                    }
-                } else {
-                    // Fallback - usar o nome do arquivo
-                    fullPath = files[0].name;
-                }
-                
-                // Se ainda não temos um caminho válido, tentar extrair do nome do arquivo
-                if (!fullPath || fullPath.trim() === '') {
-                    fullPath = files[0].name || 'pasta_selecionada';
-                }
+                // Pegar o caminho da primeira pasta selecionada (mesmo método do slideshow)
+                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
                 
                 console.log('📁 Pasta selecionada para fotos excluídas:', fullPath);
-                console.log('🔍 Debug - files[0]:', {
-                    name: files[0].name,
-                    path: files[0].path,
-                    webkitRelativePath: files[0].webkitRelativePath,
-                    fullPath: fullPath
-                });
-                console.log('🔍 Debug - files.length:', files.length);
-                console.log('🔍 Debug - todos os arquivos:', Array.from(files).map(f => ({
-                    name: f.name,
-                    path: f.path,
-                    webkitRelativePath: f.webkitRelativePath
-                })));
                 
                 // Atualizar o campo de pasta de fotos excluídas
                 const deletedField = document.getElementById('slideshow-deleted-folder');
                 if (deletedField) {
-                    if (fullPath && fullPath.trim() !== '') {
-                        deletedField.value = fullPath;
-                        this.showToast(`Pasta de fotos excluídas: ${fullPath}`, 'success');
-                        console.log('✅ Campo atualizado:', deletedField.value);
-                    } else {
-                        console.error('❌ Caminho vazio, pedindo manualmente');
-                        // Fallback: pedir caminho manualmente
-                        const manualPath = prompt('Digite o caminho da pasta de fotos excluídas:');
-                        if (manualPath && manualPath.trim() !== '') {
-                            deletedField.value = manualPath;
-                            this.showToast(`Pasta de fotos excluídas: ${manualPath}`, 'success');
-                        } else {
-                            this.showToast('Erro ao selecionar pasta', 'error');
-                        }
-                    }
+                    deletedField.value = fullPath;
+                    this.showToast(`Pasta de fotos excluídas: ${fullPath}`, 'success');
+                    console.log('✅ Campo atualizado:', deletedField.value);
                 } else {
                     console.error('❌ Campo não encontrado');
                     this.showToast('Erro: campo não encontrado', 'error');
@@ -3644,35 +3398,9 @@ class DeParaUI {
 
     // Navegar para pasta de fotos ocultas
     browseHiddenFolder() {
-        console.log('🚀 INÍCIO browseHiddenFolder()');
         console.log('📁 Abrindo seletor de pasta para fotos ocultas...');
         
-        // Detectar se estamos no Electron
-        const isElectron = navigator.userAgent.toLowerCase().includes('electron');
-        console.log('🔍 Ambiente detectado:', isElectron ? 'Electron' : 'Browser');
-        
-        if (isElectron) {
-            // No Electron, usar modal personalizado
-            console.log('⚡ Electron detectado - usando modal personalizado');
-            this.showPathInputModal('Digite o caminho da pasta de fotos ocultas:', (path) => {
-                if (path && path.trim() !== '') {
-                    const hiddenField = document.getElementById('slideshow-hidden-folder');
-                    if (hiddenField) {
-                        hiddenField.value = path;
-                        this.showToast(`Pasta de fotos ocultas: ${path}`, 'success');
-                        console.log('✅ Campo atualizado via modal:', hiddenField.value);
-                    } else {
-                        console.error('❌ Campo não encontrado');
-                        this.showToast('Erro: campo não encontrado', 'error');
-                    }
-                } else {
-                    this.showToast('Seleção cancelada', 'info');
-                }
-            });
-            return;
-        }
-        
-        // Usar diálogo nativo para seleção de pasta (apenas no browser)
+        // Usar o mesmo método que funciona para o slideshow principal
         const input = document.createElement('input');
         input.type = 'file';
         input.webkitdirectory = true;
@@ -3680,89 +3408,20 @@ class DeParaUI {
         input.multiple = false;
         input.style.display = 'none';
         
-        // Timeout para detectar se o evento não dispara
-        let eventFired = false;
-        const timeout = setTimeout(() => {
-            if (!eventFired) {
-                console.log('⏰ Timeout - evento change não disparou, usando prompt');
-                document.body.removeChild(input);
-                const manualPath = prompt('Digite o caminho da pasta de fotos ocultas:');
-                if (manualPath && manualPath.trim() !== '') {
-                    const hiddenField = document.getElementById('slideshow-hidden-folder');
-                    if (hiddenField) {
-                        hiddenField.value = manualPath;
-                        this.showToast(`Pasta de fotos ocultas: ${manualPath}`, 'success');
-                        console.log('✅ Campo atualizado via timeout prompt:', hiddenField.value);
-                    }
-                }
-            }
-        }, 3000);
-        
         input.addEventListener('change', (event) => {
-            eventFired = true;
-            clearTimeout(timeout);
-            console.log('🔄 EVENTO change disparado para hidden folder');
             const files = event.target.files;
-            console.log('📁 Arquivos selecionados:', files.length);
             if (files && files.length > 0) {
-                // Pegar o caminho da primeira pasta selecionada
-                let fullPath = '';
-                
-                if (files[0].path) {
-                    // Electron/Desktop - usar path completo
-                    fullPath = files[0].path;
-                } else if (files[0].webkitRelativePath) {
-                    // Browser - extrair pasta do webkitRelativePath
-                    const pathParts = files[0].webkitRelativePath.split('/');
-                    if (pathParts.length > 1) {
-                        // Para webkitRelativePath, a primeira parte é a pasta selecionada
-                        fullPath = pathParts[0];
-                    } else {
-                        // Se só tem uma parte, usar o nome do arquivo como pasta
-                        fullPath = files[0].name;
-                    }
-                } else {
-                    // Fallback - usar o nome do arquivo
-                    fullPath = files[0].name;
-                }
-                
-                // Se ainda não temos um caminho válido, tentar extrair do nome do arquivo
-                if (!fullPath || fullPath.trim() === '') {
-                    fullPath = files[0].name || 'pasta_selecionada';
-                }
+                // Pegar o caminho da primeira pasta selecionada (mesmo método do slideshow)
+                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
                 
                 console.log('📁 Pasta selecionada para fotos ocultas:', fullPath);
-                console.log('🔍 Debug - files[0]:', {
-                    name: files[0].name,
-                    path: files[0].path,
-                    webkitRelativePath: files[0].webkitRelativePath,
-                    fullPath: fullPath
-                });
-                console.log('🔍 Debug - files.length:', files.length);
-                console.log('🔍 Debug - todos os arquivos:', Array.from(files).map(f => ({
-                    name: f.name,
-                    path: f.path,
-                    webkitRelativePath: f.webkitRelativePath
-                })));
                 
                 // Atualizar o campo de pasta de fotos ocultas
                 const hiddenField = document.getElementById('slideshow-hidden-folder');
                 if (hiddenField) {
-                    if (fullPath && fullPath.trim() !== '') {
-                        hiddenField.value = fullPath;
-                        this.showToast(`Pasta de fotos ocultas: ${fullPath}`, 'success');
-                        console.log('✅ Campo atualizado:', hiddenField.value);
-                    } else {
-                        console.error('❌ Caminho vazio, pedindo manualmente');
-                        // Fallback: pedir caminho manualmente
-                        const manualPath = prompt('Digite o caminho da pasta de fotos ocultas:');
-                        if (manualPath && manualPath.trim() !== '') {
-                            hiddenField.value = manualPath;
-                            this.showToast(`Pasta de fotos ocultas: ${manualPath}`, 'success');
-                        } else {
-                            this.showToast('Erro ao selecionar pasta', 'error');
-                        }
-                    }
+                    hiddenField.value = fullPath;
+                    this.showToast(`Pasta de fotos ocultas: ${fullPath}`, 'success');
+                    console.log('✅ Campo atualizado:', hiddenField.value);
                 } else {
                     console.error('❌ Campo não encontrado');
                     this.showToast('Erro: campo não encontrado', 'error');
@@ -4816,13 +4475,12 @@ class DeParaUI {
             position: absolute !important;
             top: 20px !important;
             right: 80px !important;
-            background: rgba(255, 0, 0, 0.1) !important;
-            border: 1px solid rgba(255, 0, 0, 0.3) !important;
+            background: transparent !important;
+            border: none !important;
             color: white !important;
-            border-radius: 50% !important;
             width: 50px !important;
             height: 50px !important;
-            font-size: 18px !important;
+            font-size: 24px !important;
             font-family: Arial, sans-serif !important;
             cursor: pointer !important;
             display: flex !important;
@@ -4831,7 +4489,7 @@ class DeParaUI {
             transition: all 0.3s !important;
             z-index: 1000002 !important;
             pointer-events: auto !important;
-            opacity: 0.6 !important;
+            opacity: 0.7 !important;
         `;
         deleteBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4849,13 +4507,12 @@ class DeParaUI {
             position: absolute !important;
             top: 20px !important;
             right: 140px !important;
-            background: rgba(255, 165, 0, 0.1) !important;
-            border: 1px solid rgba(255, 165, 0, 0.3) !important;
+            background: transparent !important;
+            border: none !important;
             color: white !important;
-            border-radius: 50% !important;
             width: 50px !important;
             height: 50px !important;
-            font-size: 18px !important;
+            font-size: 24px !important;
             font-family: Arial, sans-serif !important;
             cursor: pointer !important;
             display: flex !important;
@@ -4864,7 +4521,7 @@ class DeParaUI {
             transition: all 0.3s !important;
             z-index: 1000002 !important;
             pointer-events: auto !important;
-            opacity: 0.6 !important;
+            opacity: 0.7 !important;
         `;
         hideBtn.addEventListener('click', (e) => {
             e.preventDefault();
