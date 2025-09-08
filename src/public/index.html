@@ -1440,12 +1440,12 @@
                 if (!fontFamily.includes('Material Icons') || fontFamily.includes('Arial')) {
                     console.log('⚠️ Material Icons não carregaram, aplicando fallbacks');
                     
-                    // Aplicar fallbacks a todos os ícones com data-fallback
-                    const icons = document.querySelectorAll('.material-icons[data-fallback]');
-                    icons.forEach(icon => {
+                    // Aplicar fallbacks apenas aos ícones de configuração (não slideshow)
+                    const configIcons = document.querySelectorAll('.slideshow-organization-settings .material-icons[data-fallback]');
+                    configIcons.forEach(icon => {
                         icon.style.fontSize = '0';
                         icon.style.fontFamily = 'Arial, sans-serif';
-                        console.log('🔄 Aplicando fallback para ícone:', icon.textContent);
+                        console.log('🔄 Aplicando fallback para ícone de configuração:', icon.textContent);
                     });
                 } else {
                     console.log('✅ Material Icons carregaram corretamente');

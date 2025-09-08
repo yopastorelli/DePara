@@ -3380,29 +3380,46 @@ class DeParaUI {
                     fullPath = files[0].name;
                 }
                 
+                // Se ainda não temos um caminho válido, tentar extrair do nome do arquivo
+                if (!fullPath || fullPath.trim() === '') {
+                    fullPath = files[0].name || 'pasta_selecionada';
+                }
+                
                 console.log('📁 Pasta selecionada para fotos excluídas:', fullPath);
                 console.log('🔍 Debug - files[0]:', {
                     name: files[0].name,
                     path: files[0].path,
-                    webkitRelativePath: files[0].webkitRelativePath
+                    webkitRelativePath: files[0].webkitRelativePath,
+                    fullPath: fullPath
                 });
+                console.log('🔍 Debug - files.length:', files.length);
+                console.log('🔍 Debug - todos os arquivos:', Array.from(files).map(f => ({
+                    name: f.name,
+                    path: f.path,
+                    webkitRelativePath: f.webkitRelativePath
+                })));
                 
                 // Atualizar o campo de pasta de fotos excluídas
                 const deletedField = document.getElementById('slideshow-deleted-folder');
-                if (deletedField && fullPath) {
-                    deletedField.value = fullPath;
-                    this.showToast(`Pasta de fotos excluídas: ${fullPath}`, 'success');
-                    console.log('✅ Campo atualizado:', deletedField.value);
-                } else {
-                    console.error('❌ Campo não encontrado ou caminho vazio');
-                    // Fallback: pedir caminho manualmente
-                    const manualPath = prompt('Digite o caminho da pasta de fotos excluídas:');
-                    if (manualPath && deletedField) {
-                        deletedField.value = manualPath;
-                        this.showToast(`Pasta de fotos excluídas: ${manualPath}`, 'success');
+                if (deletedField) {
+                    if (fullPath && fullPath.trim() !== '') {
+                        deletedField.value = fullPath;
+                        this.showToast(`Pasta de fotos excluídas: ${fullPath}`, 'success');
+                        console.log('✅ Campo atualizado:', deletedField.value);
                     } else {
-                        this.showToast('Erro ao selecionar pasta', 'error');
+                        console.error('❌ Caminho vazio, pedindo manualmente');
+                        // Fallback: pedir caminho manualmente
+                        const manualPath = prompt('Digite o caminho da pasta de fotos excluídas:');
+                        if (manualPath && manualPath.trim() !== '') {
+                            deletedField.value = manualPath;
+                            this.showToast(`Pasta de fotos excluídas: ${manualPath}`, 'success');
+                        } else {
+                            this.showToast('Erro ao selecionar pasta', 'error');
+                        }
                     }
+                } else {
+                    console.error('❌ Campo não encontrado');
+                    this.showToast('Erro: campo não encontrado', 'error');
                 }
             }
             
@@ -3451,29 +3468,46 @@ class DeParaUI {
                     fullPath = files[0].name;
                 }
                 
+                // Se ainda não temos um caminho válido, tentar extrair do nome do arquivo
+                if (!fullPath || fullPath.trim() === '') {
+                    fullPath = files[0].name || 'pasta_selecionada';
+                }
+                
                 console.log('📁 Pasta selecionada para fotos ocultas:', fullPath);
                 console.log('🔍 Debug - files[0]:', {
                     name: files[0].name,
                     path: files[0].path,
-                    webkitRelativePath: files[0].webkitRelativePath
+                    webkitRelativePath: files[0].webkitRelativePath,
+                    fullPath: fullPath
                 });
+                console.log('🔍 Debug - files.length:', files.length);
+                console.log('🔍 Debug - todos os arquivos:', Array.from(files).map(f => ({
+                    name: f.name,
+                    path: f.path,
+                    webkitRelativePath: f.webkitRelativePath
+                })));
                 
                 // Atualizar o campo de pasta de fotos ocultas
                 const hiddenField = document.getElementById('slideshow-hidden-folder');
-                if (hiddenField && fullPath) {
-                    hiddenField.value = fullPath;
-                    this.showToast(`Pasta de fotos ocultas: ${fullPath}`, 'success');
-                    console.log('✅ Campo atualizado:', hiddenField.value);
-                } else {
-                    console.error('❌ Campo não encontrado ou caminho vazio');
-                    // Fallback: pedir caminho manualmente
-                    const manualPath = prompt('Digite o caminho da pasta de fotos ocultas:');
-                    if (manualPath && hiddenField) {
-                        hiddenField.value = manualPath;
-                        this.showToast(`Pasta de fotos ocultas: ${manualPath}`, 'success');
+                if (hiddenField) {
+                    if (fullPath && fullPath.trim() !== '') {
+                        hiddenField.value = fullPath;
+                        this.showToast(`Pasta de fotos ocultas: ${fullPath}`, 'success');
+                        console.log('✅ Campo atualizado:', hiddenField.value);
                     } else {
-                        this.showToast('Erro ao selecionar pasta', 'error');
+                        console.error('❌ Caminho vazio, pedindo manualmente');
+                        // Fallback: pedir caminho manualmente
+                        const manualPath = prompt('Digite o caminho da pasta de fotos ocultas:');
+                        if (manualPath && manualPath.trim() !== '') {
+                            hiddenField.value = manualPath;
+                            this.showToast(`Pasta de fotos ocultas: ${manualPath}`, 'success');
+                        } else {
+                            this.showToast('Erro ao selecionar pasta', 'error');
+                        }
                     }
+                } else {
+                    console.error('❌ Campo não encontrado');
+                    this.showToast('Erro: campo não encontrado', 'error');
                 }
             }
             
