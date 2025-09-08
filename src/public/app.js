@@ -4515,12 +4515,13 @@ class DeParaUI {
             
             // Primeiro, tentar criar a pasta se não existir
             try {
-                const createFolderResponse = await fetch('/api/files/create-folder', {
+                const createFolderResponse = await fetch('/api/folders', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
+                        name: 'Excluidas do DEPARA',
                         path: this.slideshowConfig.deletedFolder
                     })
                 });
@@ -4611,12 +4612,13 @@ class DeParaUI {
             
             // Primeiro, tentar criar a pasta se não existir
             try {
-                const createFolderResponse = await fetch('/api/files/create-folder', {
+                const createFolderResponse = await fetch('/api/folders', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
+                        name: 'Ocultas do DEPARA',
                         path: this.slideshowConfig.hiddenFolder
                     })
                 });
