@@ -4306,24 +4306,27 @@ class DeParaUI {
             oldControls.remove();
         }
         
-        // Criar container de controles
+        // Criar container de controles (simplificado)
         const controlsContainer = document.createElement('div');
         controlsContainer.id = 'dynamic-slideshow-controls';
         controlsContainer.style.cssText = `
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            z-index: 1000000 !important;
-            pointer-events: none !important;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000000;
+            pointer-events: none;
         `;
         
         // Botão anterior (simples)
         const prevBtn = document.createElement('button');
-        prevBtn.className = 'slideshow-btn';
         prevBtn.innerHTML = '⬅️';
         prevBtn.style.cssText = `
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
             background: rgba(0, 0, 0, 0.7);
             color: white;
             border: none;
@@ -4332,10 +4335,6 @@ class DeParaUI {
             height: 60px;
             font-size: 24px;
             cursor: pointer;
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
             z-index: 1000002;
         `;
         prevBtn.addEventListener('click', (e) => {
@@ -4349,9 +4348,12 @@ class DeParaUI {
         
         // Botão próximo (simples)
         const nextBtn = document.createElement('button');
-        nextBtn.className = 'slideshow-btn';
         nextBtn.innerHTML = '➡️';
         nextBtn.style.cssText = `
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
             background: rgba(0, 0, 0, 0.7);
             color: white;
             border: none;
@@ -4360,10 +4362,6 @@ class DeParaUI {
             height: 60px;
             font-size: 24px;
             cursor: pointer;
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
             z-index: 1000002;
         `;
         nextBtn.addEventListener('click', (e) => {
@@ -4394,7 +4392,6 @@ class DeParaUI {
         
         // Botão fechar (simples)
         const closeBtn = document.createElement('button');
-        closeBtn.className = 'slideshow-btn';
         closeBtn.innerHTML = '❌';
         closeBtn.style.cssText = `
             position: absolute;
@@ -4420,7 +4417,6 @@ class DeParaUI {
         // Botão apagar (simples)
         const deleteBtn = document.createElement('button');
         deleteBtn.id = 'dynamic-slideshow-delete';
-        deleteBtn.className = 'slideshow-btn';
         deleteBtn.innerHTML = '🗑️';
         deleteBtn.title = 'Apagar foto';
         deleteBtn.style.cssText = `
@@ -4447,7 +4443,6 @@ class DeParaUI {
         // Botão ocultar (simples)
         const hideBtn = document.createElement('button');
         hideBtn.id = 'dynamic-slideshow-hide';
-        hideBtn.className = 'slideshow-btn';
         hideBtn.innerHTML = '👁️';
         hideBtn.title = 'Ocultar foto';
         hideBtn.style.cssText = `
@@ -4479,65 +4474,19 @@ class DeParaUI {
         controlsContainer.appendChild(deleteBtn);
         controlsContainer.appendChild(hideBtn);
         
-        // Verificação adicional para garantir que os emojis sejam exibidos
+        // Verificação simplificada
         setTimeout(() => {
-            console.log('🔍 Verificação pós-criação dos botões:');
-            console.log('⬅️ Prev:', prevBtn.innerHTML, 'Elemento:', prevBtn, 'Classe:', prevBtn.className);
-            console.log('➡️ Next:', nextBtn.innerHTML, 'Elemento:', nextBtn, 'Classe:', nextBtn.className);
-            console.log('❌ Close:', closeBtn.innerHTML, 'Elemento:', closeBtn, 'Classe:', closeBtn.className);
-            console.log('🗑️ Delete:', deleteBtn.innerHTML, 'Elemento:', deleteBtn, 'Classe:', deleteBtn.className);
-            console.log('👁️ Hide:', hideBtn.innerHTML, 'Elemento:', hideBtn, 'Classe:', hideBtn.className);
+            console.log('✅ Controles do slideshow criados');
         }, 100);
-        
-        console.log('🔍 Botões de organização adicionados:', {
-            deleteBtn: deleteBtn,
-            hideBtn: hideBtn,
-            deleteBtnId: deleteBtn.id,
-            hideBtnId: hideBtn.id
-        });
         
         // Adicionar ao body
         document.body.appendChild(controlsContainer);
         
-        // Sistema simplificado - sem proteção complexa
-        console.log('✅ Botões do slideshow criados com sucesso');
-        console.log('🔍 Botões criados:', {
-            prevBtn: prevBtn.innerHTML,
-            nextBtn: nextBtn.innerHTML,
-            closeBtn: closeBtn.innerHTML,
-            deleteBtn: deleteBtn.innerHTML,
-            hideBtn: hideBtn.innerHTML
-        });
+        console.log('✅ Controles do slideshow criados');
         
         // Atualizar contador
         this.updateDynamicCounter();
         
-        console.log('🎮 Controles de navegação dinâmicos criados');
-        console.log('🔍 Botões criados:', {
-            prevBtn: prevBtn,
-            nextBtn: nextBtn,
-            counter: counter,
-            closeBtn: closeBtn
-        });
-        
-        // Teste simples - adicionar um alerta temporário para verificar se os botões estão funcionando
-        setTimeout(() => {
-            console.log('🧪 Teste: Verificando se os botões estão no DOM...');
-            const testPrev = document.querySelector('#dynamic-slideshow-controls button:first-child');
-            const testNext = document.querySelector('#dynamic-slideshow-controls button:nth-child(2)');
-            console.log('🧪 Botão anterior encontrado:', testPrev);
-            console.log('🧪 Botão próximo encontrado:', testNext);
-            
-            // Teste visual - adicionar borda vermelha temporária
-            if (testPrev) {
-                testPrev.style.border = '3px solid red';
-                console.log('🔴 Borda vermelha adicionada ao botão anterior');
-            }
-            if (testNext) {
-                testNext.style.border = '3px solid blue';
-                console.log('🔵 Borda azul adicionada ao botão próximo');
-            }
-        }, 1000);
     }
     
     // Atualizar contador dinâmico
