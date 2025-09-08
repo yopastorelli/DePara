@@ -3825,6 +3825,7 @@ class DeParaUI {
                             background: black !important;
                             box-shadow: none !important;
                             border-radius: 0 !important;
+                            pointer-events: none !important;
                         `;
                         
                         // Aplicar estilos individualmente para máxima compatibilidade
@@ -3854,7 +3855,7 @@ class DeParaUI {
                         
                         // Garantir que a imagem esteja acima de todos os modais
                         newImageElement.style.zIndex = '999999';
-                        newImageElement.style.pointerEvents = 'auto';
+                        newImageElement.style.pointerEvents = 'none';
                         
                         // Adicionar fundo preto atrás de tudo
                         document.body.style.background = 'black';
@@ -4320,16 +4321,6 @@ class DeParaUI {
             const testNext = document.querySelector('#dynamic-slideshow-controls button:nth-child(2)');
             console.log('🧪 Botão anterior encontrado:', testPrev);
             console.log('🧪 Botão próximo encontrado:', testNext);
-            
-            // Teste direto dos eventos
-            if (testPrev) {
-                console.log('🧪 Testando evento do botão anterior...');
-                testPrev.click();
-            }
-            if (testNext) {
-                console.log('🧪 Testando evento do botão próximo...');
-                testNext.click();
-            }
         }, 1000);
     }
     
