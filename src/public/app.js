@@ -3811,6 +3811,14 @@ class DeParaUI {
             totalImages: this.slideshowImages?.length || 0
         });
         
+        // Garantir que os controles dinâmicos existam
+        const existingControls = document.getElementById('dynamic-slideshow-controls');
+        if (!existingControls && this.slideshowImages && this.slideshowImages.length > 0) {
+            console.log('🎮 Controles não existem, criando...');
+            this.createDynamicSlideshowControls();
+            this.dynamicControlsCreated = true;
+        }
+        
         let imageElement = document.getElementById('slideshow-image');
         const counterElement = document.getElementById('slideshow-counter');
         const filenameElement = document.getElementById('slideshow-filename');
@@ -3973,7 +3981,7 @@ class DeParaUI {
                         newImageElement.style.top = '50%';
                         newImageElement.style.left = '50%';
                         newImageElement.style.transform = 'translate(-50%, -50%)';
-                        newImageElement.style.zIndex = '999999';
+                        newImageElement.style.zIndex = '999998';
                         newImageElement.style.width = '100vw';
                         newImageElement.style.height = '100vh';
                         newImageElement.style.minWidth = '100vw';
@@ -4006,13 +4014,20 @@ class DeParaUI {
                             console.log('🖥️ Modal do slideshow escondido para mostrar imagem dinâmica');
                         }
                         
-                        // Criar controles de navegação para a imagem dinâmica (apenas na primeira vez)
+                        // Criar controles de navegação para a imagem dinâmica
                         if (!this.dynamicControlsCreated) {
                             this.createDynamicSlideshowControls();
                             this.dynamicControlsCreated = true;
                             console.log('🎮 Controles criados pela primeira vez');
                         } else {
-                            console.log('🎮 Controles já existem, não recriando');
+                            // Verificar se os controles ainda existem
+                            const existingControls = document.getElementById('dynamic-slideshow-controls');
+                            if (!existingControls) {
+                                this.createDynamicSlideshowControls();
+                                console.log('🎮 Controles recriados (não existiam)');
+                            } else {
+                                console.log('🎮 Controles já existem, não recriando');
+                            }
                         }
                         
                         console.log('🆕 Novo elemento criado e adicionado ao body');
