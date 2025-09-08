@@ -4200,7 +4200,13 @@ class DeParaUI {
             e.preventDefault();
             e.stopPropagation();
             console.log('🖱️ Botão anterior clicado');
-            this.previousSlide();
+            console.log('🔍 Contexto this:', this);
+            console.log('🔍 slideshowImages length:', this.slideshowImages ? this.slideshowImages.length : 'undefined');
+            if (this.previousSlide) {
+                this.previousSlide();
+            } else {
+                console.error('❌ previousSlide não está disponível');
+            }
         });
         prevBtn.addEventListener('mouseenter', () => {
             prevBtn.style.background = 'rgba(0, 0, 0, 0.9)';
@@ -4217,7 +4223,13 @@ class DeParaUI {
             e.preventDefault();
             e.stopPropagation();
             console.log('🖱️ Botão próximo clicado');
-            this.nextSlide();
+            console.log('🔍 Contexto this:', this);
+            console.log('🔍 slideshowImages length:', this.slideshowImages ? this.slideshowImages.length : 'undefined');
+            if (this.nextSlide) {
+                this.nextSlide();
+            } else {
+                console.error('❌ nextSlide não está disponível');
+            }
         });
         nextBtn.addEventListener('mouseenter', () => {
             nextBtn.style.background = 'rgba(0, 0, 0, 0.9)';
@@ -4282,6 +4294,21 @@ class DeParaUI {
         this.updateDynamicCounter();
         
         console.log('🎮 Controles de navegação dinâmicos criados');
+        console.log('🔍 Botões criados:', {
+            prevBtn: prevBtn,
+            nextBtn: nextBtn,
+            counter: counter,
+            closeBtn: closeBtn
+        });
+        
+        // Teste simples - adicionar um alerta temporário para verificar se os botões estão funcionando
+        setTimeout(() => {
+            console.log('🧪 Teste: Verificando se os botões estão no DOM...');
+            const testPrev = document.querySelector('#dynamic-slideshow-controls button:first-child');
+            const testNext = document.querySelector('#dynamic-slideshow-controls button:nth-child(2)');
+            console.log('🧪 Botão anterior encontrado:', testPrev);
+            console.log('🧪 Botão próximo encontrado:', testNext);
+        }, 1000);
     }
     
     // Atualizar contador dinâmico
