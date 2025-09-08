@@ -4319,108 +4319,58 @@ class DeParaUI {
             pointer-events: none !important;
         `;
         
-        // Botão anterior
+        // Botão anterior (simples)
         const prevBtn = document.createElement('button');
-        prevBtn.innerHTML = '←';
+        prevBtn.innerHTML = '⬅️';
         prevBtn.style.cssText = `
-            background: rgba(0, 0, 0, 0.7) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 50% !important;
-            width: 60px !important;
-            height: 60px !important;
-            font-size: 24px !important;
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: background 0.3s !important;
-            position: absolute !important;
-            left: 20px !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
-            z-index: 1000002 !important;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000002;
         `;
         prevBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🖱️ Botão anterior clicado - EVENTO FUNCIONANDO!');
-            console.log('🔍 Contexto this:', this);
-            console.log('🔍 slideshowImages length:', this.slideshowImages ? this.slideshowImages.length : 'undefined');
+            console.log('⬅️ Botão anterior clicado');
             if (this.previousSlide) {
-                console.log('✅ Chamando previousSlide()');
                 this.previousSlide();
-            } else {
-                console.error('❌ previousSlide não está disponível');
             }
         });
         
-        // Teste adicional - adicionar evento mousedown também
-        prevBtn.addEventListener('mousedown', (e) => {
-            console.log('🖱️ Botão anterior mousedown - TESTE');
-        });
-        
-        // Garantir que o botão seja clicável
-        prevBtn.style.pointerEvents = 'auto';
-        prevBtn.style.zIndex = '1000001';
-        prevBtn.addEventListener('mouseenter', () => {
-            prevBtn.style.background = 'rgba(0, 0, 0, 0.9)';
-        });
-        prevBtn.addEventListener('mouseleave', () => {
-            prevBtn.style.background = 'rgba(0, 0, 0, 0.7)';
-        });
-        
-        // Botão próximo
+        // Botão próximo (simples)
         const nextBtn = document.createElement('button');
-        nextBtn.innerHTML = '→';
+        nextBtn.innerHTML = '➡️';
         nextBtn.style.cssText = `
-            background: rgba(0, 0, 0, 0.7) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 50% !important;
-            width: 60px !important;
-            height: 60px !important;
-            font-size: 24px !important;
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: background 0.3s !important;
-            position: absolute !important;
-            right: 20px !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
-            z-index: 1000002 !important;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000002;
         `;
         nextBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🖱️ Botão próximo clicado - EVENTO FUNCIONANDO!');
-            console.log('🔍 Contexto this:', this);
-            console.log('🔍 slideshowImages length:', this.slideshowImages ? this.slideshowImages.length : 'undefined');
+            console.log('➡️ Botão próximo clicado');
             if (this.nextSlide) {
-                console.log('✅ Chamando nextSlide()');
                 this.nextSlide();
-            } else {
-                console.error('❌ nextSlide não está disponível');
             }
-        });
-        
-        // Teste adicional - adicionar evento mousedown também
-        nextBtn.addEventListener('mousedown', (e) => {
-            console.log('🖱️ Botão próximo mousedown - TESTE');
-        });
-        
-        // Garantir que o botão seja clicável
-        nextBtn.style.pointerEvents = 'auto';
-        nextBtn.style.zIndex = '1000001';
-        nextBtn.addEventListener('mouseenter', () => {
-            nextBtn.style.background = 'rgba(0, 0, 0, 0.9)';
-        });
-        nextBtn.addEventListener('mouseleave', () => {
-            nextBtn.style.background = 'rgba(0, 0, 0, 0.7)';
         });
         
         // Contador
@@ -4440,62 +4390,48 @@ class DeParaUI {
         `;
         counter.id = 'dynamic-slideshow-counter';
         
-        // Botão fechar
+        // Botão fechar (simples)
         const closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '✕';
+        closeBtn.innerHTML = '❌';
         closeBtn.style.cssText = `
-            position: absolute !important;
-            top: 20px !important;
-            right: 20px !important;
-            background: rgba(0, 0, 0, 0.7) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 50% !important;
-            width: 50px !important;
-            height: 50px !important;
-            font-size: 20px !important;
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 1000002 !important;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1000002;
         `;
         closeBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🖱️ Botão fechar clicado');
+            console.log('❌ Botão fechar clicado');
             this.closeSlideshowViewer();
         });
-        
-        // Garantir que o botão seja clicável
-        closeBtn.style.pointerEvents = 'auto';
-        closeBtn.style.zIndex = '1000001';
 
-        // Botão apagar (discreto)
+        // Botão apagar (simples)
         const deleteBtn = document.createElement('button');
         deleteBtn.id = 'dynamic-slideshow-delete';
         deleteBtn.innerHTML = '🗑️';
-        deleteBtn.title = 'Apagar foto (mover para pasta de excluídas)';
+        deleteBtn.title = 'Apagar foto';
         deleteBtn.style.cssText = `
-            position: absolute !important;
-            top: 20px !important;
-            right: 80px !important;
-            background: transparent !important;
-            border: none !important;
-            color: white !important;
-            width: 50px !important;
-            height: 50px !important;
-            font-size: 24px !important;
-            font-family: Arial, sans-serif !important;
-            cursor: pointer !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: all 0.3s !important;
-            z-index: 1000002 !important;
-            pointer-events: auto !important;
-            opacity: 0.7 !important;
+            position: absolute;
+            top: 20px;
+            right: 80px;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            border-radius: 50%;
+            z-index: 1000002;
         `;
         deleteBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4504,30 +4440,24 @@ class DeParaUI {
             this.deleteCurrentImage();
         });
 
-        // Botão ocultar (discreto)
+        // Botão ocultar (simples)
         const hideBtn = document.createElement('button');
         hideBtn.id = 'dynamic-slideshow-hide';
         hideBtn.innerHTML = '👁️';
-        hideBtn.title = 'Ocultar foto (mover para pasta de ocultas)';
+        hideBtn.title = 'Ocultar foto';
         hideBtn.style.cssText = `
-            position: absolute !important;
-            top: 20px !important;
-            right: 140px !important;
-            background: transparent !important;
-            border: none !important;
-            color: white !important;
-            width: 50px !important;
-            height: 50px !important;
-            font-size: 24px !important;
-            font-family: Arial, sans-serif !important;
-            cursor: pointer !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: all 0.3s !important;
-            z-index: 1000002 !important;
-            pointer-events: auto !important;
-            opacity: 0.7 !important;
+            position: absolute;
+            top: 20px;
+            right: 140px;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            border-radius: 50%;
+            z-index: 1000002;
         `;
         hideBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4554,57 +4484,8 @@ class DeParaUI {
         // Adicionar ao body
         document.body.appendChild(controlsContainer);
         
-        // Proteger ícones do slideshow imediatamente após criação
-        setTimeout(() => {
-            if (deleteBtn) {
-                deleteBtn.innerHTML = '🗑️';
-                deleteBtn.style.fontFamily = 'Arial, sans-serif !important';
-                deleteBtn.style.fontSize = '24px !important';
-                deleteBtn.style.color = 'white !important';
-                deleteBtn.style.background = 'transparent !important';
-                deleteBtn.style.border = 'none !important';
-                console.log('🛡️ Protegendo ícone de apagar do slideshow (pós-criação)');
-            }
-            
-            if (hideBtn) {
-                hideBtn.innerHTML = '👁️';
-                hideBtn.style.fontFamily = 'Arial, sans-serif !important';
-                hideBtn.style.fontSize = '24px !important';
-                hideBtn.style.color = 'white !important';
-                hideBtn.style.background = 'transparent !important';
-                hideBtn.style.border = 'none !important';
-                console.log('🛡️ Protegendo ícone de ocultar do slideshow (pós-criação)');
-            }
-        }, 100);
-        
-        // Proteção adicional após 1 segundo
-        setTimeout(() => {
-            const deleteBtnCheck = document.getElementById('dynamic-slideshow-delete');
-            const hideBtnCheck = document.getElementById('dynamic-slideshow-hide');
-            
-            if (deleteBtnCheck) {
-                deleteBtnCheck.innerHTML = '🗑️';
-                deleteBtnCheck.style.fontFamily = 'Arial, sans-serif !important';
-                deleteBtnCheck.style.fontSize = '24px !important';
-                deleteBtnCheck.style.color = 'white !important';
-                deleteBtnCheck.style.background = 'transparent !important';
-                deleteBtnCheck.style.border = 'none !important';
-                console.log('🛡️ Proteção adicional - ícone de apagar');
-            }
-            
-            if (hideBtnCheck) {
-                hideBtnCheck.innerHTML = '👁️';
-                hideBtnCheck.style.fontFamily = 'Arial, sans-serif !important';
-                hideBtnCheck.style.fontSize = '24px !important';
-                hideBtnCheck.style.color = 'white !important';
-                hideBtnCheck.style.background = 'transparent !important';
-                hideBtnCheck.style.border = 'none !important';
-                console.log('🛡️ Proteção adicional - ícone de ocultar');
-            }
-        }, 1000);
-        
-        // Proteção simples sem setInterval (evita loop infinito)
-        console.log('🛡️ Proteção de ícones configurada sem setInterval');
+        // Sistema simplificado - sem proteção complexa
+        console.log('✅ Botões do slideshow criados com sucesso');
         
         // Atualizar contador
         this.updateDynamicCounter();

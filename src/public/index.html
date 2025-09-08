@@ -1175,7 +1175,7 @@
                 <!-- Controles -->
                 <div class="slideshow-controls">
                     <button class="slideshow-btn" id="slideshow-prev">
-                        <span class="material-icons" data-fallback="◀">chevron_left</span>
+                        <span class="material-icons">chevron_left</span>
                     </button>
 
                     <div class="slideshow-info">
@@ -1186,13 +1186,13 @@
                     </div>
 
                     <button class="slideshow-btn" id="slideshow-next">
-                        <span class="material-icons" data-fallback="▶">chevron_right</span>
+                        <span class="material-icons">chevron_right</span>
                     </button>
                 </div>
 
                 <!-- Botão de fechar -->
                 <button class="slideshow-close-btn close-slideshow-btn" title="Fechar (ESC)">
-                    <span class="material-icons" data-fallback="✕">close</span>
+                    <span class="material-icons">close</span>
                 </button>
 
                 <!-- Indicadores de progresso -->
@@ -1440,24 +1440,12 @@
                 if (!fontFamily.includes('Material Icons') || fontFamily.includes('Arial')) {
                     console.log('⚠️ Material Icons não carregaram, aplicando fallbacks');
                     
-                    // Aplicar fallbacks aos ícones de configuração
+                    // Aplicar fallbacks apenas aos ícones de configuração (não slideshow)
                     const configIcons = document.querySelectorAll('.slideshow-organization-settings .material-icons[data-fallback]');
                     configIcons.forEach(icon => {
                         icon.style.fontSize = '0';
                         icon.style.fontFamily = 'Arial, sans-serif';
                         console.log('🔄 Aplicando fallback para ícone de configuração:', icon.textContent);
-                    });
-                    
-                    // Aplicar fallbacks aos ícones do slideshow
-                    const slideshowIcons = document.querySelectorAll('.slideshow-controls .material-icons[data-fallback], .slideshow-close-btn .material-icons[data-fallback]');
-                    slideshowIcons.forEach(icon => {
-                        const fallbackText = icon.getAttribute('data-fallback');
-                        if (fallbackText) {
-                            icon.innerHTML = fallbackText;
-                            icon.style.fontFamily = 'Arial, sans-serif';
-                            icon.style.fontSize = '24px';
-                            console.log('🔄 Aplicando fallback para ícone do slideshow:', icon.textContent, '→', fallbackText);
-                        }
                     });
                 } else {
                     console.log('✅ Material Icons carregaram corretamente');
@@ -1470,110 +1458,8 @@
                     });
                 }
                 
-                // Proteger ícones do slideshow de qualquer interferência
-                const protectSlideshowIcons = () => {
-                    const slideshowDeleteBtn = document.getElementById('dynamic-slideshow-delete');
-                    const slideshowHideBtn = document.getElementById('dynamic-slideshow-hide');
-                    
-                    if (slideshowDeleteBtn) {
-                        // Verificar se o ícone foi alterado
-                        const currentContent = slideshowDeleteBtn.innerHTML;
-                        if (currentContent !== '🗑️') {
-                            console.log('🚨 Ícone de apagar foi alterado! Restaurando...', currentContent);
-                        }
-                        
-                        // Forçar ícone correto e remover qualquer classe Material Icons
-                        slideshowDeleteBtn.innerHTML = '🗑️';
-                        slideshowDeleteBtn.className = ''; // Remover todas as classes
-                        slideshowDeleteBtn.style.cssText = `
-                            position: absolute !important;
-                            top: 20px !important;
-                            right: 20px !important;
-                            transform: none !important;
-                            background: transparent !important;
-                            border: none !important;
-                            font-size: 24px !important;
-                            color: white !important;
-                            cursor: pointer !important;
-                            z-index: 1000002 !important;
-                            width: 50px !important;
-                            height: 50px !important;
-                            display: flex !important;
-                            align-items: center !important;
-                            justify-content: center !important;
-                            font-family: Arial, sans-serif !important;
-                            opacity: 0.7 !important;
-                        `;
-                        console.log('🛡️ Protegendo ícone de apagar do slideshow');
-                    }
-                    
-                    if (slideshowHideBtn) {
-                        // Verificar se o ícone foi alterado
-                        const currentContent = slideshowHideBtn.innerHTML;
-                        if (currentContent !== '👁️') {
-                            console.log('🚨 Ícone de ocultar foi alterado! Restaurando...', currentContent);
-                        }
-                        
-                        // Forçar ícone correto e remover qualquer classe Material Icons
-                        slideshowHideBtn.innerHTML = '👁️';
-                        slideshowHideBtn.className = ''; // Remover todas as classes
-                        slideshowHideBtn.style.cssText = `
-                            position: absolute !important;
-                            top: 20px !important;
-                            right: 80px !important;
-                            transform: none !important;
-                            background: transparent !important;
-                            border: none !important;
-                            font-size: 24px !important;
-                            color: white !important;
-                            cursor: pointer !important;
-                            z-index: 1000002 !important;
-                            width: 50px !important;
-                            height: 50px !important;
-                            display: flex !important;
-                            align-items: center !important;
-                            justify-content: center !important;
-                            font-family: Arial, sans-serif !important;
-                            opacity: 0.7 !important;
-                        `;
-                        console.log('🛡️ Protegendo ícone de ocultar do slideshow');
-                    }
-                };
-                
-                // Função para aplicar fallbacks aos ícones do slideshow principal
-                const applySlideshowIconFallbacks = () => {
-                    const slideshowIcons = document.querySelectorAll('.slideshow-controls .material-icons[data-fallback], .slideshow-close-btn .material-icons[data-fallback]');
-                    slideshowIcons.forEach(icon => {
-                        const fallbackText = icon.getAttribute('data-fallback');
-                        if (fallbackText) {
-                            // Aplicar fallback apenas se o ícone não estiver funcionando
-                            const computedStyle = window.getComputedStyle(icon);
-                            const fontFamily = computedStyle.getPropertyValue('font-family');
-                            
-                            if (!fontFamily.includes('Material Icons') || fontFamily.includes('Arial')) {
-                                icon.innerHTML = fallbackText;
-                                icon.style.fontFamily = 'Arial, sans-serif';
-                                icon.style.fontSize = '24px';
-                                console.log('🔄 Aplicando fallback para ícone do slideshow:', icon.textContent, '→', fallbackText);
-                            }
-                        }
-                    });
-                };
-                
-                // Executar proteção imediatamente
-                protectSlideshowIcons();
-                applySlideshowIconFallbacks();
-                
-                // Executar proteção continuamente a cada 500ms (mais frequente)
-                const iconProtectionInterval = setInterval(() => {
-                    protectSlideshowIcons();
-                    applySlideshowIconFallbacks();
-                }, 500);
-                
-                // Limpar intervalo quando a página for fechada
-                window.addEventListener('beforeunload', () => {
-                    clearInterval(iconProtectionInterval);
-                });
+                // Sistema simplificado - sem proteção complexa
+                console.log('✅ Sistema de ícones simplificado ativado');
                 
                 document.body.removeChild(testIcon);
             }, 2000);
