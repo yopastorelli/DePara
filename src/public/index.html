@@ -52,11 +52,10 @@
             font-size: 18px;
         }
         
-        /* CSS FORÇADO para botões estáticos DENTRO do slideshow-viewer */
+        /* CSS CONSOLIDADO para botões estáticos do slideshow */
         .slideshow-viewer #static-slideshow-controls button {
-            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", Arial, sans-serif !important;
-            font-size: 24px !important;
-            line-height: 1 !important;
+            font-family: Arial, sans-serif !important;
+            font-size: 14px !important;
             color: white !important;
             background: rgba(0,0,0,0.8) !important;
             border: none !important;
@@ -68,48 +67,14 @@
             justify-content: center !important;
             text-align: center !important;
             white-space: nowrap !important;
-        }
-        
-        /* GARANTIR que emojis sejam exibidos e desabilitar Material Icons */
-        .slideshow-viewer #static-slideshow-controls button::before,
-        .slideshow-viewer #static-slideshow-controls button::after {
-            display: none !important;
-            content: none !important;
-        }
-        
-        /* SOBRESCREVER qualquer CSS conflitante */
-        .slideshow-viewer #static-slideshow-controls button {
-            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", Arial, sans-serif !important;
-            font-size: 24px !important;
-            color: white !important;
-        }
-        
-        /* GARANTIR que Material Icons não interfira */
-        .slideshow-viewer #static-slideshow-controls .material-icons,
-        .slideshow-viewer #static-slideshow-controls button .material-icons {
-            display: none !important;
-        }
-
-        /* BOTÕES ELEGANTES COM HOVER */
-        .slideshow-viewer #static-slideshow-controls button {
             opacity: 0.3 !important;
-            transition: opacity 0.3s ease !important;
+            transition: all 0.3s ease !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         
         .slideshow-viewer:hover #static-slideshow-controls button {
             opacity: 1 !important;
-        }
-        
-        /* CONTADOR E FILENAME SEMPRE VISÍVEIS */
-        .slideshow-viewer #static-slideshow-controls #static-counter,
-        .slideshow-viewer #static-slideshow-controls #static-filename {
-            opacity: 1 !important;
-        }
-        
-        .slideshow-viewer #static-slideshow-controls button {
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         
         .slideshow-viewer #static-slideshow-controls button:hover {
@@ -118,10 +83,18 @@
             background: rgba(0,0,0,0.9) !important;
         }
         
+        /* CONTADOR E FILENAME SEMPRE VISÍVEIS */
         .slideshow-viewer #static-slideshow-controls #static-counter,
         .slideshow-viewer #static-slideshow-controls #static-filename {
+            opacity: 1 !important;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
+        }
+        
+        /* DESABILITAR Material Icons */
+        .slideshow-viewer #static-slideshow-controls .material-icons,
+        .slideshow-viewer #static-slideshow-controls button .material-icons {
+            display: none !important;
         }
     </style>
     

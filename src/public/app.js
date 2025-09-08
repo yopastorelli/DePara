@@ -8384,30 +8384,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        window.startSlideshow = function() {
-            const sourcePath = document.getElementById('slideshow-folder-path').value.trim();
-            if (!sourcePath) {
-                alert('Por favor, selecione uma pasta de origem para o slideshow.');
-                return;
-            }
-            
-            // Salvar pasta selecionada no localStorage
-            localStorage.setItem('slideshowSelectedPath', sourcePath);
-            console.log('💾 Pasta do slideshow salva:', sourcePath);
-            
-            console.log('✅ Iniciando slideshow para:', sourcePath);
-            
-            // Fechar modal
-            window.closeSlideshowFolderModal();
-            
-            // Chamar a função que realmente inicia o slideshow
-            if (window.deParaUI) {
-                window.deParaUI.startSlideshowFromModal();
-            } else {
-                // Fallback para função global
-                startSlideshow();
-            }
-        };
+        // Função startSlideshow removida - usando implementação da classe DeParaUI
+        // window.startSlideshow agora é apenas um alias para window.deParaUI.startSlideshowFromModal()
 
         // Funções de slideshow (estas são métodos da classe DeParaUI)
         window.previousImage = function() {
