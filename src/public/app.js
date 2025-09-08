@@ -4444,12 +4444,78 @@ class DeParaUI {
         // Garantir que o botão seja clicável
         closeBtn.style.pointerEvents = 'auto';
         closeBtn.style.zIndex = '1000001';
-        
+
+        // Botão apagar (discreto)
+        const deleteBtn = document.createElement('button');
+        deleteBtn.id = 'dynamic-slideshow-delete';
+        deleteBtn.innerHTML = '🗑️';
+        deleteBtn.title = 'Apagar foto (mover para pasta de excluídas)';
+        deleteBtn.style.cssText = `
+            position: absolute !important;
+            top: 20px !important;
+            right: 80px !important;
+            background: rgba(255, 0, 0, 0.1) !important;
+            border: 1px solid rgba(255, 0, 0, 0.3) !important;
+            color: white !important;
+            border-radius: 50% !important;
+            width: 50px !important;
+            height: 50px !important;
+            font-size: 18px !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.3s !important;
+            z-index: 1000002 !important;
+            pointer-events: auto !important;
+            opacity: 0.6 !important;
+        `;
+        deleteBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🗑️ Botão apagar clicado');
+            this.deleteCurrentImage();
+        });
+
+        // Botão ocultar (discreto)
+        const hideBtn = document.createElement('button');
+        hideBtn.id = 'dynamic-slideshow-hide';
+        hideBtn.innerHTML = '👁️';
+        hideBtn.title = 'Ocultar foto (mover para pasta de ocultas)';
+        hideBtn.style.cssText = `
+            position: absolute !important;
+            top: 20px !important;
+            right: 140px !important;
+            background: rgba(255, 165, 0, 0.1) !important;
+            border: 1px solid rgba(255, 165, 0, 0.3) !important;
+            color: white !important;
+            border-radius: 50% !important;
+            width: 50px !important;
+            height: 50px !important;
+            font-size: 18px !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.3s !important;
+            z-index: 1000002 !important;
+            pointer-events: auto !important;
+            opacity: 0.6 !important;
+        `;
+        hideBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('👁️ Botão ocultar clicado');
+            this.hideCurrentImage();
+        });
+
         // Adicionar elementos ao container
         controlsContainer.appendChild(prevBtn);
         controlsContainer.appendChild(nextBtn);
         controlsContainer.appendChild(counter);
         controlsContainer.appendChild(closeBtn);
+        controlsContainer.appendChild(deleteBtn);
+        controlsContainer.appendChild(hideBtn);
         
         // Adicionar ao body
         document.body.appendChild(controlsContainer);
@@ -4643,6 +4709,16 @@ class DeParaUI {
         if (dynamicControls) {
             dynamicControls.remove();
             console.log('🧹 Controles dinâmicos removidos');
+        }
+
+        // Remover botões de organização dinâmicos
+        const deleteBtn = document.getElementById('dynamic-slideshow-delete');
+        if (deleteBtn) {
+            deleteBtn.remove();
+        }
+        const hideBtn = document.getElementById('dynamic-slideshow-hide');
+        if (hideBtn) {
+            hideBtn.remove();
         }
         
         // Restaurar fundo original do body
