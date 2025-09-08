@@ -3600,8 +3600,8 @@ class DeParaUI {
         // Entrar em fullscreen automaticamente
         this.enterFullscreen();
 
+        // Atualizar exibição e iniciar auto-play APÓS a imagem ser carregada
         this.updateSlideDisplay();
-        this.startAutoPlay();
     }
 
     // Entrar em fullscreen
@@ -3901,6 +3901,12 @@ class DeParaUI {
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'none';
                 
+                // Iniciar auto-play apenas na primeira imagem carregada
+                if (this.currentSlideIndex === 0 && this.slideshowPlaying) {
+                    console.log('🎬 Iniciando auto-play após primeira imagem carregada');
+                    this.startAutoPlay();
+                }
+                
                 // Pré-carregar próxima imagem
                 this.preloadNextImage();
             };
@@ -3929,6 +3935,13 @@ class DeParaUI {
     nextSlide() {
         if (this.slideshowImages.length === 0) return;
 
+        console.log('➡️ Navegando para próximo slide...');
+        console.log('📊 Estado atual:', {
+            currentIndex: this.currentSlideIndex,
+            totalImages: this.slideshowImages.length,
+            nextIndex: (this.currentSlideIndex + 1) % this.slideshowImages.length
+        });
+
         this.currentSlideIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
         this.updateSlideDisplay();
     }
@@ -3936,6 +3949,13 @@ class DeParaUI {
     // Slide anterior
     previousSlide() {
         if (this.slideshowImages.length === 0) return;
+
+        console.log('⬅️ Navegando para slide anterior...');
+        console.log('📊 Estado atual:', {
+            currentIndex: this.currentSlideIndex,
+            totalImages: this.slideshowImages.length,
+            prevIndex: this.currentSlideIndex === 0 ? this.slideshowImages.length - 1 : this.currentSlideIndex - 1
+        });
 
         this.currentSlideIndex = this.currentSlideIndex === 0 ?
             this.slideshowImages.length - 1 :
@@ -3964,9 +3984,15 @@ class DeParaUI {
         if (this.slideshowPlaying && this.slideshowImages.length > 1) {
             const intervalMs = this.slideshowConfig.interval * 1000;
             this.autoPlayInterval = setInterval(() => {
+                console.log('⏰ Auto-play: mudando para próximo slide...');
                 this.nextSlide();
             }, intervalMs);
             console.log(`⏰ Auto-play iniciado com intervalo de ${this.slideshowConfig.interval}s`);
+        } else {
+            console.log('⏰ Auto-play não iniciado:', {
+                slideshowPlaying: this.slideshowPlaying,
+                imageCount: this.slideshowImages.length
+            });
         }
     }
 
