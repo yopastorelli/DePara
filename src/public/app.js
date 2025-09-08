@@ -3620,13 +3620,32 @@ class DeParaUI {
     // Atualizar exibição do slide atual
     async updateSlideDisplay() {
         console.log('🖼️ Atualizando exibição do slide...');
-        
+
+        // Verificar contexto geral antes de prosseguir
+        console.log('🌐 Contexto geral:', {
+            documentReady: document.readyState,
+            windowLoaded: window.onload ? 'loaded' : 'not loaded',
+            slideshowPlaying: this.slideshowPlaying,
+            currentSlideIndex: this.currentSlideIndex,
+            totalImages: this.slideshowImages?.length || 0
+        });
+
         const imageElement = document.getElementById('slideshow-image');
         const counterElement = document.getElementById('slideshow-counter');
         const filenameElement = document.getElementById('slideshow-filename');
         const loadingElement = document.getElementById('slideshow-loading');
         const errorElement = document.getElementById('slideshow-error');
         const imageContainer = document.querySelector('.slideshow-image-container');
+
+        // Verificar se o slideshow-viewer está visível
+        const viewer = document.getElementById('slideshow-viewer');
+        if (viewer) {
+            console.log('🎬 Estado do viewer:', {
+                display: viewer.style.display,
+                visibility: viewer.style.visibility,
+                rect: viewer.getBoundingClientRect()
+            });
+        }
         
         console.log('🔍 Elementos encontrados:', {
             imageElement: !!imageElement,
@@ -3715,73 +3734,137 @@ class DeParaUI {
             img.onload = () => {
                 clearTimeout(loadTimeout);
                 console.log('✅ Imagem carregada com sucesso:', imageUrl);
+
                 if (imageElement) {
-                    imageElement.src = imageUrl;
-                    imageElement.alt = currentImage.name;
-                    imageElement.style.display = 'block';
-                    imageElement.style.visibility = 'visible';
-                    imageElement.style.opacity = '1';
-                    imageElement.style.position = 'relative';
-                    imageElement.style.zIndex = '1';
-                    
-                    // FORÇAR DIMENSÕES MÍNIMAS para garantir que a imagem seja exibida
-                    imageElement.style.minWidth = '200px';
-                    imageElement.style.minHeight = '200px';
-                    imageElement.style.maxWidth = '100%';
-                    imageElement.style.maxHeight = '100%';
-                    imageElement.style.width = 'auto';
-                    imageElement.style.height = 'auto';
-                    
-                    console.log('🖼️ Imagem exibida no elemento:', imageElement.src);
-                    console.log('🖼️ Estilo do elemento:', {
-                        display: imageElement.style.display,
-                        visibility: imageElement.style.visibility,
-                        opacity: imageElement.style.opacity,
-                        width: imageElement.style.width,
-                        height: imageElement.style.height,
-                        minWidth: imageElement.style.minWidth,
-                        minHeight: imageElement.style.minHeight,
-                        position: imageElement.style.position,
-                        zIndex: imageElement.style.zIndex
+                    // SOLUÇÃO RADICAL: Substituir completamente o elemento se necessário
+                    let targetElement = imageElement;
+                    let needsReplacement = false;
+
+                    // Verificar se o elemento atual tem problemas
+                    const currentRect = imageElement.getBoundingClientRect();
+                    if (currentRect.width === 0 || currentRect.height === 0) {
+                        console.warn('⚠️ Elemento atual tem dimensões zero, criando novo elemento...');
+                        needsReplacement = true;
+
+                        // Criar novo elemento
+                        const newImageElement = document.createElement('img');
+                        newImageElement.id = 'slideshow-image-new';
+                        newImageElement.alt = currentImage.name;
+                        newImageElement.style.cssText = `
+                            display: block !important;
+                            visibility: visible !important;
+                            opacity: 1 !important;
+                            position: relative !important;
+                            z-index: 1000 !important;
+                            width: 100% !important;
+                            height: 100% !important;
+                            min-width: 300px !important;
+                            min-height: 300px !important;
+                            max-width: 100% !important;
+                            max-height: 100% !important;
+                            object-fit: contain !important;
+                            border: 3px solid red !important;
+                            background: rgba(255, 255, 255, 0.1) !important;
+                        `;
+
+                        // Substituir o elemento antigo
+                        imageElement.parentNode.replaceChild(newImageElement, imageElement);
+                        targetElement = newImageElement;
+                        console.log('🔄 Novo elemento criado e substituído');
+                    }
+
+                    // Configurar o elemento (novo ou antigo)
+                    targetElement.src = imageUrl;
+                    targetElement.alt = currentImage.name;
+
+                    // Aplicar estilos forçados com !important
+                    targetElement.style.setProperty('display', 'block', 'important');
+                    targetElement.style.setProperty('visibility', 'visible', 'important');
+                    targetElement.style.setProperty('opacity', '1', 'important');
+                    targetElement.style.setProperty('position', 'relative', 'important');
+                    targetElement.style.setProperty('z-index', '1000', 'important');
+
+                    if (!needsReplacement) {
+                        // Só aplicar estes estilos se não foi substituído
+                        targetElement.style.setProperty('width', 'auto', 'important');
+                        targetElement.style.setProperty('height', 'auto', 'important');
+                        targetElement.style.setProperty('min-width', '300px', 'important');
+                        targetElement.style.setProperty('min-height', '300px', 'important');
+                        targetElement.style.setProperty('max-width', '100%', 'important');
+                        targetElement.style.setProperty('max-height', '100%', 'important');
+                        targetElement.style.setProperty('object-fit', 'contain', 'important');
+                        targetElement.style.setProperty('border', '3px solid red', 'important');
+                    }
+
+                    console.log('🖼️ Imagem exibida no elemento:', targetElement.src);
+                    console.log('🖼️ Tipo de elemento:', targetElement.tagName);
+                    console.log('🖼️ ID do elemento:', targetElement.id);
+
+                    // Forçar reflow múltiplas vezes
+                    targetElement.offsetHeight;
+                    targetElement.offsetWidth;
+                    targetElement.getBoundingClientRect();
+
+                    // Verificar contexto do documento
+                    console.log('📄 Contexto do documento:', {
+                        readyState: document.readyState,
+                        hidden: document.hidden,
+                        visibilityState: document.visibilityState
                     });
-                    
-                    // Forçar reflow para garantir que a imagem seja exibida
-                    imageElement.offsetHeight;
-                    
-                    // Verificar se a imagem está realmente visível
-                    const rect = imageElement.getBoundingClientRect();
+
+                    // Verificar se está no viewport correto
+                    const rect = targetElement.getBoundingClientRect();
+                    const viewport = {
+                        width: window.innerWidth,
+                        height: window.innerHeight,
+                        scrollX: window.scrollX,
+                        scrollY: window.scrollY
+                    };
+
                     console.log('🖼️ Posição da imagem:', {
                         top: rect.top,
                         left: rect.left,
                         width: rect.width,
                         height: rect.height,
-                        visible: rect.width > 0 && rect.height > 0
+                        visible: rect.width > 0 && rect.height > 0,
+                        inViewport: rect.top >= 0 && rect.left >= 0 &&
+                                   rect.bottom <= viewport.height &&
+                                   rect.right <= viewport.width
                     });
-                    
-                    // Se ainda não estiver visível, forçar mais estilos
+
+                    console.log('🖼️ Viewport:', viewport);
+
+                    // Forçar renderização adicional se ainda não estiver visível
                     if (rect.width === 0 || rect.height === 0) {
-                        console.warn('⚠️ Imagem com dimensões zero, forçando estilos adicionais...');
-                        imageElement.style.width = '300px';
-                        imageElement.style.height = '300px';
-                        imageElement.style.objectFit = 'contain';
-                        imageElement.style.border = '2px solid red'; // Para debug visual
-                        
-                        // Verificar novamente
-                        const newRect = imageElement.getBoundingClientRect();
-                        console.log('🖼️ Posição após forçar dimensões:', {
-                            top: newRect.top,
-                            left: newRect.left,
-                            width: newRect.width,
-                            height: newRect.height,
-                            visible: newRect.width > 0 && newRect.height > 0
-                        });
+                        console.error('🚨 CRÍTICO: Imagem ainda com dimensões zero após todas as tentativas!');
+
+                        // Último recurso: forçar com setTimeout
+                        setTimeout(() => {
+                            console.log('⏰ Tentativa final com setTimeout...');
+                            targetElement.style.setProperty('width', '400px', 'important');
+                            targetElement.style.setProperty('height', '400px', 'important');
+                            targetElement.style.setProperty('position', 'absolute', 'important');
+                            targetElement.style.setProperty('top', '50%', 'important');
+                            targetElement.style.setProperty('left', '50%', 'important');
+                            targetElement.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
+
+                            const finalRect = targetElement.getBoundingClientRect();
+                            console.log('🖼️ Posição FINAL:', {
+                                top: finalRect.top,
+                                left: finalRect.left,
+                                width: finalRect.width,
+                                height: finalRect.height,
+                                visible: finalRect.width > 0 && finalRect.height > 0
+                            });
+                        }, 100);
                     }
                 } else {
                     console.error('❌ Elemento slideshow-image não encontrado!');
                 }
+
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'none';
-                
+
                 // Pré-carregar próxima imagem
                 this.preloadNextImage();
             };
