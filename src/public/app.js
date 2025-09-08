@@ -4308,92 +4308,116 @@ class DeParaUI {
 
     // Criar controles de navegação para slideshow dinâmico
     createDynamicSlideshowControls() {
-        console.log('🔥 CRIANDO CONTROLES NUCLEAR - SEM CSS CONFLITANTE');
+        console.log('🔥 USANDO BOTÕES ESTÁTICOS - SOLUÇÃO DEFINITIVA');
         
-        // Remover controles antigos se existirem
+        // Remover controles dinâmicos antigos se existirem
         const oldControls = document.getElementById('dynamic-slideshow-controls');
         if (oldControls) {
             oldControls.remove();
         }
         
-        // Criar container de controles com HTML PURO
-        const controlsContainer = document.createElement('div');
-        controlsContainer.id = 'dynamic-slideshow-controls';
+        // Mostrar controles estáticos
+        const staticControls = document.getElementById('static-slideshow-controls');
+        if (staticControls) {
+            staticControls.style.display = 'block';
+            console.log('✅ Controles estáticos exibidos');
+        } else {
+            console.error('❌ Controles estáticos não encontrados');
+        }
         
-        // HTML PURO para os botões - SEM CSS INLINE
-        controlsContainer.innerHTML = `
-            <button id="slideshow-prev-nuclear" style="left: 20px; top: 50%; transform: translateY(-50%);">⬅️</button>
-            <button id="slideshow-next-nuclear" style="right: 20px; top: 50%; transform: translateY(-50%);">➡️</button>
-            <button id="slideshow-close-nuclear" style="top: 20px; right: 20px; width: 50px; height: 50px; font-size: 20px;">❌</button>
-            <button id="slideshow-delete-nuclear" style="top: 20px; right: 80px; width: 50px; height: 50px;">🗑️</button>
-            <button id="slideshow-hide-nuclear" style="top: 20px; right: 140px; width: 50px; height: 50px;">👁️</button>
-            <div id="dynamic-slideshow-counter" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 16px; z-index: 9999999; pointer-events: none;"></div>
-            <div id="dynamic-slideshow-filename" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 9999999; pointer-events: none; max-width: 80%; text-align: center; word-break: break-word;"></div>
-        `;
+        // Configurar event listeners para botões estáticos
+        this.setupStaticButtons();
         
-        // Adicionar event listeners
-        const prevBtn = controlsContainer.querySelector('#slideshow-prev-nuclear');
-        const nextBtn = controlsContainer.querySelector('#slideshow-next-nuclear');
-        const closeBtn = controlsContainer.querySelector('#slideshow-close-nuclear');
-        const deleteBtn = controlsContainer.querySelector('#slideshow-delete-nuclear');
-        const hideBtn = controlsContainer.querySelector('#slideshow-hide-nuclear');
-        
-        prevBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('⬅️ Botão anterior clicado (NUCLEAR)');
-            this.previousSlide();
-        });
-        
-        nextBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('➡️ Botão próximo clicado (NUCLEAR)');
-            this.nextSlide();
-        });
-        
-        closeBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('❌ Botão fechar clicado (NUCLEAR)');
-            this.closeSlideshowViewer();
-        });
-        
-        deleteBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🗑️ Botão apagar clicado (NUCLEAR)');
-            this.deleteCurrentImage();
-        });
-        
-        hideBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('👁️ Botão ocultar clicado (NUCLEAR)');
-            this.hideCurrentImage();
-        });
-        
-        // Debug: Verificar se botões foram criados corretamente
-        console.log('🔍 Debug botões NUCLEAR criados:', {
-            prevBtn: { innerHTML: prevBtn.innerHTML, textContent: prevBtn.textContent },
-            nextBtn: { innerHTML: nextBtn.innerHTML, textContent: nextBtn.textContent },
-            closeBtn: { innerHTML: closeBtn.innerHTML, textContent: closeBtn.textContent },
-            deleteBtn: { innerHTML: deleteBtn.innerHTML, textContent: deleteBtn.textContent },
-            hideBtn: { innerHTML: hideBtn.innerHTML, textContent: hideBtn.textContent }
-        });
-        
-        // Adicionar ao body
-        document.body.appendChild(controlsContainer);
         this.dynamicControlsCreated = true;
         
-        console.log('✅ Controles NUCLEAR criados - EMOJIS DEVEM APARECER!');
-        
         // Atualizar contador
-        this.updateDynamicCounter();
+        this.updateStaticCounter();
+    }
+    
+    setupStaticButtons() {
+        // Botão anterior
+        const prevBtn = document.getElementById('static-prev-btn');
+        if (prevBtn && !prevBtn.hasAttribute('data-listener-added')) {
+            prevBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('⬅️ Botão anterior clicado (ESTÁTICO)');
+                this.previousSlide();
+            });
+            prevBtn.setAttribute('data-listener-added', 'true');
+        }
+        
+        // Botão próximo
+        const nextBtn = document.getElementById('static-next-btn');
+        if (nextBtn && !nextBtn.hasAttribute('data-listener-added')) {
+            nextBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('➡️ Botão próximo clicado (ESTÁTICO)');
+                this.nextSlide();
+            });
+            nextBtn.setAttribute('data-listener-added', 'true');
+        }
+        
+        // Botão fechar
+        const closeBtn = document.getElementById('static-close-btn');
+        if (closeBtn && !closeBtn.hasAttribute('data-listener-added')) {
+            closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('❌ Botão fechar clicado (ESTÁTICO)');
+                this.closeSlideshowViewer();
+            });
+            closeBtn.setAttribute('data-listener-added', 'true');
+        }
+        
+        // Botão apagar
+        const deleteBtn = document.getElementById('static-delete-btn');
+        if (deleteBtn && !deleteBtn.hasAttribute('data-listener-added')) {
+            deleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🗑️ Botão apagar clicado (ESTÁTICO)');
+                this.deleteCurrentImage();
+            });
+            deleteBtn.setAttribute('data-listener-added', 'true');
+        }
+        
+        // Botão ocultar
+        const hideBtn = document.getElementById('static-hide-btn');
+        if (hideBtn && !hideBtn.hasAttribute('data-listener-added')) {
+            hideBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('👁️ Botão ocultar clicado (ESTÁTICO)');
+                this.hideCurrentImage();
+            });
+            hideBtn.setAttribute('data-listener-added', 'true');
+        }
+        
+        console.log('✅ Event listeners dos botões estáticos configurados');
+    }
+    
+    updateStaticCounter() {
+        const counter = document.getElementById('static-counter');
+        const filename = document.getElementById('static-filename');
+        
+        if (counter && this.slideshowImages) {
+            counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+        }
+        
+        if (filename && this.slideshowImages && this.slideshowImages[this.currentSlideIndex]) {
+            const currentImage = this.slideshowImages[this.currentSlideIndex];
+            filename.textContent = currentImage.name || 'Arquivo sem nome';
+        }
     }
     
     // Atualizar contador dinâmico
     updateDynamicCounter() {
+        // Usar botões estáticos se disponíveis
+        this.updateStaticCounter();
+        
+        // Fallback para botões dinâmicos se existirem
         const counter = document.getElementById('dynamic-slideshow-counter');
         const filename = document.getElementById('dynamic-slideshow-filename');
         
@@ -4571,6 +4595,13 @@ class DeParaUI {
         if (dynamicControls) {
             dynamicControls.remove();
             console.log('🧹 Controles dinâmicos removidos');
+        }
+        
+        // Esconder controles estáticos
+        const staticControls = document.getElementById('static-slideshow-controls');
+        if (staticControls) {
+            staticControls.style.display = 'none';
+            console.log('🧹 Controles estáticos escondidos');
         }
 
         // Remover botões de organização dinâmicos
