@@ -3814,12 +3814,12 @@ class DeParaUI {
                             left: 50% !important;
                             transform: translate(-50%, -50%) !important;
                             z-index: 99999 !important;
-                            width: 80vw !important;
-                            height: 80vh !important;
-                            min-width: 600px !important;
-                            min-height: 400px !important;
-                            max-width: 80vw !important;
-                            max-height: 80vh !important;
+                            width: 100vw !important;
+                            height: 100vh !important;
+                            min-width: 100vw !important;
+                            min-height: 100vh !important;
+                            max-width: 100vw !important;
+                            max-height: 100vh !important;
                             object-fit: contain !important;
                             border: 5px solid #4CAF50 !important;
                             background: rgba(0, 0, 0, 0.1) !important;
@@ -3836,12 +3836,12 @@ class DeParaUI {
                         newImageElement.style.left = '50%';
                         newImageElement.style.transform = 'translate(-50%, -50%)';
                         newImageElement.style.zIndex = '99999';
-                        newImageElement.style.width = '80vw';
-                        newImageElement.style.height = '80vh';
-                        newImageElement.style.minWidth = '600px';
-                        newImageElement.style.minHeight = '400px';
-                        newImageElement.style.maxWidth = '80vw';
-                        newImageElement.style.maxHeight = '80vh';
+                        newImageElement.style.width = '100vw';
+                        newImageElement.style.height = '100vh';
+                        newImageElement.style.minWidth = '100vw';
+                        newImageElement.style.minHeight = '100vh';
+                        newImageElement.style.maxWidth = '100vw';
+                        newImageElement.style.maxHeight = '100vh';
                         newImageElement.style.objectFit = 'contain';
                         newImageElement.style.border = '5px solid #4CAF50';
                         newImageElement.style.background = 'rgba(0, 0, 0, 0.1)';
@@ -3862,6 +3862,9 @@ class DeParaUI {
                             slideshowViewer.style.display = 'none';
                             console.log('🖥️ Modal do slideshow escondido para mostrar imagem dinâmica');
                         }
+                        
+                        // Criar controles de navegação para a imagem dinâmica
+                        this.createDynamicSlideshowControls();
                         
                         console.log('🆕 Novo elemento criado e adicionado ao body');
                         console.log('🔍 Debug Raspberry Pi - Elemento criado:', {
@@ -4084,6 +4087,7 @@ class DeParaUI {
 
         this.currentSlideIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
         this.updateSlideDisplay();
+        this.updateDynamicCounter();
     }
 
     // Slide anterior
@@ -4101,6 +4105,7 @@ class DeParaUI {
             this.slideshowImages.length - 1 :
             this.currentSlideIndex - 1;
         this.updateSlideDisplay();
+        this.updateDynamicCounter();
     }
 
     // Alternar play/pause
@@ -4144,6 +4149,130 @@ class DeParaUI {
         }
     }
 
+    // Criar controles de navegação para slideshow dinâmico
+    createDynamicSlideshowControls() {
+        // Remover controles antigos se existirem
+        const oldControls = document.getElementById('dynamic-slideshow-controls');
+        if (oldControls) {
+            oldControls.remove();
+        }
+        
+        // Criar container de controles
+        const controlsContainer = document.createElement('div');
+        controlsContainer.id = 'dynamic-slideshow-controls';
+        controlsContainer.style.cssText = `
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 1000000 !important;
+            pointer-events: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 20px !important;
+        `;
+        
+        // Botão anterior
+        const prevBtn = document.createElement('button');
+        prevBtn.innerHTML = '←';
+        prevBtn.style.cssText = `
+            background: rgba(0, 0, 0, 0.7) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 50% !important;
+            width: 60px !important;
+            height: 60px !important;
+            font-size: 24px !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: background 0.3s !important;
+        `;
+        prevBtn.addEventListener('click', () => this.previousSlide());
+        prevBtn.addEventListener('mouseenter', () => {
+            prevBtn.style.background = 'rgba(0, 0, 0, 0.9)';
+        });
+        prevBtn.addEventListener('mouseleave', () => {
+            prevBtn.style.background = 'rgba(0, 0, 0, 0.7)';
+        });
+        
+        // Botão próximo
+        const nextBtn = document.createElement('button');
+        nextBtn.innerHTML = '→';
+        nextBtn.style.cssText = prevBtn.style.cssText;
+        nextBtn.addEventListener('click', () => this.nextSlide());
+        nextBtn.addEventListener('mouseenter', () => {
+            nextBtn.style.background = 'rgba(0, 0, 0, 0.9)';
+        });
+        nextBtn.addEventListener('mouseleave', () => {
+            nextBtn.style.background = 'rgba(0, 0, 0, 0.7)';
+        });
+        
+        // Contador
+        const counter = document.createElement('div');
+        counter.style.cssText = `
+            position: absolute !important;
+            top: 20px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            background: rgba(0, 0, 0, 0.7) !important;
+            color: white !important;
+            padding: 10px 20px !important;
+            border-radius: 20px !important;
+            font-size: 16px !important;
+            pointer-events: none !important;
+        `;
+        counter.id = 'dynamic-slideshow-counter';
+        
+        // Botão fechar
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '✕';
+        closeBtn.style.cssText = `
+            position: absolute !important;
+            top: 20px !important;
+            right: 20px !important;
+            background: rgba(0, 0, 0, 0.7) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 50% !important;
+            width: 50px !important;
+            height: 50px !important;
+            font-size: 20px !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        `;
+        closeBtn.addEventListener('click', () => this.closeSlideshowViewer());
+        
+        // Adicionar elementos ao container
+        controlsContainer.appendChild(prevBtn);
+        controlsContainer.appendChild(nextBtn);
+        controlsContainer.appendChild(counter);
+        controlsContainer.appendChild(closeBtn);
+        
+        // Adicionar ao body
+        document.body.appendChild(controlsContainer);
+        
+        // Atualizar contador
+        this.updateDynamicCounter();
+        
+        console.log('🎮 Controles de navegação dinâmicos criados');
+    }
+    
+    // Atualizar contador dinâmico
+    updateDynamicCounter() {
+        const counter = document.getElementById('dynamic-slideshow-counter');
+        if (counter && this.slideshowImages) {
+            counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+        }
+    }
+
     // Fechar viewer do slideshow
     closeSlideshowViewer() {
         this.stopAutoPlay();
@@ -4153,6 +4282,13 @@ class DeParaUI {
         if (dynamicElement) {
             dynamicElement.remove();
             console.log('🧹 Elemento dinâmico removido');
+        }
+        
+        // Limpar controles dinâmicos
+        const dynamicControls = document.getElementById('dynamic-slideshow-controls');
+        if (dynamicControls) {
+            dynamicControls.remove();
+            console.log('🧹 Controles dinâmicos removidos');
         }
         
         // Mostrar o modal do slideshow novamente
