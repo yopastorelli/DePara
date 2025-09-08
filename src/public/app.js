@@ -3987,11 +3987,11 @@ class DeParaUI {
                             display: block !important;
                             visibility: visible !important;
                             opacity: 1 !important;
-                            position: fixed !important;
+                            position: absolute !important;
                             top: 50% !important;
                             left: 50% !important;
                             transform: translate(-50%, -50%) !important;
-                            z-index: 999997 !important;
+                            z-index: 1 !important;
                             width: 100vw !important;
                             height: 100vh !important;
                             min-width: 100vw !important;
@@ -4010,11 +4010,11 @@ class DeParaUI {
                         newImageElement.style.display = 'block';
                         newImageElement.style.visibility = 'visible';
                         newImageElement.style.opacity = '1';
-                        newImageElement.style.position = 'fixed';
+                        newImageElement.style.position = 'absolute';
                         newImageElement.style.top = '50%';
                         newImageElement.style.left = '50%';
                         newImageElement.style.transform = 'translate(-50%, -50%)';
-                        newImageElement.style.zIndex = '999997';
+                        newImageElement.style.zIndex = '1';
                         newImageElement.style.width = '100vw';
                         newImageElement.style.height = '100vh';
                         newImageElement.style.minWidth = '100vw';
@@ -4027,12 +4027,19 @@ class DeParaUI {
                         newImageElement.style.boxShadow = 'none';
                         newImageElement.style.borderRadius = '0';
                         
-                        // Adicionar ao body (fora do container problemático)
-                        document.body.appendChild(newImageElement);
+                        // Adicionar DENTRO do slideshow-viewer para manter contexto
+                        const slideshowViewer = document.getElementById('slideshow-viewer');
+                        if (slideshowViewer) {
+                            slideshowViewer.appendChild(newImageElement);
+                            console.log('✅ Imagem adicionada DENTRO do slideshow-viewer');
+                        } else {
+                            document.body.appendChild(newImageElement);
+                            console.log('⚠️ slideshow-viewer não encontrado, adicionando ao body');
+                        }
                         targetElement = newImageElement;
                         
-                        // Garantir que a imagem esteja acima de todos os modais mas abaixo dos controles
-                        newImageElement.style.zIndex = '999997';
+                        // Garantir que a imagem esteja dentro do viewer mas abaixo dos controles estáticos
+                        newImageElement.style.zIndex = '1';
                         newImageElement.style.pointerEvents = 'none';
                         
                         // Adicionar fundo preto atrás de tudo
