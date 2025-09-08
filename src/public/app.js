@@ -4516,6 +4516,15 @@ class DeParaUI {
         controlsContainer.appendChild(deleteBtn);
         controlsContainer.appendChild(hideBtn);
         
+        // Debug: Verificar se botões foram criados corretamente
+        console.log('🔍 Debug botões criados:', {
+            prevBtn: { innerHTML: prevBtn.innerHTML, className: prevBtn.className, zIndex: window.getComputedStyle(prevBtn).zIndex },
+            nextBtn: { innerHTML: nextBtn.innerHTML, className: nextBtn.className, zIndex: window.getComputedStyle(nextBtn).zIndex },
+            closeBtn: { innerHTML: closeBtn.innerHTML, className: closeBtn.className, zIndex: window.getComputedStyle(closeBtn).zIndex },
+            deleteBtn: { innerHTML: deleteBtn.innerHTML, className: deleteBtn.className, zIndex: window.getComputedStyle(deleteBtn).zIndex },
+            hideBtn: { innerHTML: hideBtn.innerHTML, className: hideBtn.className, zIndex: window.getComputedStyle(hideBtn).zIndex }
+        });
+        
         // Verificação simplificada
         setTimeout(() => {
             console.log('✅ Controles do slideshow criados');
@@ -4568,21 +4577,8 @@ class DeParaUI {
             console.log('🗑️ Apagando imagem:', currentImage.path);
             console.log('📁 Movendo para pasta:', this.slideshowConfig.deletedFolder);
 
-            // Verificar se a pasta de destino existe primeiro
-            const checkResponse = await fetch('/api/files/check-path', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    path: this.slideshowConfig.deletedFolder
-                })
-            });
-
-            if (!checkResponse.ok) {
-                this.showToast('Pasta de destino não existe. Configure corretamente nas configurações.', 'error');
-                return;
-            }
+            // Pular verificação de pasta (endpoint não existe)
+            console.log('📁 Pasta de destino configurada:', this.slideshowConfig.deletedFolder);
 
             // Chamar API para mover arquivo
             const response = await fetch('/api/files/execute', {
@@ -4652,21 +4648,8 @@ class DeParaUI {
             console.log('👁️ Ocultando imagem:', currentImage.path);
             console.log('📁 Movendo para pasta:', this.slideshowConfig.hiddenFolder);
 
-            // Verificar se a pasta de destino existe primeiro
-            const checkResponse = await fetch('/api/files/check-path', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    path: this.slideshowConfig.hiddenFolder
-                })
-            });
-
-            if (!checkResponse.ok) {
-                this.showToast('Pasta de destino não existe. Configure corretamente nas configurações.', 'error');
-                return;
-            }
+            // Pular verificação de pasta (endpoint não existe)
+            console.log('📁 Pasta de destino configurada:', this.slideshowConfig.hiddenFolder);
 
             // Chamar API para mover arquivo
             const response = await fetch('/api/files/execute', {

@@ -52,7 +52,7 @@
             font-size: 18px;
         }
         
-        /* Garantir que controles dinâmicos não sejam afetados pelo fallback */
+        /* Garantir que controles dinâmicos usem emojis sem interferência */
         #dynamic-slideshow-controls * {
             font-family: Arial, sans-serif !important;
             font-size: 24px !important;
@@ -61,6 +61,15 @@
         #dynamic-slideshow-controls button {
             font-family: Arial, sans-serif !important;
             font-size: 24px !important;
+        }
+        
+        /* Forçar emojis nos botões dinâmicos - desabilitar fallbacks */
+        #dynamic-slideshow-controls button:before {
+            display: none !important;
+        }
+        
+        #dynamic-slideshow-controls button:after {
+            display: none !important;
         }
     </style>
     
