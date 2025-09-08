@@ -3241,6 +3241,20 @@ class DeParaUI {
                 this.handleSlideshowKeydown(e);
             }
         });
+
+        // Listener para mudanças de fullscreen
+        document.addEventListener('fullscreenchange', () => {
+            this.handleFullscreenChange();
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            this.handleFullscreenChange();
+        });
+        document.addEventListener('mozfullscreenchange', () => {
+            this.handleFullscreenChange();
+        });
+        document.addEventListener('msfullscreenchange', () => {
+            this.handleFullscreenChange();
+        });
     }
 
     // Abrir modal de slideshow
@@ -3792,6 +3806,33 @@ class DeParaUI {
         }
     }
 
+    // Lidar com mudanças de fullscreen
+    handleFullscreenChange() {
+        console.log('🖥️ Mudança de fullscreen detectada');
+        
+        const isFullscreen = !!(document.fullscreenElement || 
+                               document.webkitFullscreenElement || 
+                               document.mozFullScreenElement || 
+                               document.msFullscreenElement);
+        
+        console.log('🔍 Fullscreen ativo:', isFullscreen);
+        
+        // Garantir que os controles estáticos permaneçam visíveis
+        const staticControls = document.getElementById('static-slideshow-controls');
+        if (staticControls) {
+            staticControls.style.display = 'block';
+            staticControls.style.zIndex = '999999';
+            console.log('✅ Controles estáticos mantidos visíveis após mudança de fullscreen');
+        }
+        
+        // Garantir que o viewer permaneça visível
+        const viewer = document.getElementById('slideshow-viewer');
+        if (viewer) {
+            viewer.style.display = 'flex';
+            console.log('✅ Viewer mantido visível após mudança de fullscreen');
+        }
+    }
+
     // Atualizar exibição do slide atual
     async updateSlideDisplay() {
         console.log('🖼️ Atualizando exibição do slide...');
@@ -3950,7 +3991,7 @@ class DeParaUI {
                             top: 50% !important;
                             left: 50% !important;
                             transform: translate(-50%, -50%) !important;
-                            z-index: 999998 !important;
+                            z-index: 999997 !important;
                             width: 100vw !important;
                             height: 100vh !important;
                             min-width: 100vw !important;
@@ -3959,7 +4000,7 @@ class DeParaUI {
                             max-height: 100vh !important;
                             object-fit: contain !important;
                             border: none !important;
-                            background: black !important;
+                            background: transparent !important;
                             box-shadow: none !important;
                             border-radius: 0 !important;
                             pointer-events: none !important;
@@ -3973,7 +4014,7 @@ class DeParaUI {
                         newImageElement.style.top = '50%';
                         newImageElement.style.left = '50%';
                         newImageElement.style.transform = 'translate(-50%, -50%)';
-                        newImageElement.style.zIndex = '999998';
+                        newImageElement.style.zIndex = '999997';
                         newImageElement.style.width = '100vw';
                         newImageElement.style.height = '100vh';
                         newImageElement.style.minWidth = '100vw';
@@ -3982,7 +4023,7 @@ class DeParaUI {
                         newImageElement.style.maxHeight = '100vh';
                         newImageElement.style.objectFit = 'contain';
                         newImageElement.style.border = 'none';
-                        newImageElement.style.background = 'black';
+                        newImageElement.style.background = 'transparent';
                         newImageElement.style.boxShadow = 'none';
                         newImageElement.style.borderRadius = '0';
                         
@@ -3991,7 +4032,7 @@ class DeParaUI {
                         targetElement = newImageElement;
                         
                         // Garantir que a imagem esteja acima de todos os modais mas abaixo dos controles
-                        newImageElement.style.zIndex = '999998';
+                        newImageElement.style.zIndex = '999997';
                         newImageElement.style.pointerEvents = 'none';
                         
                         // Adicionar fundo preto atrás de tudo
