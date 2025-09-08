@@ -3864,6 +3864,17 @@ class DeParaUI {
                     }
                 } else {
                     console.error('❌ Elemento slideshow-image não encontrado!');
+                    // Tentar encontrar o elemento novamente
+                    const imageElement = document.getElementById('slideshow-image') || document.querySelector('.slideshow-image');
+                    if (imageElement) {
+                        console.log('✅ Elemento encontrado na segunda tentativa');
+                        imageElement.src = imageUrl;
+                        imageElement.style.display = 'block';
+                        imageElement.style.visibility = 'visible';
+                        imageElement.style.opacity = '1';
+                    } else {
+                        console.error('❌ Elemento slideshow-image ainda não encontrado após segunda tentativa');
+                    }
                 }
 
                 if (loadingElement) loadingElement.style.display = 'none';
