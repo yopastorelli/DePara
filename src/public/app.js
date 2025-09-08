@@ -4434,17 +4434,21 @@ class DeParaUI {
             // Pular verificação de pasta (endpoint não existe)
             console.log('📁 Pasta de destino configurada:', this.slideshowConfig.deletedFolder);
 
+            // Debug: Log dos dados sendo enviados
+            const requestData = {
+                action: 'move',
+                sourcePath: currentImage.path,
+                targetPath: this.slideshowConfig.deletedFolder
+            };
+            console.log('🔍 DEBUG - Dados sendo enviados para API (DELETE):', requestData);
+            
             // Chamar API para mover arquivo
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    action: 'move',
-                    sourcePath: currentImage.path,
-                    targetPath: this.slideshowConfig.deletedFolder
-                })
+                body: JSON.stringify(requestData)
             });
 
             if (response.ok) {
@@ -4505,17 +4509,21 @@ class DeParaUI {
             // Pular verificação de pasta (endpoint não existe)
             console.log('📁 Pasta de destino configurada:', this.slideshowConfig.hiddenFolder);
 
+            // Debug: Log dos dados sendo enviados
+            const requestData = {
+                action: 'move',
+                sourcePath: currentImage.path,
+                targetPath: this.slideshowConfig.hiddenFolder
+            };
+            console.log('🔍 DEBUG - Dados sendo enviados para API (HIDE):', requestData);
+            
             // Chamar API para mover arquivo
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    action: 'move',
-                    sourcePath: currentImage.path,
-                    targetPath: this.slideshowConfig.hiddenFolder
-                })
+                body: JSON.stringify(requestData)
             });
 
             if (response.ok) {

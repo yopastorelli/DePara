@@ -52,7 +52,36 @@
             font-size: 18px;
         }
         
-        /* CSS antigo removido - usando botões estáticos */
+        /* CSS FORÇADO para botões estáticos - GARANTIR EMOJIS */
+        #static-slideshow-controls button {
+            font-family: Arial, sans-serif !important;
+            font-size: 24px !important;
+            line-height: 1 !important;
+            color: white !important;
+            background: rgba(0,0,0,0.8) !important;
+            border: none !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            z-index: 9999999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+        
+        /* GARANTIR que emojis sejam exibidos */
+        #static-slideshow-controls button * {
+            display: inline !important;
+            font-family: Arial, sans-serif !important;
+        }
+        
+        /* SOBRESCREVER qualquer CSS conflitante */
+        body #static-slideshow-controls button {
+            font-family: Arial, sans-serif !important;
+            font-size: 24px !important;
+            color: white !important;
+        }
     </style>
     
     <!-- Styles -->
@@ -1185,21 +1214,21 @@
     </div>
 
     <!-- BOTÕES ESTÁTICOS PARA SLIDESHOW DINÂMICO -->
-    <div id="static-slideshow-controls" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999999; pointer-events: none;">
+    <div id="static-slideshow-controls" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999999; pointer-events: none;">
         <!-- Botão anterior -->
-        <button id="static-prev-btn" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 9999999;">⬅️</button>
+        <button id="static-prev-btn" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 99999999;">⬅️</button>
         
         <!-- Botão próximo -->
-        <button id="static-next-btn" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 9999999;">➡️</button>
+        <button id="static-next-btn" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 99999999;">➡️</button>
         
         <!-- Botão fechar -->
-        <button id="static-close-btn" style="position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 20px; cursor: pointer; pointer-events: auto; z-index: 9999999;">❌</button>
+        <button id="static-close-btn" style="position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 20px; cursor: pointer; pointer-events: auto; z-index: 99999999;">❌</button>
         
         <!-- Botão apagar -->
-        <button id="static-delete-btn" style="position: absolute; top: 20px; right: 80px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 9999999;">🗑️</button>
+        <button id="static-delete-btn" style="position: absolute; top: 20px; right: 80px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 99999999;">🗑️</button>
         
         <!-- Botão ocultar -->
-        <button id="static-hide-btn" style="position: absolute; top: 20px; right: 140px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 9999999;">👁️</button>
+        <button id="static-hide-btn" style="position: absolute; top: 20px; right: 140px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 99999999;">👁️</button>
         
         <!-- Contador -->
         <div id="static-counter" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 16px; z-index: 9999999; pointer-events: none;">1 / 1</div>
