@@ -3633,7 +3633,7 @@ class DeParaUI {
             currentSlideIndex: this.currentSlideIndex,
             totalImages: this.slideshowImages?.length || 0
         });
-
+        
         const imageElement = document.getElementById('slideshow-image');
         const counterElement = document.getElementById('slideshow-counter');
         const filenameElement = document.getElementById('slideshow-filename');
@@ -3868,7 +3868,7 @@ class DeParaUI {
 
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'none';
-
+                
                 // Pré-carregar próxima imagem
                 this.preloadNextImage();
             };
@@ -7251,37 +7251,11 @@ function saveSettings() {
 }
 
 // ==========================================
-// SLIDESHOW FUNCTIONALITY
+// SLIDESHOW FUNCTIONALITY (LEGACY - REMOVIDO)
 // ==========================================
+// Agora usando implementação da classe DeParaUI
 
-// Slideshow state
-let slideshowImages = [];
-let currentImageIndex = 0;
-let slideshowInterval = null;
-let autoAdvance = true;
-
-// Slideshow Functions
-function showSlideshowModal() {
-    const modal = document.getElementById('slideshow-folder-modal');
-    modal.style.display = 'flex';
-
-    // Carregar pasta salva do localStorage
-    const savedPath = localStorage.getItem('slideshowSelectedPath');
-    if (savedPath) {
-        document.getElementById('slideshow-folder-path').value = savedPath;
-        console.log('📂 Pasta do slideshow carregada:', savedPath);
-    }
-
-    // Focus no campo de pasta
-    setTimeout(() => {
-        document.getElementById('slideshow-folder-path').focus();
-    }, 100);
-}
-
-function closeSlideshowFolderModal() {
-    document.getElementById('slideshow-folder-modal').style.display = 'none';
-    resetSlideshowFolderForm();
-}
+// Funções removidas - agora usando implementação da classe DeParaUI
 
 function closeSlideshowConfigModal() {
     const modal = document.getElementById('slideshow-config-modal');
@@ -7308,372 +7282,28 @@ function resetSlideshowFolderForm() {
     });
 }
 
-// Função removida - usando apenas a implementação da classe DeParaUI
-
-    // Coletar extensões selecionadas
-    const selectedExtensions = [];
-    const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]:checked');
-    extensionCheckboxes.forEach(checkbox => {
-        selectedExtensions.push(checkbox.value);
-    });
-
-    if (selectedExtensions.length === 0) {
-        showToast('Selecione pelo menos uma extensão de arquivo', 'error');
-        return;
-    }
-
-    try {
-        // Fechar modal de seleção
-        closeSlideshowFolderModal();
-
-        // Mostrar slideshow
-        showSlideshow(folderPath, selectedExtensions, maxDepth);
-    } catch (error) {
-        console.error('Erro ao iniciar slideshow:', error);
-        showToast('Erro ao iniciar slideshow', 'error');
-        }
+async function startSlideshow() {
+    // Usar a implementação da classe DeParaUI
+    if (window.deParaUI) {
+        window.deParaUI.startSlideshowFromModal();
+    } else {
+        console.error('DeParaUI não está disponível');
+        showToast('Erro: Interface não inicializada', 'error');
     }
 }
 
-async function showSlideshow(folderPath, extensions, maxDepth) {
-    const slideshowModal = document.getElementById('slideshow-modal');
-    const imageElement = document.getElementById('slideshow-image');
-    const loadingElement = document.getElementById('slideshow-loading');
-    const errorElement = document.getElementById('slideshow-error');
 
-    // Reset state
-    slideshowImages = [];
-    currentImageIndex = 0;
+// Função removida - agora usando implementação da classe DeParaUI
 
-    // Show modal
-    slideshowModal.style.display = 'block';
+// Função removida - agora usando implementação da classe DeParaUI
 
-    // Show loading
-    loadingElement.style.display = 'flex';
-    imageElement.style.display = 'none';
-    errorElement.style.display = 'none';
+// Funções removidas - agora usando implementação da classe DeParaUI
 
-    try {
-        // Build query parameters
-        const params = new URLSearchParams({
-            extensions: extensions.join(','),
-            maxDepth: maxDepth || '3'
-        });
+// Funções removidas - agora usando implementação da classe DeParaUI
 
-        const response = await fetch(`/api/files/images/${encodeURIComponent(folderPath)}?${params}`);
+// Código de navegação removido - agora usando implementação da classe DeParaUI
 
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.success && result.data.images && result.data.images.length > 0) {
-            slideshowImages = result.data.images;
-            await loadImage(0);
-            updateSlideshowUI();
-
-            // Start auto-advance if enabled
-            if (autoAdvance) {
-                startAutoAdvance();
-            }
-
-            showToast(`Slideshow iniciado com ${slideshowImages.length} imagens`, 'success');
-        } else {
-            throw new Error(result.error?.message || 'Nenhuma imagem encontrada');
-        }
-
-    } catch (error) {
-        console.error('Erro ao carregar imagens:', error);
-        showSlideshowError(error.message);
-    }
-}
-
-async function loadImage(index) {
-    if (index < 0 || index >= slideshowImages.length) {
-        return;
-    }
-
-    const imageElement = document.getElementById('slideshow-image');
-    const loadingElement = document.getElementById('slideshow-loading');
-    const errorElement = document.getElementById('slideshow-error');
-
-    // Show loading
-    loadingElement.style.display = 'flex';
-    imageElement.style.display = 'none';
-    errorElement.style.display = 'none';
-
-    const image = slideshowImages[index];
-
-    return new Promise((resolve, reject) => {
-        imageElement.onload = () => {
-            loadingElement.style.display = 'none';
-            imageElement.style.display = 'block';
-            currentImageIndex = index;
-            updateSlideshowUI();
-            resolve();
-        };
-
-        imageElement.onerror = () => {
-            console.error('Erro ao carregar imagem:', image.path);
-            showSlideshowError(`Erro ao carregar: ${image.name}`);
-            reject(new Error(`Erro ao carregar imagem: ${image.name}`));
-        };
-
-        // Set image source - por enquanto usaremos um placeholder
-        // TODO: Implementar endpoint para servir imagens
-        imageElement.src = `data:image/svg+xml;base64,${btoa(`
-            <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-                <rect width="100%" height="100%" fill="#f0f0f0"/>
-                <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#666" font-family="Arial" font-size="16">
-                    ${image.name}
-                </text>
-            </svg>
-        `)}`;
-        imageElement.alt = image.name;
-    });
-}
-
-function showSlideshowError(message) {
-    const loadingElement = document.getElementById('slideshow-loading');
-    const errorElement = document.getElementById('slideshow-error');
-    const errorText = errorElement.querySelector('p');
-
-    loadingElement.style.display = 'none';
-    errorElement.style.display = 'flex';
-    errorText.textContent = message;
-}
-
-function updateSlideshowUI() {
-    const currentImageElement = document.getElementById('current-image');
-    const totalImagesElement = document.getElementById('total-images');
-    const filenameElement = document.getElementById('image-filename');
-    const progressBar = document.getElementById('slideshow-progress-bar');
-    const prevBtn = document.getElementById('slideshow-prev');
-    const nextBtn = document.getElementById('slideshow-next');
-
-    if (slideshowImages.length > 0) {
-        const currentImage = slideshowImages[currentImageIndex];
-
-        currentImageElement.textContent = currentImageIndex + 1;
-        totalImagesElement.textContent = slideshowImages.length;
-        filenameElement.textContent = currentImage.name;
-
-        // Update progress bar
-        const progress = ((currentImageIndex + 1) / slideshowImages.length) * 100;
-        progressBar.style.width = `${progress}%`;
-
-        // Update navigation buttons
-        prevBtn.disabled = currentImageIndex === 0;
-        nextBtn.disabled = currentImageIndex === slideshowImages.length - 1;
-
-        prevBtn.style.opacity = prevBtn.disabled ? 0.5 : 1;
-        nextBtn.style.opacity = nextBtn.disabled ? 0.5 : 1;
-    }
-}
-
-function nextImage() {
-    if (currentImageIndex < slideshowImages.length - 1) {
-        loadImage(currentImageIndex + 1);
-    }
-}
-
-function previousImage() {
-    if (currentImageIndex > 0) {
-        loadImage(currentImageIndex - 1);
-    }
-}
-
-function startAutoAdvance() {
-    if (slideshowInterval) {
-        clearInterval(slideshowInterval);
-    }
-
-    // Usar configurações do UI se disponível
-    const interval = window.deParaUI?.slideshowConfig?.interval || 3;
-    const intervalMs = interval * 1000;
-
-    slideshowInterval = setInterval(() => {
-        if (currentImageIndex < slideshowImages.length - 1) {
-            nextImage();
-        } else {
-            // Loop back to first image
-            loadImage(0);
-        }
-    }, intervalMs);
-    
-    console.log(`⏰ Auto-advance iniciado com intervalo de ${interval}s`);
-}
-
-function stopAutoAdvance() {
-    if (slideshowInterval) {
-        clearInterval(slideshowInterval);
-        slideshowInterval = null;
-    }
-}
-
-function closeSlideshow() {
-    const slideshowModal = document.getElementById('slideshow-modal');
-
-    // Stop auto-advance
-    stopAutoAdvance();
-
-    // Hide modal
-    slideshowModal.style.display = 'none';
-
-    // Reset state
-    slideshowImages = [];
-    currentImageIndex = 0;
-
-    // Clear image source
-    const imageElement = document.getElementById('slideshow-image');
-    imageElement.src = '';
-    imageElement.style.display = 'none';
-
-    // Reset UI
-    document.getElementById('slideshow-loading').style.display = 'none';
-    document.getElementById('slideshow-error').style.display = 'none';
-}
-
-// Keyboard navigation
-document.addEventListener('keydown', (event) => {
-    const slideshowModal = document.getElementById('slideshow-modal');
-
-    if (slideshowModal.style.display === 'block') {
-        switch (event.key) {
-            case 'ArrowLeft':
-                event.preventDefault();
-                previousImage();
-                break;
-            case 'ArrowRight':
-                event.preventDefault();
-                nextImage();
-                break;
-            case ' ':
-                event.preventDefault();
-                // Toggle auto-advance
-                if (slideshowInterval) {
-                    stopAutoAdvance();
-                    showToast('Apresentação automática parada', 'info');
-                } else {
-                    startAutoAdvance();
-                    showToast('Apresentação automática iniciada', 'info');
-                }
-                break;
-            case 'Escape':
-                event.preventDefault();
-                closeSlideshow();
-                break;
-            case 'Home':
-                event.preventDefault();
-                loadImage(0);
-                break;
-            case 'End':
-                event.preventDefault();
-                loadImage(slideshowImages.length - 1);
-                break;
-        }
-    }
-});
-
-// Mouse wheel navigation
-document.addEventListener('wheel', (event) => {
-    const slideshowModal = document.getElementById('slideshow-modal');
-
-    if (slideshowModal.style.display === 'block') {
-        event.preventDefault();
-
-        if (event.deltaY > 0) {
-            nextImage();
-        } else {
-            previousImage();
-        }
-    }
-});
-
-// Touch/swipe navigation for mobile
-let touchStartX = 0;
-let touchStartY = 0;
-
-document.addEventListener('touchstart', (event) => {
-    const slideshowModal = document.getElementById('slideshow-modal');
-
-    if (slideshowModal.style.display === 'block') {
-        touchStartX = event.touches[0].clientX;
-        touchStartY = event.touches[0].clientY;
-    }
-});
-
-document.addEventListener('touchend', (event) => {
-    const slideshowModal = document.getElementById('slideshow-modal');
-
-    if (slideshowModal.style.display === 'block') {
-        const touchEndX = event.changedTouches[0].clientX;
-        const touchEndY = event.changedTouches[0].clientY;
-
-        const deltaX = touchEndX - touchStartX;
-        const deltaY = touchEndY - touchStartY;
-
-        // Check if it's a horizontal swipe (more horizontal than vertical)
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
-            if (deltaX > 0) {
-                previousImage(); // Swipe right = previous
-            } else {
-                nextImage(); // Swipe left = next
-            }
-        }
-    }
-});
-
-// Prevent context menu in slideshow
-document.addEventListener('contextmenu', (event) => {
-    const slideshowModal = document.getElementById('slideshow-modal');
-
-    if (slideshowModal.style.display === 'block') {
-        event.preventDefault();
-    }
-});
-
-// Add slideshow hints
-function addSlideshowHints() {
-    const slideshowModal = document.getElementById('slideshow-modal');
-    const existingHints = slideshowModal.querySelector('.slideshow-hints');
-
-    if (!existingHints) {
-        const hints = document.createElement('div');
-        hints.className = 'slideshow-hints';
-        hints.innerHTML = `
-            <div><strong>Navegação:</strong></div>
-            <div>← → Setas | Espaço: Pausar/Continuar</div>
-            <div>Home/End: Início/Fim | ESC: Sair</div>
-            <div>Roda do mouse: Próxima/Anterior</div>
-        `;
-
-        slideshowModal.querySelector('.slideshow-container').appendChild(hints);
-    }
-}
-
-// Initialize slideshow hints when modal is shown
-const slideshowObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-            const slideshowModal = document.getElementById('slideshow-modal');
-            if (slideshowModal.style.display === 'block') {
-                addSlideshowHints();
-            }
-        }
-    });
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    const slideshowModal = document.getElementById('slideshow-modal');
-    if (slideshowModal) {
-        slideshowObserver.observe(slideshowModal, {
-            attributes: true,
-            attributeFilter: ['style']
-        });
-    }
-});
+// Funções de hints removidas - agora usando implementação da classe DeParaUI
 
 // ==========================================
 // END SLIDESHOW FUNCTIONALITY
@@ -7985,8 +7615,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.deParaUI) {
                 window.deParaUI.startSlideshowFromModal();
             } else {
-                console.error('❌ DeParaUI não está disponível');
-                alert('Erro: DeParaUI não está disponível');
+                // Fallback para função global
+                startSlideshow();
             }
         };
 
