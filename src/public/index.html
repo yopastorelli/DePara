@@ -36,16 +36,20 @@
         }
         
         /* Fallback para quando Material Icons não carregam */
-        .material-icons:before {
+        .material-icons[data-fallback]:before {
             content: attr(data-fallback);
             font-family: Arial, sans-serif;
             font-size: 18px;
             font-weight: bold;
         }
         
-        /* Esconder fallback quando Material Icons carregam */
-        .material-icons:not([data-fallback]):before {
-            display: none;
+        /* Esconder texto original quando fallback está ativo */
+        .material-icons[data-fallback] {
+            font-size: 0;
+        }
+        
+        .material-icons[data-fallback]:before {
+            font-size: 18px;
         }
     </style>
     
@@ -1436,17 +1440,22 @@
                 if (!fontFamily.includes('Material Icons') || fontFamily.includes('Arial')) {
                     console.log('⚠️ Material Icons não carregaram, aplicando fallbacks');
                     
-                    // Aplicar fallbacks a todos os ícones
-                    const icons = document.querySelectorAll('.material-icons');
+                    // Aplicar fallbacks a todos os ícones com data-fallback
+                    const icons = document.querySelectorAll('.material-icons[data-fallback]');
                     icons.forEach(icon => {
-                        if (icon.hasAttribute('data-fallback')) {
-                            icon.style.fontFamily = 'Arial, sans-serif';
-                            icon.style.fontSize = '18px';
-                            icon.style.fontWeight = 'bold';
-                        }
+                        icon.style.fontSize = '0';
+                        icon.style.fontFamily = 'Arial, sans-serif';
+                        console.log('🔄 Aplicando fallback para ícone:', icon.textContent);
                     });
                 } else {
                     console.log('✅ Material Icons carregaram corretamente');
+                    
+                    // Remover fallbacks se Material Icons carregaram
+                    const icons = document.querySelectorAll('.material-icons[data-fallback]');
+                    icons.forEach(icon => {
+                        icon.style.fontSize = '';
+                        icon.style.fontFamily = '';
+                    });
                 }
                 
                 document.body.removeChild(testIcon);

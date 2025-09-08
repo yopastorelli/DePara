@@ -3369,8 +3369,15 @@ class DeParaUI {
                     // Browser - extrair pasta do webkitRelativePath
                     const pathParts = files[0].webkitRelativePath.split('/');
                     if (pathParts.length > 1) {
-                        fullPath = pathParts[0]; // Primeira parte é a pasta selecionada
+                        // Para webkitRelativePath, a primeira parte é a pasta selecionada
+                        fullPath = pathParts[0];
+                    } else {
+                        // Se só tem uma parte, usar o nome do arquivo como pasta
+                        fullPath = files[0].name;
                     }
+                } else {
+                    // Fallback - usar o nome do arquivo
+                    fullPath = files[0].name;
                 }
                 
                 console.log('📁 Pasta selecionada para fotos excluídas:', fullPath);
@@ -3388,7 +3395,14 @@ class DeParaUI {
                     console.log('✅ Campo atualizado:', deletedField.value);
                 } else {
                     console.error('❌ Campo não encontrado ou caminho vazio');
-                    this.showToast('Erro ao selecionar pasta', 'error');
+                    // Fallback: pedir caminho manualmente
+                    const manualPath = prompt('Digite o caminho da pasta de fotos excluídas:');
+                    if (manualPath && deletedField) {
+                        deletedField.value = manualPath;
+                        this.showToast(`Pasta de fotos excluídas: ${manualPath}`, 'success');
+                    } else {
+                        this.showToast('Erro ao selecionar pasta', 'error');
+                    }
                 }
             }
             
@@ -3426,8 +3440,15 @@ class DeParaUI {
                     // Browser - extrair pasta do webkitRelativePath
                     const pathParts = files[0].webkitRelativePath.split('/');
                     if (pathParts.length > 1) {
-                        fullPath = pathParts[0]; // Primeira parte é a pasta selecionada
+                        // Para webkitRelativePath, a primeira parte é a pasta selecionada
+                        fullPath = pathParts[0];
+                    } else {
+                        // Se só tem uma parte, usar o nome do arquivo como pasta
+                        fullPath = files[0].name;
                     }
+                } else {
+                    // Fallback - usar o nome do arquivo
+                    fullPath = files[0].name;
                 }
                 
                 console.log('📁 Pasta selecionada para fotos ocultas:', fullPath);
@@ -3445,7 +3466,14 @@ class DeParaUI {
                     console.log('✅ Campo atualizado:', hiddenField.value);
                 } else {
                     console.error('❌ Campo não encontrado ou caminho vazio');
-                    this.showToast('Erro ao selecionar pasta', 'error');
+                    // Fallback: pedir caminho manualmente
+                    const manualPath = prompt('Digite o caminho da pasta de fotos ocultas:');
+                    if (manualPath && hiddenField) {
+                        hiddenField.value = manualPath;
+                        this.showToast(`Pasta de fotos ocultas: ${manualPath}`, 'success');
+                    } else {
+                        this.showToast('Erro ao selecionar pasta', 'error');
+                    }
                 }
             }
             
