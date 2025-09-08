@@ -3434,13 +3434,27 @@ class DeParaUI {
 
             const result = await response.json();
             console.log('📊 Resultado da API:', result);
+            console.log('📊 Estrutura da resposta:', {
+                success: result.success,
+                hasData: !!result.data,
+                hasImages: !!(result.data && result.data.images),
+                imageCount: result.data?.images?.length || 0
+            });
 
             if (!result.success) {
                 throw new Error(result.error?.message || 'Erro ao listar imagens');
             }
 
+            // Verificar se a estrutura da resposta está correta
+            if (!result.data || !result.data.images) {
+                console.error('❌ Estrutura de resposta inválida:', result);
+                throw new Error('Resposta da API não contém dados de imagens');
+            }
+
             this.slideshowImages = result.data.images;
             this.slideshowInterval = interval * 1000;
+
+            console.log('📸 Imagens carregadas:', this.slideshowImages.length);
 
             if (this.slideshowImages.length === 0) {
                 this.showToast('Nenhuma imagem encontrada na pasta', 'warning');
@@ -3516,20 +3530,34 @@ class DeParaUI {
     startSlideshowViewer() {
         console.log('🎬 Iniciando viewer do slideshow...');
         console.log('📸 Imagens disponíveis:', this.slideshowImages?.length || 0);
+        console.log('📸 Primeira imagem:', this.slideshowImages?.[0]);
         
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
+            console.error('❌ Nenhuma imagem disponível para slideshow');
             this.showToast('Nenhuma imagem encontrada para o slideshow', 'error');
             return;
         }
         
         // Mostrar viewer
         const viewer = document.getElementById('slideshow-viewer');
+        console.log('🖥️ Elemento viewer encontrado:', !!viewer);
+        
         if (viewer) {
             viewer.style.display = 'flex';
+            console.log('✅ Viewer exibido');
+        } else {
+            console.error('❌ Elemento slideshow-viewer não encontrado no DOM');
+            this.showToast('Erro: Elemento de visualização não encontrado', 'error');
+            return;
         }
         
         this.currentSlideIndex = 0;
         this.slideshowPlaying = true;
+        console.log('🎯 Configurações do slideshow:', {
+            currentSlideIndex: this.currentSlideIndex,
+            slideshowPlaying: this.slideshowPlaying,
+            totalImages: this.slideshowImages.length
+        });
 
         // Entrar em fullscreen automaticamente
         this.enterFullscreen();
