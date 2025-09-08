@@ -3354,6 +3354,7 @@ class DeParaUI {
 
     // Navegar para pasta de fotos excluídas
     browseDeletedFolder() {
+        console.log('🚀 INÍCIO browseDeletedFolder()');
         console.log('📁 Abrindo seletor de pasta para fotos excluídas...');
         
         // Usar diálogo nativo para seleção de pasta
@@ -3365,7 +3366,9 @@ class DeParaUI {
         input.style.display = 'none';
         
         input.addEventListener('change', (event) => {
+            console.log('🔄 EVENTO change disparado para deleted folder');
             const files = event.target.files;
+            console.log('📁 Arquivos selecionados:', files.length);
             if (files && files.length > 0) {
                 // Pegar o caminho da primeira pasta selecionada
                 let fullPath = '';
@@ -3442,6 +3445,7 @@ class DeParaUI {
 
     // Navegar para pasta de fotos ocultas
     browseHiddenFolder() {
+        console.log('🚀 INÍCIO browseHiddenFolder()');
         console.log('📁 Abrindo seletor de pasta para fotos ocultas...');
         
         // Usar diálogo nativo para seleção de pasta
@@ -3453,7 +3457,9 @@ class DeParaUI {
         input.style.display = 'none';
         
         input.addEventListener('change', (event) => {
+            console.log('🔄 EVENTO change disparado para hidden folder');
             const files = event.target.files;
+            console.log('📁 Arquivos selecionados:', files.length);
             if (files && files.length > 0) {
                 // Pegar o caminho da primeira pasta selecionada
                 let fullPath = '';
