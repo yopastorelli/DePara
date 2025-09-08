@@ -3444,7 +3444,7 @@ class DeParaUI {
 
             // SEMPRE forçar busca recursiva para encontrar TODAS as imagens
             const forceRecursive = true;
-            
+
             console.log('📡 Enviando requisição para API...');
             console.log('🔗 Caminho sendo enviado:', folderPath);
             console.log('🔧 Extensões formatadas:', formattedExtensions);
@@ -3664,7 +3664,7 @@ class DeParaUI {
     // Atualizar exibição do slide atual
     async updateSlideDisplay() {
         console.log('🖼️ Atualizando exibição do slide...');
-
+        
         // Verificar contexto geral antes de prosseguir
         console.log('🌐 Contexto geral:', {
             documentReady: document.readyState,
@@ -3955,8 +3955,8 @@ class DeParaUI {
                     const imageElement = document.getElementById('slideshow-image') || document.querySelector('.slideshow-image');
                     if (imageElement) {
                         console.log('✅ Elemento encontrado na segunda tentativa');
-                        imageElement.src = imageUrl;
-                        imageElement.style.display = 'block';
+                imageElement.src = imageUrl;
+            imageElement.style.display = 'block';
                         imageElement.style.visibility = 'visible';
                         imageElement.style.opacity = '1';
                     } else {
