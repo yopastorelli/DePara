@@ -4336,16 +4336,9 @@ class DeParaUI {
             left: 20px;
             top: 50%;
             transform: translateY(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            border: none;
-            border-radius: 50%;
             width: 60px;
             height: 60px;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 1000002;
-            pointer-events: auto;
+            border-radius: 50%;
         `;
         prevBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4363,16 +4356,9 @@ class DeParaUI {
             right: 20px;
             top: 50%;
             transform: translateY(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            border: none;
-            border-radius: 50%;
             width: 60px;
             height: 60px;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 1000002;
-            pointer-events: auto;
+            border-radius: 50%;
         `;
         nextBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4426,16 +4412,10 @@ class DeParaUI {
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            border: none;
-            border-radius: 50%;
             width: 50px;
             height: 50px;
+            border-radius: 50%;
             font-size: 20px;
-            cursor: pointer;
-            z-index: 1000002;
-            pointer-events: auto;
         `;
         closeBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4454,16 +4434,10 @@ class DeParaUI {
             position: absolute;
             top: 20px;
             right: 80px;
-            background: rgba(0, 0, 0, 0.7);
-            border: none;
-            color: white;
             width: 50px;
             height: 50px;
-            font-size: 24px;
-            cursor: pointer;
             border-radius: 50%;
-            z-index: 1000002;
-            pointer-events: auto;
+            font-size: 24px;
         `;
         deleteBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4482,16 +4456,10 @@ class DeParaUI {
             position: absolute;
             top: 20px;
             right: 140px;
-            background: rgba(0, 0, 0, 0.7);
-            border: none;
-            color: white;
             width: 50px;
             height: 50px;
-            font-size: 24px;
-            cursor: pointer;
             border-radius: 50%;
-            z-index: 1000002;
-            pointer-events: auto;
+            font-size: 24px;
         `;
         hideBtn.addEventListener('click', (e) => {
             e.preventDefault();
