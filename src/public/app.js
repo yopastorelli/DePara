@@ -2330,12 +2330,49 @@ class DeParaUI {
 
     // Selecionar pasta de origem
     selectSourceFolder() {
-        this.showFolderBrowser('source');
+        this.showNativeFolderDialog('source');
     }
 
     // Selecionar pasta de destino
     selectTargetFolder() {
-        this.showFolderBrowser('target');
+        this.showNativeFolderDialog('target');
+    }
+
+    // Mostrar diálogo nativo de seleção de pasta
+    showNativeFolderDialog(targetType) {
+        // Criar input file oculto para seleção de pasta
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.webkitdirectory = true;
+        input.directory = true;
+        input.multiple = false;
+        input.style.display = 'none';
+        
+        input.addEventListener('change', (event) => {
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                // Pegar o caminho da primeira pasta selecionada
+                const selectedPath = files[0].webkitRelativePath.split('/')[0];
+                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
+                
+                console.log('📁 Pasta selecionada:', fullPath);
+                
+                if (targetType === 'source') {
+                    document.getElementById('source-folder-path').value = fullPath;
+                    this.showToast(`Pasta de origem selecionada: ${fullPath}`, 'success');
+                } else {
+                    document.getElementById('target-folder-path').value = fullPath;
+                    this.showToast(`Pasta de destino selecionada: ${fullPath}`, 'success');
+                }
+            }
+            
+            // Remover o input após uso
+            document.body.removeChild(input);
+        });
+        
+        // Adicionar ao DOM e clicar
+        document.body.appendChild(input);
+        input.click();
     }
 
     // Mostrar navegador de pastas
@@ -3215,57 +3252,39 @@ class DeParaUI {
 
     // Navegar para pasta de slideshow
     browseSlideshowFolder() {
-        console.log('📁 Abrindo seletor de pasta...');
+        console.log('📁 Abrindo seletor de pasta para slideshow...');
         
-        // Criar um modal personalizado para seleção de pasta
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.style.display = 'flex';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width: 600px; width: 90%;">
-                <div class="modal-header">
-                    <h3>Selecionar Pasta para Slideshow</h3>
-                    <button class="modal-close slideshow-folder-close-btn">
-                        <span class="material-icons">close</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="folder-path-input">Caminho da pasta:</label>
-                        <div class="input-group">
-                            <input type="text" id="folder-path-input" class="form-input"
-                                   placeholder="Digite o caminho da pasta" value="">
-                            <button class="btn btn-outline slideshow-folder-test-btn">
-                                <span class="material-icons">check</span>
-                                Testar
-                            </button>
-                        </div>
-                        <small class="form-help">
-                            Digite o caminho completo da pasta que contém as imagens
-                        </small>
-                    </div>
-                    <div class="folder-suggestions">
-                        <h4>Pastas comuns:</h4>
-                        <div class="suggestion-buttons">
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/mnt">/mnt</button>
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/yo/Pictures">~/Pictures</button>
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/yo/Downloads">~/Downloads</button>
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/media">/media</button>
-                            <button class="btn btn-sm slideshow-suggestion-btn" data-path="/home/yo/Desktop">~/Desktop</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary slideshow-folder-cancel-btn">Cancelar</button>
-                    <button class="btn btn-primary slideshow-folder-select-btn">Selecionar</button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        // Configurar event listeners para o modal de slideshow
-        this.setupSlideshowFolderEventListeners(modal);
+        // Usar diálogo nativo para seleção de pasta
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.webkitdirectory = true;
+        input.directory = true;
+        input.multiple = false;
+        input.style.display = 'none';
+        
+        input.addEventListener('change', (event) => {
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                // Pegar o caminho da primeira pasta selecionada
+                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
+                
+                console.log('📁 Pasta selecionada para slideshow:', fullPath);
+                
+                // Atualizar o campo de pasta do slideshow
+                const slideshowField = document.getElementById('slideshow-folder-path');
+                if (slideshowField) {
+                    slideshowField.value = fullPath;
+                    this.showToast(`Pasta selecionada: ${fullPath}`, 'success');
+                }
+            }
+            
+            // Remover o input após uso
+            document.body.removeChild(input);
+        });
+        
+        // Adicionar ao DOM e clicar
+        document.body.appendChild(input);
+        input.click();
     }
 
     // Configurar event listeners para o modal de seleção de pasta do slideshow
@@ -3496,6 +3515,12 @@ class DeParaUI {
     // Iniciar viewer do slideshow
     startSlideshowViewer() {
         console.log('🎬 Iniciando viewer do slideshow...');
+        console.log('📸 Imagens disponíveis:', this.slideshowImages?.length || 0);
+        
+        if (!this.slideshowImages || this.slideshowImages.length === 0) {
+            this.showToast('Nenhuma imagem encontrada para o slideshow', 'error');
+            return;
+        }
         
         // Mostrar viewer
         const viewer = document.getElementById('slideshow-viewer');
@@ -3561,19 +3586,25 @@ class DeParaUI {
         const loadingElement = document.getElementById('slideshow-loading');
         const errorElement = document.getElementById('slideshow-error');
 
-        if (this.slideshowImages.length === 0) {
+        if (!this.slideshowImages || this.slideshowImages.length === 0) {
             console.log('❌ Nenhuma imagem carregada');
-            loadingElement.style.display = 'none';
-            errorElement.style.display = 'block';
+            if (loadingElement) loadingElement.style.display = 'none';
+            if (errorElement) errorElement.style.display = 'block';
+            if (imageElement) imageElement.style.display = 'none';
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
         console.log('📸 Imagem atual:', currentImage);
 
+        // Mostrar loading
+        if (loadingElement) loadingElement.style.display = 'block';
+        if (errorElement) errorElement.style.display = 'none';
+        if (imageElement) imageElement.style.display = 'none';
+
         // Atualizar contador e nome do arquivo
-        counterElement.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
-        filenameElement.textContent = currentImage.name;
+        if (counterElement) counterElement.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+        if (filenameElement) filenameElement.textContent = currentImage.name;
         
         // Atualizar caminho completo da imagem no rodapé
         const pathElement = document.getElementById('slideshow-path');
@@ -3585,21 +3616,19 @@ class DeParaUI {
         const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
         console.log('🔗 URL da imagem:', imageUrl);
 
-        // Mostrar loading
-        loadingElement.style.display = 'block';
-        imageElement.style.display = 'none';
-        errorElement.style.display = 'none';
-
         try {
             // Carregar imagem diretamente
             const img = new Image();
             
             img.onload = () => {
                 console.log('✅ Imagem carregada com sucesso:', imageUrl);
-            loadingElement.style.display = 'none';
-                imageElement.src = imageUrl;
-            imageElement.style.display = 'block';
-                errorElement.style.display = 'none';
+                if (imageElement) {
+                    imageElement.src = imageUrl;
+                    imageElement.alt = currentImage.name;
+                    imageElement.style.display = 'block';
+                }
+                if (loadingElement) loadingElement.style.display = 'none';
+                if (errorElement) errorElement.style.display = 'none';
                 
                 // Pré-carregar próxima imagem
                 this.preloadNextImage();
@@ -3607,18 +3636,18 @@ class DeParaUI {
             
             img.onerror = (error) => {
                 console.error('❌ Erro ao carregar imagem:', error);
-                loadingElement.style.display = 'none';
-                imageElement.style.display = 'none';
-                errorElement.style.display = 'block';
+                if (loadingElement) loadingElement.style.display = 'none';
+                if (imageElement) imageElement.style.display = 'none';
+                if (errorElement) errorElement.style.display = 'block';
             };
 
             img.src = imageUrl;
             
         } catch (error) {
             console.error('❌ Erro ao carregar imagem:', error);
-            loadingElement.style.display = 'none';
-            imageElement.style.display = 'none';
-            errorElement.style.display = 'block';
+            if (loadingElement) loadingElement.style.display = 'none';
+            if (imageElement) imageElement.style.display = 'none';
+            if (errorElement) errorElement.style.display = 'block';
         }
     }
 
