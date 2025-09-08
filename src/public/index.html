@@ -1459,28 +1459,41 @@
                 }
                 
                 // Proteger ícones do slideshow de qualquer interferência
-                const slideshowDeleteBtn = document.getElementById('dynamic-slideshow-delete');
-                const slideshowHideBtn = document.getElementById('dynamic-slideshow-hide');
+                const protectSlideshowIcons = () => {
+                    const slideshowDeleteBtn = document.getElementById('dynamic-slideshow-delete');
+                    const slideshowHideBtn = document.getElementById('dynamic-slideshow-hide');
+                    
+                    if (slideshowDeleteBtn) {
+                        slideshowDeleteBtn.innerHTML = '🗑️';
+                        slideshowDeleteBtn.style.fontFamily = 'Arial, sans-serif !important';
+                        slideshowDeleteBtn.style.fontSize = '24px !important';
+                        slideshowDeleteBtn.style.color = 'white !important';
+                        slideshowDeleteBtn.style.background = 'transparent !important';
+                        slideshowDeleteBtn.style.border = 'none !important';
+                        console.log('🛡️ Protegendo ícone de apagar do slideshow');
+                    }
+                    
+                    if (slideshowHideBtn) {
+                        slideshowHideBtn.innerHTML = '👁️';
+                        slideshowHideBtn.style.fontFamily = 'Arial, sans-serif !important';
+                        slideshowHideBtn.style.fontSize = '24px !important';
+                        slideshowHideBtn.style.color = 'white !important';
+                        slideshowHideBtn.style.background = 'transparent !important';
+                        slideshowHideBtn.style.border = 'none !important';
+                        console.log('🛡️ Protegendo ícone de ocultar do slideshow');
+                    }
+                };
                 
-                if (slideshowDeleteBtn) {
-                    slideshowDeleteBtn.innerHTML = '🗑️';
-                    slideshowDeleteBtn.style.fontFamily = 'Arial, sans-serif !important';
-                    slideshowDeleteBtn.style.fontSize = '24px !important';
-                    slideshowDeleteBtn.style.color = 'white !important';
-                    slideshowDeleteBtn.style.background = 'transparent !important';
-                    slideshowDeleteBtn.style.border = 'none !important';
-                    console.log('🛡️ Protegendo ícone de apagar do slideshow');
-                }
+                // Executar proteção imediatamente
+                protectSlideshowIcons();
                 
-                if (slideshowHideBtn) {
-                    slideshowHideBtn.innerHTML = '👁️';
-                    slideshowHideBtn.style.fontFamily = 'Arial, sans-serif !important';
-                    slideshowHideBtn.style.fontSize = '24px !important';
-                    slideshowHideBtn.style.color = 'white !important';
-                    slideshowHideBtn.style.background = 'transparent !important';
-                    slideshowHideBtn.style.border = 'none !important';
-                    console.log('🛡️ Protegendo ícone de ocultar do slideshow');
-                }
+                // Executar proteção continuamente a cada 1 segundo
+                const iconProtectionInterval = setInterval(protectSlideshowIcons, 1000);
+                
+                // Limpar intervalo quando a página for fechada
+                window.addEventListener('beforeunload', () => {
+                    clearInterval(iconProtectionInterval);
+                });
                 
                 document.body.removeChild(testIcon);
             }, 2000);
