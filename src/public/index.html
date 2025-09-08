@@ -92,12 +92,12 @@
 
         /* BOTÕES ELEGANTES COM HOVER */
         .slideshow-viewer #static-slideshow-controls button {
-            opacity: 0;
+            opacity: 1;
             transition: opacity 0.3s ease;
         }
         
-        .slideshow-viewer:hover #static-slideshow-controls button {
-            opacity: 1;
+        .slideshow-viewer:not(:hover) #static-slideshow-controls button {
+            opacity: 0.3;
         }
         
         /* CONTADOR E FILENAME SEMPRE VISÍVEIS */
@@ -1427,10 +1427,10 @@
             <button id="static-close-btn" style="position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;">X</button>
             
             <!-- Botão apagar -->
-            <button id="static-delete-btn" style="position: absolute; top: 20px; right: 80px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 20px; cursor: pointer; pointer-events: auto; z-index: 999999;">🗑️</button>
+            <button id="static-delete-btn" style="position: absolute; top: 20px; right: 80px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;">DEL</button>
             
             <!-- Botão ocultar -->
-            <button id="static-hide-btn" style="position: absolute; top: 20px; right: 140px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 20px; cursor: pointer; pointer-events: auto; z-index: 999999;">👁️</button>
+            <button id="static-hide-btn" style="position: absolute; top: 20px; right: 140px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;">HID</button>
             
             <!-- Contador -->
             <div id="static-counter" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 16px; z-index: 999999; pointer-events: none;">1 / 1</div>

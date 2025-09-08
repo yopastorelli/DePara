@@ -4032,6 +4032,13 @@ class DeParaUI {
                         if (slideshowViewer) {
                             slideshowViewer.appendChild(newImageElement);
                             console.log('✅ Imagem adicionada DENTRO do slideshow-viewer');
+                            
+                            // Esconder a imagem original para evitar sobreposição
+                            const originalImage = document.getElementById('slideshow-image');
+                            if (originalImage) {
+                                originalImage.style.display = 'none';
+                                console.log('✅ Imagem original escondida para evitar sobreposição');
+                            }
                         } else {
                             document.body.appendChild(newImageElement);
                             console.log('⚠️ slideshow-viewer não encontrado, adicionando ao body');
