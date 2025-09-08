@@ -4202,14 +4202,20 @@ class DeParaUI {
         prevBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🖱️ Botão anterior clicado');
+            console.log('🖱️ Botão anterior clicado - EVENTO FUNCIONANDO!');
             console.log('🔍 Contexto this:', this);
             console.log('🔍 slideshowImages length:', this.slideshowImages ? this.slideshowImages.length : 'undefined');
             if (this.previousSlide) {
+                console.log('✅ Chamando previousSlide()');
                 this.previousSlide();
             } else {
                 console.error('❌ previousSlide não está disponível');
             }
+        });
+        
+        // Teste adicional - adicionar evento mousedown também
+        prevBtn.addEventListener('mousedown', (e) => {
+            console.log('🖱️ Botão anterior mousedown - TESTE');
         });
         
         // Garantir que o botão seja clicável
@@ -4248,14 +4254,20 @@ class DeParaUI {
         nextBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🖱️ Botão próximo clicado');
+            console.log('🖱️ Botão próximo clicado - EVENTO FUNCIONANDO!');
             console.log('🔍 Contexto this:', this);
             console.log('🔍 slideshowImages length:', this.slideshowImages ? this.slideshowImages.length : 'undefined');
             if (this.nextSlide) {
+                console.log('✅ Chamando nextSlide()');
                 this.nextSlide();
             } else {
                 console.error('❌ nextSlide não está disponível');
             }
+        });
+        
+        // Teste adicional - adicionar evento mousedown também
+        nextBtn.addEventListener('mousedown', (e) => {
+            console.log('🖱️ Botão próximo mousedown - TESTE');
         });
         
         // Garantir que o botão seja clicável
@@ -4344,6 +4356,16 @@ class DeParaUI {
             const testNext = document.querySelector('#dynamic-slideshow-controls button:nth-child(2)');
             console.log('🧪 Botão anterior encontrado:', testPrev);
             console.log('🧪 Botão próximo encontrado:', testNext);
+            
+            // Teste visual - adicionar borda vermelha temporária
+            if (testPrev) {
+                testPrev.style.border = '3px solid red';
+                console.log('🔴 Borda vermelha adicionada ao botão anterior');
+            }
+            if (testNext) {
+                testNext.style.border = '3px solid blue';
+                console.log('🔵 Borda azul adicionada ao botão próximo');
+            }
         }, 1000);
     }
     
