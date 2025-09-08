@@ -4006,8 +4006,11 @@ class DeParaUI {
                             console.log('🖥️ Modal do slideshow escondido para mostrar imagem dinâmica');
                         }
                         
-                        // Criar controles de navegação para a imagem dinâmica
-                        this.createDynamicSlideshowControls();
+                        // Criar controles de navegação para a imagem dinâmica (apenas na primeira vez)
+                        if (!this.dynamicControlsCreated) {
+                            this.createDynamicSlideshowControls();
+                            this.dynamicControlsCreated = true;
+                        }
                         
                         console.log('🆕 Novo elemento criado e adicionado ao body');
                         console.log('🔍 Debug Raspberry Pi - Elemento criado:', {
@@ -4538,6 +4541,13 @@ class DeParaUI {
         controlsContainer.appendChild(deleteBtn);
         controlsContainer.appendChild(hideBtn);
         
+        console.log('🔍 Botões de organização adicionados:', {
+            deleteBtn: deleteBtn,
+            hideBtn: hideBtn,
+            deleteBtnId: deleteBtn.id,
+            hideBtnId: hideBtn.id
+        });
+        
         // Adicionar ao body
         document.body.appendChild(controlsContainer);
         
@@ -4804,6 +4814,9 @@ class DeParaUI {
             this.slideshowIconProtectionInterval = null;
             console.log('🧹 Intervalo de proteção de ícones limpo');
         }
+        
+        // Resetar flag de controles criados
+        this.dynamicControlsCreated = false;
         
         // Limpar elementos criados dinamicamente
         const dynamicElement = document.getElementById('slideshow-image-new');
