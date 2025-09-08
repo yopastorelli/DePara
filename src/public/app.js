@@ -3860,6 +3860,7 @@ class DeParaUI {
                         // Adicionar fundo preto atrás de tudo
                         document.body.style.background = 'black';
                         document.body.style.overflow = 'hidden';
+                        document.body.style.cursor = 'default';
                         
                         // Esconder o modal do slideshow para que a imagem seja visível
                         const slideshowViewer = document.getElementById('slideshow-viewer');
@@ -4172,11 +4173,7 @@ class DeParaUI {
             width: 100vw !important;
             height: 100vh !important;
             z-index: 1000000 !important;
-            pointer-events: auto !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            padding: 20px !important;
+            pointer-events: none !important;
         `;
         
         // Botão anterior
@@ -4196,6 +4193,11 @@ class DeParaUI {
             align-items: center !important;
             justify-content: center !important;
             transition: background 0.3s !important;
+            position: absolute !important;
+            left: 20px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            z-index: 1000002 !important;
         `;
         prevBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4223,7 +4225,26 @@ class DeParaUI {
         // Botão próximo
         const nextBtn = document.createElement('button');
         nextBtn.innerHTML = '→';
-        nextBtn.style.cssText = prevBtn.style.cssText;
+        nextBtn.style.cssText = `
+            background: rgba(0, 0, 0, 0.7) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 50% !important;
+            width: 60px !important;
+            height: 60px !important;
+            font-size: 24px !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: background 0.3s !important;
+            position: absolute !important;
+            right: 20px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            z-index: 1000002 !important;
+        `;
         nextBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -4259,6 +4280,7 @@ class DeParaUI {
             padding: 10px 20px !important;
             border-radius: 20px !important;
             font-size: 16px !important;
+            z-index: 1000002 !important;
             pointer-events: none !important;
         `;
         counter.id = 'dynamic-slideshow-counter';
@@ -4282,6 +4304,7 @@ class DeParaUI {
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
+            z-index: 1000002 !important;
         `;
         closeBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4353,6 +4376,7 @@ class DeParaUI {
         // Restaurar fundo original do body
         document.body.style.background = '';
         document.body.style.overflow = '';
+        document.body.style.cursor = '';
         
         // Mostrar o modal do slideshow novamente
         const slideshowViewer = document.getElementById('slideshow-viewer');
