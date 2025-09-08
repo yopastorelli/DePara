@@ -3714,11 +3714,13 @@ class DeParaUI {
             imageContainer.style.display = 'flex';
             imageContainer.style.alignItems = 'center';
             imageContainer.style.justifyContent = 'center';
-            imageContainer.style.width = '100%';
-            imageContainer.style.height = '100%';
-            imageContainer.style.minHeight = '300px';
+            imageContainer.style.width = '100vw';
+            imageContainer.style.height = '100vh';
+            imageContainer.style.minWidth = '800px';
+            imageContainer.style.minHeight = '600px';
             imageContainer.style.position = 'relative';
             imageContainer.style.zIndex = '1';
+            imageContainer.style.background = 'rgba(0, 0, 0, 0.1)';
             
             console.log('📦 Container após forçar estilos:', {
                 display: imageContainer.style.display,
@@ -3800,23 +3802,62 @@ class DeParaUI {
                     targetElement.style.setProperty('opacity', '1', 'important');
                     targetElement.style.setProperty('position', 'relative', 'important');
                     targetElement.style.setProperty('z-index', '1000', 'important');
-                    targetElement.style.setProperty('width', 'auto', 'important');
-                    targetElement.style.setProperty('height', 'auto', 'important');
-                    targetElement.style.setProperty('min-width', '300px', 'important');
-                    targetElement.style.setProperty('min-height', '300px', 'important');
-                    targetElement.style.setProperty('max-width', '100%', 'important');
-                    targetElement.style.setProperty('max-height', '100%', 'important');
+                    targetElement.style.setProperty('width', '90vw', 'important');
+                    targetElement.style.setProperty('height', '90vh', 'important');
+                    targetElement.style.setProperty('min-width', '600px', 'important');
+                    targetElement.style.setProperty('min-height', '400px', 'important');
+                    targetElement.style.setProperty('max-width', '90vw', 'important');
+                    targetElement.style.setProperty('max-height', '90vh', 'important');
                     targetElement.style.setProperty('object-fit', 'contain', 'important');
-                    targetElement.style.setProperty('border', '2px solid #4CAF50', 'important');
+                    targetElement.style.setProperty('border', '3px solid #4CAF50', 'important');
+                    targetElement.style.setProperty('box-shadow', '0 0 20px rgba(0, 0, 0, 0.8)', 'important');
 
                     console.log('🖼️ Imagem exibida no elemento:', targetElement.src);
                     console.log('🖼️ Tipo de elemento:', targetElement.tagName);
                     console.log('🖼️ ID do elemento:', targetElement.id);
+                    
+                    // Forçar reflow para garantir que os estilos sejam aplicados
+                    targetElement.offsetHeight;
+                    targetElement.offsetWidth;
 
                     // Forçar reflow múltiplas vezes
                     targetElement.offsetHeight;
                     targetElement.offsetWidth;
                     targetElement.getBoundingClientRect();
+                    
+                    // Verificação final das dimensões
+                    setTimeout(() => {
+                        const finalRect = targetElement.getBoundingClientRect();
+                        console.log('🔍 Verificação final das dimensões:', {
+                            width: finalRect.width,
+                            height: finalRect.height,
+                            visible: finalRect.width > 0 && finalRect.height > 0
+                        });
+                        
+                        if (finalRect.width === 0 || finalRect.height === 0) {
+                            console.error('🚨 FALHA CRÍTICA: Imagem ainda com dimensões zero após todas as correções!');
+                            // Tentar uma última vez com estilos ainda mais forçados
+                            targetElement.style.cssText = `
+                                display: block !important;
+                                visibility: visible !important;
+                                opacity: 1 !important;
+                                position: relative !important;
+                                z-index: 9999 !important;
+                                width: 800px !important;
+                                height: 600px !important;
+                                min-width: 800px !important;
+                                min-height: 600px !important;
+                                max-width: 800px !important;
+                                max-height: 600px !important;
+                                object-fit: contain !important;
+                                border: 5px solid red !important;
+                                background: rgba(255, 0, 0, 0.1) !important;
+                                box-shadow: 0 0 30px rgba(255, 0, 0, 0.8) !important;
+                            `;
+                        } else {
+                            console.log('✅ Imagem exibida com sucesso!');
+                        }
+                    }, 100);
 
                     // Verificar contexto do documento
                     console.log('📄 Contexto do documento:', {
