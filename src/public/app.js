@@ -3813,7 +3813,7 @@ class DeParaUI {
                             top: 50% !important;
                             left: 50% !important;
                             transform: translate(-50%, -50%) !important;
-                            z-index: 9999 !important;
+                            z-index: 999999 !important;
                             width: 100vw !important;
                             height: 100vh !important;
                             min-width: 100vw !important;
@@ -3836,7 +3836,7 @@ class DeParaUI {
                         newImageElement.style.top = '50%';
                         newImageElement.style.left = '50%';
                         newImageElement.style.transform = 'translate(-50%, -50%)';
-                        newImageElement.style.zIndex = '9999';
+                        newImageElement.style.zIndex = '999999';
                         newImageElement.style.width = '100vw';
                         newImageElement.style.height = '100vh';
                         newImageElement.style.minWidth = '100vw';
@@ -3853,8 +3853,8 @@ class DeParaUI {
                         document.body.appendChild(newImageElement);
                         targetElement = newImageElement;
                         
-                        // Imagem abaixo dos controles originais do slideshow
-                        newImageElement.style.zIndex = '9999';
+                        // Garantir que a imagem esteja acima de todos os modais
+                        newImageElement.style.zIndex = '999999';
                         newImageElement.style.pointerEvents = 'none';
                         
                         // Adicionar fundo preto atrás de tudo
@@ -3862,8 +3862,15 @@ class DeParaUI {
                         document.body.style.overflow = 'hidden';
                         document.body.style.cursor = 'default';
                         
-                        // NÃO esconder o slideshow-viewer - usar os controles originais
-                        console.log('🖥️ Usando controles originais do slideshow-viewer');
+                        // Esconder o modal do slideshow para que a imagem seja visível
+                        const slideshowViewer = document.getElementById('slideshow-viewer');
+                        if (slideshowViewer) {
+                            slideshowViewer.style.display = 'none';
+                            console.log('🖥️ Modal do slideshow escondido para mostrar imagem dinâmica');
+                        }
+                        
+                        // Criar controles de navegação para a imagem dinâmica
+                        this.createDynamicSlideshowControls();
                         
                         console.log('🆕 Novo elemento criado e adicionado ao body');
                         console.log('🔍 Debug Raspberry Pi - Elemento criado:', {
@@ -4359,7 +4366,12 @@ class DeParaUI {
             console.log('🧹 Elemento dinâmico removido');
         }
         
-        // Não há controles dinâmicos para limpar - usando controles originais
+        // Limpar controles dinâmicos
+        const dynamicControls = document.getElementById('dynamic-slideshow-controls');
+        if (dynamicControls) {
+            dynamicControls.remove();
+            console.log('🧹 Controles dinâmicos removidos');
+        }
         
         // Restaurar fundo original do body
         document.body.style.background = '';
