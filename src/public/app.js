@@ -4321,6 +4321,7 @@ class DeParaUI {
         
         // Botão anterior (simples)
         const prevBtn = document.createElement('button');
+        prevBtn.className = 'slideshow-btn';
         prevBtn.innerHTML = '⬅️';
         prevBtn.style.cssText = `
             position: absolute;
@@ -4347,6 +4348,7 @@ class DeParaUI {
         
         // Botão próximo (simples)
         const nextBtn = document.createElement('button');
+        nextBtn.className = 'slideshow-btn';
         nextBtn.innerHTML = '➡️';
         nextBtn.style.cssText = `
             position: absolute;
@@ -4410,6 +4412,7 @@ class DeParaUI {
         
         // Botão fechar (simples)
         const closeBtn = document.createElement('button');
+        closeBtn.className = 'slideshow-btn';
         closeBtn.innerHTML = '❌';
         closeBtn.style.cssText = `
             position: absolute;
@@ -4436,6 +4439,7 @@ class DeParaUI {
         // Botão apagar (simples)
         const deleteBtn = document.createElement('button');
         deleteBtn.id = 'dynamic-slideshow-delete';
+        deleteBtn.className = 'slideshow-btn';
         deleteBtn.innerHTML = '🗑️';
         deleteBtn.title = 'Apagar foto';
         deleteBtn.style.cssText = `
@@ -4463,6 +4467,7 @@ class DeParaUI {
         // Botão ocultar (simples)
         const hideBtn = document.createElement('button');
         hideBtn.id = 'dynamic-slideshow-hide';
+        hideBtn.className = 'slideshow-btn';
         hideBtn.innerHTML = '👁️';
         hideBtn.title = 'Ocultar foto';
         hideBtn.style.cssText = `
@@ -4548,6 +4553,22 @@ class DeParaUI {
             console.log('🗑️ Apagando imagem:', currentImage.path);
             console.log('📁 Movendo para pasta:', this.slideshowConfig.deletedFolder);
 
+            // Verificar se a pasta de destino existe primeiro
+            const checkResponse = await fetch('/api/files/check-path', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    path: this.slideshowConfig.deletedFolder
+                })
+            });
+
+            if (!checkResponse.ok) {
+                this.showToast('Pasta de destino não existe. Configure corretamente nas configurações.', 'error');
+                return;
+            }
+
             // Chamar API para mover arquivo
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
@@ -4615,6 +4636,22 @@ class DeParaUI {
         try {
             console.log('👁️ Ocultando imagem:', currentImage.path);
             console.log('📁 Movendo para pasta:', this.slideshowConfig.hiddenFolder);
+
+            // Verificar se a pasta de destino existe primeiro
+            const checkResponse = await fetch('/api/files/check-path', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    path: this.slideshowConfig.hiddenFolder
+                })
+            });
+
+            if (!checkResponse.ok) {
+                this.showToast('Pasta de destino não existe. Configure corretamente nas configurações.', 'error');
+                return;
+            }
 
             // Chamar API para mover arquivo
             const response = await fetch('/api/files/execute', {
