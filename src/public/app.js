@@ -3158,6 +3158,10 @@ class DeParaUI {
         // Coletar pastas de organização
         const deletedFolder = document.getElementById('slideshow-deleted-folder').value.trim();
         const hiddenFolder = document.getElementById('slideshow-hidden-folder').value.trim();
+        
+        console.log('🔍 DEBUG - Pastas coletadas:');
+        console.log('🔍 deletedFolder:', deletedFolder);
+        console.log('🔍 hiddenFolder:', hiddenFolder);
 
         this.slideshowConfig = {
             interval: Math.max(1, Math.min(60, interval)),
@@ -3168,6 +3172,8 @@ class DeParaUI {
             deletedFolder,
             hiddenFolder
         };
+        
+        console.log('🔍 DEBUG - Configuração atualizada:', this.slideshowConfig);
 
         this.saveSlideshowConfig();
         console.log('⚙️ Configurações aplicadas:', this.slideshowConfig);
@@ -4435,7 +4441,12 @@ class DeParaUI {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('🗑️ Botão apagar clicado (ESTÁTICO)');
-                this.deleteCurrentImage();
+                // Usar window.deParaUI para garantir contexto correto
+                if (window.deParaUI && typeof window.deParaUI.deleteCurrentImage === 'function') {
+                    window.deParaUI.deleteCurrentImage();
+                } else {
+                    console.error('❌ DeParaUI não disponível ou método não encontrado');
+                }
             });
             deleteBtn.setAttribute('data-listener-added', 'true');
         }
@@ -4447,7 +4458,12 @@ class DeParaUI {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('👁️ Botão ocultar clicado (ESTÁTICO)');
-                this.hideCurrentImage();
+                // Usar window.deParaUI para garantir contexto correto
+                if (window.deParaUI && typeof window.deParaUI.hideCurrentImage === 'function') {
+                    window.deParaUI.hideCurrentImage();
+                } else {
+                    console.error('❌ DeParaUI não disponível ou método não encontrado');
+                }
             });
             hideBtn.setAttribute('data-listener-added', 'true');
         }
@@ -4490,18 +4506,26 @@ class DeParaUI {
 
     // Apagar imagem atual (mover para pasta de excluídas)
     async deleteCurrentImage() {
+        console.log('🔍 DEBUG deleteCurrentImage - Iniciando...');
+        console.log('🔍 slideshowImages:', this.slideshowImages);
+        console.log('🔍 currentSlideIndex:', this.currentSlideIndex);
+        console.log('🔍 slideshowConfig:', this.slideshowConfig);
+        
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
+            console.log('❌ Nenhuma imagem para apagar');
             this.showToast('Nenhuma imagem para apagar', 'error');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
         if (!currentImage) {
+            console.log('❌ Imagem atual não encontrada');
             this.showToast('Imagem atual não encontrada', 'error');
             return;
         }
 
         if (!this.slideshowConfig.deletedFolder) {
+            console.log('❌ Pasta de excluídas não configurada');
             this.showToast('Configure a pasta de fotos excluídas nas configurações', 'error');
             return;
         }
@@ -4587,18 +4611,26 @@ class DeParaUI {
 
     // Ocultar imagem atual (mover para pasta de ocultas)
     async hideCurrentImage() {
+        console.log('🔍 DEBUG hideCurrentImage - Iniciando...');
+        console.log('🔍 slideshowImages:', this.slideshowImages);
+        console.log('🔍 currentSlideIndex:', this.currentSlideIndex);
+        console.log('🔍 slideshowConfig:', this.slideshowConfig);
+        
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
+            console.log('❌ Nenhuma imagem para ocultar');
             this.showToast('Nenhuma imagem para ocultar', 'error');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
         if (!currentImage) {
+            console.log('❌ Imagem atual não encontrada');
             this.showToast('Imagem atual não encontrada', 'error');
             return;
         }
 
         if (!this.slideshowConfig.hiddenFolder) {
+            console.log('❌ Pasta de ocultas não configurada');
             this.showToast('Configure a pasta de fotos ocultas nas configurações', 'error');
             return;
         }
