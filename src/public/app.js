@@ -3645,6 +3645,27 @@ class DeParaUI {
                 position: imageContainer.style.position,
                 zIndex: imageContainer.style.zIndex
             });
+            
+            // FORÇAR ESTILOS NO CONTAINER para garantir que a imagem seja exibida
+            imageContainer.style.display = 'flex';
+            imageContainer.style.alignItems = 'center';
+            imageContainer.style.justifyContent = 'center';
+            imageContainer.style.width = '100%';
+            imageContainer.style.height = '100%';
+            imageContainer.style.minHeight = '300px';
+            imageContainer.style.position = 'relative';
+            imageContainer.style.zIndex = '1';
+            
+            console.log('📦 Container após forçar estilos:', {
+                display: imageContainer.style.display,
+                visibility: imageContainer.style.visibility,
+                opacity: imageContainer.style.opacity,
+                position: imageContainer.style.position,
+                zIndex: imageContainer.style.zIndex,
+                width: imageContainer.style.width,
+                height: imageContainer.style.height,
+                minHeight: imageContainer.style.minHeight
+            });
         }
 
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
@@ -3702,6 +3723,15 @@ class DeParaUI {
                     imageElement.style.opacity = '1';
                     imageElement.style.position = 'relative';
                     imageElement.style.zIndex = '1';
+                    
+                    // FORÇAR DIMENSÕES MÍNIMAS para garantir que a imagem seja exibida
+                    imageElement.style.minWidth = '200px';
+                    imageElement.style.minHeight = '200px';
+                    imageElement.style.maxWidth = '100%';
+                    imageElement.style.maxHeight = '100%';
+                    imageElement.style.width = 'auto';
+                    imageElement.style.height = 'auto';
+                    
                     console.log('🖼️ Imagem exibida no elemento:', imageElement.src);
                     console.log('🖼️ Estilo do elemento:', {
                         display: imageElement.style.display,
@@ -3709,6 +3739,8 @@ class DeParaUI {
                         opacity: imageElement.style.opacity,
                         width: imageElement.style.width,
                         height: imageElement.style.height,
+                        minWidth: imageElement.style.minWidth,
+                        minHeight: imageElement.style.minHeight,
                         position: imageElement.style.position,
                         zIndex: imageElement.style.zIndex
                     });
@@ -3725,6 +3757,25 @@ class DeParaUI {
                         height: rect.height,
                         visible: rect.width > 0 && rect.height > 0
                     });
+                    
+                    // Se ainda não estiver visível, forçar mais estilos
+                    if (rect.width === 0 || rect.height === 0) {
+                        console.warn('⚠️ Imagem com dimensões zero, forçando estilos adicionais...');
+                        imageElement.style.width = '300px';
+                        imageElement.style.height = '300px';
+                        imageElement.style.objectFit = 'contain';
+                        imageElement.style.border = '2px solid red'; // Para debug visual
+                        
+                        // Verificar novamente
+                        const newRect = imageElement.getBoundingClientRect();
+                        console.log('🖼️ Posição após forçar dimensões:', {
+                            top: newRect.top,
+                            left: newRect.left,
+                            width: newRect.width,
+                            height: newRect.height,
+                            visible: newRect.width > 0 && newRect.height > 0
+                        });
+                    }
                 } else {
                     console.error('❌ Elemento slideshow-image não encontrado!');
                 }
