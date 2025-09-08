@@ -3813,7 +3813,7 @@ class DeParaUI {
                             top: 50% !important;
                             left: 50% !important;
                             transform: translate(-50%, -50%) !important;
-                            z-index: 9999 !important;
+                            z-index: 99999 !important;
                             width: 80vw !important;
                             height: 80vh !important;
                             min-width: 600px !important;
@@ -3835,7 +3835,7 @@ class DeParaUI {
                         newImageElement.style.top = '50%';
                         newImageElement.style.left = '50%';
                         newImageElement.style.transform = 'translate(-50%, -50%)';
-                        newImageElement.style.zIndex = '9999';
+                        newImageElement.style.zIndex = '99999';
                         newImageElement.style.width = '80vw';
                         newImageElement.style.height = '80vh';
                         newImageElement.style.minWidth = '600px';
@@ -3851,6 +3851,17 @@ class DeParaUI {
                         // Adicionar ao body (fora do container problemático)
                         document.body.appendChild(newImageElement);
                         targetElement = newImageElement;
+                        
+                        // Garantir que a imagem esteja acima de todos os modais
+                        newImageElement.style.zIndex = '999999';
+                        newImageElement.style.pointerEvents = 'auto';
+                        
+                        // Esconder o modal do slideshow para que a imagem seja visível
+                        const slideshowViewer = document.getElementById('slideshow-viewer');
+                        if (slideshowViewer) {
+                            slideshowViewer.style.display = 'none';
+                            console.log('🖥️ Modal do slideshow escondido para mostrar imagem dinâmica');
+                        }
                         
                         console.log('🆕 Novo elemento criado e adicionado ao body');
                         console.log('🔍 Debug Raspberry Pi - Elemento criado:', {
@@ -3935,7 +3946,7 @@ class DeParaUI {
                                 position: absolute !important;
                                 top: 100px !important;
                                 left: 100px !important;
-                                z-index: 9999 !important;
+                                z-index: 99999 !important;
                                 width: 800px !important;
                                 height: 600px !important;
                                 min-width: 800px !important;
@@ -4136,13 +4147,19 @@ class DeParaUI {
     // Fechar viewer do slideshow
     closeSlideshowViewer() {
         this.stopAutoPlay();
-        document.getElementById('slideshow-viewer').style.display = 'none';
         
         // Limpar elementos criados dinamicamente
         const dynamicElement = document.getElementById('slideshow-image-new');
         if (dynamicElement) {
             dynamicElement.remove();
             console.log('🧹 Elemento dinâmico removido');
+        }
+        
+        // Mostrar o modal do slideshow novamente
+        const slideshowViewer = document.getElementById('slideshow-viewer');
+        if (slideshowViewer) {
+            slideshowViewer.style.display = 'none';
+            console.log('🖥️ Modal do slideshow fechado');
         }
         
         this.slideshowImages = [];
