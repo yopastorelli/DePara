@@ -911,6 +911,7 @@ class DeParaUI {
                 
                 slideshowField.value = finalPath;
                 console.log('📂 Pasta do slideshow carregada na inicialização:', finalPath);
+                console.log('🎯 Busca recursiva será forçada para encontrar TODAS as imagens');
             }
         }
     }
@@ -3415,8 +3416,9 @@ class DeParaUI {
         // Fechar modal de configuração
         this.closeSlideshowModal();
 
-        // Iniciar carregamento das imagens
-        await this.loadSlideshowImages(folderPath, this.slideshowConfig.extensions, this.slideshowConfig.recursive, this.slideshowConfig.interval);
+        // SEMPRE forçar busca recursiva para encontrar TODAS as imagens
+        console.log('🔍 Forçando busca recursiva para encontrar TODAS as imagens na pasta e subpastas');
+        await this.loadSlideshowImages(folderPath, this.slideshowConfig.extensions, true, this.slideshowConfig.interval);
     }
 
     // Carregar imagens do slideshow
@@ -3428,10 +3430,14 @@ class DeParaUI {
             // Preparar extensões para a API
             const formattedExtensions = extensions.map(ext => ext.startsWith('.') ? ext : '.' + ext);
 
+            // SEMPRE forçar busca recursiva para encontrar TODAS as imagens
+            const forceRecursive = true;
+            
             console.log('📡 Enviando requisição para API...');
             console.log('🔗 Caminho sendo enviado:', folderPath);
             console.log('🔧 Extensões formatadas:', formattedExtensions);
-            console.log('🔄 Recursivo:', recursive);
+            console.log('🔄 Recursivo (forçado):', forceRecursive);
+            console.log('🎯 Buscando TODAS as imagens em:', folderPath, 'e todas as subpastas');
 
             const response = await fetch('/api/files/list-images', {
                 method: 'POST',
@@ -3441,7 +3447,7 @@ class DeParaUI {
                 body: JSON.stringify({
                     folderPath,
                     extensions: formattedExtensions,
-                    recursive
+                    recursive: forceRecursive
                 })
             });
 
