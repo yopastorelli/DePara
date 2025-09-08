@@ -3626,14 +3626,26 @@ class DeParaUI {
         const filenameElement = document.getElementById('slideshow-filename');
         const loadingElement = document.getElementById('slideshow-loading');
         const errorElement = document.getElementById('slideshow-error');
+        const imageContainer = document.querySelector('.slideshow-image-container');
         
         console.log('🔍 Elementos encontrados:', {
             imageElement: !!imageElement,
             counterElement: !!counterElement,
             filenameElement: !!filenameElement,
             loadingElement: !!loadingElement,
-            errorElement: !!errorElement
+            errorElement: !!errorElement,
+            imageContainer: !!imageContainer
         });
+        
+        if (imageContainer) {
+            console.log('📦 Container da imagem:', {
+                display: imageContainer.style.display,
+                visibility: imageContainer.style.visibility,
+                opacity: imageContainer.style.opacity,
+                position: imageContainer.style.position,
+                zIndex: imageContainer.style.zIndex
+            });
+        }
 
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
             console.log('❌ Nenhuma imagem carregada');
@@ -3686,13 +3698,32 @@ class DeParaUI {
                     imageElement.src = imageUrl;
                     imageElement.alt = currentImage.name;
                     imageElement.style.display = 'block';
+                    imageElement.style.visibility = 'visible';
+                    imageElement.style.opacity = '1';
+                    imageElement.style.position = 'relative';
+                    imageElement.style.zIndex = '1';
                     console.log('🖼️ Imagem exibida no elemento:', imageElement.src);
                     console.log('🖼️ Estilo do elemento:', {
                         display: imageElement.style.display,
                         visibility: imageElement.style.visibility,
                         opacity: imageElement.style.opacity,
                         width: imageElement.style.width,
-                        height: imageElement.style.height
+                        height: imageElement.style.height,
+                        position: imageElement.style.position,
+                        zIndex: imageElement.style.zIndex
+                    });
+                    
+                    // Forçar reflow para garantir que a imagem seja exibida
+                    imageElement.offsetHeight;
+                    
+                    // Verificar se a imagem está realmente visível
+                    const rect = imageElement.getBoundingClientRect();
+                    console.log('🖼️ Posição da imagem:', {
+                        top: rect.top,
+                        left: rect.left,
+                        width: rect.width,
+                        height: rect.height,
+                        visible: rect.width > 0 && rect.height > 0
                     });
                 } else {
                     console.error('❌ Elemento slideshow-image não encontrado!');
