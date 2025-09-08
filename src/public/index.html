@@ -91,13 +91,19 @@
         }
 
         /* BOTÕES ELEGANTES COM HOVER */
-        .slideshow-viewer #static-slideshow-controls {
+        .slideshow-viewer #static-slideshow-controls button {
             opacity: 0;
             transition: opacity 0.3s ease;
         }
         
-        .slideshow-viewer:hover #static-slideshow-controls {
+        .slideshow-viewer:hover #static-slideshow-controls button {
             opacity: 1;
+        }
+        
+        /* CONTADOR E FILENAME SEMPRE VISÍVEIS */
+        .slideshow-viewer #static-slideshow-controls #static-counter,
+        .slideshow-viewer #static-slideshow-controls #static-filename {
+            opacity: 1 !important;
         }
         
         .slideshow-viewer #static-slideshow-controls button {
