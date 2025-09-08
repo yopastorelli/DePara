@@ -3950,7 +3950,7 @@ class DeParaUI {
                             top: 50% !important;
                             left: 50% !important;
                             transform: translate(-50%, -50%) !important;
-                            z-index: 999999 !important;
+                            z-index: 999998 !important;
                             width: 100vw !important;
                             height: 100vh !important;
                             min-width: 100vw !important;
@@ -3990,8 +3990,8 @@ class DeParaUI {
                         document.body.appendChild(newImageElement);
                         targetElement = newImageElement;
                         
-                        // Garantir que a imagem esteja acima de todos os modais
-                        newImageElement.style.zIndex = '999999';
+                        // Garantir que a imagem esteja acima de todos os modais mas abaixo dos controles
+                        newImageElement.style.zIndex = '999998';
                         newImageElement.style.pointerEvents = 'none';
                         
                         // Adicionar fundo preto atrás de tudo
@@ -4316,7 +4316,7 @@ class DeParaUI {
             width: 100vw;
             height: 100vh;
             z-index: 1000000;
-            pointer-events: none;
+            pointer-events: auto;
         `;
         
         // Botão anterior (simples)
