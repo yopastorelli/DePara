@@ -1700,7 +1700,7 @@ class FileOperationsManager {
                             if (extensions.includes(ext)) {
                                 logger.info(`✅ Extensão válida: ${ext}`);
                                 // Verificar se não deve ser ignorado
-                                if (!this.shouldIgnoreFile(currentPath, item)) {
+                                if (!shouldIgnoreFile(item)) {
                                     logger.info(`✅ Arquivo não ignorado: ${item}`);
                                     images.push({
                                         path: itemPath,
