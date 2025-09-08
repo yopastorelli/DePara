@@ -4544,41 +4544,79 @@ class DeParaUI {
         // Proteger ícones do slideshow imediatamente após criação
         setTimeout(() => {
             if (deleteBtn) {
-                deleteBtn.style.fontFamily = 'Arial, sans-serif !important';
-                deleteBtn.style.fontSize = '18px !important';
-                deleteBtn.style.color = 'white !important';
                 deleteBtn.innerHTML = '🗑️';
+                deleteBtn.style.fontFamily = 'Arial, sans-serif !important';
+                deleteBtn.style.fontSize = '24px !important';
+                deleteBtn.style.color = 'white !important';
+                deleteBtn.style.background = 'transparent !important';
+                deleteBtn.style.border = 'none !important';
                 console.log('🛡️ Protegendo ícone de apagar do slideshow (pós-criação)');
             }
             
             if (hideBtn) {
-                hideBtn.style.fontFamily = 'Arial, sans-serif !important';
-                hideBtn.style.fontSize = '18px !important';
-                hideBtn.style.color = 'white !important';
                 hideBtn.innerHTML = '👁️';
+                hideBtn.style.fontFamily = 'Arial, sans-serif !important';
+                hideBtn.style.fontSize = '24px !important';
+                hideBtn.style.color = 'white !important';
+                hideBtn.style.background = 'transparent !important';
+                hideBtn.style.border = 'none !important';
                 console.log('🛡️ Protegendo ícone de ocultar do slideshow (pós-criação)');
             }
         }, 100);
         
-        // Proteção adicional com intervalo
+        // Proteção adicional após 1 segundo
+        setTimeout(() => {
+            const deleteBtnCheck = document.getElementById('dynamic-slideshow-delete');
+            const hideBtnCheck = document.getElementById('dynamic-slideshow-hide');
+            
+            if (deleteBtnCheck) {
+                deleteBtnCheck.innerHTML = '🗑️';
+                deleteBtnCheck.style.fontFamily = 'Arial, sans-serif !important';
+                deleteBtnCheck.style.fontSize = '24px !important';
+                deleteBtnCheck.style.color = 'white !important';
+                deleteBtnCheck.style.background = 'transparent !important';
+                deleteBtnCheck.style.border = 'none !important';
+                console.log('🛡️ Proteção adicional - ícone de apagar');
+            }
+            
+            if (hideBtnCheck) {
+                hideBtnCheck.innerHTML = '👁️';
+                hideBtnCheck.style.fontFamily = 'Arial, sans-serif !important';
+                hideBtnCheck.style.fontSize = '24px !important';
+                hideBtnCheck.style.color = 'white !important';
+                hideBtnCheck.style.background = 'transparent !important';
+                hideBtnCheck.style.border = 'none !important';
+                console.log('🛡️ Proteção adicional - ícone de ocultar');
+            }
+        }, 1000);
+        
+        // Proteção adicional com intervalo mais agressivo
         const protectIcons = setInterval(() => {
             const deleteBtnCheck = document.getElementById('dynamic-slideshow-delete');
             const hideBtnCheck = document.getElementById('dynamic-slideshow-hide');
             
-            if (deleteBtnCheck && deleteBtnCheck.innerHTML !== '🗑️') {
+            if (deleteBtnCheck) {
+                // Forçar restauração do ícone de lixo
                 deleteBtnCheck.innerHTML = '🗑️';
                 deleteBtnCheck.style.fontFamily = 'Arial, sans-serif !important';
-                deleteBtnCheck.style.fontSize = '18px !important';
-                console.log('🔄 Restaurando ícone de apagar');
+                deleteBtnCheck.style.fontSize = '24px !important';
+                deleteBtnCheck.style.color = 'white !important';
+                deleteBtnCheck.style.background = 'transparent !important';
+                deleteBtnCheck.style.border = 'none !important';
+                console.log('🔄 Forçando restauração do ícone de apagar');
             }
             
-            if (hideBtnCheck && hideBtnCheck.innerHTML !== '👁️') {
+            if (hideBtnCheck) {
+                // Forçar restauração do ícone de olho
                 hideBtnCheck.innerHTML = '👁️';
                 hideBtnCheck.style.fontFamily = 'Arial, sans-serif !important';
-                hideBtnCheck.style.fontSize = '18px !important';
-                console.log('🔄 Restaurando ícone de ocultar');
+                hideBtnCheck.style.fontSize = '24px !important';
+                hideBtnCheck.style.color = 'white !important';
+                hideBtnCheck.style.background = 'transparent !important';
+                hideBtnCheck.style.border = 'none !important';
+                console.log('🔄 Forçando restauração do ícone de ocultar');
             }
-        }, 1000);
+        }, 500); // Intervalo mais frequente
         
         // Limpar intervalo quando slideshow fechar
         this.slideshowIconProtectionInterval = protectIcons;

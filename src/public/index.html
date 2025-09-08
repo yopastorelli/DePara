@@ -1463,14 +1463,22 @@
                 const slideshowHideBtn = document.getElementById('dynamic-slideshow-hide');
                 
                 if (slideshowDeleteBtn) {
-                    slideshowDeleteBtn.style.fontFamily = 'Arial, sans-serif';
-                    slideshowDeleteBtn.style.fontSize = '18px';
+                    slideshowDeleteBtn.innerHTML = '🗑️';
+                    slideshowDeleteBtn.style.fontFamily = 'Arial, sans-serif !important';
+                    slideshowDeleteBtn.style.fontSize = '24px !important';
+                    slideshowDeleteBtn.style.color = 'white !important';
+                    slideshowDeleteBtn.style.background = 'transparent !important';
+                    slideshowDeleteBtn.style.border = 'none !important';
                     console.log('🛡️ Protegendo ícone de apagar do slideshow');
                 }
                 
                 if (slideshowHideBtn) {
-                    slideshowHideBtn.style.fontFamily = 'Arial, sans-serif';
-                    slideshowHideBtn.style.fontSize = '18px';
+                    slideshowHideBtn.innerHTML = '👁️';
+                    slideshowHideBtn.style.fontFamily = 'Arial, sans-serif !important';
+                    slideshowHideBtn.style.fontSize = '24px !important';
+                    slideshowHideBtn.style.color = 'white !important';
+                    slideshowHideBtn.style.background = 'transparent !important';
+                    slideshowHideBtn.style.border = 'none !important';
                     console.log('🛡️ Protegendo ícone de ocultar do slideshow');
                 }
                 
