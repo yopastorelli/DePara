@@ -3357,7 +3357,26 @@ class DeParaUI {
         console.log('🚀 INÍCIO browseDeletedFolder()');
         console.log('📁 Abrindo seletor de pasta para fotos excluídas...');
         
-        // Usar diálogo nativo para seleção de pasta
+        // Verificar se estamos no Electron
+        const isElectron = window.navigator.userAgent.includes('Electron');
+        console.log('🔍 É Electron?', isElectron);
+        
+        if (isElectron) {
+            // No Electron, usar prompt para entrada manual
+            console.log('🖥️ Usando prompt manual para Electron');
+            const manualPath = prompt('Digite o caminho da pasta de fotos excluídas:');
+            if (manualPath && manualPath.trim() !== '') {
+                const deletedField = document.getElementById('slideshow-deleted-folder');
+                if (deletedField) {
+                    deletedField.value = manualPath.trim();
+                    this.showToast(`Pasta de fotos excluídas: ${manualPath}`, 'success');
+                    console.log('✅ Campo atualizado manualmente:', deletedField.value);
+                }
+            }
+            return;
+        }
+        
+        // Usar diálogo nativo para seleção de pasta (browser normal)
         const input = document.createElement('input');
         input.type = 'file';
         input.webkitdirectory = true;
@@ -3448,7 +3467,26 @@ class DeParaUI {
         console.log('🚀 INÍCIO browseHiddenFolder()');
         console.log('📁 Abrindo seletor de pasta para fotos ocultas...');
         
-        // Usar diálogo nativo para seleção de pasta
+        // Verificar se estamos no Electron
+        const isElectron = window.navigator.userAgent.includes('Electron');
+        console.log('🔍 É Electron?', isElectron);
+        
+        if (isElectron) {
+            // No Electron, usar prompt para entrada manual
+            console.log('🖥️ Usando prompt manual para Electron');
+            const manualPath = prompt('Digite o caminho da pasta de fotos ocultas:');
+            if (manualPath && manualPath.trim() !== '') {
+                const hiddenField = document.getElementById('slideshow-hidden-folder');
+                if (hiddenField) {
+                    hiddenField.value = manualPath.trim();
+                    this.showToast(`Pasta de fotos ocultas: ${manualPath}`, 'success');
+                    console.log('✅ Campo atualizado manualmente:', hiddenField.value);
+                }
+            }
+            return;
+        }
+        
+        // Usar diálogo nativo para seleção de pasta (browser normal)
         const input = document.createElement('input');
         input.type = 'file';
         input.webkitdirectory = true;
