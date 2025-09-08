@@ -4171,7 +4171,7 @@ class DeParaUI {
             width: 100vw !important;
             height: 100vh !important;
             z-index: 1000000 !important;
-            pointer-events: none !important;
+            pointer-events: auto !important;
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
@@ -4320,6 +4320,16 @@ class DeParaUI {
             const testNext = document.querySelector('#dynamic-slideshow-controls button:nth-child(2)');
             console.log('🧪 Botão anterior encontrado:', testPrev);
             console.log('🧪 Botão próximo encontrado:', testNext);
+            
+            // Teste direto dos eventos
+            if (testPrev) {
+                console.log('🧪 Testando evento do botão anterior...');
+                testPrev.click();
+            }
+            if (testNext) {
+                console.log('🧪 Testando evento do botão próximo...');
+                testNext.click();
+            }
         }, 1000);
     }
     
