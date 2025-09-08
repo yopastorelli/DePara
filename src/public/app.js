@@ -3821,10 +3821,10 @@ class DeParaUI {
                             max-width: 100vw !important;
                             max-height: 100vh !important;
                             object-fit: contain !important;
-                            border: 5px solid #4CAF50 !important;
-                            background: rgba(0, 0, 0, 0.1) !important;
-                            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8) !important;
-                            border-radius: 8px !important;
+                            border: none !important;
+                            background: black !important;
+                            box-shadow: none !important;
+                            border-radius: 0 !important;
                         `;
                         
                         // Aplicar estilos individualmente para máxima compatibilidade
@@ -3843,10 +3843,10 @@ class DeParaUI {
                         newImageElement.style.maxWidth = '100vw';
                         newImageElement.style.maxHeight = '100vh';
                         newImageElement.style.objectFit = 'contain';
-                        newImageElement.style.border = '5px solid #4CAF50';
-                        newImageElement.style.background = 'rgba(0, 0, 0, 0.1)';
-                        newImageElement.style.boxShadow = '0 0 30px rgba(0, 0, 0, 0.8)';
-                        newImageElement.style.borderRadius = '8px';
+                        newImageElement.style.border = 'none';
+                        newImageElement.style.background = 'black';
+                        newImageElement.style.boxShadow = 'none';
+                        newImageElement.style.borderRadius = '0';
                         
                         // Adicionar ao body (fora do container problemático)
                         document.body.appendChild(newImageElement);
@@ -3855,6 +3855,10 @@ class DeParaUI {
                         // Garantir que a imagem esteja acima de todos os modais
                         newImageElement.style.zIndex = '999999';
                         newImageElement.style.pointerEvents = 'auto';
+                        
+                        // Adicionar fundo preto atrás de tudo
+                        document.body.style.background = 'black';
+                        document.body.style.overflow = 'hidden';
                         
                         // Esconder o modal do slideshow para que a imagem seja visível
                         const slideshowViewer = document.getElementById('slideshow-viewer');
@@ -4192,7 +4196,12 @@ class DeParaUI {
             justify-content: center !important;
             transition: background 0.3s !important;
         `;
-        prevBtn.addEventListener('click', () => this.previousSlide());
+        prevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🖱️ Botão anterior clicado');
+            this.previousSlide();
+        });
         prevBtn.addEventListener('mouseenter', () => {
             prevBtn.style.background = 'rgba(0, 0, 0, 0.9)';
         });
@@ -4204,7 +4213,12 @@ class DeParaUI {
         const nextBtn = document.createElement('button');
         nextBtn.innerHTML = '→';
         nextBtn.style.cssText = prevBtn.style.cssText;
-        nextBtn.addEventListener('click', () => this.nextSlide());
+        nextBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🖱️ Botão próximo clicado');
+            this.nextSlide();
+        });
         nextBtn.addEventListener('mouseenter', () => {
             nextBtn.style.background = 'rgba(0, 0, 0, 0.9)';
         });
@@ -4248,7 +4262,12 @@ class DeParaUI {
             align-items: center !important;
             justify-content: center !important;
         `;
-        closeBtn.addEventListener('click', () => this.closeSlideshowViewer());
+        closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🖱️ Botão fechar clicado');
+            this.closeSlideshowViewer();
+        });
         
         // Adicionar elementos ao container
         controlsContainer.appendChild(prevBtn);
@@ -4290,6 +4309,10 @@ class DeParaUI {
             dynamicControls.remove();
             console.log('🧹 Controles dinâmicos removidos');
         }
+        
+        // Restaurar fundo original do body
+        document.body.style.background = '';
+        document.body.style.overflow = '';
         
         // Mostrar o modal do slideshow novamente
         const slideshowViewer = document.getElementById('slideshow-viewer');
