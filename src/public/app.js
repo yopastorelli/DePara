@@ -3337,9 +3337,14 @@ class DeParaUI {
                 
                 // Atualizar o campo de pasta do slideshow
                 const slideshowField = document.getElementById('slideshow-folder-path');
+                console.log('🔍 Campo slideshow encontrado:', slideshowField);
                 if (slideshowField) {
                     slideshowField.value = fullPath;
+                    console.log('✅ Campo slideshow atualizado:', slideshowField.value);
                     this.showToast(`Pasta selecionada: ${fullPath}`, 'success');
+                } else {
+                    console.error('❌ Campo slideshow-folder-path não encontrado');
+                    this.showToast('Erro: campo não encontrado', 'error');
                 }
             }
             
