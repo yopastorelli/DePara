@@ -7308,19 +7308,7 @@ function resetSlideshowFolderForm() {
     });
 }
 
-async function startSlideshow() {
-    // Usar a implementação da classe DeParaUI
-    if (window.deParaUI) {
-        window.deParaUI.startSlideshowFromModal();
-    } else {
-        // Fallback para implementação antiga
-    const folderPath = document.getElementById('slideshow-folder-path').value.trim();
-    const maxDepth = document.getElementById('slideshow-max-depth').value;
-
-    if (!folderPath) {
-        showToast('Digite o caminho da pasta', 'error');
-        return;
-    }
+// Função removida - usando apenas a implementação da classe DeParaUI
 
     // Coletar extensões selecionadas
     const selectedExtensions = [];
@@ -7997,8 +7985,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.deParaUI) {
                 window.deParaUI.startSlideshowFromModal();
             } else {
-                // Fallback para função global
-                startSlideshow();
+                console.error('❌ DeParaUI não está disponível');
+                alert('Erro: DeParaUI não está disponível');
             }
         };
 
