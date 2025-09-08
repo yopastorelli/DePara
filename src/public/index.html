@@ -1458,6 +1458,22 @@
                     });
                 }
                 
+                // Proteger ícones do slideshow de qualquer interferência
+                const slideshowDeleteBtn = document.getElementById('dynamic-slideshow-delete');
+                const slideshowHideBtn = document.getElementById('dynamic-slideshow-hide');
+                
+                if (slideshowDeleteBtn) {
+                    slideshowDeleteBtn.style.fontFamily = 'Arial, sans-serif';
+                    slideshowDeleteBtn.style.fontSize = '18px';
+                    console.log('🛡️ Protegendo ícone de apagar do slideshow');
+                }
+                
+                if (slideshowHideBtn) {
+                    slideshowHideBtn.style.fontFamily = 'Arial, sans-serif';
+                    slideshowHideBtn.style.fontSize = '18px';
+                    console.log('🛡️ Protegendo ícone de ocultar do slideshow');
+                }
+                
                 document.body.removeChild(testIcon);
             }, 2000);
         });

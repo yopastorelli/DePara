@@ -3357,26 +3357,31 @@ class DeParaUI {
         console.log('🚀 INÍCIO browseDeletedFolder()');
         console.log('📁 Abrindo seletor de pasta para fotos excluídas...');
         
-        // Verificar se estamos no Electron
-        const isElectron = window.navigator.userAgent.includes('Electron');
-        console.log('🔍 É Electron?', isElectron);
+        // Detectar se estamos no Electron
+        const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+        console.log('🔍 Ambiente detectado:', isElectron ? 'Electron' : 'Browser');
         
         if (isElectron) {
-            // No Electron, usar prompt para entrada manual
-            console.log('🖥️ Usando prompt manual para Electron');
+            // No Electron, usar prompt direto como fallback
+            console.log('⚡ Electron detectado - usando prompt direto');
             const manualPath = prompt('Digite o caminho da pasta de fotos excluídas:');
             if (manualPath && manualPath.trim() !== '') {
                 const deletedField = document.getElementById('slideshow-deleted-folder');
                 if (deletedField) {
-                    deletedField.value = manualPath.trim();
+                    deletedField.value = manualPath;
                     this.showToast(`Pasta de fotos excluídas: ${manualPath}`, 'success');
-                    console.log('✅ Campo atualizado manualmente:', deletedField.value);
+                    console.log('✅ Campo atualizado via prompt:', deletedField.value);
+                } else {
+                    console.error('❌ Campo não encontrado');
+                    this.showToast('Erro: campo não encontrado', 'error');
                 }
+            } else {
+                this.showToast('Seleção cancelada', 'info');
             }
             return;
         }
         
-        // Usar diálogo nativo para seleção de pasta (browser normal)
+        // Usar diálogo nativo para seleção de pasta (apenas no browser)
         const input = document.createElement('input');
         input.type = 'file';
         input.webkitdirectory = true;
@@ -3384,7 +3389,27 @@ class DeParaUI {
         input.multiple = false;
         input.style.display = 'none';
         
+        // Timeout para detectar se o evento não dispara
+        let eventFired = false;
+        const timeout = setTimeout(() => {
+            if (!eventFired) {
+                console.log('⏰ Timeout - evento change não disparou, usando prompt');
+                document.body.removeChild(input);
+                const manualPath = prompt('Digite o caminho da pasta de fotos excluídas:');
+                if (manualPath && manualPath.trim() !== '') {
+                    const deletedField = document.getElementById('slideshow-deleted-folder');
+                    if (deletedField) {
+                        deletedField.value = manualPath;
+                        this.showToast(`Pasta de fotos excluídas: ${manualPath}`, 'success');
+                        console.log('✅ Campo atualizado via timeout prompt:', deletedField.value);
+                    }
+                }
+            }
+        }, 3000);
+        
         input.addEventListener('change', (event) => {
+            eventFired = true;
+            clearTimeout(timeout);
             console.log('🔄 EVENTO change disparado para deleted folder');
             const files = event.target.files;
             console.log('📁 Arquivos selecionados:', files.length);
@@ -3454,7 +3479,9 @@ class DeParaUI {
             }
             
             // Remover o input após uso
-            document.body.removeChild(input);
+            if (document.body.contains(input)) {
+                document.body.removeChild(input);
+            }
         });
         
         // Adicionar ao DOM e clicar
@@ -3467,26 +3494,31 @@ class DeParaUI {
         console.log('🚀 INÍCIO browseHiddenFolder()');
         console.log('📁 Abrindo seletor de pasta para fotos ocultas...');
         
-        // Verificar se estamos no Electron
-        const isElectron = window.navigator.userAgent.includes('Electron');
-        console.log('🔍 É Electron?', isElectron);
+        // Detectar se estamos no Electron
+        const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+        console.log('🔍 Ambiente detectado:', isElectron ? 'Electron' : 'Browser');
         
         if (isElectron) {
-            // No Electron, usar prompt para entrada manual
-            console.log('🖥️ Usando prompt manual para Electron');
+            // No Electron, usar prompt direto como fallback
+            console.log('⚡ Electron detectado - usando prompt direto');
             const manualPath = prompt('Digite o caminho da pasta de fotos ocultas:');
             if (manualPath && manualPath.trim() !== '') {
                 const hiddenField = document.getElementById('slideshow-hidden-folder');
                 if (hiddenField) {
-                    hiddenField.value = manualPath.trim();
+                    hiddenField.value = manualPath;
                     this.showToast(`Pasta de fotos ocultas: ${manualPath}`, 'success');
-                    console.log('✅ Campo atualizado manualmente:', hiddenField.value);
+                    console.log('✅ Campo atualizado via prompt:', hiddenField.value);
+                } else {
+                    console.error('❌ Campo não encontrado');
+                    this.showToast('Erro: campo não encontrado', 'error');
                 }
+            } else {
+                this.showToast('Seleção cancelada', 'info');
             }
             return;
         }
         
-        // Usar diálogo nativo para seleção de pasta (browser normal)
+        // Usar diálogo nativo para seleção de pasta (apenas no browser)
         const input = document.createElement('input');
         input.type = 'file';
         input.webkitdirectory = true;
@@ -3494,7 +3526,27 @@ class DeParaUI {
         input.multiple = false;
         input.style.display = 'none';
         
+        // Timeout para detectar se o evento não dispara
+        let eventFired = false;
+        const timeout = setTimeout(() => {
+            if (!eventFired) {
+                console.log('⏰ Timeout - evento change não disparou, usando prompt');
+                document.body.removeChild(input);
+                const manualPath = prompt('Digite o caminho da pasta de fotos ocultas:');
+                if (manualPath && manualPath.trim() !== '') {
+                    const hiddenField = document.getElementById('slideshow-hidden-folder');
+                    if (hiddenField) {
+                        hiddenField.value = manualPath;
+                        this.showToast(`Pasta de fotos ocultas: ${manualPath}`, 'success');
+                        console.log('✅ Campo atualizado via timeout prompt:', hiddenField.value);
+                    }
+                }
+            }
+        }, 3000);
+        
         input.addEventListener('change', (event) => {
+            eventFired = true;
+            clearTimeout(timeout);
             console.log('🔄 EVENTO change disparado para hidden folder');
             const files = event.target.files;
             console.log('📁 Arquivos selecionados:', files.length);
@@ -3564,7 +3616,9 @@ class DeParaUI {
             }
             
             // Remover o input após uso
-            document.body.removeChild(input);
+            if (document.body.contains(input)) {
+                document.body.removeChild(input);
+            }
         });
         
         // Adicionar ao DOM e clicar
@@ -4615,6 +4669,7 @@ class DeParaUI {
             width: 50px !important;
             height: 50px !important;
             font-size: 18px !important;
+            font-family: Arial, sans-serif !important;
             cursor: pointer !important;
             display: flex !important;
             align-items: center !important;
@@ -4647,6 +4702,7 @@ class DeParaUI {
             width: 50px !important;
             height: 50px !important;
             font-size: 18px !important;
+            font-family: Arial, sans-serif !important;
             cursor: pointer !important;
             display: flex !important;
             align-items: center !important;
@@ -4673,6 +4729,21 @@ class DeParaUI {
         
         // Adicionar ao body
         document.body.appendChild(controlsContainer);
+        
+        // Proteger ícones do slideshow imediatamente após criação
+        setTimeout(() => {
+            if (deleteBtn) {
+                deleteBtn.style.fontFamily = 'Arial, sans-serif';
+                deleteBtn.style.fontSize = '18px';
+                console.log('🛡️ Protegendo ícone de apagar do slideshow (pós-criação)');
+            }
+            
+            if (hideBtn) {
+                hideBtn.style.fontFamily = 'Arial, sans-serif';
+                hideBtn.style.fontSize = '18px';
+                console.log('🛡️ Protegendo ícone de ocultar do slideshow (pós-criação)');
+            }
+        }, 100);
         
         // Atualizar contador
         this.updateDynamicCounter();
