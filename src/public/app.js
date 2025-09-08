@@ -4608,7 +4608,7 @@ class DeParaUI {
             } else {
                 const error = await response.json();
                 console.error('❌ Erro ao apagar imagem:', error);
-                this.showToast(`Erro ao apagar imagem: ${error.message}`, 'error');
+                this.showToast(`Erro ao apagar imagem: ${error.message || 'Erro desconhecido'}`, 'error');
             }
         } catch (error) {
             console.error('❌ Erro ao apagar imagem:', error);
@@ -4676,7 +4676,7 @@ class DeParaUI {
             } else {
                 const error = await response.json();
                 console.error('❌ Erro ao ocultar imagem:', error);
-                this.showToast(`Erro ao ocultar imagem: ${error.message}`, 'error');
+                this.showToast(`Erro ao ocultar imagem: ${error.message || 'Erro desconhecido'}`, 'error');
             }
         } catch (error) {
             console.error('❌ Erro ao ocultar imagem:', error);
@@ -4723,15 +4723,19 @@ class DeParaUI {
         document.body.style.overflow = '';
         document.body.style.cursor = '';
         
-        // Mostrar o modal do slideshow novamente
+        // Esconder o modal do slideshow
         const slideshowViewer = document.getElementById('slideshow-viewer');
         if (slideshowViewer) {
             slideshowViewer.style.display = 'none';
             console.log('🖥️ Modal do slideshow fechado');
         }
         
+        // Limpar dados do slideshow
         this.slideshowImages = [];
         this.currentSlideIndex = 0;
+        this.slideshowPlaying = false;
+        
+        console.log('✅ Slideshow completamente fechado');
     }
 
     // Manipular eventos de teclado no slideshow
