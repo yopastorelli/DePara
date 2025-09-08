@@ -16,6 +16,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
+    <!-- Fallback para Material Icons -->
+    <style>
+        /* Fallback para ícones Material Icons */
+        .material-icons {
+            font-family: 'Material Icons', 'Arial', sans-serif;
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Fallback para quando Material Icons não carregam */
+        .material-icons:before {
+            content: attr(data-fallback);
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        /* Esconder fallback quando Material Icons carregam */
+        .material-icons:not([data-fallback]):before {
+            display: none;
+        }
+    </style>
+    
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -1295,7 +1328,7 @@
                         <div class="input-group">
                             <input type="text" id="slideshow-deleted-folder" placeholder="Caminho para fotos excluídas">
                             <button class="btn btn-outline slideshow-browse-deleted-btn">
-                                <span class="material-icons">folder_open</span>
+                                <span class="material-icons" data-fallback="📁">folder_open</span>
                                 Selecionar
                             </button>
                         </div>
@@ -1307,7 +1340,7 @@
                         <div class="input-group">
                             <input type="text" id="slideshow-hidden-folder" placeholder="Caminho para fotos ocultas">
                             <button class="btn btn-outline slideshow-browse-hidden-btn">
-                                <span class="material-icons">folder_open</span>
+                                <span class="material-icons" data-fallback="📁">folder_open</span>
                                 Selecionar
                             </button>
                         </div>
@@ -1381,5 +1414,44 @@
     <div id="toast-container" class="toast-container"></div>
 
     <script src="app.js"></script>
+    
+    <!-- Script para detectar carregamento de fontes Material Icons -->
+    <script>
+        // Detectar se Material Icons carregaram
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aguardar um pouco para as fontes carregarem
+            setTimeout(function() {
+                const testIcon = document.createElement('span');
+                testIcon.className = 'material-icons';
+                testIcon.textContent = 'folder_open';
+                testIcon.style.position = 'absolute';
+                testIcon.style.left = '-9999px';
+                testIcon.style.fontSize = '24px';
+                document.body.appendChild(testIcon);
+                
+                const computedStyle = window.getComputedStyle(testIcon);
+                const fontFamily = computedStyle.getPropertyValue('font-family');
+                
+                // Se a fonte não carregou, aplicar fallbacks
+                if (!fontFamily.includes('Material Icons') || fontFamily.includes('Arial')) {
+                    console.log('⚠️ Material Icons não carregaram, aplicando fallbacks');
+                    
+                    // Aplicar fallbacks a todos os ícones
+                    const icons = document.querySelectorAll('.material-icons');
+                    icons.forEach(icon => {
+                        if (icon.hasAttribute('data-fallback')) {
+                            icon.style.fontFamily = 'Arial, sans-serif';
+                            icon.style.fontSize = '18px';
+                            icon.style.fontWeight = 'bold';
+                        }
+                    });
+                } else {
+                    console.log('✅ Material Icons carregaram corretamente');
+                }
+                
+                document.body.removeChild(testIcon);
+            }, 2000);
+        });
+    </script>
 </body>
 </html>

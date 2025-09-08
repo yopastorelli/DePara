@@ -3360,15 +3360,35 @@ class DeParaUI {
             const files = event.target.files;
             if (files && files.length > 0) {
                 // Pegar o caminho da primeira pasta selecionada
-                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
+                let fullPath = '';
+                
+                if (files[0].path) {
+                    // Electron/Desktop - usar path completo
+                    fullPath = files[0].path;
+                } else if (files[0].webkitRelativePath) {
+                    // Browser - extrair pasta do webkitRelativePath
+                    const pathParts = files[0].webkitRelativePath.split('/');
+                    if (pathParts.length > 1) {
+                        fullPath = pathParts[0]; // Primeira parte é a pasta selecionada
+                    }
+                }
                 
                 console.log('📁 Pasta selecionada para fotos excluídas:', fullPath);
+                console.log('🔍 Debug - files[0]:', {
+                    name: files[0].name,
+                    path: files[0].path,
+                    webkitRelativePath: files[0].webkitRelativePath
+                });
                 
                 // Atualizar o campo de pasta de fotos excluídas
                 const deletedField = document.getElementById('slideshow-deleted-folder');
-                if (deletedField) {
+                if (deletedField && fullPath) {
                     deletedField.value = fullPath;
                     this.showToast(`Pasta de fotos excluídas: ${fullPath}`, 'success');
+                    console.log('✅ Campo atualizado:', deletedField.value);
+                } else {
+                    console.error('❌ Campo não encontrado ou caminho vazio');
+                    this.showToast('Erro ao selecionar pasta', 'error');
                 }
             }
             
@@ -3397,15 +3417,35 @@ class DeParaUI {
             const files = event.target.files;
             if (files && files.length > 0) {
                 // Pegar o caminho da primeira pasta selecionada
-                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
+                let fullPath = '';
+                
+                if (files[0].path) {
+                    // Electron/Desktop - usar path completo
+                    fullPath = files[0].path;
+                } else if (files[0].webkitRelativePath) {
+                    // Browser - extrair pasta do webkitRelativePath
+                    const pathParts = files[0].webkitRelativePath.split('/');
+                    if (pathParts.length > 1) {
+                        fullPath = pathParts[0]; // Primeira parte é a pasta selecionada
+                    }
+                }
                 
                 console.log('📁 Pasta selecionada para fotos ocultas:', fullPath);
+                console.log('🔍 Debug - files[0]:', {
+                    name: files[0].name,
+                    path: files[0].path,
+                    webkitRelativePath: files[0].webkitRelativePath
+                });
                 
                 // Atualizar o campo de pasta de fotos ocultas
                 const hiddenField = document.getElementById('slideshow-hidden-folder');
-                if (hiddenField) {
+                if (hiddenField && fullPath) {
                     hiddenField.value = fullPath;
                     this.showToast(`Pasta de fotos ocultas: ${fullPath}`, 'success');
+                    console.log('✅ Campo atualizado:', hiddenField.value);
+                } else {
+                    console.error('❌ Campo não encontrado ou caminho vazio');
+                    this.showToast('Erro ao selecionar pasta', 'error');
                 }
             }
             
