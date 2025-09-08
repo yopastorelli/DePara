@@ -3543,8 +3543,21 @@ class DeParaUI {
         console.log('🖥️ Elemento viewer encontrado:', !!viewer);
         
         if (viewer) {
+            console.log('🖥️ Estilo atual do viewer:', {
+                display: viewer.style.display,
+                visibility: viewer.style.visibility,
+                opacity: viewer.style.opacity,
+                zIndex: viewer.style.zIndex
+            });
+            
             viewer.style.display = 'flex';
             console.log('✅ Viewer exibido');
+            
+            console.log('🖥️ Estilo após exibir:', {
+                display: viewer.style.display,
+                visibility: viewer.style.visibility,
+                opacity: viewer.style.opacity
+            });
         } else {
             console.error('❌ Elemento slideshow-viewer não encontrado no DOM');
             this.showToast('Erro: Elemento de visualização não encontrado', 'error');
@@ -3613,6 +3626,14 @@ class DeParaUI {
         const filenameElement = document.getElementById('slideshow-filename');
         const loadingElement = document.getElementById('slideshow-loading');
         const errorElement = document.getElementById('slideshow-error');
+        
+        console.log('🔍 Elementos encontrados:', {
+            imageElement: !!imageElement,
+            counterElement: !!counterElement,
+            filenameElement: !!filenameElement,
+            loadingElement: !!loadingElement,
+            errorElement: !!errorElement
+        });
 
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
             console.log('❌ Nenhuma imagem carregada');
@@ -3666,6 +3687,15 @@ class DeParaUI {
                     imageElement.alt = currentImage.name;
                     imageElement.style.display = 'block';
                     console.log('🖼️ Imagem exibida no elemento:', imageElement.src);
+                    console.log('🖼️ Estilo do elemento:', {
+                        display: imageElement.style.display,
+                        visibility: imageElement.style.visibility,
+                        opacity: imageElement.style.opacity,
+                        width: imageElement.style.width,
+                        height: imageElement.style.height
+                    });
+                } else {
+                    console.error('❌ Elemento slideshow-image não encontrado!');
                 }
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'none';
