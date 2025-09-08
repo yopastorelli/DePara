@@ -1355,10 +1355,30 @@ router.post('/check-ignore', async (req, res) => {
  */
 router.get('/images/:folderPath(*)', async (req, res) => {
     try {
-        const folderPath = '/' + req.params.folderPath;
+        // CORREÇÃO: Não adicionar barra extra, usar caminho como vem
+        const folderPath = req.params.folderPath;
         const { maxDepth = 10, extensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'] } = req.query;
 
-        logger.startOperation('List Images', { folderPath, maxDepth, extensions });
+        logger.startOperation('List Images', {
+            originalPath: req.params.folderPath,
+            processedPath: folderPath,
+            maxDepth,
+            extensions
+        });
+
+        // DEBUG: Verificar se o caminho existe
+        logger.info(`🔍 Verificando caminho da API: ${folderPath}`);
+        try {
+            const stats = await fs.stat(folderPath);
+            logger.info(`📊 Estatísticas do caminho: ${JSON.stringify({
+                isDirectory: stats.isDirectory(),
+                isFile: stats.isFile(),
+                size: stats.size,
+                mtime: stats.mtime
+            })}`);
+        } catch (pathError) {
+            logger.error(`❌ Caminho não encontrado: ${folderPath}`, pathError.message);
+        }
 
         const images = await fileOperationsManager.listImagesRecursive(folderPath, {
             maxDepth: parseInt(maxDepth),
@@ -1646,20 +1666,40 @@ router.post('/list-images', async (req, res) => {
             recursive
         });
 
+        logger.info(`🔍 POST /list-images - Caminho recebido: ${folderPath}`);
+        logger.info(`🔧 Extensões: ${extensions.join(', ')}`);
+        logger.info(`🔄 Recursivo: ${recursive}`);
+
         // Validar caminho (mais permissivo para slideshow)
         let safePath;
         try {
             safePath = await fileOperationsManager.validateSafePath(folderPath, 'read');
+            logger.info(`✅ Caminho validado: ${safePath}`);
         } catch (error) {
             // Se a validação falhar, tentar usar o caminho diretamente para slideshow
             logger.warn(`Validação de caminho falhou para slideshow, usando caminho direto: ${folderPath}`);
             safePath = folderPath;
         }
 
+        // DEBUG: Verificar se o caminho existe
+        logger.info(`🔍 Verificando caminho: ${safePath}`);
+        try {
+            const stats = await fs.stat(safePath);
+            logger.info(`📊 Estatísticas do caminho: ${JSON.stringify({
+                isDirectory: stats.isDirectory(),
+                isFile: stats.isFile(),
+                size: stats.size
+            })}`);
+        } catch (pathError) {
+            logger.error(`❌ Caminho não encontrado: ${safePath}`, pathError.message);
+        }
+
         // Função auxiliar para listar imagens recursivamente
         async function listImagesRecursively(dirPath, imageList = []) {
+            logger.info(`🔍 Escaneando diretório: ${dirPath}`);
             try {
                 const entries = await fs.readdir(dirPath, { withFileTypes: true });
+                logger.info(`📋 Itens encontrados em ${dirPath}: ${entries.length}`);
 
                 for (const entry of entries) {
                     const fullPath = path.join(dirPath, entry.name);
@@ -1676,7 +1716,10 @@ router.post('/list-images', async (req, res) => {
 
                         // Verificar se é uma imagem
                         const ext = path.extname(entry.name).toLowerCase();
+                        logger.info(`📄 Arquivo encontrado: ${entry.name} (ext: ${ext})`);
+
                         if (extensions.includes(ext)) {
+                            logger.info(`✅ Extensão válida: ${ext}`);
                             // Obter informações do arquivo
                             const stats = await fs.stat(fullPath);
                             imageList.push({
@@ -1686,6 +1729,9 @@ router.post('/list-images', async (req, res) => {
                                 modified: stats.mtime,
                                 extension: ext
                             });
+                            logger.info(`✅ Imagem adicionada: ${entry.name}`);
+                        } else {
+                            logger.info(`❌ Extensão inválida: ${ext} (esperado: ${extensions.join(', ')})`);
                         }
                     }
                 }
@@ -1703,6 +1749,11 @@ router.post('/list-images', async (req, res) => {
 
         // Usar todas as imagens encontradas (remover limitação)
         logger.info(`📸 Encontradas ${images.length} imagens para slideshow`);
+        if (images.length > 0) {
+            logger.info(`📸 Primeiras imagens: ${images.slice(0, 5).map(img => img.name).join(', ')}`);
+        } else {
+            logger.warn(`⚠️ Nenhuma imagem encontrada no caminho: ${safePath}`);
+        }
 
         const duration = Date.now() - startTime;
         logger.endOperation('List Images', duration, {

@@ -1666,8 +1666,13 @@ class FileOperationsManager {
         const { maxDepth = 10, extensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'] } = options;
         const images = [];
 
+        logger.info(`🖼️ Iniciando listImagesRecursive: ${folderPath}`);
+        logger.info(`🔧 Opções: ${JSON.stringify(options)}`);
+
         try {
             const stats = await fs.stat(folderPath);
+            logger.info(`📁 Pasta encontrada: ${folderPath}, isDirectory: ${stats.isDirectory()}`);
+
             if (!stats.isDirectory()) {
                 throw new Error('Caminho especificado não é uma pasta');
             }
@@ -1675,8 +1680,11 @@ class FileOperationsManager {
             async function scanDirectory(currentPath, currentDepth = 0) {
                 if (currentDepth > maxDepth) return;
 
+                logger.info(`🔍 Escaneando pasta: ${currentPath} (profundidade: ${currentDepth})`);
+
                 try {
                     const items = await fs.readdir(currentPath);
+                    logger.info(`📋 Itens encontrados em ${currentPath}: ${items.length} (${items.slice(0, 10).join(', ')}${items.length > 10 ? '...' : ''})`);
 
                     for (const item of items) {
                         const itemPath = path.join(currentPath, item);
@@ -1687,9 +1695,13 @@ class FileOperationsManager {
                             await scanDirectory(itemPath, currentDepth + 1);
                         } else if (itemStats.isFile()) {
                             const ext = path.extname(item).toLowerCase().slice(1);
+                            logger.info(`📄 Arquivo encontrado: ${item} (ext: ${ext})`);
+
                             if (extensions.includes(ext)) {
+                                logger.info(`✅ Extensão válida: ${ext}`);
                                 // Verificar se não deve ser ignorado
                                 if (!this.shouldIgnoreFile(currentPath, item)) {
+                                    logger.info(`✅ Arquivo não ignorado: ${item}`);
                                     images.push({
                                         path: itemPath,
                                         name: item,
@@ -1698,7 +1710,11 @@ class FileOperationsManager {
                                         extension: ext,
                                         relativePath: path.relative(folderPath, itemPath)
                                     });
+                                } else {
+                                    logger.warn(`🚫 Arquivo ignorado: ${item}`);
                                 }
+                            } else {
+                                logger.info(`❌ Extensão inválida: ${ext} (esperado: ${extensions.join(', ')})`);
                             }
                         }
                     }
@@ -1711,6 +1727,11 @@ class FileOperationsManager {
 
             // Ordenar imagens por data de modificação (mais recentes primeiro)
             images.sort((a, b) => b.modified.getTime() - a.modified.getTime());
+
+            logger.info(`🎯 Total de imagens encontradas: ${images.length}`);
+            if (images.length > 0) {
+                logger.info(`📸 Primeiras imagens: ${images.slice(0, 5).map(img => img.name).join(', ')}`);
+            }
 
             return images;
 

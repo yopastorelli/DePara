@@ -3414,6 +3414,10 @@ class DeParaUI {
             const formattedExtensions = extensions.map(ext => ext.startsWith('.') ? ext : '.' + ext);
 
             console.log('📡 Enviando requisição para API...');
+            console.log('🔗 Caminho sendo enviado:', folderPath);
+            console.log('🔧 Extensões formatadas:', formattedExtensions);
+            console.log('🔄 Recursivo:', recursive);
+
             const response = await fetch('/api/files/list-images', {
                 method: 'POST',
                 headers: {
