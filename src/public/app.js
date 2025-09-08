@@ -4171,7 +4171,7 @@ class DeParaUI {
             width: 100vw !important;
             height: 100vh !important;
             z-index: 1000000 !important;
-            pointer-events: none !important;
+            pointer-events: auto !important;
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
@@ -4181,15 +4181,10 @@ class DeParaUI {
         // Botão anterior
         const prevBtn = document.createElement('button');
         prevBtn.innerHTML = '←';
-        prevBtn.id = 'dynamic-prev-btn';
         prevBtn.style.cssText = `
-            position: fixed !important;
-            left: 20px !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
-            background: rgba(0, 0, 0, 0.8) !important;
+            background: rgba(0, 0, 0, 0.7) !important;
             color: white !important;
-            border: 2px solid white !important;
+            border: none !important;
             border-radius: 50% !important;
             width: 60px !important;
             height: 60px !important;
@@ -4199,19 +4194,11 @@ class DeParaUI {
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            transition: all 0.3s !important;
-            z-index: 1000001 !important;
-            user-select: none !important;
-            -webkit-user-select: none !important;
-            -moz-user-select: none !important;
-            -ms-user-select: none !important;
+            transition: background 0.3s !important;
         `;
-        
-        // Adicionar evento de clique de forma mais robusta
-        const prevClickHandler = (e) => {
+        prevBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            e.stopImmediatePropagation();
             console.log('🖱️ Botão anterior clicado');
             console.log('🔍 Contexto this:', this);
             console.log('🔍 slideshowImages length:', this.slideshowImages ? this.slideshowImages.length : 'undefined');
@@ -4220,53 +4207,21 @@ class DeParaUI {
             } else {
                 console.error('❌ previousSlide não está disponível');
             }
-        };
-        
-        prevBtn.addEventListener('click', prevClickHandler, true);
-        prevBtn.addEventListener('mousedown', prevClickHandler, true);
+        });
         prevBtn.addEventListener('mouseenter', () => {
-            prevBtn.style.background = 'rgba(255, 255, 255, 0.9)';
-            prevBtn.style.color = 'black';
+            prevBtn.style.background = 'rgba(0, 0, 0, 0.9)';
         });
         prevBtn.addEventListener('mouseleave', () => {
-            prevBtn.style.background = 'rgba(0, 0, 0, 0.8)';
-            prevBtn.style.color = 'white';
+            prevBtn.style.background = 'rgba(0, 0, 0, 0.7)';
         });
         
         // Botão próximo
         const nextBtn = document.createElement('button');
         nextBtn.innerHTML = '→';
-        nextBtn.id = 'dynamic-next-btn';
-        nextBtn.style.cssText = `
-            position: fixed !important;
-            right: 20px !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
-            background: rgba(0, 0, 0, 0.8) !important;
-            color: white !important;
-            border: 2px solid white !important;
-            border-radius: 50% !important;
-            width: 60px !important;
-            height: 60px !important;
-            font-size: 24px !important;
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: all 0.3s !important;
-            z-index: 1000001 !important;
-            user-select: none !important;
-            -webkit-user-select: none !important;
-            -moz-user-select: none !important;
-            -ms-user-select: none !important;
-        `;
-        
-        // Adicionar evento de clique de forma mais robusta
-        const nextClickHandler = (e) => {
+        nextBtn.style.cssText = prevBtn.style.cssText;
+        nextBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            e.stopImmediatePropagation();
             console.log('🖱️ Botão próximo clicado');
             console.log('🔍 Contexto this:', this);
             console.log('🔍 slideshowImages length:', this.slideshowImages ? this.slideshowImages.length : 'undefined');
@@ -4275,17 +4230,12 @@ class DeParaUI {
             } else {
                 console.error('❌ nextSlide não está disponível');
             }
-        };
-        
-        nextBtn.addEventListener('click', nextClickHandler, true);
-        nextBtn.addEventListener('mousedown', nextClickHandler, true);
+        });
         nextBtn.addEventListener('mouseenter', () => {
-            nextBtn.style.background = 'rgba(255, 255, 255, 0.9)';
-            nextBtn.style.color = 'black';
+            nextBtn.style.background = 'rgba(0, 0, 0, 0.9)';
         });
         nextBtn.addEventListener('mouseleave', () => {
-            nextBtn.style.background = 'rgba(0, 0, 0, 0.8)';
-            nextBtn.style.color = 'white';
+            nextBtn.style.background = 'rgba(0, 0, 0, 0.7)';
         });
         
         // Contador
@@ -4324,22 +4274,21 @@ class DeParaUI {
             align-items: center !important;
             justify-content: center !important;
         `;
-        const closeClickHandler = (e) => {
+        closeBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            e.stopImmediatePropagation();
             console.log('🖱️ Botão fechar clicado');
             this.closeSlideshowViewer();
-        };
+        });
         
-        closeBtn.addEventListener('click', closeClickHandler, true);
-        closeBtn.addEventListener('mousedown', closeClickHandler, true);
+        // Adicionar elementos ao container
+        controlsContainer.appendChild(prevBtn);
+        controlsContainer.appendChild(nextBtn);
+        controlsContainer.appendChild(counter);
+        controlsContainer.appendChild(closeBtn);
         
-        // Adicionar elementos diretamente ao body (não dentro de container)
-        document.body.appendChild(prevBtn);
-        document.body.appendChild(nextBtn);
-        document.body.appendChild(counter);
-        document.body.appendChild(closeBtn);
+        // Adicionar ao body
+        document.body.appendChild(controlsContainer);
         
         // Atualizar contador
         this.updateDynamicCounter();
@@ -4352,18 +4301,22 @@ class DeParaUI {
             closeBtn: closeBtn
         });
         
-        // Teste simples - verificar se os botões estão no DOM e funcionando
+        // Teste simples - adicionar um alerta temporário para verificar se os botões estão funcionando
         setTimeout(() => {
             console.log('🧪 Teste: Verificando se os botões estão no DOM...');
-            const testPrev = document.getElementById('dynamic-prev-btn');
-            const testNext = document.getElementById('dynamic-next-btn');
+            const testPrev = document.querySelector('#dynamic-slideshow-controls button:first-child');
+            const testNext = document.querySelector('#dynamic-slideshow-controls button:nth-child(2)');
             console.log('🧪 Botão anterior encontrado:', testPrev);
             console.log('🧪 Botão próximo encontrado:', testNext);
             
-            // Teste de clique programático
+            // Teste direto dos eventos
             if (testPrev) {
-                console.log('🧪 Testando clique programático no botão anterior...');
+                console.log('🧪 Testando evento do botão anterior...');
                 testPrev.click();
+            }
+            if (testNext) {
+                console.log('🧪 Testando evento do botão próximo...');
+                testNext.click();
             }
         }, 1000);
     }
