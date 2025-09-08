@@ -4010,6 +4010,9 @@ class DeParaUI {
                         if (!this.dynamicControlsCreated) {
                             this.createDynamicSlideshowControls();
                             this.dynamicControlsCreated = true;
+                            console.log('🎮 Controles criados pela primeira vez');
+                        } else {
+                            console.log('🎮 Controles já existem, não recriando');
                         }
                         
                         console.log('🆕 Novo elemento criado e adicionado ao body');
