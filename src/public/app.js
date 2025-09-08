@@ -4336,14 +4336,13 @@ class DeParaUI {
             font-size: 24px;
             cursor: pointer;
             z-index: 1000002;
+            pointer-events: auto;
         `;
         prevBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('⬅️ Botão anterior clicado');
-            if (this.previousSlide) {
-                this.previousSlide();
-            }
+            this.previousSlide();
         });
         
         // Botão próximo (simples)
@@ -4363,14 +4362,13 @@ class DeParaUI {
             font-size: 24px;
             cursor: pointer;
             z-index: 1000002;
+            pointer-events: auto;
         `;
         nextBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('➡️ Botão próximo clicado');
-            if (this.nextSlide) {
-                this.nextSlide();
-            }
+            this.nextSlide();
         });
         
         // Contador
@@ -4390,6 +4388,26 @@ class DeParaUI {
         `;
         counter.id = 'dynamic-slideshow-counter';
         
+        // Nome do arquivo
+        const filename = document.createElement('div');
+        filename.style.cssText = `
+            position: absolute !important;
+            bottom: 20px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            background: rgba(0, 0, 0, 0.7) !important;
+            color: white !important;
+            padding: 10px 20px !important;
+            border-radius: 20px !important;
+            font-size: 14px !important;
+            z-index: 1000002 !important;
+            pointer-events: none !important;
+            max-width: 80% !important;
+            text-align: center !important;
+            word-break: break-word !important;
+        `;
+        filename.id = 'dynamic-slideshow-filename';
+        
         // Botão fechar (simples)
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '❌';
@@ -4406,6 +4424,7 @@ class DeParaUI {
             font-size: 20px;
             cursor: pointer;
             z-index: 1000002;
+            pointer-events: auto;
         `;
         closeBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4432,6 +4451,7 @@ class DeParaUI {
             cursor: pointer;
             border-radius: 50%;
             z-index: 1000002;
+            pointer-events: auto;
         `;
         deleteBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4458,6 +4478,7 @@ class DeParaUI {
             cursor: pointer;
             border-radius: 50%;
             z-index: 1000002;
+            pointer-events: auto;
         `;
         hideBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4470,6 +4491,7 @@ class DeParaUI {
         controlsContainer.appendChild(prevBtn);
         controlsContainer.appendChild(nextBtn);
         controlsContainer.appendChild(counter);
+        controlsContainer.appendChild(filename);
         controlsContainer.appendChild(closeBtn);
         controlsContainer.appendChild(deleteBtn);
         controlsContainer.appendChild(hideBtn);
@@ -4492,8 +4514,15 @@ class DeParaUI {
     // Atualizar contador dinâmico
     updateDynamicCounter() {
         const counter = document.getElementById('dynamic-slideshow-counter');
+        const filename = document.getElementById('dynamic-slideshow-filename');
+        
         if (counter && this.slideshowImages) {
             counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+        }
+        
+        if (filename && this.slideshowImages && this.slideshowImages[this.currentSlideIndex]) {
+            const currentImage = this.slideshowImages[this.currentSlideIndex];
+            filename.textContent = currentImage.name || 'Arquivo sem nome';
         }
     }
 
