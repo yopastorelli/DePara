@@ -3205,30 +3205,9 @@ body {
     opacity: 1;
 }
 
-.slideshow-btn {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 48px;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 60px;
-    height: 60px;
-}
+/* CSS removido - conflitava com controles dinâmicos */
 
-.slideshow-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: scale(1.1);
-}
-
-.slideshow-btn:active {
-    transform: scale(0.95);
-}
+/* CSS removido - conflitava com controles dinâmicos */
 
 /* Botões de Organização (discretos) */
 .slideshow-organization-controls {

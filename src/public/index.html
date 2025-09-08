@@ -52,8 +52,8 @@
             font-size: 18px;
         }
         
-        /* CSS LIMPO para controles dinâmicos do slideshow */
-        #dynamic-slideshow-controls button {
+        /* CSS ULTRA ESPECÍFICO para controles dinâmicos do slideshow */
+        #dynamic-slideshow-controls button.slideshow-btn {
             font-family: Arial, sans-serif !important;
             font-size: 24px !important;
             line-height: 1 !important;
@@ -66,10 +66,26 @@
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
+            text-align: center !important;
+            white-space: nowrap !important;
         }
         
-        #dynamic-slideshow-controls button:hover {
+        #dynamic-slideshow-controls button.slideshow-btn:hover {
             background: rgba(0, 0, 0, 0.9) !important;
+        }
+        
+        /* GARANTIR que emojis sejam exibidos */
+        #dynamic-slideshow-controls button.slideshow-btn * {
+            display: inline !important;
+        }
+        
+        /* SOBRESCREVER qualquer CSS conflitante */
+        body #dynamic-slideshow-controls button.slideshow-btn {
+            font-family: Arial, sans-serif !important;
+            font-size: 24px !important;
+            background: rgba(0, 0, 0, 0.7) !important;
+            border: none !important;
+            color: white !important;
         }
     </style>
     
