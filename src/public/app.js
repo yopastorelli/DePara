@@ -3643,17 +3643,29 @@ class DeParaUI {
         // Construir URL da imagem
         const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
         console.log('🔗 URL da imagem:', imageUrl);
+        console.log('🔗 Caminho original:', currentImage.path);
+        console.log('🔗 Caminho codificado:', encodeURIComponent(currentImage.path));
 
         try {
             // Carregar imagem diretamente
             const img = new Image();
             
+            // Timeout para evitar loading infinito
+            const loadTimeout = setTimeout(() => {
+                console.error('⏰ Timeout ao carregar imagem:', imageUrl);
+                if (loadingElement) loadingElement.style.display = 'none';
+                if (imageElement) imageElement.style.display = 'none';
+                if (errorElement) errorElement.style.display = 'block';
+            }, 10000); // 10 segundos timeout
+            
             img.onload = () => {
+                clearTimeout(loadTimeout);
                 console.log('✅ Imagem carregada com sucesso:', imageUrl);
                 if (imageElement) {
                     imageElement.src = imageUrl;
                     imageElement.alt = currentImage.name;
                     imageElement.style.display = 'block';
+                    console.log('🖼️ Imagem exibida no elemento:', imageElement.src);
                 }
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'none';
@@ -3663,12 +3675,15 @@ class DeParaUI {
             };
             
             img.onerror = (error) => {
+                clearTimeout(loadTimeout);
                 console.error('❌ Erro ao carregar imagem:', error);
+                console.error('❌ URL que falhou:', imageUrl);
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (imageElement) imageElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'block';
             };
 
+            console.log('🔄 Tentando carregar imagem:', imageUrl);
             img.src = imageUrl;
             
         } catch (error) {
