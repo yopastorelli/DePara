@@ -4171,7 +4171,7 @@ class DeParaUI {
             width: 100vw !important;
             height: 100vh !important;
             z-index: 1000000 !important;
-            pointer-events: auto !important;
+            pointer-events: none !important;
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
@@ -4208,6 +4208,10 @@ class DeParaUI {
                 console.error('❌ previousSlide não está disponível');
             }
         });
+        
+        // Garantir que o botão seja clicável
+        prevBtn.style.pointerEvents = 'auto';
+        prevBtn.style.zIndex = '1000001';
         prevBtn.addEventListener('mouseenter', () => {
             prevBtn.style.background = 'rgba(0, 0, 0, 0.9)';
         });
@@ -4231,6 +4235,10 @@ class DeParaUI {
                 console.error('❌ nextSlide não está disponível');
             }
         });
+        
+        // Garantir que o botão seja clicável
+        nextBtn.style.pointerEvents = 'auto';
+        nextBtn.style.zIndex = '1000001';
         nextBtn.addEventListener('mouseenter', () => {
             nextBtn.style.background = 'rgba(0, 0, 0, 0.9)';
         });
@@ -4281,6 +4289,10 @@ class DeParaUI {
             this.closeSlideshowViewer();
         });
         
+        // Garantir que o botão seja clicável
+        closeBtn.style.pointerEvents = 'auto';
+        closeBtn.style.zIndex = '1000001';
+        
         // Adicionar elementos ao container
         controlsContainer.appendChild(prevBtn);
         controlsContainer.appendChild(nextBtn);
@@ -4308,16 +4320,6 @@ class DeParaUI {
             const testNext = document.querySelector('#dynamic-slideshow-controls button:nth-child(2)');
             console.log('🧪 Botão anterior encontrado:', testPrev);
             console.log('🧪 Botão próximo encontrado:', testNext);
-            
-            // Teste direto dos eventos
-            if (testPrev) {
-                console.log('🧪 Testando evento do botão anterior...');
-                testPrev.click();
-            }
-            if (testNext) {
-                console.log('🧪 Testando evento do botão próximo...');
-                testNext.click();
-            }
         }, 1000);
     }
     
