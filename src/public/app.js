@@ -3718,6 +3718,16 @@ class DeParaUI {
             viewer.style.display = 'flex';
             console.log('✅ Viewer exibido');
             
+            // Mostrar controles estáticos quando o viewer for exibido
+            const staticControls = document.getElementById('static-slideshow-controls');
+            if (staticControls) {
+                staticControls.style.display = 'block';
+                console.log('✅ Controles estáticos exibidos com o viewer');
+                
+                // Configurar event listeners se ainda não foram configurados
+                this.setupStaticButtons();
+            }
+            
             console.log('🖥️ Estilo após exibir:', {
                 display: viewer.style.display,
                 visibility: viewer.style.visibility,
