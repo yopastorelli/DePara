@@ -3220,17 +3220,25 @@ class DeParaUI {
 
         // Botões de seleção de pastas de organização
         const browseDeletedBtn = document.querySelector('.slideshow-browse-deleted-btn');
+        console.log('🔍 Botão deleted encontrado:', browseDeletedBtn);
         if (browseDeletedBtn) {
             browseDeletedBtn.addEventListener('click', () => {
+                console.log('🖱️ Botão deleted clicado!');
                 this.browseDeletedFolder();
             });
+        } else {
+            console.error('❌ Botão .slideshow-browse-deleted-btn não encontrado');
         }
 
         const browseHiddenBtn = document.querySelector('.slideshow-browse-hidden-btn');
+        console.log('🔍 Botão hidden encontrado:', browseHiddenBtn);
         if (browseHiddenBtn) {
             browseHiddenBtn.addEventListener('click', () => {
+                console.log('🖱️ Botão hidden clicado!');
                 this.browseHiddenFolder();
             });
+        } else {
+            console.error('❌ Botão .slideshow-browse-hidden-btn não encontrado');
         }
 
         // Viewer de slideshow
