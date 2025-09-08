@@ -139,7 +139,13 @@ const normalRateLimiter = rateLimiter({
 // Middleware permissivo para leitura
 const readRateLimiter = rateLimiter({
   windowMs: 60 * 1000, // 1 minuto
-  maxRequests: 60 // 60 requisições por minuto
+  maxRequests: 200 // 200 requisições por minuto (aumentado para slideshow)
+});
+
+// Middleware muito permissivo para slideshow
+const slideshowRateLimiter = rateLimiter({
+  windowMs: 60 * 1000, // 1 minuto
+  maxRequests: 500 // 500 requisições por minuto para slideshow
 });
 
 module.exports = {
@@ -147,5 +153,6 @@ module.exports = {
   strictRateLimiter,
   normalRateLimiter,
   readRateLimiter,
+  slideshowRateLimiter,
   RateLimitError
 };

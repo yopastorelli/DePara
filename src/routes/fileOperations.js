@@ -14,7 +14,7 @@ const path = require('path');
 const fileOperationsManager = require('../utils/fileOperations');
 const fileTemplates = require('../utils/fileTemplates');
 const logger = require('../utils/logger');
-const { normalRateLimiter, strictRateLimiter } = require('../middleware/rateLimiter');
+const { normalRateLimiter, strictRateLimiter, slideshowRateLimiter } = require('../middleware/rateLimiter');
 const { sanitizeString, sanitizeFilePath, sanitizeIdentifier, ValidationError } = require('../utils/inputSanitizer');
 
 /**
@@ -1645,7 +1645,7 @@ router.get('/actions', async (req, res) => {
 });
 
 // Listar imagens para slideshow
-router.post('/list-images', async (req, res) => {
+router.post('/list-images', slideshowRateLimiter, async (req, res) => {
     const startTime = Date.now();
 
     try {
