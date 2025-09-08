@@ -4321,6 +4321,7 @@ class DeParaUI {
         
         // Botão anterior (simples)
         const prevBtn = document.createElement('button');
+        prevBtn.className = 'slideshow-btn';
         prevBtn.innerHTML = '⬅️';
         prevBtn.style.cssText = `
             background: rgba(0, 0, 0, 0.7);
@@ -4348,6 +4349,7 @@ class DeParaUI {
         
         // Botão próximo (simples)
         const nextBtn = document.createElement('button');
+        nextBtn.className = 'slideshow-btn';
         nextBtn.innerHTML = '➡️';
         nextBtn.style.cssText = `
             background: rgba(0, 0, 0, 0.7);
@@ -4392,6 +4394,7 @@ class DeParaUI {
         
         // Botão fechar (simples)
         const closeBtn = document.createElement('button');
+        closeBtn.className = 'slideshow-btn';
         closeBtn.innerHTML = '❌';
         closeBtn.style.cssText = `
             position: absolute;
@@ -4417,6 +4420,7 @@ class DeParaUI {
         // Botão apagar (simples)
         const deleteBtn = document.createElement('button');
         deleteBtn.id = 'dynamic-slideshow-delete';
+        deleteBtn.className = 'slideshow-btn';
         deleteBtn.innerHTML = '🗑️';
         deleteBtn.title = 'Apagar foto';
         deleteBtn.style.cssText = `
@@ -4443,6 +4447,7 @@ class DeParaUI {
         // Botão ocultar (simples)
         const hideBtn = document.createElement('button');
         hideBtn.id = 'dynamic-slideshow-hide';
+        hideBtn.className = 'slideshow-btn';
         hideBtn.innerHTML = '👁️';
         hideBtn.title = 'Ocultar foto';
         hideBtn.style.cssText = `
@@ -4477,11 +4482,11 @@ class DeParaUI {
         // Verificação adicional para garantir que os emojis sejam exibidos
         setTimeout(() => {
             console.log('🔍 Verificação pós-criação dos botões:');
-            console.log('⬅️ Prev:', prevBtn.innerHTML, 'Elemento:', prevBtn);
-            console.log('➡️ Next:', nextBtn.innerHTML, 'Elemento:', nextBtn);
-            console.log('❌ Close:', closeBtn.innerHTML, 'Elemento:', closeBtn);
-            console.log('🗑️ Delete:', deleteBtn.innerHTML, 'Elemento:', deleteBtn);
-            console.log('👁️ Hide:', hideBtn.innerHTML, 'Elemento:', hideBtn);
+            console.log('⬅️ Prev:', prevBtn.innerHTML, 'Elemento:', prevBtn, 'Classe:', prevBtn.className);
+            console.log('➡️ Next:', nextBtn.innerHTML, 'Elemento:', nextBtn, 'Classe:', nextBtn.className);
+            console.log('❌ Close:', closeBtn.innerHTML, 'Elemento:', closeBtn, 'Classe:', closeBtn.className);
+            console.log('🗑️ Delete:', deleteBtn.innerHTML, 'Elemento:', deleteBtn, 'Classe:', deleteBtn.className);
+            console.log('👁️ Hide:', hideBtn.innerHTML, 'Elemento:', hideBtn, 'Classe:', hideBtn.className);
         }, 100);
         
         console.log('🔍 Botões de organização adicionados:', {

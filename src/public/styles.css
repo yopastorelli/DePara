@@ -3073,7 +3073,7 @@ body {
    ========================================== */
 
 /* Controles dinâmicos do slideshow */
-#dynamic-slideshow-controls button {
+#dynamic-slideshow-controls .slideshow-btn {
     font-family: Arial, sans-serif !important;
     font-size: 24px !important;
     background: rgba(0, 0, 0, 0.7) !important;
@@ -3085,9 +3085,10 @@ body {
     align-items: center !important;
     justify-content: center !important;
     transition: background 0.3s !important;
+    pointer-events: auto !important;
 }
 
-#dynamic-slideshow-controls button:hover {
+#dynamic-slideshow-controls .slideshow-btn:hover {
     background: rgba(0, 0, 0, 0.9) !important;
 }
 
@@ -3104,6 +3105,7 @@ body {
     align-items: center !important;
     justify-content: center !important;
     transition: background 0.3s !important;
+    pointer-events: auto !important;
 }
 
 #dynamic-slideshow-delete:hover,
