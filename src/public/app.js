@@ -2268,7 +2268,7 @@ class DeParaUI {
         this.addButtonListener('.close-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
         this.addButtonListener('.cancel-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
         this.addButtonListener('.close-slideshow-config-btn', () => window.closeSlideshowConfigModal());
-        this.addButtonListener('.start-slideshow-btn', () => window.startSlideshow());
+        // Removido - duplicado com .slideshow-start-btn
         this.addButtonListener('#slideshow-prev', () => this.previousSlide());
         this.addButtonListener('#slideshow-next', () => this.nextSlide());
         this.addButtonListener('.close-slideshow-btn', () => this.closeSlideshowViewer());
@@ -3241,49 +3241,8 @@ class DeParaUI {
             console.error('❌ Botão .slideshow-browse-hidden-btn não encontrado');
         }
 
-        // Viewer de slideshow
-        const prevBtn = document.querySelector('.slideshow-prev-btn');
-        if (prevBtn) {
-            prevBtn.addEventListener('click', () => {
-                this.previousSlide();
-            });
-        }
-
-        const nextBtn = document.querySelector('.slideshow-next-btn');
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
-                this.nextSlide();
-            });
-        }
-
-        const playPauseBtn = document.querySelector('.slideshow-play-pause-btn');
-        if (playPauseBtn) {
-            playPauseBtn.addEventListener('click', () => {
-                this.togglePlayPause();
-            });
-        }
-
-        const closeViewerBtn = document.querySelector('.slideshow-close-viewer-btn');
-        if (closeViewerBtn) {
-            closeViewerBtn.addEventListener('click', () => {
-                this.closeSlideshowViewer();
-            });
-        }
-
-        // Botões de organização
-        const deleteBtn = document.querySelector('.slideshow-delete-btn');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => {
-                this.deleteCurrentImage();
-            });
-        }
-
-        const hideBtn = document.querySelector('.slideshow-hide-btn');
-        if (hideBtn) {
-            hideBtn.addEventListener('click', () => {
-                this.hideCurrentImage();
-            });
-        }
+        // Controles dinâmicos são criados via createDynamicSlideshowControls()
+        // Não precisamos de event listeners estáticos aqui
 
         // Controles de teclado
         document.addEventListener('keydown', (e) => {
