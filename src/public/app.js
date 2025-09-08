@@ -4313,28 +4313,36 @@ class DeParaUI {
     }
     
     setupStaticButtons() {
+        console.log('🔧 Configurando botões estáticos...');
+        
         // Botão anterior
         const prevBtn = document.getElementById('static-prev-btn');
+        console.log('🔍 Botão anterior encontrado:', !!prevBtn);
         if (prevBtn && !prevBtn.hasAttribute('data-listener-added')) {
             prevBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('⬅️ Botão anterior clicado (ESTÁTICO)');
+                console.log('🔍 Fullscreen ativo:', !!document.fullscreenElement);
                 this.previousSlide();
             });
             prevBtn.setAttribute('data-listener-added', 'true');
+            console.log('✅ Event listener anterior adicionado');
         }
         
         // Botão próximo
         const nextBtn = document.getElementById('static-next-btn');
+        console.log('🔍 Botão próximo encontrado:', !!nextBtn);
         if (nextBtn && !nextBtn.hasAttribute('data-listener-added')) {
             nextBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('➡️ Botão próximo clicado (ESTÁTICO)');
+                console.log('🔍 Fullscreen ativo:', !!document.fullscreenElement);
                 this.nextSlide();
             });
             nextBtn.setAttribute('data-listener-added', 'true');
+            console.log('✅ Event listener próximo adicionado');
         }
         
         // Botão fechar
