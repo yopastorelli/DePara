@@ -1464,22 +1464,54 @@
                     const slideshowHideBtn = document.getElementById('dynamic-slideshow-hide');
                     
                     if (slideshowDeleteBtn) {
+                        // Forçar ícone correto e remover qualquer classe Material Icons
                         slideshowDeleteBtn.innerHTML = '🗑️';
-                        slideshowDeleteBtn.style.fontFamily = 'Arial, sans-serif !important';
-                        slideshowDeleteBtn.style.fontSize = '24px !important';
-                        slideshowDeleteBtn.style.color = 'white !important';
-                        slideshowDeleteBtn.style.background = 'transparent !important';
-                        slideshowDeleteBtn.style.border = 'none !important';
+                        slideshowDeleteBtn.className = ''; // Remover todas as classes
+                        slideshowDeleteBtn.style.cssText = `
+                            position: absolute !important;
+                            top: 50% !important;
+                            right: 80px !important;
+                            transform: translateY(-50%) !important;
+                            background: transparent !important;
+                            border: none !important;
+                            font-size: 24px !important;
+                            color: white !important;
+                            cursor: pointer !important;
+                            z-index: 1000002 !important;
+                            width: 50px !important;
+                            height: 50px !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            font-family: Arial, sans-serif !important;
+                            opacity: 0.7 !important;
+                        `;
                         console.log('🛡️ Protegendo ícone de apagar do slideshow');
                     }
                     
                     if (slideshowHideBtn) {
+                        // Forçar ícone correto e remover qualquer classe Material Icons
                         slideshowHideBtn.innerHTML = '👁️';
-                        slideshowHideBtn.style.fontFamily = 'Arial, sans-serif !important';
-                        slideshowHideBtn.style.fontSize = '24px !important';
-                        slideshowHideBtn.style.color = 'white !important';
-                        slideshowHideBtn.style.background = 'transparent !important';
-                        slideshowHideBtn.style.border = 'none !important';
+                        slideshowHideBtn.className = ''; // Remover todas as classes
+                        slideshowHideBtn.style.cssText = `
+                            position: absolute !important;
+                            top: 50% !important;
+                            right: 20px !important;
+                            transform: translateY(-50%) !important;
+                            background: transparent !important;
+                            border: none !important;
+                            font-size: 24px !important;
+                            color: white !important;
+                            cursor: pointer !important;
+                            z-index: 1000002 !important;
+                            width: 50px !important;
+                            height: 50px !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            font-family: Arial, sans-serif !important;
+                            opacity: 0.7 !important;
+                        `;
                         console.log('🛡️ Protegendo ícone de ocultar do slideshow');
                     }
                 };

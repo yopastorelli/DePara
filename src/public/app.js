@@ -4668,14 +4668,15 @@ class DeParaUI {
             console.log('📁 Movendo para pasta:', this.slideshowConfig.deletedFolder);
 
             // Chamar API para mover arquivo
-            const response = await fetch('/api/files/move', {
+            const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    action: 'move',
                     sourcePath: currentImage.path,
-                    destinationPath: this.slideshowConfig.deletedFolder
+                    targetPath: this.slideshowConfig.deletedFolder
                 })
             });
 
@@ -4735,14 +4736,15 @@ class DeParaUI {
             console.log('📁 Movendo para pasta:', this.slideshowConfig.hiddenFolder);
 
             // Chamar API para mover arquivo
-            const response = await fetch('/api/files/move', {
+            const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    action: 'move',
                     sourcePath: currentImage.path,
-                    destinationPath: this.slideshowConfig.hiddenFolder
+                    targetPath: this.slideshowConfig.hiddenFolder
                 })
             });
 
