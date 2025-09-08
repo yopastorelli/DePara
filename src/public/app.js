@@ -3449,20 +3449,9 @@ class DeParaUI {
         `;
         
         // Event listeners
-        const closeModal = () => {
+        let closeModal = () => {
             document.body.removeChild(modal);
         };
-        
-        confirmBtn.addEventListener('click', () => {
-            const path = input.value.trim();
-            closeModal();
-            callback(path);
-        });
-        
-        cancelBtn.addEventListener('click', () => {
-            closeModal();
-            callback('');
-        });
         
         // Fechar com ESC
         const handleKeyPress = (e) => {
@@ -3478,12 +3467,22 @@ class DeParaUI {
         
         document.addEventListener('keydown', handleKeyPress);
         
-        // Limpar event listener quando modal fechar
-        const originalCloseModal = closeModal;
+        // Atualizar closeModal para limpar event listener
         closeModal = () => {
             document.removeEventListener('keydown', handleKeyPress);
-            originalCloseModal();
+            document.body.removeChild(modal);
         };
+        
+        confirmBtn.addEventListener('click', () => {
+            const path = input.value.trim();
+            closeModal();
+            callback(path);
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            closeModal();
+            callback('');
+        });
         
         // Montar modal
         buttonContainer.appendChild(confirmBtn);
