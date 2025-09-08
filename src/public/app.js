@@ -3999,11 +3999,11 @@ class DeParaUI {
                         document.body.style.overflow = 'hidden';
                         document.body.style.cursor = 'default';
                         
-                        // Esconder o modal do slideshow para que a imagem seja visível
+                        // MANTER o slideshow-viewer visível para que os botões estáticos sejam exibidos
                         const slideshowViewer = document.getElementById('slideshow-viewer');
                         if (slideshowViewer) {
-                            slideshowViewer.style.display = 'none';
-                            console.log('🖥️ Modal do slideshow escondido para mostrar imagem dinâmica');
+                            // NÃO ESCONDER! Os botões estáticos estão dentro dele
+                            console.log('🖥️ Slideshow viewer mantido visível para preservar botões estáticos');
                         }
                         
                         // Criar controles de navegação para a imagem dinâmica
