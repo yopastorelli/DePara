@@ -4474,6 +4474,16 @@ class DeParaUI {
         controlsContainer.appendChild(deleteBtn);
         controlsContainer.appendChild(hideBtn);
         
+        // Verificação adicional para garantir que os emojis sejam exibidos
+        setTimeout(() => {
+            console.log('🔍 Verificação pós-criação dos botões:');
+            console.log('⬅️ Prev:', prevBtn.innerHTML, 'Elemento:', prevBtn);
+            console.log('➡️ Next:', nextBtn.innerHTML, 'Elemento:', nextBtn);
+            console.log('❌ Close:', closeBtn.innerHTML, 'Elemento:', closeBtn);
+            console.log('🗑️ Delete:', deleteBtn.innerHTML, 'Elemento:', deleteBtn);
+            console.log('👁️ Hide:', hideBtn.innerHTML, 'Elemento:', hideBtn);
+        }, 100);
+        
         console.log('🔍 Botões de organização adicionados:', {
             deleteBtn: deleteBtn,
             hideBtn: hideBtn,
@@ -4486,6 +4496,13 @@ class DeParaUI {
         
         // Sistema simplificado - sem proteção complexa
         console.log('✅ Botões do slideshow criados com sucesso');
+        console.log('🔍 Botões criados:', {
+            prevBtn: prevBtn.innerHTML,
+            nextBtn: nextBtn.innerHTML,
+            closeBtn: closeBtn.innerHTML,
+            deleteBtn: deleteBtn.innerHTML,
+            hideBtn: hideBtn.innerHTML
+        });
         
         // Atualizar contador
         this.updateDynamicCounter();

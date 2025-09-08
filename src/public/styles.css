@@ -3072,6 +3072,45 @@ body {
    SLIDESHOW STYLES
    ========================================== */
 
+/* Controles dinâmicos do slideshow */
+#dynamic-slideshow-controls button {
+    font-family: Arial, sans-serif !important;
+    font-size: 24px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    border: none !important;
+    color: white !important;
+    cursor: pointer !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.3s !important;
+}
+
+#dynamic-slideshow-controls button:hover {
+    background: rgba(0, 0, 0, 0.9) !important;
+}
+
+#dynamic-slideshow-delete,
+#dynamic-slideshow-hide {
+    font-family: Arial, sans-serif !important;
+    font-size: 24px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    border: none !important;
+    color: white !important;
+    cursor: pointer !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.3s !important;
+}
+
+#dynamic-slideshow-delete:hover,
+#dynamic-slideshow-hide:hover {
+    background: rgba(0, 0, 0, 0.9) !important;
+}
+
 /* Slideshow Modal */
 .slideshow-modal {
     position: fixed;
