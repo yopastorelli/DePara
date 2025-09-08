@@ -3971,6 +3971,13 @@ class DeParaUI {
                     // SOLUÇÃO RADICAL: Criar novo elemento se o atual não funcionar
                     let targetElement = imageElement;
                     
+                    // REMOVER imagem anterior para evitar empilhamento
+                    const existingDynamicImage = document.getElementById('slideshow-image-new');
+                    if (existingDynamicImage) {
+                        existingDynamicImage.remove();
+                        console.log('🗑️ Imagem anterior removida para evitar empilhamento');
+                    }
+                    
                     // Verificar se o elemento atual tem problemas
                     const currentRect = imageElement.getBoundingClientRect();
                     if (currentRect.width === 0 || currentRect.height === 0) {
