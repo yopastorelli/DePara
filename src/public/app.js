@@ -3352,6 +3352,159 @@ class DeParaUI {
         input.click();
     }
 
+    // Mostrar modal para entrada de caminho
+    showPathInputModal(message, callback) {
+        console.log('📝 Criando modal para entrada de caminho:', message);
+        
+        // Criar modal
+        const modal = document.createElement('div');
+        modal.id = 'path-input-modal';
+        modal.style.cssText = `
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 999999 !important;
+        `;
+        
+        // Criar conteúdo do modal
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: white !important;
+            padding: 30px !important;
+            border-radius: 10px !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+            max-width: 500px !important;
+            width: 90% !important;
+            text-align: center !important;
+        `;
+        
+        // Título
+        const title = document.createElement('h3');
+        title.textContent = 'Selecionar Pasta';
+        title.style.cssText = `
+            margin: 0 0 20px 0 !important;
+            color: #333 !important;
+            font-size: 18px !important;
+        `;
+        
+        // Mensagem
+        const messageEl = document.createElement('p');
+        messageEl.textContent = message;
+        messageEl.style.cssText = `
+            margin: 0 0 20px 0 !important;
+            color: #666 !important;
+            font-size: 14px !important;
+        `;
+        
+        // Input
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Digite o caminho da pasta...';
+        input.style.cssText = `
+            width: 100% !important;
+            padding: 12px !important;
+            border: 2px solid #ddd !important;
+            border-radius: 5px !important;
+            font-size: 14px !important;
+            margin-bottom: 20px !important;
+            box-sizing: border-box !important;
+        `;
+        
+        // Botões
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.cssText = `
+            display: flex !important;
+            gap: 10px !important;
+            justify-content: center !important;
+        `;
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.textContent = 'Confirmar';
+        confirmBtn.style.cssText = `
+            background: #007bff !important;
+            color: white !important;
+            border: none !important;
+            padding: 10px 20px !important;
+            border-radius: 5px !important;
+            cursor: pointer !important;
+            font-size: 14px !important;
+        `;
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancelar';
+        cancelBtn.style.cssText = `
+            background: #6c757d !important;
+            color: white !important;
+            border: none !important;
+            padding: 10px 20px !important;
+            border-radius: 5px !important;
+            cursor: pointer !important;
+            font-size: 14px !important;
+        `;
+        
+        // Event listeners
+        const closeModal = () => {
+            document.body.removeChild(modal);
+        };
+        
+        confirmBtn.addEventListener('click', () => {
+            const path = input.value.trim();
+            closeModal();
+            callback(path);
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            closeModal();
+            callback('');
+        });
+        
+        // Fechar com ESC
+        const handleKeyPress = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                callback('');
+            } else if (e.key === 'Enter') {
+                const path = input.value.trim();
+                closeModal();
+                callback(path);
+            }
+        };
+        
+        document.addEventListener('keydown', handleKeyPress);
+        
+        // Limpar event listener quando modal fechar
+        const originalCloseModal = closeModal;
+        closeModal = () => {
+            document.removeEventListener('keydown', handleKeyPress);
+            originalCloseModal();
+        };
+        
+        // Montar modal
+        buttonContainer.appendChild(confirmBtn);
+        buttonContainer.appendChild(cancelBtn);
+        
+        modalContent.appendChild(title);
+        modalContent.appendChild(messageEl);
+        modalContent.appendChild(input);
+        modalContent.appendChild(buttonContainer);
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Focar no input
+        setTimeout(() => {
+            input.focus();
+        }, 100);
+        
+        console.log('✅ Modal de entrada de caminho criado');
+    }
+
     // Navegar para pasta de fotos excluídas
     browseDeletedFolder() {
         console.log('🚀 INÍCIO browseDeletedFolder()');
@@ -3362,22 +3515,23 @@ class DeParaUI {
         console.log('🔍 Ambiente detectado:', isElectron ? 'Electron' : 'Browser');
         
         if (isElectron) {
-            // No Electron, usar prompt direto como fallback
-            console.log('⚡ Electron detectado - usando prompt direto');
-            const manualPath = prompt('Digite o caminho da pasta de fotos excluídas:');
-            if (manualPath && manualPath.trim() !== '') {
-                const deletedField = document.getElementById('slideshow-deleted-folder');
-                if (deletedField) {
-                    deletedField.value = manualPath;
-                    this.showToast(`Pasta de fotos excluídas: ${manualPath}`, 'success');
-                    console.log('✅ Campo atualizado via prompt:', deletedField.value);
+            // No Electron, usar modal personalizado
+            console.log('⚡ Electron detectado - usando modal personalizado');
+            this.showPathInputModal('Digite o caminho da pasta de fotos excluídas:', (path) => {
+                if (path && path.trim() !== '') {
+                    const deletedField = document.getElementById('slideshow-deleted-folder');
+                    if (deletedField) {
+                        deletedField.value = path;
+                        this.showToast(`Pasta de fotos excluídas: ${path}`, 'success');
+                        console.log('✅ Campo atualizado via modal:', deletedField.value);
+                    } else {
+                        console.error('❌ Campo não encontrado');
+                        this.showToast('Erro: campo não encontrado', 'error');
+                    }
                 } else {
-                    console.error('❌ Campo não encontrado');
-                    this.showToast('Erro: campo não encontrado', 'error');
+                    this.showToast('Seleção cancelada', 'info');
                 }
-            } else {
-                this.showToast('Seleção cancelada', 'info');
-            }
+            });
             return;
         }
         
@@ -3499,22 +3653,23 @@ class DeParaUI {
         console.log('🔍 Ambiente detectado:', isElectron ? 'Electron' : 'Browser');
         
         if (isElectron) {
-            // No Electron, usar prompt direto como fallback
-            console.log('⚡ Electron detectado - usando prompt direto');
-            const manualPath = prompt('Digite o caminho da pasta de fotos ocultas:');
-            if (manualPath && manualPath.trim() !== '') {
-                const hiddenField = document.getElementById('slideshow-hidden-folder');
-                if (hiddenField) {
-                    hiddenField.value = manualPath;
-                    this.showToast(`Pasta de fotos ocultas: ${manualPath}`, 'success');
-                    console.log('✅ Campo atualizado via prompt:', hiddenField.value);
+            // No Electron, usar modal personalizado
+            console.log('⚡ Electron detectado - usando modal personalizado');
+            this.showPathInputModal('Digite o caminho da pasta de fotos ocultas:', (path) => {
+                if (path && path.trim() !== '') {
+                    const hiddenField = document.getElementById('slideshow-hidden-folder');
+                    if (hiddenField) {
+                        hiddenField.value = path;
+                        this.showToast(`Pasta de fotos ocultas: ${path}`, 'success');
+                        console.log('✅ Campo atualizado via modal:', hiddenField.value);
+                    } else {
+                        console.error('❌ Campo não encontrado');
+                        this.showToast('Erro: campo não encontrado', 'error');
+                    }
                 } else {
-                    console.error('❌ Campo não encontrado');
-                    this.showToast('Erro: campo não encontrado', 'error');
+                    this.showToast('Seleção cancelada', 'info');
                 }
-            } else {
-                this.showToast('Seleção cancelada', 'info');
-            }
+            });
             return;
         }
         
@@ -4733,17 +4888,44 @@ class DeParaUI {
         // Proteger ícones do slideshow imediatamente após criação
         setTimeout(() => {
             if (deleteBtn) {
-                deleteBtn.style.fontFamily = 'Arial, sans-serif';
-                deleteBtn.style.fontSize = '18px';
+                deleteBtn.style.fontFamily = 'Arial, sans-serif !important';
+                deleteBtn.style.fontSize = '18px !important';
+                deleteBtn.style.color = 'white !important';
+                deleteBtn.innerHTML = '🗑️';
                 console.log('🛡️ Protegendo ícone de apagar do slideshow (pós-criação)');
             }
             
             if (hideBtn) {
-                hideBtn.style.fontFamily = 'Arial, sans-serif';
-                hideBtn.style.fontSize = '18px';
+                hideBtn.style.fontFamily = 'Arial, sans-serif !important';
+                hideBtn.style.fontSize = '18px !important';
+                hideBtn.style.color = 'white !important';
+                hideBtn.innerHTML = '👁️';
                 console.log('🛡️ Protegendo ícone de ocultar do slideshow (pós-criação)');
             }
         }, 100);
+        
+        // Proteção adicional com intervalo
+        const protectIcons = setInterval(() => {
+            const deleteBtnCheck = document.getElementById('dynamic-slideshow-delete');
+            const hideBtnCheck = document.getElementById('dynamic-slideshow-hide');
+            
+            if (deleteBtnCheck && deleteBtnCheck.innerHTML !== '🗑️') {
+                deleteBtnCheck.innerHTML = '🗑️';
+                deleteBtnCheck.style.fontFamily = 'Arial, sans-serif !important';
+                deleteBtnCheck.style.fontSize = '18px !important';
+                console.log('🔄 Restaurando ícone de apagar');
+            }
+            
+            if (hideBtnCheck && hideBtnCheck.innerHTML !== '👁️') {
+                hideBtnCheck.innerHTML = '👁️';
+                hideBtnCheck.style.fontFamily = 'Arial, sans-serif !important';
+                hideBtnCheck.style.fontSize = '18px !important';
+                console.log('🔄 Restaurando ícone de ocultar');
+            }
+        }, 1000);
+        
+        // Limpar intervalo quando slideshow fechar
+        this.slideshowIconProtectionInterval = protectIcons;
         
         // Atualizar contador
         this.updateDynamicCounter();
@@ -4921,6 +5103,13 @@ class DeParaUI {
     // Fechar viewer do slideshow
     closeSlideshowViewer() {
         this.stopAutoPlay();
+        
+        // Limpar intervalo de proteção de ícones
+        if (this.slideshowIconProtectionInterval) {
+            clearInterval(this.slideshowIconProtectionInterval);
+            this.slideshowIconProtectionInterval = null;
+            console.log('🧹 Intervalo de proteção de ícones limpo');
+        }
         
         // Limpar elementos criados dinamicamente
         const dynamicElement = document.getElementById('slideshow-image-new');
