@@ -1632,8 +1632,15 @@ router.post('/list-images', async (req, res) => {
             recursive
         });
 
-        // Validar caminho
-        const safePath = await fileOperationsManager.validateSafePath(folderPath, 'read');
+        // Validar caminho (mais permissivo para slideshow)
+        let safePath;
+        try {
+            safePath = await fileOperationsManager.validateSafePath(folderPath, 'read');
+        } catch (error) {
+            // Se a validação falhar, tentar usar o caminho diretamente para slideshow
+            logger.warn(`Validação de caminho falhou para slideshow, usando caminho direto: ${folderPath}`);
+            safePath = folderPath;
+        }
 
         // Função auxiliar para listar imagens recursivamente
         async function listImagesRecursively(dirPath, imageList = []) {

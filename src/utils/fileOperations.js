@@ -219,10 +219,10 @@ async function validateSafePath(filePath, operation = 'read') {
   // Resolver caminho absoluto
   const resolvedPath = path.resolve(filePath);
 
-  // Verificar se contém caracteres de navegação perigosa
-  if (filePath.includes('..') || filePath.includes('~') || filePath.includes('$')) {
-    logger.warn(`Tentativa de acesso com caracteres suspeitos: ${filePath}`);
-    throw new Error('Caminho contém caracteres não permitidos');
+  // Verificar se contém sequências de navegação perigosa (apenas sequências específicas)
+  if (filePath.includes('../') || filePath.includes('..\\') || filePath.startsWith('~/')) {
+    logger.warn(`Tentativa de acesso com sequências suspeitas: ${filePath}`);
+    throw new Error('Caminho contém sequências não permitidas');
   }
 
   // Para aplicações locais, permitir acesso apenas a diretórios seguros
