@@ -1464,6 +1464,12 @@
                     const slideshowHideBtn = document.getElementById('dynamic-slideshow-hide');
                     
                     if (slideshowDeleteBtn) {
+                        // Verificar se o ícone foi alterado
+                        const currentContent = slideshowDeleteBtn.innerHTML;
+                        if (currentContent !== '🗑️') {
+                            console.log('🚨 Ícone de apagar foi alterado! Restaurando...', currentContent);
+                        }
+                        
                         // Forçar ícone correto e remover qualquer classe Material Icons
                         slideshowDeleteBtn.innerHTML = '🗑️';
                         slideshowDeleteBtn.className = ''; // Remover todas as classes
@@ -1490,6 +1496,12 @@
                     }
                     
                     if (slideshowHideBtn) {
+                        // Verificar se o ícone foi alterado
+                        const currentContent = slideshowHideBtn.innerHTML;
+                        if (currentContent !== '👁️') {
+                            console.log('🚨 Ícone de ocultar foi alterado! Restaurando...', currentContent);
+                        }
+                        
                         // Forçar ícone correto e remover qualquer classe Material Icons
                         slideshowHideBtn.innerHTML = '👁️';
                         slideshowHideBtn.className = ''; // Remover todas as classes
@@ -1519,8 +1531,8 @@
                 // Executar proteção imediatamente
                 protectSlideshowIcons();
                 
-                // Executar proteção continuamente a cada 1 segundo
-                const iconProtectionInterval = setInterval(protectSlideshowIcons, 1000);
+                // Executar proteção continuamente a cada 500ms (mais frequente)
+                const iconProtectionInterval = setInterval(protectSlideshowIcons, 500);
                 
                 // Limpar intervalo quando a página for fechada
                 window.addEventListener('beforeunload', () => {
