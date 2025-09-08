@@ -3116,7 +3116,9 @@ class DeParaUI {
         random: false,
         preload: true,
         extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
-        recursive: true
+        recursive: true,
+        deletedFolder: '',
+        hiddenFolder: ''
     };
     preloadedImages = new Map();
 
@@ -3156,12 +3158,18 @@ class DeParaUI {
             .filter(cb => cb.checked)
             .map(cb => cb.value);
 
+        // Coletar pastas de organização
+        const deletedFolder = document.getElementById('slideshow-deleted-folder').value.trim();
+        const hiddenFolder = document.getElementById('slideshow-hidden-folder').value.trim();
+
         this.slideshowConfig = {
             interval: Math.max(1, Math.min(60, interval)),
             random,
             preload,
             extensions: extensions.length > 0 ? extensions : ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
-            recursive
+            recursive,
+            deletedFolder,
+            hiddenFolder
         };
 
         this.saveSlideshowConfig();
@@ -3180,6 +3188,10 @@ class DeParaUI {
         extensionCheckboxes.forEach(cb => {
             cb.checked = this.slideshowConfig.extensions.includes(cb.value);
         });
+
+        // Aplicar pastas de organização
+        document.getElementById('slideshow-deleted-folder').value = this.slideshowConfig.deletedFolder || '';
+        document.getElementById('slideshow-hidden-folder').value = this.slideshowConfig.hiddenFolder || '';
     }
 
     // Adicionar event listeners para slideshow
@@ -3203,6 +3215,21 @@ class DeParaUI {
         if (browseBtn) {
             browseBtn.addEventListener('click', () => {
                 this.browseSlideshowFolder();
+            });
+        }
+
+        // Botões de seleção de pastas de organização
+        const browseDeletedBtn = document.querySelector('.slideshow-browse-deleted-btn');
+        if (browseDeletedBtn) {
+            browseDeletedBtn.addEventListener('click', () => {
+                this.browseDeletedFolder();
+            });
+        }
+
+        const browseHiddenBtn = document.querySelector('.slideshow-browse-hidden-btn');
+        if (browseHiddenBtn) {
+            browseHiddenBtn.addEventListener('click', () => {
+                this.browseHiddenFolder();
             });
         }
 
@@ -3232,6 +3259,21 @@ class DeParaUI {
         if (closeViewerBtn) {
             closeViewerBtn.addEventListener('click', () => {
                 this.closeSlideshowViewer();
+            });
+        }
+
+        // Botões de organização
+        const deleteBtn = document.querySelector('.slideshow-delete-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                this.deleteCurrentImage();
+            });
+        }
+
+        const hideBtn = document.querySelector('.slideshow-hide-btn');
+        if (hideBtn) {
+            hideBtn.addEventListener('click', () => {
+                this.hideCurrentImage();
             });
         }
 
@@ -3290,6 +3332,80 @@ class DeParaUI {
                 if (slideshowField) {
                     slideshowField.value = fullPath;
                     this.showToast(`Pasta selecionada: ${fullPath}`, 'success');
+                }
+            }
+            
+            // Remover o input após uso
+            document.body.removeChild(input);
+        });
+        
+        // Adicionar ao DOM e clicar
+        document.body.appendChild(input);
+        input.click();
+    }
+
+    // Navegar para pasta de fotos excluídas
+    browseDeletedFolder() {
+        console.log('📁 Abrindo seletor de pasta para fotos excluídas...');
+        
+        // Usar diálogo nativo para seleção de pasta
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.webkitdirectory = true;
+        input.directory = true;
+        input.multiple = false;
+        input.style.display = 'none';
+        
+        input.addEventListener('change', (event) => {
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                // Pegar o caminho da primeira pasta selecionada
+                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
+                
+                console.log('📁 Pasta selecionada para fotos excluídas:', fullPath);
+                
+                // Atualizar o campo de pasta de fotos excluídas
+                const deletedField = document.getElementById('slideshow-deleted-folder');
+                if (deletedField) {
+                    deletedField.value = fullPath;
+                    this.showToast(`Pasta de fotos excluídas: ${fullPath}`, 'success');
+                }
+            }
+            
+            // Remover o input após uso
+            document.body.removeChild(input);
+        });
+        
+        // Adicionar ao DOM e clicar
+        document.body.appendChild(input);
+        input.click();
+    }
+
+    // Navegar para pasta de fotos ocultas
+    browseHiddenFolder() {
+        console.log('📁 Abrindo seletor de pasta para fotos ocultas...');
+        
+        // Usar diálogo nativo para seleção de pasta
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.webkitdirectory = true;
+        input.directory = true;
+        input.multiple = false;
+        input.style.display = 'none';
+        
+        input.addEventListener('change', (event) => {
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                // Pegar o caminho da primeira pasta selecionada
+                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
+                
+                console.log('📁 Pasta selecionada para fotos ocultas:', fullPath);
+                
+                // Atualizar o campo de pasta de fotos ocultas
+                const hiddenField = document.getElementById('slideshow-hidden-folder');
+                if (hiddenField) {
+                    hiddenField.value = fullPath;
+                    this.showToast(`Pasta de fotos ocultas: ${fullPath}`, 'success');
                 }
             }
             
@@ -4374,6 +4490,140 @@ class DeParaUI {
         const counter = document.getElementById('dynamic-slideshow-counter');
         if (counter && this.slideshowImages) {
             counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+        }
+    }
+
+    // Apagar imagem atual (mover para pasta de excluídas)
+    async deleteCurrentImage() {
+        if (!this.slideshowImages || this.slideshowImages.length === 0) {
+            this.showToast('Nenhuma imagem para apagar', 'error');
+            return;
+        }
+
+        const currentImage = this.slideshowImages[this.currentSlideIndex];
+        if (!currentImage) {
+            this.showToast('Imagem atual não encontrada', 'error');
+            return;
+        }
+
+        if (!this.slideshowConfig.deletedFolder) {
+            this.showToast('Configure a pasta de fotos excluídas nas configurações', 'error');
+            return;
+        }
+
+        try {
+            console.log('🗑️ Apagando imagem:', currentImage.path);
+            console.log('📁 Movendo para pasta:', this.slideshowConfig.deletedFolder);
+
+            // Chamar API para mover arquivo
+            const response = await fetch('/api/files/move', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sourcePath: currentImage.path,
+                    destinationPath: this.slideshowConfig.deletedFolder
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Imagem apagada com sucesso:', result);
+                
+                // Remover imagem da lista atual
+                this.slideshowImages.splice(this.currentSlideIndex, 1);
+                
+                // Ajustar índice se necessário
+                if (this.currentSlideIndex >= this.slideshowImages.length) {
+                    this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
+                }
+                
+                // Atualizar exibição
+                if (this.slideshowImages.length > 0) {
+                    this.updateSlideDisplay();
+                    this.updateDynamicCounter();
+                } else {
+                    this.showToast('Todas as imagens foram apagadas', 'info');
+                    this.closeSlideshowViewer();
+                }
+                
+                this.showToast('Imagem apagada com sucesso', 'success');
+            } else {
+                const error = await response.json();
+                console.error('❌ Erro ao apagar imagem:', error);
+                this.showToast(`Erro ao apagar imagem: ${error.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao apagar imagem:', error);
+            this.showToast('Erro ao apagar imagem', 'error');
+        }
+    }
+
+    // Ocultar imagem atual (mover para pasta de ocultas)
+    async hideCurrentImage() {
+        if (!this.slideshowImages || this.slideshowImages.length === 0) {
+            this.showToast('Nenhuma imagem para ocultar', 'error');
+            return;
+        }
+
+        const currentImage = this.slideshowImages[this.currentSlideIndex];
+        if (!currentImage) {
+            this.showToast('Imagem atual não encontrada', 'error');
+            return;
+        }
+
+        if (!this.slideshowConfig.hiddenFolder) {
+            this.showToast('Configure a pasta de fotos ocultas nas configurações', 'error');
+            return;
+        }
+
+        try {
+            console.log('👁️ Ocultando imagem:', currentImage.path);
+            console.log('📁 Movendo para pasta:', this.slideshowConfig.hiddenFolder);
+
+            // Chamar API para mover arquivo
+            const response = await fetch('/api/files/move', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sourcePath: currentImage.path,
+                    destinationPath: this.slideshowConfig.hiddenFolder
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Imagem ocultada com sucesso:', result);
+                
+                // Remover imagem da lista atual
+                this.slideshowImages.splice(this.currentSlideIndex, 1);
+                
+                // Ajustar índice se necessário
+                if (this.currentSlideIndex >= this.slideshowImages.length) {
+                    this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
+                }
+                
+                // Atualizar exibição
+                if (this.slideshowImages.length > 0) {
+                    this.updateSlideDisplay();
+                    this.updateDynamicCounter();
+                } else {
+                    this.showToast('Todas as imagens foram ocultadas', 'info');
+                    this.closeSlideshowViewer();
+                }
+                
+                this.showToast('Imagem ocultada com sucesso', 'success');
+            } else {
+                const error = await response.json();
+                console.error('❌ Erro ao ocultar imagem:', error);
+                this.showToast(`Erro ao ocultar imagem: ${error.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao ocultar imagem:', error);
+            this.showToast('Erro ao ocultar imagem', 'error');
         }
     }
 

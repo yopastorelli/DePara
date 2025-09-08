@@ -1285,6 +1285,35 @@
                         </label>
                     </div>
                 </div>
+
+                <!-- Configurações de Pastas de Organização -->
+                <div class="slideshow-organization-settings">
+                    <h4>Pastas de Organização</h4>
+                    
+                    <div class="setting-row">
+                        <label for="slideshow-deleted-folder">Pasta de Fotos Excluídas:</label>
+                        <div class="input-group">
+                            <input type="text" id="slideshow-deleted-folder" placeholder="Caminho para fotos excluídas">
+                            <button class="btn btn-outline slideshow-browse-deleted-btn">
+                                <span class="material-icons">folder_open</span>
+                                Selecionar
+                            </button>
+                        </div>
+                        <small class="form-help">Pasta onde as fotos apagadas serão movidas</small>
+                    </div>
+
+                    <div class="setting-row">
+                        <label for="slideshow-hidden-folder">Pasta de Fotos Ocultas:</label>
+                        <div class="input-group">
+                            <input type="text" id="slideshow-hidden-folder" placeholder="Caminho para fotos ocultas">
+                            <button class="btn btn-outline slideshow-browse-hidden-btn">
+                                <span class="material-icons">folder_open</span>
+                                Selecionar
+                            </button>
+                        </div>
+                        <small class="form-help">Pasta onde as fotos ocultas serão movidas</small>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer">
@@ -1313,6 +1342,16 @@
                 </button>
                 <button class="slideshow-btn slideshow-close-viewer-btn" title="Fechar (ESC)">
                     <span class="material-icons">close</span>
+                </button>
+            </div>
+            
+            <!-- Botões de Organização (discretos) -->
+            <div class="slideshow-organization-controls">
+                <button class="slideshow-btn slideshow-delete-btn" title="Apagar foto (mover para pasta de excluídas)">
+                    <span class="material-icons">delete</span>
+                </button>
+                <button class="slideshow-btn slideshow-hide-btn" title="Ocultar foto (mover para pasta de ocultas)">
+                    <span class="material-icons">visibility_off</span>
                 </button>
             </div>
         </div>

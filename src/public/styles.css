@@ -3206,6 +3206,35 @@ body {
     transform: scale(0.95);
 }
 
+/* Botões de Organização (discretos) */
+.slideshow-organization-controls {
+    display: flex;
+    gap: 5px;
+    margin-left: 10px;
+}
+
+.slideshow-organization-controls .slideshow-btn {
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid rgba(255, 0, 0, 0.3);
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+.slideshow-organization-controls .slideshow-btn:hover {
+    background: rgba(255, 0, 0, 0.2);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.slideshow-organization-controls .slideshow-hide-btn {
+    background: rgba(255, 165, 0, 0.1);
+    border: 1px solid rgba(255, 165, 0, 0.3);
+}
+
+.slideshow-organization-controls .slideshow-hide-btn:hover {
+    background: rgba(255, 165, 0, 0.2);
+}
+
 .slideshow-info {
     display: flex;
     flex-direction: column;
