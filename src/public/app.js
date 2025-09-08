@@ -901,8 +901,16 @@ class DeParaUI {
         if (savedPath) {
             const slideshowField = document.getElementById('slideshow-folder-path');
             if (slideshowField) {
-                slideshowField.value = savedPath;
-                console.log('📂 Pasta do slideshow carregada na inicialização:', savedPath);
+                // Se o caminho salvo for relativo, converter para absoluto
+                let finalPath = savedPath;
+                if (!savedPath.startsWith('/') && !savedPath.match(/^[A-Za-z]:/)) {
+                    const basePath = '/mnt/lytspot/@SYNC@/_@@PICZ & VIDEOS LYT @@_/_@LYT PicZ por ANO@_';
+                    finalPath = `${basePath}/${savedPath}`;
+                    console.log('🔗 Caminho relativo convertido para absoluto na inicialização:', finalPath);
+                }
+                
+                slideshowField.value = finalPath;
+                console.log('📂 Pasta do slideshow carregada na inicialização:', finalPath);
             }
         }
     }
@@ -3191,14 +3199,6 @@ class DeParaUI {
             });
         }
 
-        // Botão de pasta principal
-        const mainFolderBtn = document.querySelector('.slideshow-main-folder-btn');
-        if (mainFolderBtn) {
-            mainFolderBtn.addEventListener('click', () => {
-                this.useMainFolder();
-            });
-        }
-
         // Viewer de slideshow
         const prevBtn = document.querySelector('.slideshow-prev-btn');
         if (prevBtn) {
@@ -3278,19 +3278,11 @@ class DeParaUI {
                 
                 console.log('📁 Pasta selecionada para slideshow:', fullPath);
                 
-                // CORREÇÃO: Se a pasta selecionada pode estar vazia, usar a pasta pai
-                let finalPath = fullPath;
-                if (fullPath.includes('@Bfore 2001@') || fullPath.includes('@2021@') || fullPath.includes('@2022@') || fullPath.includes('@2023@')) {
-                    const parentPath = fullPath.replace(/\/@[^@]+@$/, '');
-                    console.log(`🔄 Pasta selecionada pode estar vazia, usando pasta pai: ${parentPath}`);
-                    finalPath = parentPath;
-                }
-                
                 // Atualizar o campo de pasta do slideshow
                 const slideshowField = document.getElementById('slideshow-folder-path');
                 if (slideshowField) {
-                    slideshowField.value = finalPath;
-                    this.showToast(`Pasta selecionada: ${finalPath}`, 'success');
+                    slideshowField.value = fullPath;
+                    this.showToast(`Pasta selecionada: ${fullPath}`, 'success');
                 }
             }
             
@@ -3301,25 +3293,6 @@ class DeParaUI {
         // Adicionar ao DOM e clicar
         document.body.appendChild(input);
         input.click();
-    }
-
-    // Usar pasta principal com todas as imagens
-    useMainFolder() {
-        console.log('📁 Usando pasta principal...');
-        
-        const mainPath = '/mnt/lytspot/@SYNC@/_@@PICZ & VIDEOS LYT @@_/_@LYT PicZ por ANO@_';
-        
-        // Atualizar o campo de pasta do slideshow
-        const slideshowField = document.getElementById('slideshow-folder-path');
-        if (slideshowField) {
-            slideshowField.value = mainPath;
-            this.showToast(`Pasta principal selecionada: ${mainPath}`, 'success');
-        }
-        
-        // Atualizar configuração
-        this.slideshowConfig.folderPath = mainPath;
-        this.saveSlideshowConfig();
-        this.applySlideshowConfig();
     }
 
     // Configurar event listeners para o modal de seleção de pasta do slideshow
@@ -3422,11 +3395,18 @@ class DeParaUI {
 
     // Iniciar slideshow a partir do modal
     async startSlideshowFromModal() {
-        const folderPath = document.getElementById('slideshow-folder-path').value.trim();
+        let folderPath = document.getElementById('slideshow-folder-path').value.trim();
 
         if (!folderPath) {
             this.showToast('Selecione uma pasta com imagens', 'error');
             return;
+        }
+
+        // Se o caminho for relativo, construir o caminho absoluto
+        if (!folderPath.startsWith('/') && !folderPath.match(/^[A-Za-z]:/)) {
+            const basePath = '/mnt/lytspot/@SYNC@/_@@PICZ & VIDEOS LYT @@_/_@LYT PicZ por ANO@_';
+            folderPath = `${basePath}/${folderPath}`;
+            console.log('🔗 Caminho relativo convertido para absoluto:', folderPath);
         }
 
         // Aplicar configurações do modal
