@@ -4510,8 +4510,29 @@ class DeParaUI {
             console.log('🗑️ Apagando imagem:', currentImage.path);
             console.log('📁 Movendo para pasta:', this.slideshowConfig.deletedFolder);
 
-            // Pular verificação de pasta (endpoint não existe)
+            // Verificar se pasta de destino existe, se não, criar
             console.log('📁 Pasta de destino configurada:', this.slideshowConfig.deletedFolder);
+            
+            // Primeiro, tentar criar a pasta se não existir
+            try {
+                const createFolderResponse = await fetch('/api/files/create-folder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        path: this.slideshowConfig.deletedFolder
+                    })
+                });
+                
+                if (createFolderResponse.ok) {
+                    console.log('✅ Pasta de destino criada/verificada');
+                } else {
+                    console.log('⚠️ Pasta de destino já existe ou erro ao criar');
+                }
+            } catch (error) {
+                console.log('⚠️ Erro ao verificar/criar pasta:', error);
+            }
 
             // Debug: Log dos dados sendo enviados
             const requestData = {
@@ -4585,8 +4606,29 @@ class DeParaUI {
             console.log('👁️ Ocultando imagem:', currentImage.path);
             console.log('📁 Movendo para pasta:', this.slideshowConfig.hiddenFolder);
 
-            // Pular verificação de pasta (endpoint não existe)
+            // Verificar se pasta de destino existe, se não, criar
             console.log('📁 Pasta de destino configurada:', this.slideshowConfig.hiddenFolder);
+            
+            // Primeiro, tentar criar a pasta se não existir
+            try {
+                const createFolderResponse = await fetch('/api/files/create-folder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        path: this.slideshowConfig.hiddenFolder
+                    })
+                });
+                
+                if (createFolderResponse.ok) {
+                    console.log('✅ Pasta de destino criada/verificada');
+                } else {
+                    console.log('⚠️ Pasta de destino já existe ou erro ao criar');
+                }
+            } catch (error) {
+                console.log('⚠️ Erro ao verificar/criar pasta:', error);
+            }
 
             // Debug: Log dos dados sendo enviados
             const requestData = {
