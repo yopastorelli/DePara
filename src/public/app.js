@@ -2268,10 +2268,7 @@ class DeParaUI {
         this.addButtonListener('.close-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
         this.addButtonListener('.cancel-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
         this.addButtonListener('.close-slideshow-config-btn', () => window.closeSlideshowConfigModal());
-        // Removido - duplicado com .slideshow-start-btn
-        this.addButtonListener('#slideshow-prev', () => this.previousSlide());
-        this.addButtonListener('#slideshow-next', () => this.nextSlide());
-        this.addButtonListener('.close-slideshow-btn', () => this.closeSlideshowViewer());
+        // Event listeners antigos removidos - usando botões estáticos
 
         // Botão seletor de pasta
         this.addButtonListener('.select-folder-btn', () => {
@@ -3196,13 +3193,7 @@ class DeParaUI {
 
     // Adicionar event listeners para slideshow
     addSlideshowEventListeners() {
-        // Modal de configuração
-        const closeBtns = document.querySelectorAll('.slideshow-close-btn');
-        closeBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.closeSlideshowModal();
-            });
-        });
+        // Event listeners antigos removidos - usando botões estáticos
 
         const startBtn = document.querySelector('.slideshow-start-btn');
         if (startBtn) {
@@ -3804,12 +3795,10 @@ class DeParaUI {
             totalImages: this.slideshowImages?.length || 0
         });
         
-        // Garantir que os controles dinâmicos existam
-        const existingControls = document.getElementById('dynamic-slideshow-controls');
-        if (!existingControls && this.slideshowImages && this.slideshowImages.length > 0) {
-            console.log('🎮 Controles não existem, criando...');
+        // Garantir que os controles estáticos existam
+        if (this.slideshowImages && this.slideshowImages.length > 0) {
+            console.log('🎮 Usando controles estáticos...');
             this.createDynamicSlideshowControls();
-            this.dynamicControlsCreated = true;
         }
         
         let imageElement = document.getElementById('slideshow-image');
@@ -4008,20 +3997,9 @@ class DeParaUI {
                         }
                         
                         // Criar controles de navegação para a imagem dinâmica
-                        if (!this.dynamicControlsCreated) {
-                            this.createDynamicSlideshowControls();
-                            this.dynamicControlsCreated = true;
-                            console.log('🎮 Controles criados pela primeira vez');
-                        } else {
-                            // Verificar se os controles ainda existem
-                            const existingControls = document.getElementById('dynamic-slideshow-controls');
-                            if (!existingControls) {
-                                this.createDynamicSlideshowControls();
-                                console.log('🎮 Controles recriados (não existiam)');
-                            } else {
-                                console.log('🎮 Controles já existem, não recriando');
-                            }
-                        }
+                        // Usar controles estáticos
+                        this.createDynamicSlideshowControls();
+                        console.log('🎮 Controles estáticos configurados');
                         
                         console.log('🆕 Novo elemento criado e adicionado ao body');
                         console.log('🔍 Debug Raspberry Pi - Elemento criado:', {
@@ -4590,11 +4568,11 @@ class DeParaUI {
             console.log('🧹 Elemento dinâmico removido');
         }
         
-        // Limpar controles dinâmicos
+        // Limpar controles dinâmicos antigos (se existirem)
         const dynamicControls = document.getElementById('dynamic-slideshow-controls');
         if (dynamicControls) {
             dynamicControls.remove();
-            console.log('🧹 Controles dinâmicos removidos');
+            console.log('🧹 Controles dinâmicos antigos removidos');
         }
         
         // Esconder controles estáticos
