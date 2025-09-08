@@ -3197,6 +3197,21 @@ body {
     height: 60px;
 }
 
+/* Garantir que os ícones do slideshow sempre funcionem */
+.slideshow-btn .material-icons {
+    font-family: 'Material Icons', 'Arial', sans-serif !important;
+    font-size: 48px !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+}
+
+/* Fallback para quando Material Icons não carregam */
+.slideshow-btn .material-icons[data-fallback] {
+    font-family: Arial, sans-serif !important;
+    font-size: 48px !important;
+    font-weight: bold !important;
+}
+
 .slideshow-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     transform: scale(1.1);
@@ -3283,6 +3298,21 @@ body {
     width: 50px;
     height: 50px;
     opacity: 0;
+}
+
+/* Garantir que o ícone de fechar sempre funcione */
+.slideshow-close-btn .material-icons {
+    font-family: 'Material Icons', 'Arial', sans-serif !important;
+    font-size: 24px !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+}
+
+/* Fallback para quando Material Icons não carregam */
+.slideshow-close-btn .material-icons[data-fallback] {
+    font-family: Arial, sans-serif !important;
+    font-size: 24px !important;
+    font-weight: bold !important;
 }
 
 .slideshow-modal:hover .slideshow-close-btn {
