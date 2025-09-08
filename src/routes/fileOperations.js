@@ -1396,12 +1396,21 @@ router.get('/images/:folderPath(*)', async (req, res) => {
  */
 router.get('/image/:imagePath(*)', async (req, res) => {
     try {
-        const imagePath = '/' + req.params.imagePath;
+        const imagePath = req.params.imagePath;
+        
+        logger.info(`🖼️ Servindo imagem: ${imagePath}`);
 
         // Verificar se o arquivo existe e é uma imagem
-
         const stats = await fs.stat(imagePath);
+        logger.info(`📊 Estatísticas do arquivo: ${JSON.stringify({
+            isFile: stats.isFile(),
+            isDirectory: stats.isDirectory(),
+            size: stats.size,
+            mtime: stats.mtime
+        })}`);
+        
         if (!stats.isFile()) {
+            logger.error(`❌ Arquivo não encontrado: ${imagePath}`);
             return res.status(404).json({
                 error: {
                     message: 'Arquivo não encontrado',
@@ -1412,8 +1421,11 @@ router.get('/image/:imagePath(*)', async (req, res) => {
 
         const ext = path.extname(imagePath).toLowerCase().slice(1);
         const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'svg'];
+        
+        logger.info(`🔍 Extensão do arquivo: ${ext}`);
 
         if (!allowedExtensions.includes(ext)) {
+            logger.error(`❌ Extensão não suportada: ${ext}`);
             return res.status(400).json({
                 error: {
                     message: 'Tipo de arquivo não suportado',
@@ -1446,6 +1458,8 @@ router.get('/image/:imagePath(*)', async (req, res) => {
 
         res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
         res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache por 1 hora
+
+        logger.info(`✅ Servindo imagem: ${imagePath} com Content-Type: ${mimeTypes[ext]}`);
 
         // Stream do arquivo com gerenciamento adequado
         const fileStream = fsSync.createReadStream(imagePath);
@@ -1721,67 +1735,6 @@ router.post('/list-images', async (req, res) => {
     }
 });
 
-// Servir imagem para slideshow
-router.get('/image/:imagePath(*)', async (req, res) => {
-    try {
-        const imagePath = req.params.imagePath;
-
-        // Validar caminho da imagem
-        const safePath = await fileOperationsManager.validateSafePath(imagePath, 'read');
-
-        // Verificar se o arquivo existe
-        const stats = await fs.stat(safePath);
-
-        // Verificar se é uma imagem
-        const ext = path.extname(safePath).toLowerCase();
-        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
-
-        if (!allowedExtensions.includes(ext)) {
-            return res.status(403).json({
-                error: {
-                    message: 'Tipo de arquivo não permitido para visualização'
-                }
-            });
-        }
-
-        // Definir content-type baseado na extensão
-        const contentTypes = {
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.png': 'image/png',
-            '.gif': 'image/gif',
-            '.bmp': 'image/bmp',
-            '.webp': 'image/webp'
-        };
-
-        res.setHeader('Content-Type', contentTypes[ext] || 'application/octet-stream');
-        res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache por 1 hora
-
-        // Stream do arquivo
-        const stream = fsSync.createReadStream(safePath);
-        stream.pipe(res);
-
-        stream.on('error', (error) => {
-            logger.error('Erro ao streamar imagem:', error);
-            if (!res.headersSent) {
-                res.status(500).json({
-                    error: {
-                        message: 'Erro ao carregar imagem'
-                    }
-                });
-            }
-        });
-
-    } catch (error) {
-        logger.error('Erro ao servir imagem:', error);
-        res.status(404).json({
-            error: {
-                message: 'Imagem não encontrada',
-                details: error.message
-            }
-        });
-    }
-});
 
 // Listar pastas de um diretório para navegador
 router.post('/list-folders', async (req, res) => {
