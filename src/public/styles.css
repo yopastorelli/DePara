@@ -3075,26 +3075,7 @@ body {
 /* Controles dinâmicos do slideshow */
 /* CSS duplicado removido - agora está apenas no index.html */
 
-#dynamic-slideshow-delete,
-#dynamic-slideshow-hide {
-    font-family: Arial, sans-serif !important;
-    font-size: 24px !important;
-    background: rgba(0, 0, 0, 0.7) !important;
-    border: none !important;
-    color: white !important;
-    cursor: pointer !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    transition: background 0.3s !important;
-    pointer-events: auto !important;
-}
-
-#dynamic-slideshow-delete:hover,
-#dynamic-slideshow-hide:hover {
-    background: rgba(0, 0, 0, 0.9) !important;
-}
+/* CSS removido - conflitava com controles dinâmicos */
 
 /* Slideshow Modal */
 .slideshow-modal {

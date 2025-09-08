@@ -4308,197 +4308,88 @@ class DeParaUI {
 
     // Criar controles de navegação para slideshow dinâmico
     createDynamicSlideshowControls() {
+        console.log('🔥 CRIANDO CONTROLES NUCLEAR - SEM CSS CONFLITANTE');
+        
         // Remover controles antigos se existirem
         const oldControls = document.getElementById('dynamic-slideshow-controls');
         if (oldControls) {
             oldControls.remove();
         }
         
-        // Criar container de controles (simplificado)
+        // Criar container de controles com HTML PURO
         const controlsContainer = document.createElement('div');
         controlsContainer.id = 'dynamic-slideshow-controls';
-        controlsContainer.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 1000000;
-            pointer-events: auto;
+        
+        // HTML PURO para os botões - SEM CSS INLINE
+        controlsContainer.innerHTML = `
+            <button id="slideshow-prev-nuclear" style="left: 20px; top: 50%; transform: translateY(-50%);">⬅️</button>
+            <button id="slideshow-next-nuclear" style="right: 20px; top: 50%; transform: translateY(-50%);">➡️</button>
+            <button id="slideshow-close-nuclear" style="top: 20px; right: 20px; width: 50px; height: 50px; font-size: 20px;">❌</button>
+            <button id="slideshow-delete-nuclear" style="top: 20px; right: 80px; width: 50px; height: 50px;">🗑️</button>
+            <button id="slideshow-hide-nuclear" style="top: 20px; right: 140px; width: 50px; height: 50px;">👁️</button>
+            <div id="dynamic-slideshow-counter" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 16px; z-index: 9999999; pointer-events: none;"></div>
+            <div id="dynamic-slideshow-filename" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 9999999; pointer-events: none; max-width: 80%; text-align: center; word-break: break-word;"></div>
         `;
         
-        // Botão anterior (simples)
-        const prevBtn = document.createElement('button');
-        prevBtn.className = 'slideshow-btn';
-        prevBtn.innerHTML = '⬅️';
-        prevBtn.style.cssText = `
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-        `;
+        // Adicionar event listeners
+        const prevBtn = controlsContainer.querySelector('#slideshow-prev-nuclear');
+        const nextBtn = controlsContainer.querySelector('#slideshow-next-nuclear');
+        const closeBtn = controlsContainer.querySelector('#slideshow-close-nuclear');
+        const deleteBtn = controlsContainer.querySelector('#slideshow-delete-nuclear');
+        const hideBtn = controlsContainer.querySelector('#slideshow-hide-nuclear');
+        
         prevBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('⬅️ Botão anterior clicado');
+            console.log('⬅️ Botão anterior clicado (NUCLEAR)');
             this.previousSlide();
         });
         
-        // Botão próximo (simples)
-        const nextBtn = document.createElement('button');
-        nextBtn.className = 'slideshow-btn';
-        nextBtn.innerHTML = '➡️';
-        nextBtn.style.cssText = `
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-        `;
         nextBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('➡️ Botão próximo clicado');
+            console.log('➡️ Botão próximo clicado (NUCLEAR)');
             this.nextSlide();
         });
         
-        // Contador
-        const counter = document.createElement('div');
-        counter.style.cssText = `
-            position: absolute !important;
-            top: 20px !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            background: rgba(0, 0, 0, 0.7) !important;
-            color: white !important;
-            padding: 10px 20px !important;
-            border-radius: 20px !important;
-            font-size: 16px !important;
-            z-index: 1000002 !important;
-            pointer-events: none !important;
-        `;
-        counter.id = 'dynamic-slideshow-counter';
-        
-        // Nome do arquivo
-        const filename = document.createElement('div');
-        filename.style.cssText = `
-            position: absolute !important;
-            bottom: 20px !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            background: rgba(0, 0, 0, 0.7) !important;
-            color: white !important;
-            padding: 10px 20px !important;
-            border-radius: 20px !important;
-            font-size: 14px !important;
-            z-index: 1000002 !important;
-            pointer-events: none !important;
-            max-width: 80% !important;
-            text-align: center !important;
-            word-break: break-word !important;
-        `;
-        filename.id = 'dynamic-slideshow-filename';
-        
-        // Botão fechar (simples)
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'slideshow-btn';
-        closeBtn.innerHTML = '❌';
-        closeBtn.style.cssText = `
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 20px;
-        `;
         closeBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('❌ Botão fechar clicado');
+            console.log('❌ Botão fechar clicado (NUCLEAR)');
             this.closeSlideshowViewer();
         });
-
-        // Botão apagar (simples)
-        const deleteBtn = document.createElement('button');
-        deleteBtn.id = 'dynamic-slideshow-delete';
-        deleteBtn.className = 'slideshow-btn';
-        deleteBtn.innerHTML = '🗑️';
-        deleteBtn.title = 'Apagar foto';
-        deleteBtn.style.cssText = `
-            position: absolute;
-            top: 20px;
-            right: 80px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 24px;
-        `;
+        
         deleteBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🗑️ Botão apagar clicado');
+            console.log('🗑️ Botão apagar clicado (NUCLEAR)');
             this.deleteCurrentImage();
         });
-
-        // Botão ocultar (simples)
-        const hideBtn = document.createElement('button');
-        hideBtn.id = 'dynamic-slideshow-hide';
-        hideBtn.className = 'slideshow-btn';
-        hideBtn.innerHTML = '👁️';
-        hideBtn.title = 'Ocultar foto';
-        hideBtn.style.cssText = `
-            position: absolute;
-            top: 20px;
-            right: 140px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 24px;
-        `;
+        
         hideBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('👁️ Botão ocultar clicado');
+            console.log('👁️ Botão ocultar clicado (NUCLEAR)');
             this.hideCurrentImage();
         });
-
-        // Adicionar elementos ao container
-        controlsContainer.appendChild(prevBtn);
-        controlsContainer.appendChild(nextBtn);
-        controlsContainer.appendChild(counter);
-        controlsContainer.appendChild(filename);
-        controlsContainer.appendChild(closeBtn);
-        controlsContainer.appendChild(deleteBtn);
-        controlsContainer.appendChild(hideBtn);
         
         // Debug: Verificar se botões foram criados corretamente
-        console.log('🔍 Debug botões criados:', {
-            prevBtn: { innerHTML: prevBtn.innerHTML, className: prevBtn.className, zIndex: window.getComputedStyle(prevBtn).zIndex },
-            nextBtn: { innerHTML: nextBtn.innerHTML, className: nextBtn.className, zIndex: window.getComputedStyle(nextBtn).zIndex },
-            closeBtn: { innerHTML: closeBtn.innerHTML, className: closeBtn.className, zIndex: window.getComputedStyle(closeBtn).zIndex },
-            deleteBtn: { innerHTML: deleteBtn.innerHTML, className: deleteBtn.className, zIndex: window.getComputedStyle(deleteBtn).zIndex },
-            hideBtn: { innerHTML: hideBtn.innerHTML, className: hideBtn.className, zIndex: window.getComputedStyle(hideBtn).zIndex }
+        console.log('🔍 Debug botões NUCLEAR criados:', {
+            prevBtn: { innerHTML: prevBtn.innerHTML, textContent: prevBtn.textContent },
+            nextBtn: { innerHTML: nextBtn.innerHTML, textContent: nextBtn.textContent },
+            closeBtn: { innerHTML: closeBtn.innerHTML, textContent: closeBtn.textContent },
+            deleteBtn: { innerHTML: deleteBtn.innerHTML, textContent: deleteBtn.textContent },
+            hideBtn: { innerHTML: hideBtn.innerHTML, textContent: hideBtn.textContent }
         });
-        
-        // Verificação simplificada
-        setTimeout(() => {
-            console.log('✅ Controles do slideshow criados');
-        }, 100);
         
         // Adicionar ao body
         document.body.appendChild(controlsContainer);
+        this.dynamicControlsCreated = true;
         
-        console.log('✅ Controles do slideshow criados');
+        console.log('✅ Controles NUCLEAR criados - EMOJIS DEVEM APARECER!');
         
         // Atualizar contador
         this.updateDynamicCounter();
-        
     }
     
     // Atualizar contador dinâmico
