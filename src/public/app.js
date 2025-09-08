@@ -3804,7 +3804,7 @@ class DeParaUI {
                         newImageElement.className = 'slideshow-image-new';
                         newImageElement.alt = currentImage.name;
                         
-                        // Aplicar estilos diretamente no elemento
+                        // Aplicar estilos diretamente no elemento (compatível com Raspberry Pi)
                         newImageElement.style.cssText = `
                             display: block !important;
                             visibility: visible !important;
@@ -3827,11 +3827,39 @@ class DeParaUI {
                             border-radius: 8px !important;
                         `;
                         
+                        // Aplicar estilos individualmente para máxima compatibilidade
+                        newImageElement.style.display = 'block';
+                        newImageElement.style.visibility = 'visible';
+                        newImageElement.style.opacity = '1';
+                        newImageElement.style.position = 'fixed';
+                        newImageElement.style.top = '50%';
+                        newImageElement.style.left = '50%';
+                        newImageElement.style.transform = 'translate(-50%, -50%)';
+                        newImageElement.style.zIndex = '9999';
+                        newImageElement.style.width = '80vw';
+                        newImageElement.style.height = '80vh';
+                        newImageElement.style.minWidth = '600px';
+                        newImageElement.style.minHeight = '400px';
+                        newImageElement.style.maxWidth = '80vw';
+                        newImageElement.style.maxHeight = '80vh';
+                        newImageElement.style.objectFit = 'contain';
+                        newImageElement.style.border = '5px solid #4CAF50';
+                        newImageElement.style.background = 'rgba(0, 0, 0, 0.1)';
+                        newImageElement.style.boxShadow = '0 0 30px rgba(0, 0, 0, 0.8)';
+                        newImageElement.style.borderRadius = '8px';
+                        
                         // Adicionar ao body (fora do container problemático)
                         document.body.appendChild(newImageElement);
                         targetElement = newImageElement;
                         
                         console.log('🆕 Novo elemento criado e adicionado ao body');
+                        console.log('🔍 Debug Raspberry Pi - Elemento criado:', {
+                            id: newImageElement.id,
+                            tagName: newImageElement.tagName,
+                            parentNode: newImageElement.parentNode.tagName,
+                            position: newImageElement.getBoundingClientRect(),
+                            computedStyle: window.getComputedStyle(newImageElement)
+                        });
                     }
 
                     // Configurar o elemento
@@ -3871,14 +3899,42 @@ class DeParaUI {
                             visible: finalRect.width > 0 && finalRect.height > 0
                         });
                         
+                        // Debug específico para Raspberry Pi
+                        console.log('🍓 Debug Raspberry Pi - Estado final:', {
+                            userAgent: navigator.userAgent,
+                            platform: navigator.platform,
+                            elementId: targetElement.id,
+                            elementTag: targetElement.tagName,
+                            elementSrc: targetElement.src,
+                            elementPosition: finalRect,
+                            elementStyles: {
+                                display: targetElement.style.display,
+                                position: targetElement.style.position,
+                                top: targetElement.style.top,
+                                left: targetElement.style.left,
+                                transform: targetElement.style.transform,
+                                zIndex: targetElement.style.zIndex,
+                                width: targetElement.style.width,
+                                height: targetElement.style.height,
+                                border: targetElement.style.border
+                            },
+                            computedStyles: window.getComputedStyle(targetElement),
+                            parentElement: targetElement.parentElement?.tagName,
+                            isInBody: targetElement.parentElement === document.body
+                        });
+                        
                         if (finalRect.width === 0 || finalRect.height === 0) {
                             console.error('🚨 FALHA CRÍTICA: Imagem ainda com dimensões zero após todas as correções!');
-                            // Tentar uma última vez com estilos ainda mais forçados
+                            console.error('🍓 Raspberry Pi - Tentando solução de emergência...');
+                            
+                            // Solução de emergência específica para Raspberry Pi
                             targetElement.style.cssText = `
                                 display: block !important;
                                 visibility: visible !important;
                                 opacity: 1 !important;
-                                position: relative !important;
+                                position: absolute !important;
+                                top: 100px !important;
+                                left: 100px !important;
                                 z-index: 9999 !important;
                                 width: 800px !important;
                                 height: 600px !important;
@@ -3887,12 +3943,19 @@ class DeParaUI {
                                 max-width: 800px !important;
                                 max-height: 600px !important;
                                 object-fit: contain !important;
-                                border: 5px solid red !important;
-                                background: rgba(255, 0, 0, 0.1) !important;
-                                box-shadow: 0 0 30px rgba(255, 0, 0, 0.8) !important;
+                                border: 10px solid red !important;
+                                background: rgba(255, 0, 0, 0.3) !important;
+                                box-shadow: 0 0 50px rgba(255, 0, 0, 1) !important;
                             `;
+                            
+                            // Forçar reflow
+                            targetElement.offsetHeight;
+                            targetElement.offsetWidth;
+                            
+                            console.log('🍓 Raspberry Pi - Solução de emergência aplicada');
                         } else {
                             console.log('✅ Imagem exibida com sucesso!');
+                            console.log('🍓 Raspberry Pi - Slideshow funcionando corretamente!');
                         }
                     }, 100);
 
