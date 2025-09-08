@@ -3126,9 +3126,13 @@ class DeParaUI {
             try {
                 this.slideshowConfig = { ...this.slideshowConfig, ...JSON.parse(saved) };
                 console.log('📋 Configurações do slideshow carregadas:', this.slideshowConfig);
+                console.log('🔍 DEBUG - Pasta oculta carregada:', this.slideshowConfig.hiddenFolder);
+                console.log('🔍 DEBUG - Pasta excluída carregada:', this.slideshowConfig.deletedFolder);
             } catch (error) {
                 console.warn('⚠️ Erro ao carregar configurações do slideshow:', error);
             }
+        } else {
+            console.log('⚠️ Nenhuma configuração salva encontrada');
         }
     }
 
@@ -3156,10 +3160,15 @@ class DeParaUI {
             .map(cb => cb.value);
 
         // Coletar pastas de organização
-        const deletedFolder = document.getElementById('slideshow-deleted-folder').value.trim();
-        const hiddenFolder = document.getElementById('slideshow-hidden-folder').value.trim();
+        const deletedField = document.getElementById('slideshow-deleted-folder');
+        const hiddenField = document.getElementById('slideshow-hidden-folder');
+        
+        const deletedFolder = deletedField ? deletedField.value.trim() : '';
+        const hiddenFolder = hiddenField ? hiddenField.value.trim() : '';
         
         console.log('🔍 DEBUG - Pastas coletadas:');
+        console.log('🔍 deletedField encontrado:', !!deletedField);
+        console.log('🔍 hiddenField encontrado:', !!hiddenField);
         console.log('🔍 deletedFolder:', deletedFolder);
         console.log('🔍 hiddenFolder:', hiddenFolder);
 
@@ -3193,8 +3202,22 @@ class DeParaUI {
         });
 
         // Aplicar pastas de organização
-        document.getElementById('slideshow-deleted-folder').value = this.slideshowConfig.deletedFolder || '';
-        document.getElementById('slideshow-hidden-folder').value = this.slideshowConfig.hiddenFolder || '';
+        const deletedField = document.getElementById('slideshow-deleted-folder');
+        const hiddenField = document.getElementById('slideshow-hidden-folder');
+        
+        if (deletedField) {
+            deletedField.value = this.slideshowConfig.deletedFolder || '';
+            console.log('🔍 DEBUG - Campo deleted aplicado:', deletedField.value);
+        } else {
+            console.error('❌ Campo slideshow-deleted-folder não encontrado');
+        }
+        
+        if (hiddenField) {
+            hiddenField.value = this.slideshowConfig.hiddenFolder || '';
+            console.log('🔍 DEBUG - Campo hidden aplicado:', hiddenField.value);
+        } else {
+            console.error('❌ Campo slideshow-hidden-folder não encontrado');
+        }
     }
 
     // Adicionar event listeners para slideshow
@@ -4629,11 +4652,16 @@ class DeParaUI {
             return;
         }
 
-        if (!this.slideshowConfig.hiddenFolder) {
+        if (!this.slideshowConfig.hiddenFolder || this.slideshowConfig.hiddenFolder.trim() === '') {
             console.log('❌ Pasta de ocultas não configurada');
+            console.log('❌ slideshowConfig.hiddenFolder:', this.slideshowConfig.hiddenFolder);
+            console.log('❌ slideshowConfig completo:', this.slideshowConfig);
             this.showToast('Configure a pasta de fotos ocultas nas configurações', 'error');
             return;
         }
+        
+        console.log('✅ Pasta de ocultas configurada:', this.slideshowConfig.hiddenFolder);
+        console.log('✅ Configuração completa:', this.slideshowConfig);
 
         try {
             console.log('👁️ Ocultando imagem:', currentImage.path);
