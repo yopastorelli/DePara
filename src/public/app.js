@@ -4603,36 +4603,8 @@ class DeParaUI {
             }
         }, 1000);
         
-        // Proteção adicional com intervalo mais agressivo
-        const protectIcons = setInterval(() => {
-            const deleteBtnCheck = document.getElementById('dynamic-slideshow-delete');
-            const hideBtnCheck = document.getElementById('dynamic-slideshow-hide');
-            
-            if (deleteBtnCheck) {
-                // Forçar restauração do ícone de lixo
-                deleteBtnCheck.innerHTML = '🗑️';
-                deleteBtnCheck.style.fontFamily = 'Arial, sans-serif !important';
-                deleteBtnCheck.style.fontSize = '24px !important';
-                deleteBtnCheck.style.color = 'white !important';
-                deleteBtnCheck.style.background = 'transparent !important';
-                deleteBtnCheck.style.border = 'none !important';
-                console.log('🔄 Forçando restauração do ícone de apagar');
-            }
-            
-            if (hideBtnCheck) {
-                // Forçar restauração do ícone de olho
-                hideBtnCheck.innerHTML = '👁️';
-                hideBtnCheck.style.fontFamily = 'Arial, sans-serif !important';
-                hideBtnCheck.style.fontSize = '24px !important';
-                hideBtnCheck.style.color = 'white !important';
-                hideBtnCheck.style.background = 'transparent !important';
-                hideBtnCheck.style.border = 'none !important';
-                console.log('🔄 Forçando restauração do ícone de ocultar');
-            }
-        }, 500); // Intervalo mais frequente
-        
-        // Limpar intervalo quando slideshow fechar
-        this.slideshowIconProtectionInterval = protectIcons;
+        // Proteção simples sem setInterval (evita loop infinito)
+        console.log('🛡️ Proteção de ícones configurada sem setInterval');
         
         // Atualizar contador
         this.updateDynamicCounter();
@@ -4811,12 +4783,8 @@ class DeParaUI {
     closeSlideshowViewer() {
         this.stopAutoPlay();
         
-        // Limpar intervalo de proteção de ícones
-        if (this.slideshowIconProtectionInterval) {
-            clearInterval(this.slideshowIconProtectionInterval);
-            this.slideshowIconProtectionInterval = null;
-            console.log('🧹 Intervalo de proteção de ícones limpo');
-        }
+        // Limpeza de proteção de ícones (sem setInterval)
+        console.log('🧹 Proteção de ícones limpa');
         
         // Resetar flag de controles criados
         this.dynamicControlsCreated = false;
