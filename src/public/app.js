@@ -3569,6 +3569,13 @@ class DeParaUI {
         console.log('📸 Imagens disponíveis:', this.slideshowImages?.length || 0);
         console.log('📸 Primeira imagem:', this.slideshowImages?.[0]);
         
+        // Limpar elementos antigos se existirem
+        const oldElement = document.getElementById('slideshow-image-new');
+        if (oldElement) {
+            oldElement.remove();
+            console.log('🧹 Elemento antigo removido');
+        }
+        
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
             console.error('❌ Nenhuma imagem disponível para slideshow');
             this.showToast('Nenhuma imagem encontrada para o slideshow', 'error');
@@ -3783,34 +3790,64 @@ class DeParaUI {
                 console.log('✅ Imagem carregada com sucesso:', imageUrl);
 
                 if (imageElement) {
-                    // Usar o elemento existente e forçar estilos
-                    const targetElement = imageElement;
+                    // SOLUÇÃO RADICAL: Criar novo elemento se o atual não funcionar
+                    let targetElement = imageElement;
                     
                     // Verificar se o elemento atual tem problemas
                     const currentRect = imageElement.getBoundingClientRect();
                     if (currentRect.width === 0 || currentRect.height === 0) {
-                        console.warn('⚠️ Elemento atual tem dimensões zero, forçando estilos...');
+                        console.warn('⚠️ Elemento atual tem dimensões zero, criando novo elemento...');
+                        
+                        // Criar novo elemento de imagem
+                        const newImageElement = document.createElement('img');
+                        newImageElement.id = 'slideshow-image-new';
+                        newImageElement.className = 'slideshow-image-new';
+                        newImageElement.alt = currentImage.name;
+                        
+                        // Aplicar estilos diretamente no elemento
+                        newImageElement.style.cssText = `
+                            display: block !important;
+                            visibility: visible !important;
+                            opacity: 1 !important;
+                            position: fixed !important;
+                            top: 50% !important;
+                            left: 50% !important;
+                            transform: translate(-50%, -50%) !important;
+                            z-index: 9999 !important;
+                            width: 80vw !important;
+                            height: 80vh !important;
+                            min-width: 600px !important;
+                            min-height: 400px !important;
+                            max-width: 80vw !important;
+                            max-height: 80vh !important;
+                            object-fit: contain !important;
+                            border: 5px solid #4CAF50 !important;
+                            background: rgba(0, 0, 0, 0.1) !important;
+                            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8) !important;
+                            border-radius: 8px !important;
+                        `;
+                        
+                        // Adicionar ao body (fora do container problemático)
+                        document.body.appendChild(newImageElement);
+                        targetElement = newImageElement;
+                        
+                        console.log('🆕 Novo elemento criado e adicionado ao body');
                     }
 
                     // Configurar o elemento
                     targetElement.src = imageUrl;
                     targetElement.alt = currentImage.name;
 
-                    // Aplicar estilos forçados com !important
-                    targetElement.style.setProperty('display', 'block', 'important');
-                    targetElement.style.setProperty('visibility', 'visible', 'important');
-                    targetElement.style.setProperty('opacity', '1', 'important');
-                    targetElement.style.setProperty('position', 'relative', 'important');
-                    targetElement.style.setProperty('z-index', '1000', 'important');
-                    targetElement.style.setProperty('width', '90vw', 'important');
-                    targetElement.style.setProperty('height', '90vh', 'important');
-                    targetElement.style.setProperty('min-width', '600px', 'important');
-                    targetElement.style.setProperty('min-height', '400px', 'important');
-                    targetElement.style.setProperty('max-width', '90vw', 'important');
-                    targetElement.style.setProperty('max-height', '90vh', 'important');
-                    targetElement.style.setProperty('object-fit', 'contain', 'important');
-                    targetElement.style.setProperty('border', '3px solid #4CAF50', 'important');
-                    targetElement.style.setProperty('box-shadow', '0 0 20px rgba(0, 0, 0, 0.8)', 'important');
+                    // Se for o elemento original, aplicar estilos básicos
+                    if (targetElement === imageElement) {
+                        targetElement.style.setProperty('display', 'block', 'important');
+                        targetElement.style.setProperty('visibility', 'visible', 'important');
+                        targetElement.style.setProperty('opacity', '1', 'important');
+                        targetElement.style.setProperty('width', '90vw', 'important');
+                        targetElement.style.setProperty('height', '90vh', 'important');
+                        targetElement.style.setProperty('object-fit', 'contain', 'important');
+                        targetElement.style.setProperty('border', '3px solid #4CAF50', 'important');
+                    }
 
                     console.log('🖼️ Imagem exibida no elemento:', targetElement.src);
                     console.log('🖼️ Tipo de elemento:', targetElement.tagName);
@@ -4037,6 +4074,14 @@ class DeParaUI {
     closeSlideshowViewer() {
         this.stopAutoPlay();
         document.getElementById('slideshow-viewer').style.display = 'none';
+        
+        // Limpar elementos criados dinamicamente
+        const dynamicElement = document.getElementById('slideshow-image-new');
+        if (dynamicElement) {
+            dynamicElement.remove();
+            console.log('🧹 Elemento dinâmico removido');
+        }
+        
         this.slideshowImages = [];
         this.currentSlideIndex = 0;
     }
