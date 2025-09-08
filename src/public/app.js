@@ -909,6 +909,12 @@ class DeParaUI {
                     console.log('🔗 Caminho relativo convertido para absoluto na inicialização:', finalPath);
                 }
                 
+                // Verificar se o caminho já contém a pasta base (evitar duplicação)
+                if (finalPath.includes('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/')) {
+                    finalPath = finalPath.replace('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/', '/_@LYT PicZ por ANO@_/');
+                    console.log('🔧 Caminho duplicado corrigido na inicialização:', finalPath);
+                }
+                
                 slideshowField.value = finalPath;
                 console.log('📂 Pasta do slideshow carregada na inicialização:', finalPath);
                 console.log('🎯 Busca recursiva será forçada para encontrar TODAS as imagens');
@@ -3409,6 +3415,12 @@ class DeParaUI {
             folderPath = `${basePath}/${folderPath}`;
             console.log('🔗 Caminho relativo convertido para absoluto:', folderPath);
         }
+        
+        // Verificar se o caminho já contém a pasta base (evitar duplicação)
+        if (folderPath.includes('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/')) {
+            folderPath = folderPath.replace('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/', '/_@LYT PicZ por ANO@_/');
+            console.log('🔧 Caminho duplicado corrigido:', folderPath);
+        }
 
         // Aplicar configurações do modal
         this.applySlideshowConfigFromModal();
@@ -3655,12 +3667,20 @@ class DeParaUI {
             totalImages: this.slideshowImages?.length || 0
         });
         
-        const imageElement = document.getElementById('slideshow-image');
+        let imageElement = document.getElementById('slideshow-image');
         const counterElement = document.getElementById('slideshow-counter');
         const filenameElement = document.getElementById('slideshow-filename');
         const loadingElement = document.getElementById('slideshow-loading');
         const errorElement = document.getElementById('slideshow-error');
         const imageContainer = document.querySelector('.slideshow-image-container');
+        
+        // Se não encontrar o elemento slideshow-image, tentar encontrar o slideshow-image-new
+        if (!imageElement) {
+            imageElement = document.getElementById('slideshow-image-new');
+            if (imageElement) {
+                console.log('🔄 Usando elemento slideshow-image-new encontrado');
+            }
+        }
 
         // Verificar se o slideshow-viewer está visível
         const viewer = document.getElementById('slideshow-viewer');
@@ -3761,44 +3781,16 @@ class DeParaUI {
                 console.log('✅ Imagem carregada com sucesso:', imageUrl);
 
                 if (imageElement) {
-                    // SOLUÇÃO RADICAL: Substituir completamente o elemento se necessário
-                    let targetElement = imageElement;
-                    let needsReplacement = false;
-
+                    // Usar o elemento existente e forçar estilos
+                    const targetElement = imageElement;
+                    
                     // Verificar se o elemento atual tem problemas
                     const currentRect = imageElement.getBoundingClientRect();
                     if (currentRect.width === 0 || currentRect.height === 0) {
-                        console.warn('⚠️ Elemento atual tem dimensões zero, criando novo elemento...');
-                        needsReplacement = true;
-
-                        // Criar novo elemento
-                        const newImageElement = document.createElement('img');
-                        newImageElement.id = 'slideshow-image-new';
-                        newImageElement.alt = currentImage.name;
-                        newImageElement.style.cssText = `
-                            display: block !important;
-                            visibility: visible !important;
-                            opacity: 1 !important;
-                            position: relative !important;
-                            z-index: 1000 !important;
-                            width: 100% !important;
-                            height: 100% !important;
-                            min-width: 300px !important;
-                            min-height: 300px !important;
-                            max-width: 100% !important;
-                            max-height: 100% !important;
-                            object-fit: contain !important;
-                            border: 3px solid red !important;
-                            background: rgba(255, 255, 255, 0.1) !important;
-                        `;
-
-                        // Substituir o elemento antigo
-                        imageElement.parentNode.replaceChild(newImageElement, imageElement);
-                        targetElement = newImageElement;
-                        console.log('🔄 Novo elemento criado e substituído');
+                        console.warn('⚠️ Elemento atual tem dimensões zero, forçando estilos...');
                     }
 
-                    // Configurar o elemento (novo ou antigo)
+                    // Configurar o elemento
                     targetElement.src = imageUrl;
                     targetElement.alt = currentImage.name;
 
@@ -3808,18 +3800,14 @@ class DeParaUI {
                     targetElement.style.setProperty('opacity', '1', 'important');
                     targetElement.style.setProperty('position', 'relative', 'important');
                     targetElement.style.setProperty('z-index', '1000', 'important');
-
-                    if (!needsReplacement) {
-                        // Só aplicar estes estilos se não foi substituído
-                        targetElement.style.setProperty('width', 'auto', 'important');
-                        targetElement.style.setProperty('height', 'auto', 'important');
-                        targetElement.style.setProperty('min-width', '300px', 'important');
-                        targetElement.style.setProperty('min-height', '300px', 'important');
-                        targetElement.style.setProperty('max-width', '100%', 'important');
-                        targetElement.style.setProperty('max-height', '100%', 'important');
-                        targetElement.style.setProperty('object-fit', 'contain', 'important');
-                        targetElement.style.setProperty('border', '3px solid red', 'important');
-                    }
+                    targetElement.style.setProperty('width', 'auto', 'important');
+                    targetElement.style.setProperty('height', 'auto', 'important');
+                    targetElement.style.setProperty('min-width', '300px', 'important');
+                    targetElement.style.setProperty('min-height', '300px', 'important');
+                    targetElement.style.setProperty('max-width', '100%', 'important');
+                    targetElement.style.setProperty('max-height', '100%', 'important');
+                    targetElement.style.setProperty('object-fit', 'contain', 'important');
+                    targetElement.style.setProperty('border', '2px solid #4CAF50', 'important');
 
                     console.log('🖼️ Imagem exibida no elemento:', targetElement.src);
                     console.log('🖼️ Tipo de elemento:', targetElement.tagName);
