@@ -52,9 +52,9 @@
             font-size: 18px;
         }
         
-        /* CSS FORÇADO para botões estáticos - GARANTIR EMOJIS */
-        #static-slideshow-controls button {
-            font-family: Arial, sans-serif !important;
+        /* CSS FORÇADO para botões estáticos DENTRO do slideshow-viewer */
+        .slideshow-viewer #static-slideshow-controls button {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", Arial, sans-serif !important;
             font-size: 24px !important;
             line-height: 1 !important;
             color: white !important;
@@ -62,7 +62,7 @@
             border: none !important;
             cursor: pointer !important;
             pointer-events: auto !important;
-            z-index: 99999999 !important;
+            z-index: 10002 !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
@@ -70,28 +70,23 @@
             white-space: nowrap !important;
         }
         
-        /* FORÇAR emojis e desabilitar Material Icons */
-        #static-slideshow-controls button {
-            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", Arial, sans-serif !important;
-        }
-        
         /* GARANTIR que emojis sejam exibidos e desabilitar Material Icons */
-        #static-slideshow-controls button::before,
-        #static-slideshow-controls button::after {
+        .slideshow-viewer #static-slideshow-controls button::before,
+        .slideshow-viewer #static-slideshow-controls button::after {
             display: none !important;
             content: none !important;
         }
         
         /* SOBRESCREVER qualquer CSS conflitante */
-        body #static-slideshow-controls button {
+        .slideshow-viewer #static-slideshow-controls button {
             font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", Arial, sans-serif !important;
             font-size: 24px !important;
             color: white !important;
         }
         
         /* GARANTIR que Material Icons não interfira */
-        #static-slideshow-controls .material-icons,
-        #static-slideshow-controls button .material-icons {
+        .slideshow-viewer #static-slideshow-controls .material-icons,
+        .slideshow-viewer #static-slideshow-controls button .material-icons {
             display: none !important;
         }
     </style>
@@ -1225,29 +1220,7 @@
         </div>
     </div>
 
-    <!-- BOTÕES ESTÁTICOS PARA SLIDESHOW DINÂMICO -->
-    <div id="static-slideshow-controls" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999999; pointer-events: none;">
-        <!-- Botão anterior -->
-        <button id="static-prev-btn" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 99999999;">⬅️</button>
-        
-        <!-- Botão próximo -->
-        <button id="static-next-btn" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 99999999;">➡️</button>
-        
-        <!-- Botão fechar -->
-        <button id="static-close-btn" style="position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 20px; cursor: pointer; pointer-events: auto; z-index: 99999999;">❌</button>
-        
-        <!-- Botão apagar -->
-        <button id="static-delete-btn" style="position: absolute; top: 20px; right: 80px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 99999999;">🗑️</button>
-        
-        <!-- Botão ocultar -->
-        <button id="static-hide-btn" style="position: absolute; top: 20px; right: 140px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 99999999;">👁️</button>
-        
-        <!-- Contador -->
-        <div id="static-counter" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 16px; z-index: 9999999; pointer-events: none;">1 / 1</div>
-        
-        <!-- Nome do arquivo -->
-        <div id="static-filename" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 9999999; pointer-events: none; max-width: 80%; text-align: center; word-break: break-word;">Arquivo</div>
-    </div>
+    <!-- BOTÕES ESTÁTICOS MOVIDOS PARA DENTRO DO SLIDESHOW-VIEWER -->
 
     <!-- Modal de Seleção de Pasta para Slideshow -->
     <div id="slideshow-folder-modal" class="modal" style="display: none;">
@@ -1434,6 +1407,30 @@
         <!-- Rodapé com caminho da imagem -->
         <div class="slideshow-footer">
             <div id="slideshow-path" class="slideshow-path">Caminho da imagem aparecerá aqui</div>
+        </div>
+        
+        <!-- BOTÕES ESTÁTICOS DENTRO DO SLIDESHOW-VIEWER -->
+        <div id="static-slideshow-controls" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10001; pointer-events: none;">
+            <!-- Botão anterior -->
+            <button id="static-prev-btn" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 10002;">⬅️</button>
+            
+            <!-- Botão próximo -->
+            <button id="static-next-btn" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 10002;">➡️</button>
+            
+            <!-- Botão fechar -->
+            <button id="static-close-btn" style="position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 20px; cursor: pointer; pointer-events: auto; z-index: 10002;">❌</button>
+            
+            <!-- Botão apagar -->
+            <button id="static-delete-btn" style="position: absolute; top: 20px; right: 80px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 10002;">🗑️</button>
+            
+            <!-- Botão ocultar -->
+            <button id="static-hide-btn" style="position: absolute; top: 20px; right: 140px; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 24px; cursor: pointer; pointer-events: auto; z-index: 10002;">👁️</button>
+            
+            <!-- Contador -->
+            <div id="static-counter" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 16px; z-index: 10002; pointer-events: none;">1 / 1</div>
+            
+            <!-- Nome do arquivo -->
+            <div id="static-filename" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 10002; pointer-events: none; max-width: 80%; text-align: center; word-break: break-word;">Arquivo</div>
         </div>
     </div>
 

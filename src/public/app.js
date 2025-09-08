@@ -4298,7 +4298,7 @@ class DeParaUI {
         const staticControls = document.getElementById('static-slideshow-controls');
         if (staticControls) {
             staticControls.style.display = 'block';
-            console.log('✅ Controles estáticos exibidos');
+            console.log('✅ Controles estáticos exibidos dentro do slideshow-viewer');
         } else {
             console.error('❌ Controles estáticos não encontrados');
         }
