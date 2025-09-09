@@ -261,6 +261,11 @@ async function validateSafePath(filePath, operation = 'read') {
 
     return resolvedPath;
   } catch (error) {
+    // Para operações de escrita, permitir que o caminho não exista ainda
+    if (operation === 'write' && error.code === 'ENOENT') {
+      logger.info(`Caminho de destino não existe ainda (permitido para ${operation}): ${resolvedPath}`);
+      return resolvedPath;
+    }
     if (error.code === 'ENOENT') {
       // Caminho não existe - verificar se podemos criar
       if (operation === 'write' || operation === 'create') {
