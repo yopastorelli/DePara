@@ -4597,27 +4597,8 @@ class DeParaUI {
             // Verificar se pasta de destino existe, se não, criar
             console.log('📁 Pasta de destino configurada:', this.slideshowConfig.deletedFolder);
             
-            // Primeiro, tentar criar a pasta se não existir
-            try {
-                const createFolderResponse = await fetch('/api/folders', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        name: 'Excluidas do DEPARA',
-                        path: this.slideshowConfig.deletedFolder
-                    })
-                });
-                
-                if (createFolderResponse.ok) {
-                    console.log('✅ Pasta de destino criada/verificada');
-                } else {
-                    console.log('⚠️ Pasta de destino já existe ou erro ao criar');
-                }
-            } catch (error) {
-                console.log('⚠️ Erro ao verificar/criar pasta:', error);
-            }
+            // Pasta de destino já configurada - prosseguir diretamente
+            console.log('✅ Pasta de destino configurada, prosseguindo com operação');
 
             // Debug: Log dos dados sendo enviados
             const requestData = {
@@ -4628,6 +4609,7 @@ class DeParaUI {
             console.log('🔍 DEBUG - Dados sendo enviados para API (DELETE):', requestData);
             
             // Chamar API para mover arquivo
+            console.log('📡 Enviando requisição para /api/files/execute...');
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
@@ -4635,6 +4617,8 @@ class DeParaUI {
                 },
                 body: JSON.stringify(requestData)
             });
+            
+            console.log('📡 Resposta da API:', response.status, response.statusText);
 
             if (response.ok) {
                 const result = await response.json();
@@ -4707,27 +4691,8 @@ class DeParaUI {
             // Verificar se pasta de destino existe, se não, criar
             console.log('📁 Pasta de destino configurada:', this.slideshowConfig.hiddenFolder);
             
-            // Primeiro, tentar criar a pasta se não existir
-            try {
-                const createFolderResponse = await fetch('/api/folders', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        name: 'Ocultas do DEPARA',
-                        path: this.slideshowConfig.hiddenFolder
-                    })
-                });
-                
-                if (createFolderResponse.ok) {
-                    console.log('✅ Pasta de destino criada/verificada');
-                } else {
-                    console.log('⚠️ Pasta de destino já existe ou erro ao criar');
-                }
-            } catch (error) {
-                console.log('⚠️ Erro ao verificar/criar pasta:', error);
-            }
+            // Pasta de destino já configurada - prosseguir diretamente
+            console.log('✅ Pasta de destino configurada, prosseguindo com operação');
 
             // Debug: Log dos dados sendo enviados
             const requestData = {
@@ -4738,6 +4703,7 @@ class DeParaUI {
             console.log('🔍 DEBUG - Dados sendo enviados para API (HIDE):', requestData);
             
             // Chamar API para mover arquivo
+            console.log('📡 Enviando requisição para /api/files/execute...');
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
@@ -4745,6 +4711,8 @@ class DeParaUI {
                 },
                 body: JSON.stringify(requestData)
             });
+            
+            console.log('📡 Resposta da API:', response.status, response.statusText);
 
             if (response.ok) {
                 const result = await response.json();
