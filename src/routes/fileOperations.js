@@ -450,10 +450,23 @@ router.post('/execute', normalRateLimiter, async (req, res) => {
 
     } catch (error) {
         logger.operationError('File Operation Execute', error);
+        
+        // Log detalhado do erro para debug
+        logger.error('🔍 DEBUG - Erro detalhado na operação:', {
+            action: req.body?.action,
+            sourcePath: req.body?.sourcePath,
+            targetPath: req.body?.targetPath,
+            errorMessage: error.message,
+            errorStack: error.stack,
+            errorCode: error.code
+        });
+        
         res.status(500).json({
             error: {
                 message: 'Erro na execução da operação',
-                details: error.message
+                details: error.message,
+                code: error.code,
+                action: req.body?.action
             }
         });
     }

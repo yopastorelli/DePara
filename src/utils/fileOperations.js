@@ -58,8 +58,14 @@ async function checkRaspberryPiPermissions(sourcePath, targetPath, operation) {
     try {
         // Detectar se está rodando no Raspberry Pi
         const isRaspberryPi = process.platform === 'linux' && 
-                             (process.arch === 'arm' || process.arch === 'arm64') &&
-                             process.env.USER === 'pi';
+                             (process.arch === 'arm' || process.arch === 'arm64');
+        
+        logger.info(`🔍 DEBUG - Detecção Raspberry Pi:`, {
+            platform: process.platform,
+            arch: process.arch,
+            user: process.env.USER,
+            isRaspberryPi: isRaspberryPi
+        });
 
         if (!isRaspberryPi) {
             logger.debug('Não é Raspberry Pi, pulando verificação de permissões');
@@ -67,13 +73,18 @@ async function checkRaspberryPiPermissions(sourcePath, targetPath, operation) {
         }
 
         logger.info(`🍓 Verificando permissões no Raspberry Pi para ${operation}`);
+        logger.info(`🔍 DEBUG - Caminhos:`, {
+            sourcePath: sourcePath,
+            targetPath: targetPath,
+            operation: operation
+        });
 
         // Verificar permissões do arquivo de origem
         try {
             await fs.access(sourcePath, fs.constants.R_OK);
-            logger.debug(`✅ Permissão de leitura OK: ${sourcePath}`);
+            logger.info(`✅ Permissão de leitura OK: ${sourcePath}`);
         } catch (error) {
-            logger.warn(`⚠️ Sem permissão de leitura: ${sourcePath}`);
+            logger.warn(`⚠️ Sem permissão de leitura: ${sourcePath} - ${error.message}`);
             // Tentar corrigir permissões
             await fixFilePermissions(sourcePath, '644');
         }
