@@ -25,9 +25,81 @@ async function fixFilePermissions(filePath, permissions = '755') {
         // Executar chmod para corrigir permissões
         await execAsync(`chmod ${permissions} "${filePath}"`);
         logger.debug(`✅ Permissões corrigidas: ${filePath} (${permissions})`);
+        
+        // Verificar se a correção funcionou
+        const stats = await fs.stat(filePath);
+        logger.debug(`📊 Estatísticas após correção: ${JSON.stringify({
+            mode: stats.mode.toString(8),
+            uid: stats.uid,
+            gid: stats.gid
+        })}`);
+        
     } catch (error) {
         // Log como aviso, não como erro, pois não é crítico
         logger.warn(`⚠️ Não foi possível corrigir permissões de ${filePath}: ${error.message}`);
+        
+        // Tentar com sudo se disponível
+        try {
+            await execAsync(`sudo chmod ${permissions} "${filePath}"`);
+            logger.info(`✅ Permissões corrigidas com sudo: ${filePath} (${permissions})`);
+        } catch (sudoError) {
+            logger.warn(`⚠️ Falha mesmo com sudo: ${sudoError.message}`);
+        }
+    }
+}
+
+/**
+ * Verificar e corrigir permissões no Raspberry Pi
+ * @param {string} sourcePath - Caminho de origem
+ * @param {string} targetPath - Caminho de destino
+ * @param {string} operation - Tipo de operação
+ */
+async function checkRaspberryPiPermissions(sourcePath, targetPath, operation) {
+    try {
+        // Detectar se está rodando no Raspberry Pi
+        const isRaspberryPi = process.platform === 'linux' && 
+                             (process.arch === 'arm' || process.arch === 'arm64') &&
+                             process.env.USER === 'pi';
+
+        if (!isRaspberryPi) {
+            logger.debug('Não é Raspberry Pi, pulando verificação de permissões');
+            return;
+        }
+
+        logger.info(`🍓 Verificando permissões no Raspberry Pi para ${operation}`);
+
+        // Verificar permissões do arquivo de origem
+        try {
+            await fs.access(sourcePath, fs.constants.R_OK);
+            logger.debug(`✅ Permissão de leitura OK: ${sourcePath}`);
+        } catch (error) {
+            logger.warn(`⚠️ Sem permissão de leitura: ${sourcePath}`);
+            // Tentar corrigir permissões
+            await fixFilePermissions(sourcePath, '644');
+        }
+
+        // Verificar/criar diretório de destino
+        const targetDir = path.dirname(targetPath);
+        try {
+            await fs.access(targetDir, fs.constants.W_OK);
+            logger.debug(`✅ Permissão de escrita OK: ${targetDir}`);
+        } catch (error) {
+            logger.warn(`⚠️ Sem permissão de escrita: ${targetDir}`);
+            // Criar diretório com permissões corretas
+            await fs.mkdir(targetDir, { recursive: true });
+            await fixFilePermissions(targetDir, '755');
+        }
+
+        // Verificar se o usuário tem permissão sudo
+        try {
+            await execAsync('sudo -n true');
+            logger.debug('✅ Permissão sudo disponível');
+        } catch (error) {
+            logger.warn('⚠️ Sem permissão sudo - operações podem falhar');
+        }
+
+    } catch (error) {
+        logger.warn(`⚠️ Erro na verificação de permissões: ${error.message}`);
     }
 }
 
@@ -561,6 +633,9 @@ class FileOperationsManager {
             const stats = await fs.stat(safeSourcePath);
             const isDirectory = stats.isDirectory();
 
+            // Verificar permissões no Raspberry Pi
+            await this.checkRaspberryPiPermissions(safeSourcePath, safeTargetPath, 'move');
+
             // Criar backup se solicitado
             if (options.backupBeforeMove) {
                 await this.createBackup(safeSourcePath, 'move');
@@ -694,6 +769,9 @@ class FileOperationsManager {
             // Verificar se é um diretório para operação recursiva
             const stats = await fs.stat(safeSourcePath);
             const isDirectory = stats.isDirectory();
+
+            // Verificar permissões no Raspberry Pi
+            await this.checkRaspberryPiPermissions(safeSourcePath, safeTargetPath, 'copy');
 
             if (isDirectory && options.recursive !== false) {
                 // Operação recursiva em diretório
@@ -1327,6 +1405,16 @@ class FileOperationsManager {
                 throw error;
             }
         }
+    }
+
+    /**
+     * Verificar permissões no Raspberry Pi
+     * @param {string} sourcePath - Caminho de origem
+     * @param {string} targetPath - Caminho de destino
+     * @param {string} operation - Tipo de operação
+     */
+    async checkRaspberryPiPermissions(sourcePath, targetPath, operation) {
+        return await checkRaspberryPiPermissions(sourcePath, targetPath, operation);
     }
 
     /**
