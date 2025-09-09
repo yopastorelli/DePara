@@ -142,7 +142,9 @@ class DeParaUI {
 
     async init() {
         // Carregar configurações do slideshow
+        console.log('🔍 DEBUG - Inicializando DeParaUI...');
         this.loadSlideshowConfig();
+        console.log('🔍 DEBUG - Configurações carregadas:', this.slideshowConfig);
         
         logger.info('🚀 Inicializando DePara UI...', {
             version: '2.0.0',
@@ -773,6 +775,9 @@ class DeParaUI {
 
     // Iniciar slideshow
     async startSlideshow() {
+        console.log('🔍 DEBUG - startSlideshow chamada');
+        console.log('🔍 DEBUG - Configurações antes do slideshow:', this.slideshowConfig);
+        
         const folderPath = document.getElementById('slideshow-folder-path').value.trim();
         const maxDepth = document.getElementById('slideshow-max-depth').value;
 
@@ -3186,6 +3191,7 @@ class DeParaUI {
 
         this.saveSlideshowConfig();
         console.log('⚙️ Configurações aplicadas:', this.slideshowConfig);
+        console.log('🔍 DEBUG - Configurações salvas no localStorage:', localStorage.getItem('slideshowConfig'));
     }
 
     // Aplicar configurações salvas ao modal
@@ -3288,8 +3294,10 @@ class DeParaUI {
 
     // Abrir modal de slideshow
     showSlideshowModal() {
+        console.log('🔍 DEBUG - showSlideshowModal chamada');
         // Carregar configurações salvas
         this.loadSlideshowConfig();
+        console.log('🔍 DEBUG - Configurações carregadas no modal:', this.slideshowConfig);
         
         // Aplicar configurações ao modal
         this.applySlideshowConfigToModal();
@@ -4414,6 +4422,9 @@ class DeParaUI {
     
     setupStaticButtons() {
         console.log('🔧 Configurando botões estáticos...');
+        console.log('🔍 DEBUG - setupStaticButtons chamada');
+        console.log('🔍 DEBUG - this context:', this);
+        console.log('🔍 DEBUG - window.deParaUI:', window.deParaUI);
         
         // Botão anterior
         const prevBtn = document.getElementById('static-prev-btn');
@@ -4459,36 +4470,62 @@ class DeParaUI {
         
         // Botão apagar
         const deleteBtn = document.getElementById('static-delete-btn');
+        console.log('🔍 DEBUG - Botão delete encontrado:', !!deleteBtn);
+        if (deleteBtn) {
+            console.log('🔍 DEBUG - Botão delete já tem listener:', deleteBtn.hasAttribute('data-listener-added'));
+        }
+        
         if (deleteBtn && !deleteBtn.hasAttribute('data-listener-added')) {
+            console.log('🔍 DEBUG - Adicionando listener ao botão delete');
             deleteBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('🗑️ Botão apagar clicado (ESTÁTICO)');
+                console.log('🔍 DEBUG - window.deParaUI disponível:', !!window.deParaUI);
+                console.log('🔍 DEBUG - deleteCurrentImage disponível:', !!(window.deParaUI && typeof window.deParaUI.deleteCurrentImage === 'function'));
+                
                 // Usar window.deParaUI para garantir contexto correto
                 if (window.deParaUI && typeof window.deParaUI.deleteCurrentImage === 'function') {
+                    console.log('🔍 DEBUG - Chamando deleteCurrentImage');
                     window.deParaUI.deleteCurrentImage();
                 } else {
                     console.error('❌ DeParaUI não disponível ou método não encontrado');
+                    console.error('❌ window.deParaUI:', window.deParaUI);
+                    console.error('❌ typeof deleteCurrentImage:', typeof window.deParaUI?.deleteCurrentImage);
                 }
             });
             deleteBtn.setAttribute('data-listener-added', 'true');
+            console.log('✅ Listener do botão delete adicionado');
         }
         
         // Botão ocultar
         const hideBtn = document.getElementById('static-hide-btn');
+        console.log('🔍 DEBUG - Botão hide encontrado:', !!hideBtn);
+        if (hideBtn) {
+            console.log('🔍 DEBUG - Botão hide já tem listener:', hideBtn.hasAttribute('data-listener-added'));
+        }
+        
         if (hideBtn && !hideBtn.hasAttribute('data-listener-added')) {
+            console.log('🔍 DEBUG - Adicionando listener ao botão hide');
             hideBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('👁️ Botão ocultar clicado (ESTÁTICO)');
+                console.log('🔍 DEBUG - window.deParaUI disponível:', !!window.deParaUI);
+                console.log('🔍 DEBUG - hideCurrentImage disponível:', !!(window.deParaUI && typeof window.deParaUI.hideCurrentImage === 'function'));
+                
                 // Usar window.deParaUI para garantir contexto correto
                 if (window.deParaUI && typeof window.deParaUI.hideCurrentImage === 'function') {
+                    console.log('🔍 DEBUG - Chamando hideCurrentImage');
                     window.deParaUI.hideCurrentImage();
                 } else {
                     console.error('❌ DeParaUI não disponível ou método não encontrado');
+                    console.error('❌ window.deParaUI:', window.deParaUI);
+                    console.error('❌ typeof hideCurrentImage:', typeof window.deParaUI?.hideCurrentImage);
                 }
             });
             hideBtn.setAttribute('data-listener-added', 'true');
+            console.log('✅ Listener do botão hide adicionado');
         }
         
         console.log('✅ Event listeners dos botões estáticos configurados');
