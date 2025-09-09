@@ -4601,16 +4601,21 @@ class DeParaUI {
             console.log('✅ Pasta de destino configurada, prosseguindo com operação');
 
             // Debug: Log dos dados sendo enviados
+            const fileName = currentImage.name || currentImage.path.split('/').pop();
+            const targetPath = `${this.slideshowConfig.deletedFolder}/${fileName}`;
+            
             const requestData = {
                 action: 'move',
                 sourcePath: currentImage.path,
-                targetPath: this.slideshowConfig.deletedFolder
+                targetPath: targetPath
             };
             console.log('🔍 DEBUG - Dados sendo enviados para API (DELETE):', requestData);
             console.log('🔍 DEBUG - sourcePath existe:', !!currentImage.path);
             console.log('🔍 DEBUG - targetPath existe:', !!this.slideshowConfig.deletedFolder);
             console.log('🔍 DEBUG - sourcePath tipo:', typeof currentImage.path);
             console.log('🔍 DEBUG - targetPath tipo:', typeof this.slideshowConfig.deletedFolder);
+            console.log('🔍 DEBUG - fileName extraído:', fileName);
+            console.log('🔍 DEBUG - targetPath completo:', targetPath);
             
             // Chamar API para mover arquivo
             console.log('📡 Enviando requisição para /api/files/execute...');
@@ -4715,16 +4720,21 @@ class DeParaUI {
             console.log('✅ Pasta de destino configurada, prosseguindo com operação');
 
             // Debug: Log dos dados sendo enviados
+            const fileName = currentImage.name || currentImage.path.split('/').pop();
+            const targetPath = `${this.slideshowConfig.hiddenFolder}/${fileName}`;
+            
             const requestData = {
                 action: 'move',
                 sourcePath: currentImage.path,
-                targetPath: this.slideshowConfig.hiddenFolder
+                targetPath: targetPath
             };
             console.log('🔍 DEBUG - Dados sendo enviados para API (HIDE):', requestData);
             console.log('🔍 DEBUG - sourcePath existe:', !!currentImage.path);
             console.log('🔍 DEBUG - targetPath existe:', !!this.slideshowConfig.hiddenFolder);
             console.log('🔍 DEBUG - sourcePath tipo:', typeof currentImage.path);
             console.log('🔍 DEBUG - targetPath tipo:', typeof this.slideshowConfig.hiddenFolder);
+            console.log('🔍 DEBUG - fileName extraído:', fileName);
+            console.log('🔍 DEBUG - targetPath completo:', targetPath);
             
             // Chamar API para mover arquivo
             console.log('📡 Enviando requisição para /api/files/execute...');
