@@ -2,32 +2,30 @@
 
 ## 📋 Descrição
 
-DePara é uma aplicação Node.js simplificada e poderosa para gerenciamento automatizado de arquivos. Oferece operações de mover, copiar e apagar arquivos com agendamento flexível, backup automático e controle total sobre a estrutura de pastas. Perfeita para automação de tarefas de arquivo em qualquer ambiente.
+DePara é uma aplicação Node.js moderna e simplificada para gerenciamento automatizado de arquivos. Oferece operações de mover, copiar e apagar arquivos com agendamento flexível, backup automático e um slideshow de imagens integrado. Perfeita para automação de tarefas de arquivo em qualquer ambiente, especialmente otimizada para Raspberry Pi.
 
-## 🚀 Funcionalidades
+## 🚀 Funcionalidades Principais
 
 ### 🗂️ **Operações de Arquivos**
 - **Mover Arquivos**: Move arquivos entre pastas com backup automático
 - **Copiar Arquivos**: Copia arquivos preservando o original
 - **Apagar Arquivos**: Remove arquivos com backup automático
 - **Agendamento Flexível**: De segundos até dias de intervalo
-- **Edição de Tarefas**: Modifique operações agendadas existentes
-- **Controle Total**: Cancele ou edite tarefas a qualquer momento
 - **Operações em Lote**: Processa todos os arquivos de uma pasta
 - **Preservação de Estrutura**: Mantém ou achata estrutura de pastas conforme preferência
 
-### 🔄 **Automação e Templates**
-- **Templates Pré-configurados**: Cenários comuns prontos para uso
-  - 📦 **Backup**: Diário, por hora, incremental
-  - 🧹 **Limpeza**: Temporários, logs antigos, arquivos velhos
-  - 📁 **Organização**: Por tipo, por data, por tamanho
-  - 🔄 **Sincronização**: Espelhamento, backup bidirecional
-  - ⚙️ **Processamento**: Importação, arquivamento automático
+### 🖼️ **Slideshow de Imagens**
+- **Visualização Fullscreen**: Apresentação de imagens em tela cheia
+- **Navegação Intuitiva**: Teclado, mouse e controles na tela
+- **Busca Recursiva**: Inclui todas as subpastas automaticamente
+- **Filtros Avançados**: Seleção por tipo de arquivo (JPG, PNG, GIF, etc.)
+- **Controles de Ação**: Ocultar e apagar imagens diretamente do slideshow
+- **Otimizado para Raspberry Pi**: Performance otimizada para hardware de baixo consumo
 
 ### 🛡️ **Sistema de Proteção Inteligente**
 - **Arquivos Críticos Protegidos**: Resilio Sync, sistema e temporários
 - **Ignorar Automático**: Não interrompe sincronização ou sistema
-- **Compatibilidade Total**: Windows, Linux, macOS
+- **Compatibilidade Total**: Windows, Linux, macOS, Raspberry Pi
 - **Verificação Manual**: Teste se arquivo seria ignorado
 
 ### 📊 **Monitoramento e Controle**
@@ -35,20 +33,6 @@ DePara é uma aplicação Node.js simplificada e poderosa para gerenciamento aut
 - **API REST Completa**: Integração com outros sistemas
 - **Logs Estruturados**: Monitoramento detalhado de operações
 - **Backup Automático**: Proteção antes de qualquer operação
-- **Filtros Avançados**: Por extensão, tamanho, data, padrão
-
-### 🔧 **Conversão e Mapeamento**
-- **Conversão de Dados**: Transformação entre diferentes formatos (CSV, JSON, XML)
-- **Mapeamento Inteligente**: Sistema de regras para mapeamento automático de campos
-- **Validação Automática**: Verificação de integridade dos dados
-- **Transformações**: Limpeza, formatação, validação
-
-### 🖼️ **Slideshow de Imagens**
-- **Visualização Fullscreen**: Apresentação de imagens em tela cheia
-- **Navegação Inteligente**: Teclado, mouse e toque
-- **Busca Recursiva**: Inclui todas as subpastas automaticamente
-- **Filtros Avançados**: Seleção por tipo de arquivo
-- **Controles Intuitivos**: ESC para sair, setas para navegar
 
 ## 📋 Pré-requisitos
 
@@ -80,12 +64,11 @@ install.bat
 ./install.sh
 ```
 
-O instalador fará automaticamente:
-- ✅ Verificação do Node.js e npm
-- ✅ Instalação de todas as dependências
-- ✅ Criação da estrutura de pastas (backups, logs, temp)
-- ✅ Configuração básica do ambiente
-- ✅ Instruções de uso
+#### Raspberry Pi
+```bash
+# Instalação específica para Raspberry Pi
+./install-raspberry.sh
+```
 
 ### 🔧 **Instalação Manual**
 
@@ -118,6 +101,9 @@ npm run dev
 
 # Modo produção
 npm start
+
+# Modo produção com PM2 (recomendado)
+npm run start:bg
 ```
 
 ### 🌐 **Acesso Após Instalação**
@@ -125,11 +111,11 @@ npm start
 Após iniciar, acesse:
 - **Interface Web**: http://localhost:3000/ui
 - **API**: http://localhost:3000/api
-- **Documentação**: http://localhost:3000/api/docs
+- **Health Check**: http://localhost:3000/api/health
 
 ## 🎯 Como Usar
 
-### 🌐 **Interface Web (Recomendado para Iniciantes)**
+### 🌐 **Interface Web (Recomendado)**
 
 Acesse `http://localhost:3000/ui` e use a interface amigável para:
 
@@ -140,22 +126,17 @@ Acesse `http://localhost:3000/ui` e use a interface amigável para:
 
 #### 2. **Agendamento Automático**
 - Configure operações recorrentes (a cada 5 minutos, 1 hora, diariamente)
-- Use **templates pré-configurados** para cenários comuns
 - **Monitore** operações agendadas ativas
+- **Edite ou cancele** tarefas a qualquer momento
 
-#### 3. **Templates Rápidos**
-- **Backup Diário**: Configure backup automático de pastas importantes
-- **Limpeza de Logs**: Remova arquivos de log antigos automaticamente
-- **Organização por Tipo**: Mova arquivos para pastas organizadas por extensão
-- **Sincronização**: Mantenha pastas espelhadas
-
-#### 4. **Slideshow de Imagens**
+#### 3. **Slideshow de Imagens**
 - Clique no botão **"Slideshow de Imagens"** no dashboard
 - Selecione a pasta contendo as imagens
 - Escolha os tipos de arquivo desejados (JPG, PNG, GIF, etc.)
 - Defina a profundidade de busca em subpastas
 - Inicie a apresentação em fullscreen
-- Use as setas do teclado, roda do mouse ou toque para navegar
+- Use as setas do teclado, roda do mouse ou controles na tela para navegar
+- **Oculte ou apague** imagens diretamente do slideshow
 - Pressione **ESC** ou clique no botão **X** para sair
 
 ### 🔌 **API REST (Para Integração)**
@@ -164,11 +145,9 @@ Acesse `http://localhost:3000/ui` e use a interface amigável para:
 - `GET /api/health` - Status da aplicação
 - `POST /api/files/execute` - Operações imediatas em arquivos
 - `POST /api/files/schedule` - Agendamento de operações
-- `GET /api/files/templates` - Templates pré-configurados
-- `GET /api/files/images/:folderPath` - Listar imagens para slideshow
-- `GET /api/files/image/:imagePath` - Servir imagem para slideshow
-- `POST /api/convert` - Conversão de dados
-- `POST /api/map` - Mapeamento de campos
+- `GET /api/files/scheduled` - Listar operações agendadas
+- `GET /api/files/list-images` - Listar imagens para slideshow
+- `GET /api/files/image/:path` - Servir imagem para slideshow
 
 #### Exemplos Práticos
 
@@ -176,7 +155,7 @@ Acesse `http://localhost:3000/ui` e use a interface amigável para:
 # Verificar status
 curl http://localhost:3000/api/health
 
-# Mover arquivo com backup e preservação de estrutura
+# Mover arquivo com backup
 curl -X POST http://localhost:3000/api/files/execute \
   -H "Content-Type: application/json" \
   -d '{
@@ -189,7 +168,7 @@ curl -X POST http://localhost:3000/api/files/execute \
     }
   }'
 
-# Agendar backup diário com preservação de estrutura
+# Agendar backup diário
 curl -X POST http://localhost:3000/api/files/schedule \
   -H "Content-Type: application/json" \
   -d '{
@@ -203,26 +182,8 @@ curl -X POST http://localhost:3000/api/files/schedule \
     }
   }'
 
-# Aplicar template de limpeza
-curl -X POST http://localhost:3000/api/files/templates/cleanup/temp_files/apply \
-  -H "Content-Type: application/json" \
-  -d '{"sourcePath": "/minha_pasta_temp"}'
-
-# Verificar se arquivo seria ignorado
-curl -X POST http://localhost:3000/api/files/check-ignore \
-  -H "Content-Type: application/json" \
-  -d '{"filePath": "/sync/.sync/Archive", "filename": "Archive"}'
-
-# Listar padrões de arquivos protegidos
-curl http://localhost:3000/api/files/ignored-patterns
-
-# Listar imagens para slideshow (busca recursiva)
-curl "http://localhost:3000/api/files/images/caminho/para/imagens?extensions=jpg,png,gif&maxDepth=5"
-
-# Verificar se arquivo seria ignorado
-curl -X POST http://localhost:3000/api/files/check-ignore \
-  -H "Content-Type: application/json" \
-  -d '{"filePath": "/sync/.sync/Archive", "filename": "Archive"}'
+# Listar imagens para slideshow
+curl "http://localhost:3000/api/files/list-images?folderPath=/caminho/imagens&extensions=jpg,png,gif&recursive=true"
 ```
 
 ## 🧪 Testes
@@ -245,29 +206,49 @@ npm run test:coverage
 - `npm start` - Inicia a aplicação em modo produção
 - `npm run dev` - Inicia em modo desenvolvimento com nodemon
 - `npm run start:bg` - Inicia em segundo plano com PM2
-- `npm run start:bg:prod` - Inicia em produção com PM2
 - `npm run stop:bg` - Para a aplicação em segundo plano
 - `npm run restart:bg` - Reinicia a aplicação em segundo plano
 - `npm run status` - Verifica status da aplicação PM2
 - `npm run logs` - Visualiza logs da aplicação PM2
 - `npm test` - Executa os testes
 - `npm run lint` - Executa o linter ESLint
-- `npm run setup` - Instala dependências
-- `npm run setup:bg` - Instala dependências + PM2 global
 
 ### Estrutura do Projeto
 
 ```
 DePara/
-├── src/           # Código fonte
-├── tests/         # Testes automatizados
-├── docs/          # Documentação adicional
-├── logs/          # Arquivos de log
-├── package.json   # Dependências e scripts
-├── .gitignore     # Arquivos ignorados pelo Git
-├── env.example    # Exemplo de variáveis de ambiente
-└── README.md      # Este arquivo
+├── src/                    # Código fonte
+│   ├── main.js            # Arquivo principal
+│   ├── routes/            # Rotas da API
+│   ├── utils/             # Utilitários
+│   ├── middleware/        # Middlewares
+│   └── public/            # Interface web
+├── tests/                 # Testes automatizados
+├── docs/                  # Documentação adicional
+├── logs/                  # Arquivos de log
+├── package.json           # Dependências e scripts
+├── .gitignore            # Arquivos ignorados pelo Git
+├── env.example           # Exemplo de variáveis de ambiente
+└── README.md             # Este arquivo
 ```
+
+## 🍓 **Suporte Especial para Raspberry Pi**
+
+### Instalação no Raspberry Pi
+```bash
+# Instalação automática
+./install-raspberry.sh
+
+# Configuração como serviço
+sudo systemctl enable depara
+sudo systemctl start depara
+```
+
+### Otimizações Incluídas
+- **Detecção automática** de hardware Raspberry Pi
+- **Correção de permissões** automática
+- **Performance otimizada** para ARM
+- **Logs específicos** para debugging
 
 ## 📝 Logs
 
@@ -276,6 +257,39 @@ A aplicação gera logs estruturados para facilitar o debug e monitoramento:
 - **Nível**: info, warn, error, debug
 - **Localização**: `logs/app.log`
 - **Formato**: JSON estruturado com timestamp
+
+## 🆘 Troubleshooting
+
+### Problemas Comuns
+
+#### 1. **Erro de Permissão no Raspberry Pi**
+```bash
+# Corrigir permissões
+sudo chown -R pi:pi /caminho/do/projeto
+sudo chmod -R 755 /caminho/do/projeto
+```
+
+#### 2. **Slideshow não carrega imagens**
+- Verifique se a pasta existe e tem permissão de leitura
+- Confirme se as extensões estão corretas
+- Verifique os logs da aplicação
+
+#### 3. **API retorna erro 500**
+- Verifique os logs em `logs/app.log`
+- Confirme se os caminhos de arquivo estão corretos
+- Verifique permissões de escrita nas pastas de destino
+
+#### 4. **Aplicação não inicia**
+```bash
+# Verificar dependências
+npm install
+
+# Verificar logs
+npm run logs
+
+# Reiniciar aplicação
+npm run restart:bg
+```
 
 ## 🤝 Como Contribuir
 
@@ -294,7 +308,7 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 Se encontrar algum problema ou tiver dúvidas:
 
 1. Verifique os logs da aplicação
-2. Consulte a documentação da API
+2. Consulte a documentação da API em `docs/API.md`
 3. Abra uma issue no GitHub
 4. Entre em contato com a equipe de desenvolvimento
 
@@ -305,8 +319,9 @@ Para manter o projeto atualizado:
 ```bash
 git pull origin main
 npm install
+npm run restart:bg
 ```
 
 ---
 
-**DePara** - Transformando dados com simplicidade e eficiência! 🚀
+**DePara** - Gerenciando arquivos com simplicidade e eficiência! 🚀

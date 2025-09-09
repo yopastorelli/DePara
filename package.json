@@ -1,7 +1,7 @@
 {
   "name": "depara",
-  "version": "1.0.0",
-  "description": "Aplicação DePara - Sistema de conversão e mapeamento de dados",
+  "version": "2.0.0",
+  "description": "DePara - Gerenciador Automatizado de Arquivos com Slideshow de Imagens",
   "main": "src/main.js",
   "scripts": {
     "start": "node src/main.js",
@@ -22,9 +22,13 @@
     "postinstall": "node -e \"console.log('✅ DePara instalado com sucesso! Use npm run start:bg para iniciar em segundo plano.')\""
   },
   "keywords": [
-    "conversao",
-    "mapeamento",
-    "dados",
+    "file-manager",
+    "slideshow",
+    "automation",
+    "backup",
+    "raspberry-pi",
+    "nodejs",
+    "express",
     "depara"
   ],
   "author": "yopastorelli",
