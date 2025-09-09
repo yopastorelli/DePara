@@ -4607,6 +4607,10 @@ class DeParaUI {
                 targetPath: this.slideshowConfig.deletedFolder
             };
             console.log('🔍 DEBUG - Dados sendo enviados para API (DELETE):', requestData);
+            console.log('🔍 DEBUG - sourcePath existe:', !!currentImage.path);
+            console.log('🔍 DEBUG - targetPath existe:', !!this.slideshowConfig.deletedFolder);
+            console.log('🔍 DEBUG - sourcePath tipo:', typeof currentImage.path);
+            console.log('🔍 DEBUG - targetPath tipo:', typeof this.slideshowConfig.deletedFolder);
             
             // Chamar API para mover arquivo
             console.log('📡 Enviando requisição para /api/files/execute...');
@@ -4619,7 +4623,20 @@ class DeParaUI {
             });
             
             console.log('📡 Resposta da API:', response.status, response.statusText);
-
+            
+            // Capturar detalhes do erro se houver
+            if (!response.ok) {
+                let errorDetails = {};
+                try {
+                    errorDetails = await response.json();
+                    console.error('❌ Detalhes do erro da API:', errorDetails);
+                } catch (e) {
+                    console.error('❌ Erro ao parsear resposta de erro:', e);
+                    const errorText = await response.text();
+                    console.error('❌ Resposta de erro (texto):', errorText);
+                }
+            }
+            
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ Imagem apagada com sucesso:', result);
@@ -4701,6 +4718,10 @@ class DeParaUI {
                 targetPath: this.slideshowConfig.hiddenFolder
             };
             console.log('🔍 DEBUG - Dados sendo enviados para API (HIDE):', requestData);
+            console.log('🔍 DEBUG - sourcePath existe:', !!currentImage.path);
+            console.log('🔍 DEBUG - targetPath existe:', !!this.slideshowConfig.hiddenFolder);
+            console.log('🔍 DEBUG - sourcePath tipo:', typeof currentImage.path);
+            console.log('🔍 DEBUG - targetPath tipo:', typeof this.slideshowConfig.hiddenFolder);
             
             // Chamar API para mover arquivo
             console.log('📡 Enviando requisição para /api/files/execute...');
@@ -4713,7 +4734,20 @@ class DeParaUI {
             });
             
             console.log('📡 Resposta da API:', response.status, response.statusText);
-
+            
+            // Capturar detalhes do erro se houver
+            if (!response.ok) {
+                let errorDetails = {};
+                try {
+                    errorDetails = await response.json();
+                    console.error('❌ Detalhes do erro da API:', errorDetails);
+                } catch (e) {
+                    console.error('❌ Erro ao parsear resposta de erro:', e);
+                    const errorText = await response.text();
+                    console.error('❌ Resposta de erro (texto):', errorText);
+                }
+            }
+            
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ Imagem ocultada com sucesso:', result);
