@@ -4632,8 +4632,12 @@ class DeParaUI {
                     console.error('❌ Detalhes do erro da API:', errorDetails);
                 } catch (e) {
                     console.error('❌ Erro ao parsear resposta de erro:', e);
-                    const errorText = await response.text();
-                    console.error('❌ Resposta de erro (texto):', errorText);
+                    try {
+                        const errorText = await response.text();
+                        console.error('❌ Resposta de erro (texto):', errorText);
+                    } catch (textError) {
+                        console.error('❌ Erro ao ler resposta como texto:', textError);
+                    }
                 }
             }
             
@@ -4660,9 +4664,8 @@ class DeParaUI {
                 
                 this.showToast('Imagem apagada com sucesso', 'success');
             } else {
-                const error = await response.json();
-                console.error('❌ Erro ao apagar imagem:', error);
-                this.showToast(`Erro ao apagar imagem: ${error.message || 'Erro desconhecido'}`, 'error');
+                console.error('❌ Erro ao apagar imagem - status:', response.status);
+                this.showToast(`Erro ao apagar imagem: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
             console.error('❌ Erro ao apagar imagem:', error);
@@ -4743,8 +4746,12 @@ class DeParaUI {
                     console.error('❌ Detalhes do erro da API:', errorDetails);
                 } catch (e) {
                     console.error('❌ Erro ao parsear resposta de erro:', e);
-                    const errorText = await response.text();
-                    console.error('❌ Resposta de erro (texto):', errorText);
+                    try {
+                        const errorText = await response.text();
+                        console.error('❌ Resposta de erro (texto):', errorText);
+                    } catch (textError) {
+                        console.error('❌ Erro ao ler resposta como texto:', textError);
+                    }
                 }
             }
             
@@ -4771,9 +4778,8 @@ class DeParaUI {
                 
                 this.showToast('Imagem ocultada com sucesso', 'success');
             } else {
-                const error = await response.json();
-                console.error('❌ Erro ao ocultar imagem:', error);
-                this.showToast(`Erro ao ocultar imagem: ${error.message || 'Erro desconhecido'}`, 'error');
+                console.error('❌ Erro ao ocultar imagem - status:', response.status);
+                this.showToast(`Erro ao ocultar imagem: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
             console.error('❌ Erro ao ocultar imagem:', error);
