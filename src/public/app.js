@@ -209,6 +209,10 @@ class DeParaUI {
             this.setupKeyboardShortcuts();
             logger.success('Atalhos de teclado configurados');
 
+            // Configurar controles de fullscreen do dashboard
+            this.setupDashboardFullscreenControls();
+            logger.success('Controles de fullscreen do dashboard configurados');
+
             // Forçar atualização inicial da dashboard
             await this.updateDashboard();
             logger.success('Dashboard atualizada');
@@ -1299,12 +1303,176 @@ class DeParaUI {
                 return;
             }
 
+            // F11: Alternar fullscreen do dashboard
+            if (event.key === 'F11') {
+                event.preventDefault();
+                this.toggleDashboardFullscreen();
+                return;
+            }
+
             // Escape: Fechar modais
             if (event.key === 'Escape') {
                 this.closeAllModals();
                 return;
             }
         });
+    }
+
+    // Alternar fullscreen do dashboard
+    toggleDashboardFullscreen() {
+        const isFullscreen = !!(document.fullscreenElement || 
+                               document.webkitFullscreenElement || 
+                               document.mozFullScreenElement || 
+                               document.msFullscreenElement);
+        
+        if (isFullscreen) {
+            this.exitDashboardFullscreen();
+        } else {
+            this.enterDashboardFullscreen();
+        }
+    }
+
+    // Entrar em fullscreen do dashboard
+    enterDashboardFullscreen() {
+        console.log('🖥️ Entrando em fullscreen do dashboard...');
+        
+        const element = document.documentElement;
+        
+        // Tentar diferentes métodos de fullscreen
+        if (element.requestFullscreen) {
+            element.requestFullscreen().then(() => {
+                this.showDashboardFullscreenControls();
+            }).catch(err => {
+                console.warn('Erro ao entrar em fullscreen:', err);
+            });
+        } else if (element.webkitRequestFullscreen) {
+            element.webkitRequestFullscreen();
+            this.showDashboardFullscreenControls();
+        } else if (element.mozRequestFullScreen) {
+            element.mozRequestFullScreen();
+            this.showDashboardFullscreenControls();
+        } else if (element.msRequestFullscreen) {
+            element.msRequestFullscreen();
+            this.showDashboardFullscreenControls();
+        } else {
+            console.warn('Fullscreen não suportado neste navegador');
+        }
+    }
+
+    // Sair do fullscreen do dashboard
+    exitDashboardFullscreen() {
+        console.log('🖥️ Saindo do fullscreen do dashboard...');
+        
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+        
+        this.hideDashboardFullscreenControls();
+    }
+
+    // Mostrar controles de fullscreen do dashboard
+    showDashboardFullscreenControls() {
+        const controls = document.getElementById('dashboard-fullscreen-controls');
+        if (controls) {
+            controls.style.display = 'block';
+            console.log('✅ Controles de fullscreen do dashboard mostrados');
+        }
+    }
+
+    // Esconder controles de fullscreen do dashboard
+    hideDashboardFullscreenControls() {
+        const controls = document.getElementById('dashboard-fullscreen-controls');
+        if (controls) {
+            controls.style.display = 'none';
+            console.log('✅ Controles de fullscreen do dashboard escondidos');
+        }
+    }
+
+    // Fechar aplicação
+    closeApplication() {
+        console.log('🚪 Fechando aplicação...');
+        
+        // Primeiro sair do fullscreen se estiver ativo
+        this.exitDashboardFullscreen();
+        
+        // Aguardar um pouco para garantir que as operações sejam concluídas
+        setTimeout(() => {
+            // Tentar fechar a janela do navegador/Electron
+            if (window.close) {
+                window.close();
+            } else if (window.electronAPI && window.electronAPI.closeApp) {
+                // Se estiver rodando no Electron
+                window.electronAPI.closeApp();
+            } else {
+                // Fallback: mostrar mensagem para o usuário
+                alert('Para fechar a aplicação, use Alt+F4 ou feche a janela do navegador.');
+            }
+        }, 500);
+    }
+
+    // Configurar controles de fullscreen do dashboard
+    setupDashboardFullscreenControls() {
+        // Botão sair do fullscreen
+        const exitFullscreenBtn = document.getElementById('dashboard-exit-fullscreen-btn');
+        if (exitFullscreenBtn) {
+            exitFullscreenBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖥️ Botão sair do fullscreen do dashboard clicado');
+                this.exitDashboardFullscreen();
+            });
+            console.log('✅ Listener do botão exit fullscreen do dashboard adicionado');
+        }
+
+        // Botão fechar aplicação
+        const closeAppBtn = document.getElementById('dashboard-close-app-btn');
+        if (closeAppBtn) {
+            closeAppBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🚪 Botão fechar aplicação do dashboard clicado');
+                this.closeApplication();
+            });
+            console.log('✅ Listener do botão fechar aplicação do dashboard adicionado');
+        }
+
+        // Listener para mudanças de fullscreen do dashboard
+        document.addEventListener('fullscreenchange', () => {
+            this.handleDashboardFullscreenChange();
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            this.handleDashboardFullscreenChange();
+        });
+        document.addEventListener('mozfullscreenchange', () => {
+            this.handleDashboardFullscreenChange();
+        });
+        document.addEventListener('msfullscreenchange', () => {
+            this.handleDashboardFullscreenChange();
+        });
+    }
+
+    // Lidar com mudanças de fullscreen do dashboard
+    handleDashboardFullscreenChange() {
+        console.log('🖥️ Mudança de fullscreen do dashboard detectada');
+        
+        const isFullscreen = !!(document.fullscreenElement || 
+                               document.webkitFullscreenElement || 
+                               document.mozFullScreenElement || 
+                               document.msFullscreenElement);
+        
+        console.log('🔍 Fullscreen do dashboard ativo:', isFullscreen);
+        
+        if (isFullscreen) {
+            this.showDashboardFullscreenControls();
+        } else {
+            this.hideDashboardFullscreenControls();
+        }
     }
 
     // Salvar configurações rapidamente
