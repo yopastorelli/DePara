@@ -3267,6 +3267,7 @@ class DeParaUI {
             console.error('❌ Botão .slideshow-browse-hidden-btn não encontrado');
         }
 
+
         // Controles dinâmicos são criados via createDynamicSlideshowControls()
         // Não precisamos de event listeners estáticos aqui
 
@@ -3473,6 +3474,7 @@ class DeParaUI {
         document.body.appendChild(input);
         input.click();
     }
+
 
     // Configurar event listeners para o modal de seleção de pasta do slideshow
     setupSlideshowFolderEventListeners(modal) {
@@ -4556,6 +4558,20 @@ class DeParaUI {
             console.log('✅ Listener do botão fechar aplicação adicionado');
         }
         
+        // Botão favoritar
+        const favoriteBtn = document.getElementById('static-favorite-btn');
+        console.log('🔍 DEBUG - Botão favoritar encontrado:', !!favoriteBtn);
+        if (favoriteBtn && !favoriteBtn.hasAttribute('data-listener-added')) {
+            favoriteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('⭐ Botão favoritar clicado (ESTÁTICO)');
+                this.favoriteCurrentImage();
+            });
+            favoriteBtn.setAttribute('data-listener-added', 'true');
+            console.log('✅ Listener do botão favoritar adicionado');
+        }
+        
         console.log('✅ Event listeners dos botões estáticos configurados');
     }
     
@@ -4822,6 +4838,98 @@ class DeParaUI {
         } catch (error) {
             console.error('❌ Erro ao ocultar imagem:', error);
             this.showToast('Erro ao ocultar imagem', 'error');
+        }
+    }
+
+    // Favoritar imagem atual (mover para subpasta dentro da pasta atual)
+    async favoriteCurrentImage() {
+        console.log('🔍 DEBUG favoriteCurrentImage - Iniciando...');
+        console.log('🔍 slideshowImages:', this.slideshowImages);
+        console.log('🔍 currentSlideIndex:', this.currentSlideIndex);
+        
+        if (!this.slideshowImages || this.slideshowImages.length === 0) {
+            console.log('❌ Nenhuma imagem para favoritar');
+            this.showToast('Nenhuma imagem para favoritar', 'error');
+            return;
+        }
+
+        const currentImage = this.slideshowImages[this.currentSlideIndex];
+        if (!currentImage) {
+            console.log('❌ Imagem atual não encontrada');
+            this.showToast('Imagem atual não encontrada', 'error');
+            return;
+        }
+
+        try {
+            console.log('⭐ Favoritando imagem:', currentImage.path);
+
+            // Extrair diretório pai da imagem atual
+            const pathParts = currentImage.path.split('/');
+            const fileName = pathParts.pop(); // Nome do arquivo
+            const currentDir = pathParts.join('/'); // Diretório atual da imagem
+            const parentFolderName = pathParts[pathParts.length - 1] || 'Fotos';
+            
+            console.log('📁 Diretório atual da imagem:', currentDir);
+            console.log('📁 Nome da pasta pai:', parentFolderName);
+
+            // Criar subdiretório "Favoritas + Nome da pasta pai" DENTRO da pasta atual
+            const favoritesSubDir = `Favoritas ${parentFolderName}`;
+            const targetDir = `${currentDir}/${favoritesSubDir}`;
+            console.log('📁 Subdiretório de favoritas:', favoritesSubDir);
+            console.log('📁 Diretório completo de destino:', targetDir);
+
+            const targetPath = `${targetDir}/${fileName}`;
+            
+            const requestData = {
+                action: 'move',
+                sourcePath: currentImage.path,
+                targetPath: targetPath,
+                createTargetDir: true // Flag para criar diretório se não existir
+            };
+            
+            console.log('🔍 DEBUG - Dados sendo enviados para API (FAVORITE):', requestData);
+            
+            // Chamar API para mover arquivo
+            console.log('📡 Enviando requisição para /api/files/execute...');
+            const response = await fetch('/api/files/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            });
+            
+            console.log('📡 Resposta da API:', response.status, response.statusText);
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Imagem favoritada com sucesso:', result);
+                
+                // Remover imagem da lista atual
+                this.slideshowImages.splice(this.currentSlideIndex, 1);
+                
+                // Ajustar índice se necessário
+                if (this.currentSlideIndex >= this.slideshowImages.length) {
+                    this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
+                }
+                
+                // Atualizar exibição
+                if (this.slideshowImages.length > 0) {
+                    this.updateSlideDisplay();
+                    this.updateDynamicCounter();
+                } else {
+                    this.showToast('Todas as imagens foram favoritadas', 'info');
+                    this.closeSlideshowViewer();
+                }
+                
+                this.showToast(`Imagem favoritada! Movida para: ${favoritesSubDir}`, 'success');
+            } else {
+                console.error('❌ Erro ao favoritar imagem - status:', response.status);
+                this.showToast(`Erro ao favoritar imagem: ${response.status} ${response.statusText}`, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao favoritar imagem:', error);
+            this.showToast('Erro ao favoritar imagem', 'error');
         }
     }
 
