@@ -4612,19 +4612,6 @@ class DeParaUI {
             console.log('✅ Listener do botão exit fullscreen adicionado');
         }
         
-        // Botão fechar aplicação
-        const closeAppBtn = document.getElementById('static-close-app-btn');
-        console.log('🔍 DEBUG - Botão fechar aplicação encontrado:', !!closeAppBtn);
-        if (closeAppBtn && !closeAppBtn.hasAttribute('data-listener-added')) {
-            closeAppBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🚪 Botão fechar aplicação clicado (ESTÁTICO)');
-                this.closeApplication();
-            });
-            closeAppBtn.setAttribute('data-listener-added', 'true');
-            console.log('✅ Listener do botão fechar aplicação adicionado');
-        }
         
         // Botão favoritar
         const favoriteBtn = document.getElementById('static-favorite-btn');
@@ -5165,30 +5152,6 @@ class DeParaUI {
         console.log('✅ Slideshow completamente fechado');
     }
 
-    // Fechar aplicação completamente
-    closeApplication() {
-        console.log('🚪 Fechando aplicação...');
-        
-        // Primeiro sair do fullscreen se estiver ativo
-        this.exitFullscreen();
-        
-        // Fechar o slideshow se estiver aberto
-        this.closeSlideshowViewer();
-        
-        // Aguardar um pouco para garantir que as operações sejam concluídas
-        setTimeout(() => {
-            // Tentar fechar a janela do navegador/Electron
-            if (window.close) {
-                window.close();
-            } else if (window.electronAPI && window.electronAPI.closeApp) {
-                // Se estiver rodando no Electron
-                window.electronAPI.closeApp();
-            } else {
-                // Fallback: mostrar mensagem para o usuário
-                alert('Para fechar a aplicação, use Alt+F4 ou feche a janela do navegador.');
-            }
-        }, 500);
-    }
 
     // Manipular eventos de teclado no slideshow
     handleSlideshowKeydown(event) {
