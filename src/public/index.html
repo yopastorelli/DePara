@@ -96,6 +96,43 @@
         .slideshow-viewer #static-slideshow-controls button .material-icons {
             display: none !important;
         }
+        
+        /* Estilos melhorados para os botões do slideshow */
+        .slideshow-viewer #static-slideshow-controls button {
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 2px solid transparent;
+        }
+        
+        .slideshow-viewer #static-slideshow-controls button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            border-color: rgba(255,255,255,0.3);
+        }
+        
+        .slideshow-viewer #static-slideshow-controls button:active {
+            transform: scale(0.95);
+        }
+        
+        /* Botão de sair do fullscreen - cor especial */
+        #static-exit-fullscreen-btn {
+            background: rgba(52, 144, 220, 0.9) !important;
+        }
+        
+        #static-exit-fullscreen-btn:hover {
+            background: rgba(52, 144, 220, 1) !important;
+            border-color: rgba(255,255,255,0.5) !important;
+        }
+        
+        /* Botão de fechar aplicação - cor vermelha */
+        #static-close-app-btn {
+            background: rgba(220, 53, 69, 0.9) !important;
+        }
+        
+        #static-close-app-btn:hover {
+            background: rgba(220, 53, 69, 1) !important;
+            border-color: rgba(255,255,255,0.5) !important;
+        }
     </style>
     
     <!-- Styles -->
@@ -1404,6 +1441,12 @@
             
             <!-- Botão ocultar -->
             <button id="static-hide-btn" style="position: absolute; top: 20px; right: 120px; width: 40px; height: 40px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;">HID</button>
+            
+            <!-- Botão sair do fullscreen -->
+            <button id="static-exit-fullscreen-btn" style="position: absolute; top: 20px; right: 170px; width: 40px; height: 40px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;" title="Sair do modo tela cheia">FS</button>
+            
+            <!-- Botão fechar aplicação -->
+            <button id="static-close-app-btn" style="position: absolute; top: 20px; right: 220px; width: 40px; height: 40px; border-radius: 50%; background: rgba(220,53,69,0.9); color: white; border: none; font-size: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;" title="Fechar aplicação">EXIT</button>
             
             <!-- Contador -->
             <div id="static-counter" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 16px; z-index: 999999; pointer-events: none;">1 / 1</div>
