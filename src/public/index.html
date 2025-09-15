@@ -170,10 +170,13 @@
     <!-- Controles de Fullscreen do Dashboard -->
     <div id="dashboard-fullscreen-controls" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: none;">
         <!-- Botão sair do fullscreen -->
-        <button id="dashboard-exit-fullscreen-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(52,144,220,0.9); color: white; border: none; font-size: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; margin-right: 10px;" title="Sair do modo tela cheia">FS</button>
+        <button id="dashboard-exit-fullscreen-btn" style="padding: 8px 16px; border-radius: 6px; background: rgba(220,53,69,0.9); color: white; border: none; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; margin-right: 10px; display: flex; align-items: center; gap: 6px;" title="Sair do modo tela cheia">
+            <span class="material-icons" style="font-size: 16px;">fullscreen_exit</span>
+            Sair Tela Cheia
+        </button>
         
         <!-- Botão fechar aplicação -->
-        <button id="dashboard-close-app-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(220,53,69,0.9); color: white; border: none; font-size: 10px; font-weight: bold; cursor: pointer; pointer-events: auto;" title="Fechar aplicação">X</button>
+        <button id="dashboard-close-app-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(220,53,69,0.9); color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; pointer-events: auto;" title="Fechar aplicação">X</button>
     </div>
 
     <!-- Header -->
@@ -1495,11 +1498,6 @@
             <!-- Botão ajustar -->
             <button id="static-adjust-btn" style="position: absolute; top: 20px; right: 220px; width: 40px; height: 40px; border-radius: 50%; background: rgba(76,175,80,0.9); color: white; border: none; font-size: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999; display: block;" title="Mover para pasta de ajustes">AJUST</button>
             
-            <!-- Contador -->
-            <div id="static-counter" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 16px; z-index: 999999; pointer-events: none;">1 / 1</div>
-            
-            <!-- Nome do arquivo -->
-            <div id="static-filename" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 999999; pointer-events: none; max-width: 80%; text-align: center; word-break: break-word;">Arquivo</div>
         </div>
     </div>
 
