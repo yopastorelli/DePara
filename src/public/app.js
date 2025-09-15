@@ -1380,8 +1380,19 @@ class DeParaUI {
     showDashboardFullscreenControls() {
         const controls = document.getElementById('dashboard-fullscreen-controls');
         if (controls) {
-            controls.style.display = 'block';
+            controls.style.display = 'flex';
+            controls.style.flexDirection = 'row';
+            controls.style.alignItems = 'center';
             console.log('✅ Controles de fullscreen do dashboard mostrados');
+            
+            // Adicionar fade-in para melhor UX
+            controls.style.opacity = '0';
+            controls.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                controls.style.transition = 'all 0.3s ease';
+                controls.style.opacity = '1';
+                controls.style.transform = 'translateY(0)';
+            }, 10);
         }
     }
 
@@ -1389,8 +1400,15 @@ class DeParaUI {
     hideDashboardFullscreenControls() {
         const controls = document.getElementById('dashboard-fullscreen-controls');
         if (controls) {
-            controls.style.display = 'none';
-            console.log('✅ Controles de fullscreen do dashboard escondidos');
+            // Adicionar fade-out para melhor UX
+            controls.style.transition = 'all 0.3s ease';
+            controls.style.opacity = '0';
+            controls.style.transform = 'translateY(-10px)';
+            
+            setTimeout(() => {
+                controls.style.display = 'none';
+                console.log('✅ Controles de fullscreen do dashboard escondidos');
+            }, 300);
         }
     }
 
@@ -1425,9 +1443,14 @@ class DeParaUI {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('🖥️ Botão sair do fullscreen do dashboard clicado');
+                logger.info('Botão sair fullscreen clicado', { source: 'dashboard-controls' });
                 this.exitDashboardFullscreen();
             });
             console.log('✅ Listener do botão exit fullscreen do dashboard adicionado');
+            logger.debug('Listener do botão exit fullscreen configurado');
+        } else {
+            console.warn('⚠️ Botão exit fullscreen não encontrado');
+            logger.warn('Botão exit fullscreen não encontrado no DOM');
         }
 
         // Botão fechar aplicação
@@ -1437,9 +1460,14 @@ class DeParaUI {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('🚪 Botão fechar aplicação do dashboard clicado');
+                logger.info('Botão fechar aplicação clicado', { source: 'dashboard-controls' });
                 this.closeApplication();
             });
             console.log('✅ Listener do botão fechar aplicação do dashboard adicionado');
+            logger.debug('Listener do botão fechar aplicação configurado');
+        } else {
+            console.warn('⚠️ Botão fechar aplicação não encontrado');
+            logger.warn('Botão fechar aplicação não encontrado no DOM');
         }
 
         // Botão de fullscreen no header
@@ -1498,19 +1526,18 @@ class DeParaUI {
             const text = headerBtn.querySelector('span:not(.material-icons)') || headerBtn.childNodes[headerBtn.childNodes.length - 1];
             
             if (isFullscreen) {
-                // Modo fullscreen - mostrar ícone de sair
-                if (icon) icon.textContent = 'fullscreen_exit';
-                if (text) text.textContent = 'Sair Tela Cheia';
-                headerBtn.title = 'Sair da tela cheia (F11)';
-                headerBtn.style.background = 'rgba(220,53,69,0.1)';
-                headerBtn.style.borderColor = 'rgba(220,53,69,0.3)';
+                // Modo fullscreen - esconder botão do header para evitar redundância
+                headerBtn.style.display = 'none';
+                console.log('🔍 Botão de fullscreen do header escondido em modo fullscreen');
             } else {
-                // Modo normal - mostrar ícone de entrar
+                // Modo normal - mostrar botão do header
+                headerBtn.style.display = 'flex';
                 if (icon) icon.textContent = 'fullscreen';
                 if (text) text.textContent = 'Tela Cheia';
                 headerBtn.title = 'Alternar tela cheia (F11)';
                 headerBtn.style.background = 'rgba(52,144,220,0.1)';
                 headerBtn.style.borderColor = 'rgba(52,144,220,0.3)';
+                console.log('🔍 Botão de fullscreen do header mostrado em modo normal');
             }
         }
     }

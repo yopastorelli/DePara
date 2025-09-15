@@ -168,15 +168,15 @@
     </div>
 
     <!-- Controles de Fullscreen do Dashboard -->
-    <div id="dashboard-fullscreen-controls" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: none;">
+    <div id="dashboard-fullscreen-controls" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: none; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.2);">
         <!-- Botão sair do fullscreen -->
-        <button id="dashboard-exit-fullscreen-btn" style="padding: 8px 16px; border-radius: 6px; background: rgba(220,53,69,0.9); color: white; border: none; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; margin-right: 10px; display: flex; align-items: center; gap: 6px;" title="Sair do modo tela cheia">
-            <span class="material-icons" style="font-size: 16px;">fullscreen_exit</span>
+        <button id="dashboard-exit-fullscreen-btn" style="padding: 12px 20px; border-radius: 8px; background: rgba(52,144,220,0.9); color: white; border: 1px solid rgba(255,255,255,0.3); font-size: 14px; font-weight: 600; cursor: pointer; pointer-events: auto; margin-right: 12px; display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;" title="Sair do modo tela cheia (F11)" onmouseover="this.style.background='rgba(52,144,220,1)'; this.style.transform='scale(1.05)'" onmouseout="this.style.background='rgba(52,144,220,0.9)'; this.style.transform='scale(1)'">
+            <span class="material-icons" style="font-size: 18px;">fullscreen_exit</span>
             Sair Tela Cheia
         </button>
         
         <!-- Botão fechar aplicação -->
-        <button id="dashboard-close-app-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(220,53,69,0.9); color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; pointer-events: auto;" title="Fechar aplicação">X</button>
+        <button id="dashboard-close-app-btn" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(220,53,69,0.9); color: white; border: 1px solid rgba(255,255,255,0.3); font-size: 18px; font-weight: bold; cursor: pointer; pointer-events: auto; transition: all 0.2s ease;" title="Fechar aplicação (Alt+F4)" onmouseover="this.style.background='rgba(220,53,69,1)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(220,53,69,0.9)'; this.style.transform='scale(1)'">×</button>
     </div>
 
     <!-- Header -->
