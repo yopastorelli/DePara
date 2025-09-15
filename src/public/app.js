@@ -1442,6 +1442,18 @@ class DeParaUI {
             console.log('✅ Listener do botão fechar aplicação do dashboard adicionado');
         }
 
+        // Botão de fullscreen no header
+        const headerFullscreenBtn = document.getElementById('header-fullscreen-btn');
+        if (headerFullscreenBtn) {
+            headerFullscreenBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖥️ Botão fullscreen do header clicado');
+                this.toggleDashboardFullscreen();
+            });
+            console.log('✅ Listener do botão fullscreen do header adicionado');
+        }
+
         // Listener para mudanças de fullscreen do dashboard
         document.addEventListener('fullscreenchange', () => {
             this.handleDashboardFullscreenChange();
@@ -1468,10 +1480,38 @@ class DeParaUI {
         
         console.log('🔍 Fullscreen do dashboard ativo:', isFullscreen);
         
+        // Atualizar botão do header
+        this.updateHeaderFullscreenButton(isFullscreen);
+        
         if (isFullscreen) {
             this.showDashboardFullscreenControls();
         } else {
             this.hideDashboardFullscreenControls();
+        }
+    }
+
+    // Atualizar botão de fullscreen no header
+    updateHeaderFullscreenButton(isFullscreen) {
+        const headerBtn = document.getElementById('header-fullscreen-btn');
+        if (headerBtn) {
+            const icon = headerBtn.querySelector('.material-icons');
+            const text = headerBtn.querySelector('span:not(.material-icons)') || headerBtn.childNodes[headerBtn.childNodes.length - 1];
+            
+            if (isFullscreen) {
+                // Modo fullscreen - mostrar ícone de sair
+                if (icon) icon.textContent = 'fullscreen_exit';
+                if (text) text.textContent = 'Sair Tela Cheia';
+                headerBtn.title = 'Sair da tela cheia (F11)';
+                headerBtn.style.background = 'rgba(220,53,69,0.1)';
+                headerBtn.style.borderColor = 'rgba(220,53,69,0.3)';
+            } else {
+                // Modo normal - mostrar ícone de entrar
+                if (icon) icon.textContent = 'fullscreen';
+                if (text) text.textContent = 'Tela Cheia';
+                headerBtn.title = 'Alternar tela cheia (F11)';
+                headerBtn.style.background = 'rgba(52,144,220,0.1)';
+                headerBtn.style.borderColor = 'rgba(52,144,220,0.3)';
+            }
         }
     }
 
