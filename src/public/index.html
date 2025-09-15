@@ -1400,7 +1400,19 @@
                     </div>
 
                     <div class="setting-row">
-                        <label>Pasta de Fotos para Ajustar:</label>
+                        <label for="slideshow-adjustable-folder">Pasta de Fotos para Ajustar:</label>
+                        <div class="input-group">
+                            <input type="text" id="slideshow-adjustable-folder" placeholder="Caminho para fotos para ajustar">
+                            <button class="btn btn-outline slideshow-browse-adjustable-btn">
+                                <span class="material-icons" data-fallback="📁">folder_open</span>
+                                Selecionar
+                            </button>
+                        </div>
+                        <small class="form-help">Pasta onde as fotos para ajustar serão movidas</small>
+                    </div>
+
+                    <div class="setting-row">
+                        <label>Pasta de Fotos Favoritas:</label>
                         <div class="input-group">
                             <input type="text" value="Automático - dentro da pasta atual" readonly style="background-color: #f5f5f5; color: #666;">
                         </div>
@@ -1469,6 +1481,9 @@
             
             <!-- Botão favoritar -->
             <button id="static-favorite-btn" style="position: absolute; top: 20px; right: 290px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,193,7,0.9); color: white; border: 2px solid rgba(255,255,255,0.3); font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999; display: block;" title="Favoritar foto">FAV</button>
+            
+            <!-- Botão ajustar -->
+            <button id="static-adjust-btn" style="position: absolute; top: 20px; right: 350px; width: 50px; height: 50px; border-radius: 50%; background: rgba(76,175,80,0.9); color: white; border: 2px solid rgba(255,255,255,0.3); font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999; display: block;" title="Mover para pasta de ajustes">AJUST</button>
             
             <!-- Contador -->
             <div id="static-counter" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 16px; z-index: 999999; pointer-events: none;">1 / 1</div>

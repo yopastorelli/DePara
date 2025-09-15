@@ -3120,7 +3120,8 @@ class DeParaUI {
         extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
         recursive: true,
         deletedFolder: '',
-        hiddenFolder: ''
+        hiddenFolder: '',
+        adjustableFolder: ''
     };
     preloadedImages = new Map();
 
@@ -3133,6 +3134,7 @@ class DeParaUI {
                 console.log('📋 Configurações do slideshow carregadas:', this.slideshowConfig);
                 console.log('🔍 DEBUG - Pasta oculta carregada:', this.slideshowConfig.hiddenFolder);
                 console.log('🔍 DEBUG - Pasta excluída carregada:', this.slideshowConfig.deletedFolder);
+                console.log('🔍 DEBUG - Pasta ajustável carregada:', this.slideshowConfig.adjustableFolder);
             } catch (error) {
                 console.warn('⚠️ Erro ao carregar configurações do slideshow:', error);
             }
@@ -3167,15 +3169,19 @@ class DeParaUI {
         // Coletar pastas de organização
         const deletedField = document.getElementById('slideshow-deleted-folder');
         const hiddenField = document.getElementById('slideshow-hidden-folder');
+        const adjustableField = document.getElementById('slideshow-adjustable-folder');
         
         const deletedFolder = deletedField ? deletedField.value.trim() : '';
         const hiddenFolder = hiddenField ? hiddenField.value.trim() : '';
+        const adjustableFolder = adjustableField ? adjustableField.value.trim() : '';
         
         console.log('🔍 DEBUG - Pastas coletadas:');
         console.log('🔍 deletedField encontrado:', !!deletedField);
         console.log('🔍 hiddenField encontrado:', !!hiddenField);
+        console.log('🔍 adjustableField encontrado:', !!adjustableField);
         console.log('🔍 deletedFolder:', deletedFolder);
         console.log('🔍 hiddenFolder:', hiddenFolder);
+        console.log('🔍 adjustableFolder:', adjustableFolder);
 
         this.slideshowConfig = {
             interval: Math.max(1, Math.min(60, interval)),
@@ -3184,7 +3190,8 @@ class DeParaUI {
             extensions: extensions.length > 0 ? extensions : ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
             recursive,
             deletedFolder,
-            hiddenFolder
+            hiddenFolder,
+            adjustableFolder
         };
         
         console.log('🔍 DEBUG - Configuração atualizada:', this.slideshowConfig);
@@ -3210,6 +3217,7 @@ class DeParaUI {
         // Aplicar pastas de organização
         const deletedField = document.getElementById('slideshow-deleted-folder');
         const hiddenField = document.getElementById('slideshow-hidden-folder');
+        const adjustableField = document.getElementById('slideshow-adjustable-folder');
         
         if (deletedField) {
             deletedField.value = this.slideshowConfig.deletedFolder || '';
@@ -3223,6 +3231,13 @@ class DeParaUI {
             console.log('🔍 DEBUG - Campo hidden aplicado:', hiddenField.value);
         } else {
             console.error('❌ Campo slideshow-hidden-folder não encontrado');
+        }
+
+        if (adjustableField) {
+            adjustableField.value = this.slideshowConfig.adjustableFolder || '';
+            console.log('🔍 DEBUG - Campo adjustable aplicado:', adjustableField.value);
+        } else {
+            console.error('❌ Campo slideshow-adjustable-folder não encontrado');
         }
     }
 
@@ -3265,6 +3280,17 @@ class DeParaUI {
             });
         } else {
             console.error('❌ Botão .slideshow-browse-hidden-btn não encontrado');
+        }
+
+        // Botão navegar pela pasta de fotos para ajustar
+        const browseAdjustableBtn = modal.querySelector('.slideshow-browse-adjustable-btn');
+        if (browseAdjustableBtn) {
+            browseAdjustableBtn.addEventListener('click', () => {
+                console.log('🖱️ Botão adjustable clicado!');
+                this.browseAdjustableFolder();
+            });
+        } else {
+            console.error('❌ Botão .slideshow-browse-adjustable-btn não encontrado');
         }
 
 
@@ -3475,6 +3501,48 @@ class DeParaUI {
         input.click();
     }
 
+    // Navegar pela pasta de fotos para ajustar
+    browseAdjustableFolder() {
+        console.log('📁 Abrindo seletor de pasta para fotos para ajustar...');
+        
+        // Usar o mesmo método que funciona para o slideshow principal
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.webkitdirectory = true;
+        input.directory = true;
+        input.multiple = false;
+        input.style.display = 'none';
+        
+        input.addEventListener('change', (event) => {
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                // Pegar o caminho da primeira pasta selecionada (mesmo método do slideshow)
+                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
+                
+                console.log('📁 Pasta selecionada para fotos para ajustar:', fullPath);
+                
+                // Atualizar o campo de pasta de fotos para ajustar
+                const adjustableField = document.getElementById('slideshow-adjustable-folder');
+                if (adjustableField) {
+                    adjustableField.value = fullPath;
+                    this.showToast(`Pasta de fotos para ajustar: ${fullPath}`, 'success');
+                    console.log('✅ Campo atualizado:', adjustableField.value);
+                } else {
+                    console.error('❌ Campo não encontrado');
+                    this.showToast('Erro: campo não encontrado', 'error');
+                }
+            }
+            
+            // Remover o input após uso
+            if (document.body.contains(input)) {
+                document.body.removeChild(input);
+            }
+        });
+        
+        // Adicionar ao DOM e clicar
+        document.body.appendChild(input);
+        input.click();
+    }
 
     // Configurar event listeners para o modal de seleção de pasta do slideshow
     setupSlideshowFolderEventListeners(modal) {
@@ -4571,6 +4639,20 @@ class DeParaUI {
             favoriteBtn.setAttribute('data-listener-added', 'true');
             console.log('✅ Listener do botão favoritar adicionado');
         }
+
+        // Botão ajustar
+        const adjustBtn = document.getElementById('static-adjust-btn');
+        console.log('🔍 DEBUG - Botão ajustar encontrado:', !!adjustBtn);
+        if (adjustBtn && !adjustBtn.hasAttribute('data-listener-added')) {
+            adjustBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔧 Botão ajustar clicado (ESTÁTICO)');
+                this.adjustCurrentImage();
+            });
+            adjustBtn.setAttribute('data-listener-added', 'true');
+            console.log('✅ Listener do botão ajustar adicionado');
+        }
         
         console.log('✅ Event listeners dos botões estáticos configurados');
     }
@@ -4930,6 +5012,95 @@ class DeParaUI {
         } catch (error) {
             console.error('❌ Erro ao favoritar imagem:', error);
             this.showToast('Erro ao favoritar imagem', 'error');
+        }
+    }
+
+    // Ajustar imagem atual (mover para pasta configurada)
+    async adjustCurrentImage() {
+        console.log('🔍 DEBUG adjustCurrentImage - Iniciando...');
+        console.log('🔍 slideshowImages:', this.slideshowImages);
+        console.log('🔍 currentSlideIndex:', this.currentSlideIndex);
+        console.log('🔍 adjustableFolder:', this.slideshowConfig.adjustableFolder);
+        
+        if (!this.slideshowImages || this.slideshowImages.length === 0) {
+            console.log('❌ Nenhuma imagem para ajustar');
+            this.showToast('Nenhuma imagem para ajustar', 'error');
+            return;
+        }
+
+        if (!this.slideshowConfig.adjustableFolder || this.slideshowConfig.adjustableFolder.trim() === '') {
+            console.log('❌ Pasta de ajustes não configurada');
+            this.showToast('Configure a pasta de fotos para ajustar nas configurações do slideshow', 'error');
+            return;
+        }
+
+        const currentImage = this.slideshowImages[this.currentSlideIndex];
+        if (!currentImage) {
+            console.log('❌ Imagem atual não encontrada');
+            this.showToast('Imagem atual não encontrada', 'error');
+            return;
+        }
+
+        try {
+            console.log('🔧 Ajustando imagem:', currentImage.path);
+
+            // Extrair nome do arquivo
+            const pathParts = currentImage.path.split('/');
+            const fileName = pathParts.pop();
+            
+            // Usar pasta configurada
+            const targetPath = `${this.slideshowConfig.adjustableFolder}/${fileName}`;
+            
+            const requestData = {
+                action: 'move',
+                sourcePath: currentImage.path,
+                targetPath: targetPath,
+                createTargetDir: true // Flag para criar diretório se não existir
+            };
+            
+            console.log('🔍 DEBUG - Dados sendo enviados para API (ADJUST):', requestData);
+            
+            // Chamar API para mover arquivo
+            console.log('📡 Enviando requisição para /api/files/execute...');
+            const response = await fetch('/api/files/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            });
+            
+            console.log('📡 Resposta da API:', response.status, response.statusText);
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Imagem ajustada com sucesso:', result);
+                
+                // Remover imagem da lista atual
+                this.slideshowImages.splice(this.currentSlideIndex, 1);
+                
+                // Ajustar índice se necessário
+                if (this.currentSlideIndex >= this.slideshowImages.length) {
+                    this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
+                }
+                
+                // Atualizar exibição
+                if (this.slideshowImages.length > 0) {
+                    this.updateSlideDisplay();
+                    this.updateDynamicCounter();
+                } else {
+                    this.showToast('Todas as imagens foram ajustadas', 'info');
+                    this.closeSlideshowViewer();
+                }
+                
+                this.showToast(`Imagem ajustada! Movida para: ${this.slideshowConfig.adjustableFolder}`, 'success');
+            } else {
+                console.error('❌ Erro ao ajustar imagem - status:', response.status);
+                this.showToast(`Erro ao ajustar imagem: ${response.status} ${response.statusText}`, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao ajustar imagem:', error);
+            this.showToast('Erro ao ajustar imagem', 'error');
         }
     }
 
