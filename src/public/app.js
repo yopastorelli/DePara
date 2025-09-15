@@ -4806,19 +4806,6 @@ class DeParaUI {
             console.log('✅ Listener do botão hide adicionado');
         }
         
-        // Botão sair do fullscreen
-        const exitFullscreenBtn = document.getElementById('static-exit-fullscreen-btn');
-        console.log('🔍 DEBUG - Botão exit fullscreen encontrado:', !!exitFullscreenBtn);
-        if (exitFullscreenBtn && !exitFullscreenBtn.hasAttribute('data-listener-added')) {
-            exitFullscreenBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🖥️ Botão sair do fullscreen clicado (ESTÁTICO)');
-                this.exitFullscreen();
-            });
-            exitFullscreenBtn.setAttribute('data-listener-added', 'true');
-            console.log('✅ Listener do botão exit fullscreen adicionado');
-        }
         
         
         // Botão favoritar
