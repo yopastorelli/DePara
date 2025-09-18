@@ -5317,6 +5317,24 @@ class DeParaUI {
     closeSlideshowViewer() {
         this.stopAutoPlay();
         
+        // Sair do fullscreen antes de fechar o viewer
+        console.log('🖥️ Saindo do fullscreen antes de fechar slideshow...');
+        this.exitFullscreen();
+        
+        // Aguardar um pouco para garantir que a saída do fullscreen seja processada
+        setTimeout(() => {
+            // Verificar se ainda está em fullscreen e forçar saída se necessário
+            const isStillFullscreen = !!(document.fullscreenElement || 
+                                       document.webkitFullscreenElement || 
+                                       document.mozFullScreenElement || 
+                                       document.msFullscreenElement);
+            
+            if (isStillFullscreen) {
+                console.log('🖥️ Ainda em fullscreen, forçando saída...');
+                this.exitFullscreen();
+            }
+        }, 100);
+        
         // Limpeza de proteção de ícones (sem setInterval)
         console.log('🧹 Proteção de ícones limpa');
         
