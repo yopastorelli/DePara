@@ -117,11 +117,24 @@ setup_desktop_file() {
     # Copiar arquivo .desktop e ajustar caminhos
     cp "$DEPARA_DIR/depara.desktop" "$APPLICATIONS_DIR/"
     
-    # Ajustar caminhos no arquivo .desktop
+    # Ajustar caminho da aplicacao no template
+    sed -i "s|__DEPARA_DIR__|$DEPARA_DIR|g" "$APPLICATIONS_DIR/depara.desktop"
     sed -i "s|/home/pi/DePara|$DEPARA_DIR|g" "$APPLICATIONS_DIR/depara.desktop"
+    sed -i "s|/home/yo/DePara|$DEPARA_DIR|g" "$APPLICATIONS_DIR/depara.desktop"
+
+    # Publicar icone no tema local para o menu do desktop
+    mkdir -p "$USER_HOME/.local/share/icons/hicolor/192x192/apps"
+    if [ -f "$DEPARA_DIR/src/public/favicon/android-chrome-192x192.png" ]; then
+        cp "$DEPARA_DIR/src/public/favicon/android-chrome-192x192.png" \
+           "$USER_HOME/.local/share/icons/hicolor/192x192/apps/depara.png"
+    elif [ -f "$DEPARA_DIR/src/public/favicon/favicon-32x32.png" ]; then
+        cp "$DEPARA_DIR/src/public/favicon/favicon-32x32.png" \
+           "$USER_HOME/.local/share/icons/hicolor/192x192/apps/depara.png"
+    fi
     
     # Atualizar banco de dados de aplicações
     update-desktop-database "$APPLICATIONS_DIR" 2>/dev/null || true
+    gtk-update-icon-cache -f -t "$USER_HOME/.local/share/icons" 2>/dev/null || true
     
     # Criar link no desktop
     ln -sf "$APPLICATIONS_DIR/depara.desktop" "$DESKTOP_DIR/"

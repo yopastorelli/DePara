@@ -2,9 +2,9 @@
 Version=1.0
 Type=Application
 Name=DePara
-Comment=Gerenciador de Arquivos e Operações
-Exec=/home/yo/DePara/start-depara.sh open
-Icon=/home/yo/DePara/src/public/favicon.ico
+Comment=Gerenciador de Arquivos e Operacoes
+Exec=__DEPARA_DIR__/start-depara.sh open
+Icon=depara
 Terminal=false
 StartupNotify=true
 Categories=Utility;FileManager;
