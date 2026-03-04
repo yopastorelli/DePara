@@ -2144,7 +2144,7 @@ class DeParaUI {
     async createFolderOnServer(folder) {
         console.log(`🌐 Enviando requisição para criar pasta:`, folder);
 
-        const response = await fetch('/api/folders', {
+        const response = await fetch('/api/files/folders', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2366,7 +2366,7 @@ class DeParaUI {
 
         if (confirm('Tem certeza que deseja excluir esta pasta?')) {
             try {
-                const response = await fetch(`/api/folders/${folderId}`, {
+                const response = await fetch(`/api/files/folders/${folderId}`, {
                     method: 'DELETE'
                 });
 
@@ -2408,9 +2408,8 @@ class DeParaUI {
         this.addButtonListener('.refresh-charts-btn', () => this.updateCharts());
         this.addButtonListener('.clear-search-btn', () => this.clearSearch());
         this.addButtonListener('.schedule-modal-btn', () => {
-            // Redirecionar para a nova interface de operações de arquivos
-            this.switchTab('fileops');
-            this.showToast('Use a nova interface de configuração de operações abaixo', 'info');
+            this.switchTab('scheduled');
+            this.showScheduleModal();
         });
 
         // Botões de ação rápida (interface antiga) - redirecionar para nova interface
@@ -5420,7 +5419,7 @@ class DeParaUI {
         console.log('💾 Salvando pasta:', folder);
 
         try {
-            const response = await fetch('/api/folders', {
+            const response = await fetch('/api/files/folders', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -5733,7 +5732,7 @@ class DeParaUI {
                 enabled: true
             };
 
-            const response = await fetch('/api/folders', {
+            const response = await fetch('/api/files/folders', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -5767,7 +5766,7 @@ class DeParaUI {
         try {
             const workflowData = this.collectWorkflowData();
             
-            const response = await fetch('/api/workflows', {
+            const response = await fetch('/api/files/workflows', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -5944,7 +5943,6 @@ setupEventListeners() {
 
     // Sistema de Atualizações
     setupUpdateEventListeners() {
-        // Botão verificar atualizações
         const checkUpdatesBtn = document.getElementById('check-updates-btn');
         if (checkUpdatesBtn) {
             checkUpdatesBtn.addEventListener('click', () => {
@@ -5952,7 +5950,6 @@ setupEventListeners() {
             });
         }
 
-        // Botão aplicar atualizações
         const applyUpdatesBtn = document.getElementById('apply-updates-btn');
         if (applyUpdatesBtn) {
             applyUpdatesBtn.addEventListener('click', () => {
@@ -5960,7 +5957,6 @@ setupEventListeners() {
             });
         }
 
-        // Botão reiniciar aplicação
         const restartAppBtn = document.getElementById('restart-app-btn');
         if (restartAppBtn) {
             restartAppBtn.addEventListener('click', () => {
@@ -5968,34 +5964,97 @@ setupEventListeners() {
             });
         }
 
-        // Verificar atualizações automaticamente ao carregar
+        const autoCheckUpdates = document.getElementById('auto-check-updates');
+        if (autoCheckUpdates) {
+            autoCheckUpdates.addEventListener('change', () => this.saveAutoUpdateConfig());
+        }
+
+        const updateCheckFrequency = document.getElementById('update-check-frequency');
+        if (updateCheckFrequency) {
+            updateCheckFrequency.addEventListener('change', () => this.saveAutoUpdateConfig());
+        }
+
         this.checkForUpdates();
+    }
+
+    getUpdateCheckIntervalMinutes(value) {
+        switch (value) {
+            case 'daily':
+                return 24 * 60;
+            case 'weekly':
+                return 7 * 24 * 60;
+            case 'monthly':
+                return 30 * 24 * 60;
+            case 'manual':
+                return 365 * 24 * 60;
+            default:
+                return 60;
+        }
+    }
+
+    getUpdateFrequencyLabel(minutes) {
+        if (minutes >= 30 * 24 * 60) return 'monthly';
+        if (minutes >= 7 * 24 * 60) return 'weekly';
+        if (minutes >= 24 * 60) return 'daily';
+        return 'manual';
+    }
+
+    async saveAutoUpdateConfig() {
+        try {
+            const autoCheckUpdates = document.getElementById('auto-check-updates');
+            const updateCheckFrequency = document.getElementById('update-check-frequency');
+            const autoApplyUpdates = document.getElementById('auto-apply-updates');
+            const payload = {
+                enabled: autoCheckUpdates ? autoCheckUpdates.checked : true,
+                autoApply: autoApplyUpdates ? autoApplyUpdates.checked : true,
+                checkIntervalMinutes: this.getUpdateCheckIntervalMinutes(
+                    updateCheckFrequency ? updateCheckFrequency.value : 'daily'
+                )
+            };
+
+            const response = await fetch('/api/update/auto/config', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error?.message || 'Falha ao salvar configuração');
+            }
+        } catch (error) {
+            logger.error('Erro ao salvar config de auto update:', error);
+            showToast('Erro ao salvar configuração de atualização', 'error');
+        }
     }
 
     // Verificar atualizações disponíveis
     async checkForUpdates() {
         try {
-            logger.info('🔍 Verificando atualizações...');
-            
-            const response = await fetch('/api/update/check');
+            logger.info('Verificando status de auto update...');
+            const response = await fetch('/api/update/auto/status');
             const result = await response.json();
 
-            if (result.success) {
-                this.updateUpdateStatus(result.data);
-            } else {
-                logger.warn('⚠️ Erro ao verificar atualizações:', result.error);
-                this.updateUpdateStatus({
-                    hasUpdates: false,
-                    commitsAhead: 0,
-                    message: 'Erro ao verificar atualizações'
-                });
+            if (!result.success) {
+                throw new Error(result.error?.message || 'Erro ao verificar status');
             }
+
+            this.updateUpdateStatus(result.data);
         } catch (error) {
-            logger.error('❌ Erro ao verificar atualizações:', error);
+            logger.error('Erro ao verificar atualizações:', error);
             this.updateUpdateStatus({
-                hasUpdates: false,
-                commitsAhead: 0,
-                message: 'Erro de conexão'
+                state: {
+                    status: 'error',
+                    currentCommit: null,
+                    targetCommit: null,
+                    lastError: error.message
+                },
+                config: {
+                    enabled: false,
+                    checkIntervalMinutes: 0
+                }
             });
         }
     }
@@ -6007,73 +6066,90 @@ setupEventListeners() {
         const updateActions = document.getElementById('update-actions');
         const updateMessage = document.getElementById('update-message');
         const updateCommits = document.getElementById('update-commits');
+        const autoCheckUpdates = document.getElementById('auto-check-updates');
+        const updateCheckFrequency = document.getElementById('update-check-frequency');
+        const autoApplyUpdates = document.getElementById('auto-apply-updates');
+
+        const state = data.state || {};
+        const config = data.config || {};
+        const hasUpdates = Boolean(
+            state.targetCommit &&
+            state.currentCommit &&
+            state.targetCommit !== state.currentCommit
+        );
 
         if (statusText) {
-            statusText.textContent = data.message;
+            statusText.textContent = state.lastError
+                ? `Erro: ${state.lastError}`
+                : `Status: ${state.status || 'idle'}`;
         }
 
         if (versionText) {
-            versionText.textContent = `Versão: ${data.currentVersion || 'Desconhecida'}`;
+            const current = state.currentCommit ? state.currentCommit.slice(0, 8) : 'desconhecida';
+            const target = state.targetCommit ? state.targetCommit.slice(0, 8) : current;
+            versionText.textContent = `Commit atual: ${current} | alvo: ${target}`;
         }
 
-        if (data.hasUpdates) {
-            if (updateActions) {
-                updateActions.style.display = 'block';
-            }
-            if (updateMessage) {
-                updateMessage.textContent = `Há ${data.commitsAhead} atualização(ões) disponível(is)`;
-            }
-            if (updateCommits) {
-                updateCommits.textContent = `${data.commitsAhead} commit(s) à frente`;
-            }
-        } else {
-            if (updateActions) {
-                updateActions.style.display = 'none';
-            }
+        if (autoCheckUpdates) {
+            autoCheckUpdates.checked = Boolean(config.enabled);
+        }
+
+        if (autoApplyUpdates) {
+            autoApplyUpdates.checked = Boolean(config.autoApply);
+        }
+
+        if (updateCheckFrequency) {
+            updateCheckFrequency.value = this.getUpdateFrequencyLabel(Number(config.checkIntervalMinutes) || 0);
+        }
+
+        if (updateActions) {
+            updateActions.style.display = hasUpdates ? 'block' : 'none';
+        }
+
+        if (updateMessage) {
+            updateMessage.textContent = hasUpdates
+                ? 'Há atualização disponível no origin/main'
+                : 'Aplicação atualizada';
+        }
+
+        if (updateCommits) {
+            updateCommits.textContent = hasUpdates
+                ? `Atual: ${(state.currentCommit || '').slice(0, 8)} -> Alvo: ${(state.targetCommit || '').slice(0, 8)}`
+                : '';
         }
     }
 
     // Aplicar atualizações
     async applyUpdates() {
         try {
-            logger.info('🔄 Aplicando atualizações...');
-            
             const applyBtn = document.getElementById('apply-updates-btn');
             if (applyBtn) {
                 applyBtn.disabled = true;
-                applyBtn.innerHTML = '<span class="material-icons">hourglass_empty</span> Aplicando...';
+                applyBtn.innerHTML = '<span class="material-icons">hourglass_empty</span> Executando ciclo...';
             }
 
-            const response = await fetch('/api/update/apply', {
+            const response = await fetch('/api/update/auto/trigger', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-
             const result = await response.json();
 
-            if (result.success) {
-                logger.info('✅ Atualizações aplicadas com sucesso');
-                showToast('Atualizações aplicadas com sucesso!', 'success');
-                
-                // Mostrar botão de reiniciar
-                const restartBtn = document.getElementById('restart-app-btn');
-                if (restartBtn) {
-                    restartBtn.style.display = 'inline-flex';
-                }
-            } else {
-                logger.error('❌ Erro ao aplicar atualizações:', result.error);
-                showToast(result.error?.message || 'Erro ao aplicar atualizações', 'error');
+            if (!result.success) {
+                throw new Error(result.error?.message || 'Falha ao iniciar ciclo');
             }
+
+            showToast('Ciclo automático iniciado. Reinício ocorrerá automaticamente.', 'success');
+            setTimeout(() => this.checkForUpdates(), 1000);
         } catch (error) {
-            logger.error('❌ Erro ao aplicar atualizações:', error);
-            showToast('Erro de conexão ao aplicar atualizações', 'error');
+            logger.error('Erro ao disparar ciclo de update:', error);
+            showToast(error.message || 'Erro ao iniciar ciclo de atualização', 'error');
         } finally {
             const applyBtn = document.getElementById('apply-updates-btn');
             if (applyBtn) {
                 applyBtn.disabled = false;
-                applyBtn.innerHTML = '<span class="material-icons">download</span> Aplicar Atualizações';
+                applyBtn.innerHTML = '<span class="material-icons">download</span> Executar Ciclo Agora';
             }
         }
     }
@@ -6081,8 +6157,6 @@ setupEventListeners() {
     // Reiniciar aplicação
     async restartApplication() {
         try {
-            logger.info('🔄 Reiniciando aplicação...');
-            
             const restartBtn = document.getElementById('restart-app-btn');
             if (restartBtn) {
                 restartBtn.disabled = true;
@@ -6095,24 +6169,16 @@ setupEventListeners() {
                     'Content-Type': 'application/json'
                 }
             });
-
             const result = await response.json();
-
-            if (result.success) {
-                logger.info('✅ Aplicação reiniciada com sucesso');
-                showToast('Aplicação reiniciada! Recarregando página...', 'success');
-                
-                // Recarregar página após um tempo
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            } else {
-                logger.error('❌ Erro ao reiniciar aplicação:', result.error);
-                showToast(result.error?.message || 'Erro ao reiniciar aplicação', 'error');
+            if (!result.success) {
+                throw new Error(result.error?.message || 'Falha ao reiniciar');
             }
+
+            showToast('Reinício solicitado com sucesso.', 'success');
+            setTimeout(() => window.location.reload(), 3000);
         } catch (error) {
-            logger.error('❌ Erro ao reiniciar aplicação:', error);
-            showToast('Erro de conexão ao reiniciar aplicação', 'error');
+            logger.error('Erro ao reiniciar aplicação:', error);
+            showToast(error.message || 'Erro ao reiniciar aplicação', 'error');
         } finally {
             const restartBtn = document.getElementById('restart-app-btn');
             if (restartBtn) {

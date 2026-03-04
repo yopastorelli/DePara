@@ -96,10 +96,11 @@ let configuredWorkflows = [
  * GET /api/files/folders - Listar pastas configuradas
  */
 router.get('/folders', async (req, res) => {
+    const startTime = Date.now();
     try {
         logger.startOperation('List Folders', {});
         const result = configuredFolders;
-        const duration = Date.now() - Date.now();
+        const duration = Date.now() - startTime;
         logger.endOperation('List Folders', duration, result);
 
         res.json({
@@ -123,6 +124,7 @@ router.get('/folders', async (req, res) => {
  * POST /api/files/folders - Criar nova pasta
  */
 router.post('/folders', async (req, res) => {
+    const startTime = Date.now();
     try {
         const { name, path, type = 'source', format = 'any' } = req.body;
 
@@ -152,7 +154,7 @@ router.post('/folders', async (req, res) => {
         configuredFolders.push(newFolder);
 
         logger.startOperation('Create Folder', newFolder);
-        const duration = Date.now() - Date.now();
+        const duration = Date.now() - startTime;
         logger.endOperation('Create Folder', duration, newFolder);
 
         res.status(201).json({
@@ -176,6 +178,7 @@ router.post('/folders', async (req, res) => {
  * DELETE /api/files/folders/:id - Deletar pasta
  */
 router.delete('/folders/:id', async (req, res) => {
+    const startTime = Date.now();
     try {
         const { id } = req.params;
 
@@ -193,7 +196,7 @@ router.delete('/folders/:id', async (req, res) => {
         const deletedFolder = configuredFolders.splice(folderIndex, 1)[0];
 
         logger.startOperation('Delete Folder', { id });
-        const duration = Date.now() - Date.now();
+        const duration = Date.now() - startTime;
         logger.endOperation('Delete Folder', duration, deletedFolder);
 
         res.json({
@@ -214,6 +217,59 @@ router.delete('/folders/:id', async (req, res) => {
 });
 
 /**
+ * PUT /api/files/folders/:id - Editar pasta
+ */
+router.put('/folders/:id', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const { id } = req.params;
+        const { name, path: folderPath, type, format, description, enabled } = req.body;
+
+        const folderIndex = configuredFolders.findIndex(folder => folder.id === id);
+        if (folderIndex === -1) {
+            return res.status(404).json({
+                error: {
+                    message: 'Pasta não encontrada',
+                    id
+                }
+            });
+        }
+
+        const currentFolder = configuredFolders[folderIndex];
+        const updatedFolder = {
+            ...currentFolder,
+            ...(name !== undefined ? { name } : {}),
+            ...(folderPath !== undefined ? { path: folderPath } : {}),
+            ...(type !== undefined ? { type } : {}),
+            ...(format !== undefined ? { format } : {}),
+            ...(description !== undefined ? { description } : {}),
+            ...(enabled !== undefined ? { enabled: Boolean(enabled) } : {}),
+            updatedAt: new Date().toISOString()
+        };
+
+        configuredFolders[folderIndex] = updatedFolder;
+
+        const duration = Date.now() - startTime;
+        logger.endOperation('Update Folder', duration, { id });
+
+        res.json({
+            success: true,
+            data: updatedFolder,
+            message: 'Pasta atualizada com sucesso',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logger.operationError('Update Folder', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro ao atualizar pasta',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
  * Gerenciamento de Workflows
  * GET /api/files/workflows - Listar workflows configurados
  * POST /api/files/workflows - Criar novo workflow
@@ -224,10 +280,11 @@ router.delete('/folders/:id', async (req, res) => {
  * GET /api/files/workflows - Listar workflows configurados
  */
 router.get('/workflows', async (req, res) => {
+    const startTime = Date.now();
     try {
         logger.startOperation('List Workflows', {});
         const result = configuredWorkflows;
-        const duration = Date.now() - Date.now();
+        const duration = Date.now() - startTime;
         logger.endOperation('List Workflows', duration, result);
 
         res.json({
@@ -251,6 +308,7 @@ router.get('/workflows', async (req, res) => {
  * POST /api/files/workflows - Criar novo workflow
  */
 router.post('/workflows', async (req, res) => {
+    const startTime = Date.now();
     try {
         const { name, description, steps = [] } = req.body;
 
@@ -280,7 +338,7 @@ router.post('/workflows', async (req, res) => {
         configuredWorkflows.push(newWorkflow);
 
         logger.startOperation('Create Workflow', newWorkflow);
-        const duration = Date.now() - Date.now();
+        const duration = Date.now() - startTime;
         logger.endOperation('Create Workflow', duration, newWorkflow);
 
         res.status(201).json({
@@ -304,6 +362,7 @@ router.post('/workflows', async (req, res) => {
  * DELETE /api/files/workflows/:id - Deletar workflow
  */
 router.delete('/workflows/:id', async (req, res) => {
+    const startTime = Date.now();
     try {
         const { id } = req.params;
 
@@ -321,7 +380,7 @@ router.delete('/workflows/:id', async (req, res) => {
         const deletedWorkflow = configuredWorkflows.splice(workflowIndex, 1)[0];
 
         logger.startOperation('Delete Workflow', { id });
-        const duration = Date.now() - Date.now();
+        const duration = Date.now() - startTime;
         logger.endOperation('Delete Workflow', duration, deletedWorkflow);
 
         res.json({
@@ -335,6 +394,57 @@ router.delete('/workflows/:id', async (req, res) => {
         res.status(500).json({
             error: {
                 message: 'Erro ao deletar workflow',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
+ * PUT /api/files/workflows/:id - Editar workflow
+ */
+router.put('/workflows/:id', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const { id } = req.params;
+        const { name, description, steps, status } = req.body;
+
+        const workflowIndex = configuredWorkflows.findIndex(workflow => workflow.id === id);
+        if (workflowIndex === -1) {
+            return res.status(404).json({
+                error: {
+                    message: 'Workflow não encontrado',
+                    id
+                }
+            });
+        }
+
+        const currentWorkflow = configuredWorkflows[workflowIndex];
+        const updatedWorkflow = {
+            ...currentWorkflow,
+            ...(name !== undefined ? { name } : {}),
+            ...(description !== undefined ? { description } : {}),
+            ...(steps !== undefined ? { steps } : {}),
+            ...(status !== undefined ? { status } : {}),
+            updatedAt: new Date().toISOString()
+        };
+
+        configuredWorkflows[workflowIndex] = updatedWorkflow;
+
+        const duration = Date.now() - startTime;
+        logger.endOperation('Update Workflow', duration, { id });
+
+        res.json({
+            success: true,
+            data: updatedWorkflow,
+            message: 'Workflow atualizado com sucesso',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logger.operationError('Update Workflow', error);
+        res.status(500).json({
+            error: {
+                message: 'Erro ao atualizar workflow',
                 details: error.message
             }
         });
@@ -598,9 +708,18 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
             if (frequency !== undefined) {
                 sanitizedFrequency = sanitizeString(frequency, {
                     field: 'frequency',
-                    maxLength: 10,
-                    allowedChars: '0-9mhdw'
+                    maxLength: 20,
+                    allowedChars: 'a-zA-Z0-9\\-'
                 });
+
+                const validFrequencyPattern = /^(\d+[smhdwM]|manual|on-startup)$/;
+                if (!validFrequencyPattern.test(sanitizedFrequency)) {
+                    throw new ValidationError(
+                        'Frequência inválida. Use formatos como 30s, 5m, 1h, 1d, 1w, 1M, manual ou on-startup',
+                        'frequency',
+                        sanitizedFrequency
+                    );
+                }
             }
 
             if (action !== undefined) {
@@ -680,7 +799,7 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
         logger.info(`Editando operação agendada: ${operationId}`, { operationId, newConfig });
         const result = fileOperationsManager.editScheduledOperation(operationId, newConfig);
 
-        const duration = Date.now() - Date.now();
+        const duration = Date.now() - startTime;
         logger.endOperation('File Operation Edit', duration, result);
 
         res.status(200).json({
@@ -770,18 +889,20 @@ router.post('/schedule/:operationId/execute', strictRateLimiter, async (req, res
             });
         }
         
-        try {
-            const targetStats = await fs.stat(operation.targetPath);
-            logger.info(`📁 Destino existe: ${operation.targetPath}`, { 
-                isDirectory: targetStats.isDirectory(),
-                isFile: targetStats.isFile()
-            });
-        } catch (targetError) {
-            logger.error(`❌ Destino não existe: ${operation.targetPath}`, { error: targetError.message });
-            return res.status(400).json({
-                success: false,
-                error: `Destino não existe: ${operation.targetPath}`
-            });
+        if ((operation.action === 'move' || operation.action === 'copy')) {
+            try {
+                const targetStats = await fs.stat(operation.targetPath);
+                logger.info(`📁 Destino existe: ${operation.targetPath}`, { 
+                    isDirectory: targetStats.isDirectory(),
+                    isFile: targetStats.isFile()
+                });
+            } catch (targetError) {
+                logger.error(`❌ Destino não existe: ${operation.targetPath}`, { error: targetError.message });
+                return res.status(400).json({
+                    success: false,
+                    error: `Destino não existe: ${operation.targetPath}`
+                });
+            }
         }
         
         // Executar a operação imediatamente
@@ -1367,6 +1488,7 @@ router.post('/check-ignore', async (req, res) => {
  * GET /api/files/images/:folderPath
  */
 router.get('/images/:folderPath(*)', async (req, res) => {
+    const startTime = Date.now();
     try {
         // CORREÇÃO: Não adicionar barra extra, usar caminho como vem
         const folderPath = req.params.folderPath;
@@ -1398,7 +1520,7 @@ router.get('/images/:folderPath(*)', async (req, res) => {
             extensions: Array.isArray(extensions) ? extensions : extensions.split(',')
         });
 
-        const duration = Date.now() - Date.now();
+        const duration = Date.now() - startTime;
         logger.endOperation('List Images', duration, { imageCount: images.length });
 
         res.status(200).json({

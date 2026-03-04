@@ -1,243 +1,256 @@
 /**
- * Rotas para Sistema de Atualização Automática
- * 
- * @author yopastorelli
- * @version 1.0.0
+ * Rotas para atualização automática do DePara.
  */
 
 const express = require('express');
-const { exec } = require('child_process');
-const router = express.Router();
 const logger = require('../utils/logger');
+const updateOrchestrator = require('../services/updateOrchestrator');
+
+const router = express.Router();
+
+router.use(async (req, res, next) => {
+  try {
+    await updateOrchestrator.init();
+    next();
+  } catch (error) {
+    logger.operationError('Update Init Middleware', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Falha ao inicializar sistema de atualização',
+        details: error.message
+      }
+    });
+  }
+});
 
 /**
- * Verificar atualizações disponíveis
- * GET /api/update/check
+ * Legacy: GET /api/update/check
  */
 router.get('/check', async (req, res) => {
-    try {
-        logger.info('🔍 Verificando atualizações disponíveis...');
-
-        // Verificar se há atualizações no repositório remoto
-        exec('git fetch origin', (error, stdout, stderr) => {
-            if (error) {
-                logger.warn('⚠️ Erro ao verificar atualizações:', error.message);
-                return res.status(500).json({
-                    success: false,
-                    error: {
-                        message: 'Erro ao verificar atualizações',
-                        details: error.message
-                    }
-                });
-            }
-
-                    // Verificar se há commits à frente
-        exec('git rev-list HEAD..origin/main --count', (error, stdout, stderr) => {
-            if (error) {
-                logger.warn('⚠️ Erro ao contar commits:', error.message);
-                return res.status(500).json({
-                    success: false,
-                    error: {
-                        message: 'Erro ao contar commits',
-                        details: error.message
-                    }
-                });
-            }
-
-            const commitsAhead = parseInt(stdout.trim()) || 0;
-            const hasUpdates = commitsAhead > 0;
-
-            // Obter versão atual
-            exec('git rev-parse --short HEAD', (versionError, versionStdout, versionStderr) => {
-                const currentVersion = versionError ? 'unknown' : versionStdout.trim();
-
-                logger.info(`📊 Verificação de atualizações: ${commitsAhead} commits à frente, versão: ${currentVersion}`);
-
-                res.status(200).json({
-                    success: true,
-                    data: {
-                        hasUpdates,
-                        commitsAhead,
-                        currentVersion,
-                        lastChecked: new Date().toISOString(),
-                        message: hasUpdates ? 
-                            `Há ${commitsAhead} atualização(ões) disponível(is)` : 
-                            'DePara está atualizado'
-                    },
-                    timestamp: new Date().toISOString()
-                });
-            });
-        });
-        });
-
-    } catch (error) {
-        logger.operationError('Update Check', error);
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Erro interno ao verificar atualizações',
-                details: error.message
-            }
-        });
-    }
+  try {
+    const check = await updateOrchestrator.checkForUpdates();
+    res.status(200).json({
+      success: true,
+      data: {
+        hasUpdates: check.hasUpdates,
+        commitsAhead: check.commitsAhead,
+        currentVersion: check.currentCommit ? check.currentCommit.slice(0, 8) : 'unknown',
+        targetVersion: check.targetCommit ? check.targetCommit.slice(0, 8) : 'unknown',
+        lastChecked: new Date().toISOString(),
+        message: check.hasUpdates
+          ? `Há ${check.commitsAhead} atualização(ões) disponível(is)`
+          : 'DePara está atualizado'
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.operationError('Update Check', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Erro ao verificar atualizações',
+        details: error.message
+      }
+    });
+  }
 });
 
 /**
- * Aplicar atualizações
- * POST /api/update/apply
+ * Legacy: POST /api/update/apply
+ * Inicia ciclo completo automático e retorna imediatamente.
  */
 router.post('/apply', async (req, res) => {
-    try {
-        logger.info('🔄 Aplicando atualizações...');
-
-        // Fazer backup das mudanças locais
-        exec('git stash push -m "Backup antes da atualização automática"', (error, stdout, stderr) => {
-            if (error) {
-                logger.warn('⚠️ Erro ao fazer backup:', error.message);
-            }
-
-            // Fazer pull das atualizações
-            exec('git pull origin main', (error, stdout, stderr) => {
-                if (error) {
-                    logger.error('❌ Erro ao aplicar atualizações:', error.message);
-                    return res.status(500).json({
-                        success: false,
-                        error: {
-                            message: 'Erro ao aplicar atualizações',
-                            details: error.message
-                        }
-                    });
-                }
-
-                logger.info('✅ Atualizações aplicadas com sucesso');
-
-                // Reinstalar dependências se necessário
-                exec('npm install', (error, stdout, stderr) => {
-                    if (error) {
-                        logger.warn('⚠️ Erro ao reinstalar dependências:', error.message);
-                    }
-
-                    res.status(200).json({
-                        success: true,
-                        message: 'Atualizações aplicadas com sucesso',
-                        data: {
-                            output: stdout,
-                            timestamp: new Date().toISOString()
-                        }
-                    });
-                });
-            });
-        });
-
-    } catch (error) {
-        logger.operationError('Update Apply', error);
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Erro interno ao aplicar atualizações',
-                details: error.message
-            }
-        });
+  try {
+    const trigger = await updateOrchestrator.startUpdateCycle({ reason: 'manual_apply' });
+    if (!trigger.started) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          message: 'Ciclo de atualização já está em execução',
+          reason: trigger.reason
+        }
+      });
     }
+
+    return res.status(202).json({
+      success: true,
+      message: 'Ciclo automático iniciado com sucesso',
+      data: {
+        runId: trigger.runId
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.operationError('Update Apply', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        message: 'Erro ao iniciar atualização automática',
+        details: error.message
+      }
+    });
+  }
 });
 
 /**
- * Reiniciar aplicação após atualização
- * POST /api/update/restart
+ * Legacy: POST /api/update/restart
  */
 router.post('/restart', async (req, res) => {
-    try {
-        logger.info('🔄 Reiniciando aplicação após atualização...');
+  try {
+    setTimeout(() => {
+      updateOrchestrator.requestRestart().catch((error) => {
+        logger.operationError('Manual Restart', error);
+      });
+    }, 250);
 
-        // Parar DePara atual (compatível com Windows e Linux)
-        const isWindows = process.platform === 'win32';
-        const stopCommand = isWindows ? 'taskkill /F /IM node.exe' : 'pkill -f "node.*main.js"';
-        
-        exec(stopCommand, (error, stdout, stderr) => {
-            if (error) {
-                logger.warn('⚠️ Erro ao parar DePara:', error.message);
-            }
-
-            // Aguardar um pouco
-            setTimeout(() => {
-                // Iniciar DePara novamente (compatível com Windows e Linux)
-                const isWindows = process.platform === 'win32';
-                const startCommand = isWindows ? 'npm start' : 'nohup npm start > /dev/null 2>&1 &';
-                
-                exec(startCommand, (error, stdout, stderr) => {
-                    if (error) {
-                        logger.error('❌ Erro ao reiniciar DePara:', error.message);
-                        return res.status(500).json({
-                            success: false,
-                            error: {
-                                message: 'Erro ao reiniciar aplicação',
-                                details: error.message
-                            }
-                        });
-                    }
-
-                    logger.info('✅ Aplicação reiniciada com sucesso');
-
-                    res.status(200).json({
-                        success: true,
-                        message: 'Aplicação reiniciada com sucesso',
-                        timestamp: new Date().toISOString()
-                    });
-                });
-            }, 2000);
-        });
-
-    } catch (error) {
-        logger.operationError('Update Restart', error);
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Erro interno ao reiniciar aplicação',
-                details: error.message
-            }
-        });
-    }
+    return res.status(202).json({
+      success: true,
+      message: 'Reinício solicitado',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.operationError('Update Restart', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        message: 'Erro ao solicitar reinício',
+        details: error.message
+      }
+    });
+  }
 });
 
 /**
- * Obter status da aplicação
- * GET /api/update/status
+ * Legacy: GET /api/update/status
  */
 router.get('/status', async (req, res) => {
-    try {
-        logger.info('📊 Verificando status da aplicação...');
+  try {
+    const status = await updateOrchestrator.getStatus();
+    return res.status(200).json({
+      success: true,
+      data: {
+        ...status.state,
+        config: status.config
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.operationError('Update Status', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        message: 'Erro ao obter status de atualização',
+        details: error.message
+      }
+    });
+  }
+});
 
-        // Verificar se DePara está rodando
-        exec('pgrep -f "node.*main.js"', (error, stdout, stderr) => {
-            const isRunning = !error && stdout.trim() !== '';
-            
-            // Obter versão atual
-            exec('git rev-parse --short HEAD', (error, stdout, stderr) => {
-                const currentVersion = error ? 'unknown' : stdout.trim();
-                
-                res.status(200).json({
-                    success: true,
-                    data: {
-                        isRunning,
-                        currentVersion,
-                        lastChecked: new Date().toISOString(),
-                        uptime: process.uptime()
-                    },
-                    timestamp: new Date().toISOString()
-                });
-            });
-        });
+/**
+ * GET /api/update/auto/status
+ */
+router.get('/auto/status', async (req, res) => {
+  try {
+    const status = await updateOrchestrator.getStatus();
+    return res.status(200).json({
+      success: true,
+      data: status,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.operationError('Auto Update Status', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        message: 'Erro ao obter status automático',
+        details: error.message
+      }
+    });
+  }
+});
 
-    } catch (error) {
-        logger.operationError('Update Status', error);
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Erro interno ao verificar status',
-                details: error.message
-            }
-        });
+/**
+ * PUT /api/update/auto/config
+ */
+router.put('/auto/config', async (req, res) => {
+  try {
+    const config = await updateOrchestrator.updateConfig(req.body || {});
+    return res.status(200).json({
+      success: true,
+      data: config,
+      message: 'Configuração de atualização automática salva',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.operationError('Auto Update Config', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        message: 'Erro ao salvar configuração automática',
+        details: error.message
+      }
+    });
+  }
+});
+
+/**
+ * POST /api/update/auto/trigger
+ */
+router.post('/auto/trigger', async (req, res) => {
+  try {
+    const trigger = await updateOrchestrator.startUpdateCycle({ reason: 'manual_trigger' });
+    if (!trigger.started) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          message: 'Ciclo já está em execução',
+          reason: trigger.reason
+        }
+      });
     }
+
+    return res.status(202).json({
+      success: true,
+      data: trigger,
+      message: 'Ciclo automático iniciado',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.operationError('Auto Update Trigger', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        message: 'Erro ao disparar ciclo automático',
+        details: error.message
+      }
+    });
+  }
+});
+
+/**
+ * GET /api/update/auto/history
+ */
+router.get('/auto/history', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const history = await updateOrchestrator.getHistory(limit);
+    return res.status(200).json({
+      success: true,
+      data: history,
+      count: history.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.operationError('Auto Update History', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        message: 'Erro ao carregar histórico de atualização',
+        details: error.message
+      }
+    });
+  }
 });
 
 module.exports = router;

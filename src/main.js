@@ -20,12 +20,14 @@ const packageInfo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'packa
 // Importar módulos da aplicação
 const logger = require('./utils/logger');
 const routes = require('./routes');
+const updateOrchestrator = require('./services/updateOrchestrator');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter, normalRateLimiter, strictRateLimiter } = require('./middleware/rateLimiter');
 
 // Configurações da aplicação
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+let server;
 
 /**
  * Inicializa diretórios necessários para a aplicação
@@ -165,9 +167,10 @@ async function startServer() {
     try {
         // Inicializar diretórios necessários
         await initializeDirectories();
+        await updateOrchestrator.init();
 
         // Iniciar servidor
-        const server = app.listen(PORT, () => {
+        server = app.listen(PORT, () => {
             logger.info(`🚀 Servidor DePara iniciado na porta ${PORT}`);
             logger.info(`📊 API disponível em: http://localhost:${PORT}`);
             logger.info(`🌐 Interface web disponível em: http://localhost:${PORT}/ui`);
@@ -198,18 +201,26 @@ process.on('unhandledRejection', (reason, promise) => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM recebido, encerrando servidor...');
-  server.close(() => {
-    logger.info('Servidor encerrado com sucesso');
+  if (server) {
+    server.close(() => {
+      logger.info('Servidor encerrado com sucesso');
+      process.exit(0);
+    });
+  } else {
     process.exit(0);
-  });
+  }
 });
 
 process.on('SIGINT', () => {
   logger.info('SIGINT recebido, encerrando servidor...');
-  server.close(() => {
-    logger.info('Servidor encerrado com sucesso');
+  if (server) {
+    server.close(() => {
+      logger.info('Servidor encerrado com sucesso');
+      process.exit(0);
+    });
+  } else {
     process.exit(0);
-  });
+  }
 });
 
 module.exports = app;
