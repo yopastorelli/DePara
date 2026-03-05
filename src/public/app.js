@@ -157,9 +157,13 @@ class DeParaUI {
             savedUIState: null,
             viewerWasVisible: false,
             startedSlideshowSession: false,
-            showingFallback: false
+            showingFallback: false,
+            dedicatedActive: false,
+            dedicatedSessionId: null
         };
+        this.isDedicatedScreensaverWindow = this.isDedicatedScreensaverRoute();
         this.screensaverClockInterval = null;
+        this.screensaverDedicatedSyncInterval = null;
         this.refreshSchedulerInterval = null;
         this.refreshSchedulerIntervalMs = 30000;
         this.refreshVisibilityListenerAdded = false;
@@ -234,6 +238,9 @@ class DeParaUI {
             // Configurar screensaver por inatividade
             this.initScreensaverManager();
             logger.success('Screensaver configurado');
+            if (this.isDedicatedScreensaverWindow) {
+                this.enableDedicatedScreensaverUI();
+            }
 
             // Configurar controles de fullscreen do dashboard
             this.setupDashboardFullscreenControls();
@@ -244,7 +251,7 @@ class DeParaUI {
             logger.success('Dashboard atualizada');
 
             // Mostrar onboarding se necessÃƒÂ¡rio
-            if (!localStorage.getItem('depara-onboarding-completed')) {
+            if (!this.isDedicatedScreensaverWindow && !localStorage.getItem('depara-onboarding-completed')) {
                 setTimeout(() => this.showOnboarding(), 1000);
             }
 
@@ -259,6 +266,9 @@ class DeParaUI {
             
             // Carregar pasta salva do slideshow
             this.loadSlideshowSavedPath();
+            if (this.isDedicatedScreensaverWindow) {
+                await this.activateScreensaver({ forceLocal: true });
+            }
 
             const initDuration = Date.now() - startTime;
             logger.success('Ã°Å¸Å½â€° InicializaÃƒÂ§ÃƒÂ£o completa!', {
@@ -1655,6 +1665,110 @@ class DeParaUI {
         }
     }
 
+    isDedicatedScreensaverRoute() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('screensaver') === '1' && params.get('dedicated') === '1';
+        } catch {
+            return false;
+        }
+    }
+
+    updateScreensaverStatusLabel() {
+        const statusEl = document.getElementById('screensaver-config-status');
+        if (!statusEl) return;
+
+        let runtimeState = 'inativo';
+        if (!this.screensaverConfig.enabled) {
+            runtimeState = 'desativado';
+        } else if (this.isDedicatedScreensaverWindow || this.screensaverState.dedicatedActive) {
+            runtimeState = 'ativo dedicado';
+        } else if (this.screensaverState.isActive) {
+            runtimeState = 'ativo local';
+        }
+
+        statusEl.textContent = `Saida: ESC apenas | Estado: ${runtimeState}`;
+    }
+
+    async openDedicatedScreensaverWindow() {
+        if (this.screensaverState.dedicatedActive) {
+            return true;
+        }
+
+        try {
+            const response = await fetch('/api/tray/screensaver/open', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result?.error?.message || `HTTP ${response.status}`);
+            }
+
+            this.screensaverState.dedicatedActive = true;
+            this.screensaverState.dedicatedSessionId = result?.data?.sessionId || null;
+            this.updateScreensaverStatusLabel();
+            return true;
+        } catch (error) {
+            console.warn('Erro ao abrir screensaver dedicado:', error);
+            return false;
+        }
+    }
+
+    async closeDedicatedScreensaverWindow() {
+        if (!this.screensaverState.dedicatedActive && !this.isDedicatedScreensaverWindow) {
+            return true;
+        }
+
+        try {
+            await fetch('/api/tray/screensaver/close', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                keepalive: true
+            });
+        } catch (error) {
+            console.warn('Erro ao fechar screensaver dedicado:', error);
+        } finally {
+            this.screensaverState.dedicatedActive = false;
+            this.screensaverState.dedicatedSessionId = null;
+            this.updateScreensaverStatusLabel();
+        }
+
+        return true;
+    }
+
+    async syncDedicatedScreensaverStatus() {
+        try {
+            const response = await fetch('/api/tray/status');
+            const result = await response.json();
+            if (!response.ok || !result.success) return;
+
+            this.screensaverState.dedicatedActive = Boolean(result?.data?.screensaverDedicatedActive);
+            this.screensaverState.dedicatedSessionId = result?.data?.screensaverSessionId || null;
+            this.updateScreensaverStatusLabel();
+        } catch (error) {
+            console.warn('Erro ao sincronizar status do screensaver dedicado:', error);
+        }
+    }
+
+    enableDedicatedScreensaverUI() {
+        document.body.classList.add('screensaver-dedicated-window');
+
+        if (!document.getElementById('screensaver-dedicated-style')) {
+            const style = document.createElement('style');
+            style.id = 'screensaver-dedicated-style';
+            style.textContent = `
+                body.screensaver-dedicated-window .header,
+                body.screensaver-dedicated-window .main,
+                body.screensaver-dedicated-window #dashboard-fullscreen-controls,
+                body.screensaver-dedicated-window .toast-container {
+                    display: none !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
     initScreensaverManager() {
         this.createScreensaverFallback();
         localStorage.setItem('screensaverConfig', JSON.stringify(this.screensaverConfig));
@@ -1685,23 +1799,32 @@ class DeParaUI {
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) return;
             if (!this.screensaverState.isActive) this.resetScreensaverTimer();
+            if (!this.isDedicatedScreensaverWindow) {
+                this.syncDedicatedScreensaverStatus();
+            }
         });
 
         this.resetScreensaverTimer();
+        this.updateScreensaverStatusLabel();
+
+        if (!this.isDedicatedScreensaverWindow && !this.screensaverDedicatedSyncInterval) {
+            this.screensaverDedicatedSyncInterval = setInterval(() => {
+                if (document.hidden || this.screensaverState.dedicatedActive) {
+                    this.syncDedicatedScreensaverStatus();
+                }
+            }, 45000);
+        }
     }
 
     setupScreensaverSettingsUI() {
         const enabledEl = document.getElementById('screensaver-enabled');
         const idleEl = document.getElementById('screensaver-idle-minutes');
-        const statusEl = document.getElementById('screensaver-config-status');
         if (!enabledEl || !idleEl) return;
 
         enabledEl.checked = Boolean(this.screensaverConfig.enabled);
         idleEl.value = String(this.screensaverConfig.idleMinutes || 3);
         idleEl.disabled = !enabledEl.checked;
-        if (statusEl) {
-            statusEl.textContent = `SaÃƒÂ­da: ESC apenas | Estado: ${enabledEl.checked ? 'ativo' : 'desativado'}`;
-        }
+        this.updateScreensaverStatusLabel();
 
         if (!enabledEl.dataset.listenerAdded) {
             enabledEl.addEventListener('change', () => {
@@ -1711,9 +1834,7 @@ class DeParaUI {
                     exitMode: 'esc_only'
                 });
                 idleEl.disabled = !enabledEl.checked;
-                if (statusEl) {
-                    statusEl.textContent = `SaÃƒÂ­da: ESC apenas | Estado: ${enabledEl.checked ? 'ativo' : 'desativado'}`;
-                }
+                this.updateScreensaverStatusLabel();
             });
             enabledEl.dataset.listenerAdded = 'true';
         }
@@ -1745,14 +1866,16 @@ class DeParaUI {
                 clearTimeout(this.screensaverState.timerId);
                 this.screensaverState.timerId = null;
             }
-            if (this.screensaverState.isActive) {
+            if (this.screensaverState.isActive || this.screensaverState.dedicatedActive) {
                 this.deactivateScreensaver();
             }
+            this.updateScreensaverStatusLabel();
             this.showToast('Screensaver desativado', 'info');
             return;
         }
 
         this.resetScreensaverTimer();
+        this.updateScreensaverStatusLabel();
         this.showToast(`Screensaver ativo (${this.screensaverConfig.idleMinutes} min)`, 'success');
     }
 
@@ -1887,6 +2010,16 @@ class DeParaUI {
         }
     }
 
+    enforceScreensaverFullscreen(attempts = 3) {
+        if (attempts <= 0) return;
+        const tryEnter = (remaining) => {
+            this.enterFullscreen();
+            if (remaining <= 1) return;
+            setTimeout(() => tryEnter(remaining - 1), 800);
+        };
+        tryEnter(attempts);
+    }
+
     getScreensaverSourcePath() {
         const localPath = localStorage.getItem('slideshowSelectedPath');
         if (localPath && localPath.trim()) return localPath.trim();
@@ -1895,18 +2028,31 @@ class DeParaUI {
         return '';
     }
 
-    async activateScreensaver() {
+    async activateScreensaver(options = {}) {
         if (this.screensaverState.isActive || !this.screensaverConfig.enabled) return;
+
+        if (!options.forceLocal && !this.isDedicatedScreensaverWindow && document.hidden) {
+            const opened = await this.openDedicatedScreensaverWindow();
+            if (opened) {
+                this.updateScreensaverStatusLabel();
+            }
+            return;
+        }
+
         this.screensaverState.savedUIState = this.captureUIState();
         this.screensaverState.isActive = true;
         this.screensaverState.startedSlideshowSession = false;
         this.screensaverState.showingFallback = false;
+        this.updateScreensaverStatusLabel();
 
         const viewer = document.getElementById('slideshow-viewer');
         const viewerVisible = viewer && window.getComputedStyle(viewer).display !== 'none';
         this.screensaverState.viewerWasVisible = Boolean(viewerVisible);
         if (viewerVisible) {
             viewer.classList.add('screensaver-mode');
+            if (this.isDedicatedScreensaverWindow) {
+                this.enforceScreensaverFullscreen();
+            }
             return;
         }
 
@@ -1931,6 +2077,9 @@ class DeParaUI {
                 if (activeViewer) activeViewer.classList.add('screensaver-mode');
                 this.screensaverState.startedSlideshowSession = true;
                 this.hideScreensaverFallback();
+                if (this.isDedicatedScreensaverWindow) {
+                    this.enforceScreensaverFullscreen();
+                }
                 return;
             }
         } catch (error) {
@@ -1938,10 +2087,31 @@ class DeParaUI {
         }
 
         this.showScreensaverFallback();
+        if (this.isDedicatedScreensaverWindow) {
+            this.enforceScreensaverFullscreen();
+        }
     }
 
-    deactivateScreensaver() {
-        if (!this.screensaverState.isActive) return;
+    async deactivateScreensaver() {
+        if (!this.screensaverState.isActive && !this.screensaverState.dedicatedActive && !this.isDedicatedScreensaverWindow) return;
+
+        if (this.isDedicatedScreensaverWindow) {
+            await this.closeDedicatedScreensaverWindow();
+            this.hideScreensaverFallback();
+            this.closeSlideshowViewer();
+            this.screensaverState.isActive = false;
+            this.updateScreensaverStatusLabel();
+            setTimeout(() => {
+                window.close();
+            }, 50);
+            return;
+        }
+
+        if (!this.screensaverState.isActive && this.screensaverState.dedicatedActive) {
+            await this.closeDedicatedScreensaverWindow();
+            this.resetScreensaverTimer();
+            return;
+        }
 
         this.hideScreensaverFallback();
         const viewer = document.getElementById('slideshow-viewer');
@@ -1959,6 +2129,7 @@ class DeParaUI {
         this.screensaverState.startedSlideshowSession = false;
         this.screensaverState.showingFallback = false;
         this.screensaverState.isActive = false;
+        this.updateScreensaverStatusLabel();
         this.resetScreensaverTimer();
     }
 
@@ -9750,3 +9921,5 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+
