@@ -153,6 +153,60 @@ async function forceActiveWindowFullscreen() {
     }
 }
 
+async function focusScreensaverWindowByPid(pid, retries = 10, intervalMs = 400) {
+    if (!pid) return false;
+    const hasWmctrl = await commandExists('wmctrl');
+    if (!hasWmctrl) return false;
+    const hasXdotool = await commandExists('xdotool');
+
+    for (let i = 0; i < retries; i += 1) {
+        try {
+            let windowId = null;
+
+            if (hasXdotool) {
+                const xdoCmd = `bash -lc "xdotool search --onlyvisible --pid ${pid} 2>/dev/null | head -n 1"`;
+                const { stdout } = await execPromise(xdoCmd);
+                const candidate = (stdout || '').trim();
+                if (candidate) {
+                    const dec = parseInt(candidate, 10);
+                    if (!Number.isNaN(dec)) {
+                        windowId = `0x${dec.toString(16)}`;
+                    }
+                }
+            }
+
+            if (!windowId) {
+                const { stdout } = await execPromise(`bash -lc "wmctrl -lp | awk '$3==${pid} {print $1; exit}'"`);
+                const candidate = (stdout || '').trim();
+                if (candidate) {
+                    windowId = candidate;
+                }
+            }
+
+            if (windowId) {
+                const activateCmd = [
+                    `wmctrl -i -r ${windowId} -b remove,hidden >/dev/null 2>&1 || true`,
+                    `wmctrl -i -a ${windowId} >/dev/null 2>&1 || true`,
+                    `wmctrl -i -r ${windowId} -b add,above,fullscreen >/dev/null 2>&1 || true`
+                ];
+                if (hasXdotool) {
+                    activateCmd.push(`xdotool windowactivate ${windowId} >/dev/null 2>&1 || true`);
+                }
+                await execPromise(`bash -lc "${activateCmd.join('; ')}"`);
+                return true;
+            }
+        } catch {
+            // Retry below.
+        }
+
+        if (i < retries - 1) {
+            await sleep(intervalMs);
+        }
+    }
+
+    return false;
+}
+
 function clearDedicatedScreensaverState() {
     dedicatedScreensaverState.pid = null;
     dedicatedScreensaverState.browser = null;
@@ -323,7 +377,10 @@ router.post('/screensaver/open', async (req, res) => {
     try {
         disarmDedicatedScreensaver();
         if (isProcessRunning(dedicatedScreensaverState.pid)) {
-            await forceActiveWindowFullscreen();
+            const focused = await focusScreensaverWindowByPid(dedicatedScreensaverState.pid);
+            if (!focused) {
+                await forceActiveWindowFullscreen();
+            }
             res.status(200).json({
                 success: true,
                 already_open: true,
@@ -373,7 +430,10 @@ router.post('/screensaver/open', async (req, res) => {
         dedicatedScreensaverState.sessionId = `ss_${Date.now()}`;
         dedicatedScreensaverState.openedAt = new Date().toISOString();
 
-        forceActiveWindowFullscreen().catch(() => undefined);
+        const focused = await focusScreensaverWindowByPid(dedicatedScreensaverState.pid);
+        if (!focused) {
+            forceActiveWindowFullscreen().catch(() => undefined);
+        }
 
         logger.info('Screensaver dedicado aberto', {
             sessionId: dedicatedScreensaverState.sessionId,
@@ -441,7 +501,10 @@ router.post('/screensaver/arm', async (req, res) => {
                 dedicatedScreensaverState.browser = launchConfig.name;
                 dedicatedScreensaverState.sessionId = `ss_${Date.now()}`;
                 dedicatedScreensaverState.openedAt = new Date().toISOString();
-                forceActiveWindowFullscreen().catch(() => undefined);
+                const focused = await focusScreensaverWindowByPid(dedicatedScreensaverState.pid);
+                if (!focused) {
+                    forceActiveWindowFullscreen().catch(() => undefined);
+                }
                 logger.info('Screensaver dedicado aberto por arm timer', {
                     sessionId: dedicatedScreensaverState.sessionId,
                     pid: dedicatedScreensaverState.pid
