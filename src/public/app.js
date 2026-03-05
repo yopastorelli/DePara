@@ -141,7 +141,10 @@ class DeParaUI {
         this.screensaverState = {
             isActive: false,
             timerId: null,
-            savedUIState: null
+            savedUIState: null,
+            viewerWasVisible: false,
+            startedSlideshowSession: false,
+            showingFallback: false
         };
         this.screensaverClockInterval = null;
         this.init();
@@ -1614,6 +1617,7 @@ class DeParaUI {
     initScreensaverManager() {
         this.createScreensaverFallback();
         localStorage.setItem('screensaverConfig', JSON.stringify(this.screensaverConfig));
+        this.setupScreensaverSettingsUI();
         const activityEvents = ['mousemove', 'mousedown', 'wheel', 'touchstart', 'keydown'];
         activityEvents.forEach((eventName) => {
             document.addEventListener(eventName, () => {
@@ -1631,8 +1635,10 @@ class DeParaUI {
                 this.deactivateScreensaver();
                 return;
             }
-            event.preventDefault();
-            event.stopImmediatePropagation();
+            if (this.screensaverState.showingFallback) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
         }, true);
 
         document.addEventListener('visibilitychange', () => {
@@ -1641,6 +1647,72 @@ class DeParaUI {
         });
 
         this.resetScreensaverTimer();
+    }
+
+    setupScreensaverSettingsUI() {
+        const enabledEl = document.getElementById('screensaver-enabled');
+        const idleEl = document.getElementById('screensaver-idle-minutes');
+        const statusEl = document.getElementById('screensaver-config-status');
+        if (!enabledEl || !idleEl) return;
+
+        enabledEl.checked = Boolean(this.screensaverConfig.enabled);
+        idleEl.value = String(this.screensaverConfig.idleMinutes || 3);
+        idleEl.disabled = !enabledEl.checked;
+        if (statusEl) {
+            statusEl.textContent = `Saída: ESC apenas | Estado: ${enabledEl.checked ? 'ativo' : 'desativado'}`;
+        }
+
+        if (!enabledEl.dataset.listenerAdded) {
+            enabledEl.addEventListener('change', () => {
+                this.applyScreensaverConfig({
+                    enabled: enabledEl.checked,
+                    idleMinutes: Number(idleEl.value) || 3,
+                    exitMode: 'esc_only'
+                });
+                idleEl.disabled = !enabledEl.checked;
+                if (statusEl) {
+                    statusEl.textContent = `Saída: ESC apenas | Estado: ${enabledEl.checked ? 'ativo' : 'desativado'}`;
+                }
+            });
+            enabledEl.dataset.listenerAdded = 'true';
+        }
+
+        if (!idleEl.dataset.listenerAdded) {
+            idleEl.addEventListener('change', () => {
+                const nextMinutes = Math.max(1, Number(idleEl.value) || 3);
+                idleEl.value = String(nextMinutes);
+                this.applyScreensaverConfig({
+                    enabled: enabledEl.checked,
+                    idleMinutes: nextMinutes,
+                    exitMode: 'esc_only'
+                });
+            });
+            idleEl.dataset.listenerAdded = 'true';
+        }
+    }
+
+    applyScreensaverConfig(nextConfig) {
+        this.screensaverConfig = {
+            enabled: nextConfig.enabled !== false,
+            idleMinutes: Math.max(1, Number(nextConfig.idleMinutes) || 3),
+            exitMode: 'esc_only'
+        };
+        localStorage.setItem('screensaverConfig', JSON.stringify(this.screensaverConfig));
+
+        if (!this.screensaverConfig.enabled) {
+            if (this.screensaverState.timerId) {
+                clearTimeout(this.screensaverState.timerId);
+                this.screensaverState.timerId = null;
+            }
+            if (this.screensaverState.isActive) {
+                this.deactivateScreensaver();
+            }
+            this.showToast('Screensaver desativado', 'info');
+            return;
+        }
+
+        this.resetScreensaverTimer();
+        this.showToast(`Screensaver ativo (${this.screensaverConfig.idleMinutes} min)`, 'success');
     }
 
     resetScreensaverTimer() {
@@ -1721,10 +1793,6 @@ class DeParaUI {
                 #slideshow-viewer.screensaver-mode {
                     z-index: 9999998 !important;
                     cursor: none !important;
-                    pointer-events: none !important;
-                }
-                #slideshow-viewer.screensaver-mode #static-slideshow-controls {
-                    display: none !important;
                 }
             `;
             document.head.appendChild(style);
@@ -1756,6 +1824,7 @@ class DeParaUI {
     showScreensaverFallback() {
         const overlay = document.getElementById('screensaver-fallback');
         if (!overlay) return;
+        this.screensaverState.showingFallback = true;
         overlay.style.display = 'flex';
 
         const clock = document.getElementById('screensaver-clock');
@@ -1770,22 +1839,61 @@ class DeParaUI {
     hideScreensaverFallback() {
         const overlay = document.getElementById('screensaver-fallback');
         if (overlay) overlay.style.display = 'none';
+        this.screensaverState.showingFallback = false;
         if (this.screensaverClockInterval) {
             clearInterval(this.screensaverClockInterval);
             this.screensaverClockInterval = null;
         }
     }
 
-    activateScreensaver() {
+    getScreensaverSourcePath() {
+        const localPath = localStorage.getItem('slideshowSelectedPath');
+        if (localPath && localPath.trim()) return localPath.trim();
+        const fieldPath = document.getElementById('slideshow-folder-path')?.value?.trim();
+        if (fieldPath) return fieldPath;
+        return '';
+    }
+
+    async activateScreensaver() {
         if (this.screensaverState.isActive || !this.screensaverConfig.enabled) return;
         this.screensaverState.savedUIState = this.captureUIState();
         this.screensaverState.isActive = true;
+        this.screensaverState.startedSlideshowSession = false;
+        this.screensaverState.showingFallback = false;
 
         const viewer = document.getElementById('slideshow-viewer');
         const viewerVisible = viewer && window.getComputedStyle(viewer).display !== 'none';
+        this.screensaverState.viewerWasVisible = Boolean(viewerVisible);
         if (viewerVisible) {
             viewer.classList.add('screensaver-mode');
             return;
+        }
+
+        try {
+            this.loadSlideshowConfig();
+            const sourcePath = this.getScreensaverSourcePath();
+            if (!sourcePath) {
+                this.showScreensaverFallback();
+                return;
+            }
+
+            await this.loadSlideshowImages(
+                sourcePath,
+                this.slideshowConfig.extensions,
+                true,
+                this.slideshowConfig.interval
+            );
+
+            if (!this.screensaverState.isActive) return;
+            if (Array.isArray(this.slideshowImages) && this.slideshowImages.length > 0) {
+                const activeViewer = document.getElementById('slideshow-viewer');
+                if (activeViewer) activeViewer.classList.add('screensaver-mode');
+                this.screensaverState.startedSlideshowSession = true;
+                this.hideScreensaverFallback();
+                return;
+            }
+        } catch (error) {
+            console.warn('Erro ao iniciar slideshow no screensaver:', error);
         }
 
         this.showScreensaverFallback();
@@ -1798,8 +1906,17 @@ class DeParaUI {
         const viewer = document.getElementById('slideshow-viewer');
         if (viewer) viewer.classList.remove('screensaver-mode');
 
+        if (this.screensaverState.startedSlideshowSession) {
+            this.closeSlideshowViewer();
+        } else if (this.screensaverState.viewerWasVisible) {
+            if (viewer) viewer.style.display = 'flex';
+        }
+
         this.restoreUIState(this.screensaverState.savedUIState);
         this.screensaverState.savedUIState = null;
+        this.screensaverState.viewerWasVisible = false;
+        this.screensaverState.startedSlideshowSession = false;
+        this.screensaverState.showingFallback = false;
         this.screensaverState.isActive = false;
         this.resetScreensaverTimer();
     }
@@ -5618,22 +5735,49 @@ class DeParaUI {
 
     // Manipular eventos de teclado no slideshow
     handleSlideshowKeydown(event) {
-        switch (event.key) {
+        const key = (event.key || '').toLowerCase();
+        switch (key) {
             case 'ArrowLeft':
+            case 'arrowleft':
                 event.preventDefault();
                 this.previousSlide();
                 break;
             case 'ArrowRight':
+            case 'arrowright':
                 event.preventDefault();
                 this.nextSlide();
                 break;
             case ' ':
+            case 'spacebar':
                 event.preventDefault();
                 this.togglePlayPause();
                 break;
-            case 'Escape':
+            case 'd':
                 event.preventDefault();
-                this.closeSlideshowViewer();
+                this.deleteCurrentImage();
+                break;
+            case 'o':
+                event.preventDefault();
+                this.hideCurrentImage();
+                break;
+            case 'a':
+                event.preventDefault();
+                this.adjustCurrentImage();
+                break;
+            case 'f':
+                event.preventDefault();
+                if (typeof this.favoriteCurrentImage === 'function') {
+                    this.favoriteCurrentImage();
+                }
+                break;
+            case 'Escape':
+            case 'escape':
+                event.preventDefault();
+                if (this.screensaverState && this.screensaverState.isActive) {
+                    this.deactivateScreensaver();
+                } else {
+                    this.closeSlideshowViewer();
+                }
                 break;
         }
     }

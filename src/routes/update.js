@@ -283,4 +283,27 @@ router.get('/auto/history', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/update/auto/diagnostics
+ */
+router.get('/auto/diagnostics', async (req, res) => {
+  try {
+    const diagnostics = await updateOrchestrator.getDiagnostics();
+    return res.status(200).json({
+      success: true,
+      data: diagnostics,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.operationError('Auto Update Diagnostics', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        message: 'Erro ao coletar diagnóstico do auto-update',
+        details: error.message
+      }
+    });
+  }
+});
+
 module.exports = router;

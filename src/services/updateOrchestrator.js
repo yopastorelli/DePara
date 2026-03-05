@@ -248,6 +248,29 @@ class UpdateOrchestrator {
     };
   }
 
+  async getDiagnostics() {
+    await this.init();
+    let lock = null;
+    if (fsSync.existsSync(this.lockPath)) {
+      try {
+        lock = JSON.parse(fsSync.readFileSync(this.lockPath, 'utf8'));
+      } catch {
+        lock = { invalid: true };
+      }
+    }
+
+    const recentHistory = await this.getHistory(10);
+    return {
+      now: new Date().toISOString(),
+      repoRoot: this.repoRoot,
+      lockPath: this.lockPath,
+      lock,
+      config: this.config,
+      state: this.state,
+      recentHistory
+    };
+  }
+
   async getHistory(limit = 50) {
     await this.init();
     try {

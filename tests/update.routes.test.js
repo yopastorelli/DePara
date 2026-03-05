@@ -19,7 +19,8 @@ const orchestratorMock = {
   requestRestart: jest.fn(),
   getStatus: jest.fn(),
   updateConfig: jest.fn(),
-  getHistory: jest.fn()
+  getHistory: jest.fn(),
+  getDiagnostics: jest.fn()
 };
 
 jest.mock('../src/services/updateOrchestrator', () => orchestratorMock);
@@ -142,5 +143,18 @@ describe('Update Routes', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.count).toBe(2);
     expect(orchestratorMock.getHistory).toHaveBeenCalledWith(10);
+  });
+
+  it('GET /api/update/auto/diagnostics should return diagnostics payload', async () => {
+    orchestratorMock.getDiagnostics.mockResolvedValue({
+      state: { status: 'idle' },
+      config: { enabled: true },
+      recentHistory: []
+    });
+
+    const res = await request(app).get('/api/update/auto/diagnostics').expect(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.state.status).toBe('idle');
+    expect(orchestratorMock.getDiagnostics).toHaveBeenCalledTimes(1);
   });
 });
