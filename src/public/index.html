@@ -551,7 +551,7 @@
                 <!-- Quick Actions -->
                 <div class="fileops-actions">
                     <div class="action-cards">
-                        <div class="action-card action-slideshow-card" onclick="if(window.deParaUI) window.deParaUI.showSlideshowModal(); else showSlideshowModal();">
+                        <div class="action-card action-slideshow-card">
                             <span class="material-icons">slideshow</span>
                             <h3>Slideshow</h3>
                             <p>Visualize imagens em slideshow</p>
@@ -1365,9 +1365,10 @@
                         <input type="text" id="slideshow-folder-path" placeholder="dynamic-pictures-placeholder" readonly>
                         <button class="btn btn-outline slideshow-browse-btn">
                             <span class="material-icons">folder_open</span>
-                            Selecionar Pasta
+                            Escolher Pasta Local
                         </button>
                     </div>
+                    <small class="form-help">Apenas seleciona o caminho local. Nenhuma foto e enviada para upload.</small>
                 </div>
 
                 <!-- Configurações do Slideshow -->
