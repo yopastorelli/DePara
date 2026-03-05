@@ -54,6 +54,40 @@ describe('Update Routes', () => {
     expect(orchestratorMock.getStatus).toHaveBeenCalledTimes(1);
   });
 
+  it('GET /api/update/auto/status?refresh=1 should force remote check', async () => {
+    orchestratorMock.checkForUpdates.mockResolvedValue({
+      hasUpdates: false,
+      commitsAhead: 0
+    });
+    orchestratorMock.getStatus.mockResolvedValue({
+      config: { enabled: true, checkIntervalMinutes: 60 },
+      state: { status: 'idle' }
+    });
+
+    const res = await request(app).get('/api/update/auto/status?refresh=1').expect(200);
+    expect(res.body.success).toBe(true);
+    expect(orchestratorMock.checkForUpdates).toHaveBeenCalledTimes(1);
+  });
+
+  it('POST /api/update/auto/check-now should force check and return status', async () => {
+    orchestratorMock.checkForUpdates.mockResolvedValue({
+      hasUpdates: true,
+      commitsAhead: 1,
+      currentCommit: 'aaa',
+      targetCommit: 'bbb'
+    });
+    orchestratorMock.getStatus.mockResolvedValue({
+      config: { enabled: true },
+      state: { status: 'checking' }
+    });
+
+    const res = await request(app).post('/api/update/auto/check-now').expect(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.check.hasUpdates).toBe(true);
+    expect(orchestratorMock.checkForUpdates).toHaveBeenCalledTimes(1);
+    expect(orchestratorMock.getStatus).toHaveBeenCalledTimes(1);
+  });
+
   it('PUT /api/update/auto/config should persist config', async () => {
     orchestratorMock.updateConfig.mockResolvedValue({
       enabled: true,
@@ -110,4 +144,3 @@ describe('Update Routes', () => {
     expect(orchestratorMock.getHistory).toHaveBeenCalledWith(10);
   });
 });
-

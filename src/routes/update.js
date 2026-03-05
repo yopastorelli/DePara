@@ -152,6 +152,9 @@ router.get('/status', async (req, res) => {
  */
 router.get('/auto/status', async (req, res) => {
   try {
+    if (req.query.refresh === '1' || req.query.refresh === 'true') {
+      await updateOrchestrator.checkForUpdates();
+    }
     const status = await updateOrchestrator.getStatus();
     return res.status(200).json({
       success: true,
@@ -164,6 +167,33 @@ router.get('/auto/status', async (req, res) => {
       success: false,
       error: {
         message: 'Erro ao obter status automático',
+        details: error.message
+      }
+    });
+  }
+});
+
+/**
+ * POST /api/update/auto/check-now
+ */
+router.post('/auto/check-now', async (req, res) => {
+  try {
+    const check = await updateOrchestrator.checkForUpdates();
+    const status = await updateOrchestrator.getStatus();
+    return res.status(200).json({
+      success: true,
+      data: {
+        ...status,
+        check
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.operationError('Auto Update Check Now', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        message: 'Erro ao executar checagem remota',
         details: error.message
       }
     });

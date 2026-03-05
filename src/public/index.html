@@ -638,7 +638,10 @@
                                 <div class="update-details">
                                     <p id="update-status-text">Verificando atualizações...</p>
                                     <p id="update-version-text" class="update-version">Versão: Carregando...</p>
+                                    <p id="update-last-check-text" class="update-version">Última verificação: -</p>
+                                    <p id="update-last-result-text" class="update-version">Último resultado: -</p>
                                 </div>
+                                <span id="update-state-badge" class="badge badge-info">idle</span>
                             </div>
                             <button class="btn btn-secondary" id="check-updates-btn">
                                 <span class="material-icons">refresh</span>
@@ -688,6 +691,10 @@
                                     <option value="monthly">Mensalmente</option>
                                     <option value="manual">Manual</option>
                                 </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Últimos eventos do update</label>
+                                <div id="update-history-list" class="api-endpoints-list"></div>
                             </div>
                         </div>
                     </div>

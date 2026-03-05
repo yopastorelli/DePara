@@ -137,6 +137,13 @@ class DeParaUI {
         this.settings = {};
         this.currentWorkflowStep = 1;
         this.isExecutingOperation = false;
+        this.screensaverConfig = this.getScreensaverConfig();
+        this.screensaverState = {
+            isActive: false,
+            timerId: null,
+            savedUIState: null
+        };
+        this.screensaverClockInterval = null;
         this.init();
     }
 
@@ -208,6 +215,10 @@ class DeParaUI {
             // Configurar atalhos de teclado
             this.setupKeyboardShortcuts();
             logger.success('Atalhos de teclado configurados');
+
+            // Configurar screensaver por inatividade
+            this.initScreensaverManager();
+            logger.success('Screensaver configurado');
 
             // Configurar controles de fullscreen do dashboard
             this.setupDashboardFullscreenControls();
@@ -1578,6 +1589,219 @@ class DeParaUI {
         modals.forEach(modal => {
             modal.style.display = 'none';
         });
+    }
+
+    getScreensaverConfig() {
+        const defaults = {
+            enabled: true,
+            idleMinutes: 3,
+            exitMode: 'esc_only'
+        };
+        try {
+            const raw = localStorage.getItem('screensaverConfig');
+            if (!raw) return defaults;
+            const parsed = JSON.parse(raw);
+            return {
+                enabled: parsed.enabled !== false,
+                idleMinutes: Math.max(1, Number(parsed.idleMinutes) || 3),
+                exitMode: 'esc_only'
+            };
+        } catch {
+            return defaults;
+        }
+    }
+
+    initScreensaverManager() {
+        this.createScreensaverFallback();
+        localStorage.setItem('screensaverConfig', JSON.stringify(this.screensaverConfig));
+        const activityEvents = ['mousemove', 'mousedown', 'wheel', 'touchstart', 'keydown'];
+        activityEvents.forEach((eventName) => {
+            document.addEventListener(eventName, () => {
+                if (!this.screensaverState.isActive) {
+                    this.resetScreensaverTimer();
+                }
+            }, { passive: true });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (!this.screensaverState.isActive) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                this.deactivateScreensaver();
+                return;
+            }
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }, true);
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) return;
+            if (!this.screensaverState.isActive) this.resetScreensaverTimer();
+        });
+
+        this.resetScreensaverTimer();
+    }
+
+    resetScreensaverTimer() {
+        if (!this.screensaverConfig.enabled) return;
+        if (this.screensaverState.timerId) {
+            clearTimeout(this.screensaverState.timerId);
+        }
+
+        this.screensaverState.timerId = setTimeout(() => {
+            this.activateScreensaver();
+        }, this.screensaverConfig.idleMinutes * 60 * 1000);
+    }
+
+    captureUIState() {
+        const activeButton = document.querySelector('.nav-btn.active');
+        const modalStates = Array.from(document.querySelectorAll('.modal'))
+            .filter((modal) => window.getComputedStyle(modal).display !== 'none')
+            .map((modal) => ({ id: modal.id, display: modal.style.display || 'flex' }));
+
+        const fieldIds = [
+            'source-path',
+            'target-path',
+            'schedule-name',
+            'schedule-action',
+            'schedule-source',
+            'schedule-target',
+            'filter-extensions'
+        ];
+
+        const fieldValues = {};
+        fieldIds.forEach((id) => {
+            const field = document.getElementById(id);
+            if (field) fieldValues[id] = field.value;
+        });
+
+        const slideshowViewer = document.getElementById('slideshow-viewer');
+
+        return {
+            activeTab: activeButton?.dataset?.tab || this.currentTab || 'dashboard',
+            modalStates,
+            fieldValues,
+            scrollY: window.scrollY || 0,
+            slideshowState: {
+                viewerVisible: slideshowViewer && window.getComputedStyle(slideshowViewer).display !== 'none',
+                currentSlideIndex: this.currentSlideIndex || 0,
+                slideshowPlaying: Boolean(this.slideshowPlaying)
+            }
+        };
+    }
+
+    restoreUIState(savedState) {
+        if (!savedState) return;
+        this.switchTab(savedState.activeTab || 'dashboard');
+
+        Object.entries(savedState.fieldValues || {}).forEach(([id, value]) => {
+            const field = document.getElementById(id);
+            if (field) field.value = value;
+        });
+
+        this.closeAllModals();
+        (savedState.modalStates || []).forEach((modalState) => {
+            const modal = document.getElementById(modalState.id);
+            if (modal) {
+                modal.style.display = modalState.display || 'flex';
+            }
+        });
+
+        setTimeout(() => {
+            window.scrollTo(0, savedState.scrollY || 0);
+        }, 0);
+    }
+
+    createScreensaverFallback() {
+        if (!document.getElementById('screensaver-style')) {
+            const style = document.createElement('style');
+            style.id = 'screensaver-style';
+            style.textContent = `
+                #slideshow-viewer.screensaver-mode {
+                    z-index: 9999998 !important;
+                    cursor: none !important;
+                    pointer-events: none !important;
+                }
+                #slideshow-viewer.screensaver-mode #static-slideshow-controls {
+                    display: none !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        if (document.getElementById('screensaver-fallback')) return;
+        const overlay = document.createElement('div');
+        overlay.id = 'screensaver-fallback';
+        overlay.style.cssText = `
+            display:none;
+            position:fixed;
+            inset:0;
+            z-index:9999999;
+            background:radial-gradient(circle at 20% 20%, #1d3557, #111 55%, #000);
+            color:#fff;
+            align-items:center;
+            justify-content:center;
+            flex-direction:column;
+            text-align:center;
+            font-family:Arial, sans-serif;
+        `;
+        overlay.innerHTML = `
+            <div style="font-size:48px;font-weight:700;letter-spacing:2px;">DePara</div>
+            <div id="screensaver-clock" style="font-size:22px;opacity:.9;margin-top:10px;">--:--:--</div>
+            <div style="font-size:14px;opacity:.75;margin-top:14px;">Pressione ESC para sair</div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    showScreensaverFallback() {
+        const overlay = document.getElementById('screensaver-fallback');
+        if (!overlay) return;
+        overlay.style.display = 'flex';
+
+        const clock = document.getElementById('screensaver-clock');
+        const tick = () => {
+            if (clock) clock.textContent = new Date().toLocaleTimeString('pt-BR');
+        };
+        tick();
+        if (this.screensaverClockInterval) clearInterval(this.screensaverClockInterval);
+        this.screensaverClockInterval = setInterval(tick, 1000);
+    }
+
+    hideScreensaverFallback() {
+        const overlay = document.getElementById('screensaver-fallback');
+        if (overlay) overlay.style.display = 'none';
+        if (this.screensaverClockInterval) {
+            clearInterval(this.screensaverClockInterval);
+            this.screensaverClockInterval = null;
+        }
+    }
+
+    activateScreensaver() {
+        if (this.screensaverState.isActive || !this.screensaverConfig.enabled) return;
+        this.screensaverState.savedUIState = this.captureUIState();
+        this.screensaverState.isActive = true;
+
+        const viewer = document.getElementById('slideshow-viewer');
+        const viewerVisible = viewer && window.getComputedStyle(viewer).display !== 'none';
+        if (viewerVisible) {
+            viewer.classList.add('screensaver-mode');
+            return;
+        }
+
+        this.showScreensaverFallback();
+    }
+
+    deactivateScreensaver() {
+        if (!this.screensaverState.isActive) return;
+
+        this.hideScreensaverFallback();
+        const viewer = document.getElementById('slideshow-viewer');
+        if (viewer) viewer.classList.remove('screensaver-mode');
+
+        this.restoreUIState(this.screensaverState.savedUIState);
+        this.screensaverState.savedUIState = null;
+        this.screensaverState.isActive = false;
+        this.resetScreensaverTimer();
     }
 
     // Mostrar ajuda de atalhos
@@ -5946,7 +6170,7 @@ setupEventListeners() {
         const checkUpdatesBtn = document.getElementById('check-updates-btn');
         if (checkUpdatesBtn) {
             checkUpdatesBtn.addEventListener('click', () => {
-                this.checkForUpdates();
+                this.checkForUpdates(true);
             });
         }
 
@@ -5972,6 +6196,11 @@ setupEventListeners() {
         const updateCheckFrequency = document.getElementById('update-check-frequency');
         if (updateCheckFrequency) {
             updateCheckFrequency.addEventListener('change', () => this.saveAutoUpdateConfig());
+        }
+
+        const autoApplyUpdates = document.getElementById('auto-apply-updates');
+        if (autoApplyUpdates) {
+            autoApplyUpdates.addEventListener('change', () => this.saveAutoUpdateConfig());
         }
 
         this.checkForUpdates();
@@ -6031,10 +6260,12 @@ setupEventListeners() {
     }
 
     // Verificar atualizações disponíveis
-    async checkForUpdates() {
+    async checkForUpdates(forceRemote = false) {
         try {
             logger.info('Verificando status de auto update...');
-            const response = await fetch('/api/update/auto/status');
+            const endpoint = forceRemote ? '/api/update/auto/check-now' : '/api/update/auto/status';
+            const method = forceRemote ? 'POST' : 'GET';
+            const response = await fetch(endpoint, { method });
             const result = await response.json();
 
             if (!result.success) {
@@ -6042,6 +6273,7 @@ setupEventListeners() {
             }
 
             this.updateUpdateStatus(result.data);
+            this.loadUpdateHistory();
         } catch (error) {
             logger.error('Erro ao verificar atualizações:', error);
             this.updateUpdateStatus({
@@ -6063,6 +6295,9 @@ setupEventListeners() {
     updateUpdateStatus(data) {
         const statusText = document.getElementById('update-status-text');
         const versionText = document.getElementById('update-version-text');
+        const lastCheckText = document.getElementById('update-last-check-text');
+        const lastResultText = document.getElementById('update-last-result-text');
+        const stateBadge = document.getElementById('update-state-badge');
         const updateActions = document.getElementById('update-actions');
         const updateMessage = document.getElementById('update-message');
         const updateCommits = document.getElementById('update-commits');
@@ -6084,10 +6319,24 @@ setupEventListeners() {
                 : `Status: ${state.status || 'idle'}`;
         }
 
+        if (lastCheckText) {
+            lastCheckText.textContent = `Última verificação: ${state.lastCheckAt ? new Date(state.lastCheckAt).toLocaleString('pt-BR') : '-'}`;
+        }
+
+        if (lastResultText) {
+            lastResultText.textContent = `Último resultado: ${state.lastEvent || '-'}`;
+        }
+
         if (versionText) {
             const current = state.currentCommit ? state.currentCommit.slice(0, 8) : 'desconhecida';
             const target = state.targetCommit ? state.targetCommit.slice(0, 8) : current;
             versionText.textContent = `Commit atual: ${current} | alvo: ${target}`;
+        }
+
+        if (stateBadge) {
+            const status = state.status || 'idle';
+            stateBadge.textContent = status;
+            stateBadge.className = `badge ${this.getUpdateStateBadgeClass(status)}`;
         }
 
         if (autoCheckUpdates) {
@@ -6116,6 +6365,49 @@ setupEventListeners() {
             updateCommits.textContent = hasUpdates
                 ? `Atual: ${(state.currentCommit || '').slice(0, 8)} -> Alvo: ${(state.targetCommit || '').slice(0, 8)}`
                 : '';
+        }
+    }
+
+    getUpdateStateBadgeClass(status) {
+        const map = {
+            idle: 'badge-success',
+            checking: 'badge-info',
+            downloading: 'badge-info',
+            installing: 'badge-warning',
+            restarting: 'badge-warning',
+            validating: 'badge-info',
+            rollback: 'badge-warning',
+            critical: 'badge-danger'
+        };
+        return map[status] || 'badge-info';
+    }
+
+    async loadUpdateHistory() {
+        const list = document.getElementById('update-history-list');
+        if (!list) return;
+
+        try {
+            const response = await fetch('/api/update/auto/history?limit=5');
+            const result = await response.json();
+            if (!result.success || !Array.isArray(result.data)) {
+                throw new Error(result.error?.message || 'Falha ao carregar histórico');
+            }
+
+            if (result.data.length === 0) {
+                list.innerHTML = '<small>Nenhum evento recente</small>';
+                return;
+            }
+
+            list.innerHTML = result.data
+                .map((item) => {
+                    const when = item.timestamp ? new Date(item.timestamp).toLocaleString('pt-BR') : '-';
+                    const event = item.event || 'evento';
+                    const detail = item.error || item.reason || item.status || '';
+                    return `<div><small><strong>${event}</strong> - ${when}${detail ? ` - ${detail}` : ''}</small></div>`;
+                })
+                .join('');
+        } catch (error) {
+            list.innerHTML = '<small>Erro ao carregar histórico</small>';
         }
     }
 

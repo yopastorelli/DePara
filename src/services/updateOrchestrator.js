@@ -29,11 +29,16 @@ class UpdateOrchestrator {
     this.historyPath = path.join(this.dataDir, 'update-history.log');
     this.lockPath = path.join(this.dataDir, 'update.lock');
 
+    this.installCommand = 'npm ci --omit=dev';
+    this.fallbackInstallCommand = 'npm install --production';
+    this.lockStaleMs = 30 * 60 * 1000;
+
     this.config = null;
     this.state = null;
     this.timer = null;
     this.isInitialized = false;
     this.isRunning = false;
+    this.lockOwnerRunId = null;
   }
 
   getDefaultConfig() {
@@ -43,8 +48,7 @@ class UpdateOrchestrator {
       checkIntervalMinutes: 60,
       healthTimeoutMs: 3000,
       healthRetries: 5,
-      installCommand: 'npm ci --omit=dev',
-      fallbackInstallCommand: 'npm install --production',
+      healthPath: '/health',
       maxConsecutiveFailures: 3
     };
   }
@@ -59,6 +63,8 @@ class UpdateOrchestrator {
       lastSuccessAt: null,
       lastCheckAt: null,
       lastError: null,
+      lastRunId: null,
+      lastEvent: null,
       rollbackPerformed: false,
       consecutiveFailures: 0,
       restartRequestedAt: null
@@ -75,7 +81,11 @@ class UpdateOrchestrator {
 
     this.config = await this.readJson(this.configPath, this.getDefaultConfig());
     this.state = await this.readJson(this.statePath, this.getDefaultState());
+    this.config = this.normalizeConfig(this.config);
+    this.state = this.normalizeState(this.state);
     this.state.currentCommit = await this.getCurrentCommitSafe();
+    await this.cleanupStaleLock();
+    await this.saveConfig();
     await this.saveState();
 
     this.setupScheduler();
@@ -88,6 +98,28 @@ class UpdateOrchestrator {
         });
       }, 5000);
     }
+  }
+
+  normalizeConfig(config = {}) {
+    const allowed = {
+      enabled: Boolean(config.enabled),
+      autoApply: config.autoApply === undefined ? true : Boolean(config.autoApply),
+      checkIntervalMinutes: Math.max(1, Number(config.checkIntervalMinutes) || 60),
+      healthTimeoutMs: Math.max(500, Number(config.healthTimeoutMs) || 3000),
+      healthRetries: Math.max(1, Number(config.healthRetries) || 5),
+      healthPath: typeof config.healthPath === 'string' && config.healthPath.startsWith('/')
+        ? config.healthPath
+        : '/health',
+      maxConsecutiveFailures: Math.max(1, Number(config.maxConsecutiveFailures) || 3)
+    };
+    return allowed;
+  }
+
+  normalizeState(state = {}) {
+    return {
+      ...this.getDefaultState(),
+      ...state
+    };
   }
 
   async ensureFile(filePath, defaultData, plainText = false) {
@@ -103,7 +135,7 @@ class UpdateOrchestrator {
     try {
       const content = await fs.readFile(filePath, 'utf8');
       return JSON.parse(content);
-    } catch (error) {
+    } catch {
       return fallback;
     }
   }
@@ -119,6 +151,17 @@ class UpdateOrchestrator {
   async appendHistory(entry) {
     const line = JSON.stringify({ timestamp: new Date().toISOString(), ...entry });
     await fs.appendFile(this.historyPath, `${line}\n`, 'utf8');
+    this.state.lastEvent = entry.event || this.state.lastEvent;
+  }
+
+  async setState(status, patch = {}, event = null) {
+    this.state.status = status;
+    this.state = {
+      ...this.state,
+      ...patch
+    };
+    if (event) this.state.lastEvent = event;
+    await this.saveState();
   }
 
   setupScheduler() {
@@ -128,11 +171,73 @@ class UpdateOrchestrator {
     }
 
     if (!this.config.enabled) return;
-
     const intervalMs = Math.max(1, Number(this.config.checkIntervalMinutes) || 60) * 60 * 1000;
+
     this.timer = setInterval(() => {
       this.startUpdateCycle({ reason: 'scheduler' });
     }, intervalMs);
+  }
+
+  async cleanupStaleLock() {
+    if (!fsSync.existsSync(this.lockPath)) return;
+
+    let lockData = null;
+    try {
+      lockData = JSON.parse(fsSync.readFileSync(this.lockPath, 'utf8'));
+    } catch {
+      fsSync.unlinkSync(this.lockPath);
+      return;
+    }
+
+    const startedAtMs = new Date(lockData.startedAt || 0).getTime();
+    const isStaleByAge = !startedAtMs || (Date.now() - startedAtMs) > this.lockStaleMs;
+    const isAlive = this.isProcessAlive(lockData.pid);
+
+    if (isStaleByAge || !isAlive) {
+      fsSync.unlinkSync(this.lockPath);
+      await this.appendHistory({
+        event: 'lock_cleared',
+        reason: isStaleByAge ? 'stale_age' : 'stale_pid',
+        pid: lockData.pid,
+        runId: lockData.runId
+      });
+    }
+  }
+
+  isProcessAlive(pid) {
+    if (!pid || Number.isNaN(Number(pid))) return false;
+    try {
+      process.kill(Number(pid), 0);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  acquireLock(runId) {
+    if (fsSync.existsSync(this.lockPath)) return false;
+    const lockData = {
+      runId,
+      pid: process.pid,
+      startedAt: new Date().toISOString()
+    };
+    fsSync.writeFileSync(this.lockPath, JSON.stringify(lockData), 'utf8');
+    this.lockOwnerRunId = runId;
+    return true;
+  }
+
+  releaseLock(runId) {
+    if (!fsSync.existsSync(this.lockPath)) return;
+    try {
+      const lockData = JSON.parse(fsSync.readFileSync(this.lockPath, 'utf8'));
+      if (!runId || lockData.runId === runId) {
+        fsSync.unlinkSync(this.lockPath);
+      }
+    } catch {
+      fsSync.unlinkSync(this.lockPath);
+    } finally {
+      this.lockOwnerRunId = null;
+    }
   }
 
   async getStatus() {
@@ -147,7 +252,7 @@ class UpdateOrchestrator {
     await this.init();
     try {
       const content = await fs.readFile(this.historyPath, 'utf8');
-      const rows = content
+      return content
         .split('\n')
         .filter(Boolean)
         .slice(-Math.max(1, limit))
@@ -158,8 +263,8 @@ class UpdateOrchestrator {
             return null;
           }
         })
-        .filter(Boolean);
-      return rows.reverse();
+        .filter(Boolean)
+        .reverse();
     } catch {
       return [];
     }
@@ -167,25 +272,34 @@ class UpdateOrchestrator {
 
   async updateConfig(partialConfig = {}) {
     await this.init();
+    const allowedKeys = [
+      'enabled',
+      'autoApply',
+      'checkIntervalMinutes',
+      'healthTimeoutMs',
+      'healthRetries',
+      'healthPath',
+      'maxConsecutiveFailures'
+    ];
 
-    const next = {
+    const filtered = {};
+    for (const key of allowedKeys) {
+      if (Object.prototype.hasOwnProperty.call(partialConfig, key)) {
+        filtered[key] = partialConfig[key];
+      }
+    }
+
+    this.config = this.normalizeConfig({
       ...this.config,
-      ...partialConfig
-    };
+      ...filtered
+    });
 
-    next.enabled = Boolean(next.enabled);
-    next.autoApply = Boolean(next.autoApply);
-    next.checkIntervalMinutes = Math.max(1, Number(next.checkIntervalMinutes) || 60);
-    next.healthTimeoutMs = Math.max(500, Number(next.healthTimeoutMs) || 3000);
-    next.healthRetries = Math.max(1, Number(next.healthRetries) || 5);
-    next.maxConsecutiveFailures = Math.max(1, Number(next.maxConsecutiveFailures) || 3);
-    next.installCommand = String(next.installCommand || 'npm ci --omit=dev');
-    next.fallbackInstallCommand = String(next.fallbackInstallCommand || 'npm install --production');
-
-    this.config = next;
     await this.saveConfig();
     this.setupScheduler();
-
+    await this.appendHistory({
+      event: 'config_updated',
+      keys: Object.keys(filtered)
+    });
     return this.config;
   }
 
@@ -202,16 +316,18 @@ class UpdateOrchestrator {
     const { stdout: countRaw } = await execCommand('git rev-list HEAD..origin/main --count', options);
     const commitsAhead = parseInt(countRaw || '0', 10) || 0;
 
-    this.state.lastCheckAt = new Date().toISOString();
-    this.state.currentCommit = currentCommit;
-    this.state.targetCommit = targetCommit;
-    await this.saveState();
+    await this.setState(this.state.status, {
+      lastCheckAt: new Date().toISOString(),
+      currentCommit,
+      targetCommit
+    }, 'check_result');
 
     return {
       hasUpdates: commitsAhead > 0,
       commitsAhead,
       currentCommit,
-      targetCommit
+      targetCommit,
+      lastCheckAt: this.state.lastCheckAt
     };
   }
 
@@ -222,6 +338,7 @@ class UpdateOrchestrator {
       return { started: false, reason: 'disabled' };
     }
 
+    await this.cleanupStaleLock();
     if (this.isRunning || fsSync.existsSync(this.lockPath)) {
       return { started: false, reason: 'running' };
     }
@@ -230,44 +347,45 @@ class UpdateOrchestrator {
     const runId = `run_${Date.now()}`;
 
     try {
-      fsSync.writeFileSync(this.lockPath, runId, 'utf8');
+      if (!this.acquireLock(runId)) {
+        this.isRunning = false;
+        return { started: false, reason: 'running' };
+      }
       this.runCycle({ runId, reason }).catch((error) => {
         logger.error('Erro no ciclo de atualização', { runId, error: error.message });
       });
       return { started: true, runId };
     } catch (error) {
       this.isRunning = false;
-      if (fsSync.existsSync(this.lockPath)) {
-        fsSync.unlinkSync(this.lockPath);
-      }
+      this.releaseLock(runId);
       throw error;
     }
   }
 
   async runCycle({ runId, reason }) {
     try {
-      this.state.status = 'checking';
-      this.state.lastRunAt = new Date().toISOString();
-      this.state.lastError = null;
-      await this.saveState();
+      await this.setState('checking', {
+        lastRunAt: new Date().toISOString(),
+        lastRunId: runId,
+        lastError: null
+      }, 'cycle_started');
       await this.appendHistory({ runId, reason, event: 'cycle_started' });
 
       const check = await this.checkForUpdatesInternal();
       await this.appendHistory({ runId, reason, event: 'check_result', ...check });
 
       if (!check.hasUpdates) {
-        this.state.status = 'idle';
-        this.state.lastSuccessAt = new Date().toISOString();
-        this.state.rollbackPerformed = false;
-        this.state.consecutiveFailures = 0;
-        await this.saveState();
+        await this.setState('idle', {
+          lastSuccessAt: new Date().toISOString(),
+          rollbackPerformed: false,
+          consecutiveFailures: 0
+        }, 'no_update');
         await this.appendHistory({ runId, reason, event: 'no_update' });
         return;
       }
 
       if (!this.config.autoApply) {
-        this.state.status = 'idle';
-        await this.saveState();
+        await this.setState('idle', {}, 'auto_apply_disabled');
         await this.appendHistory({ runId, reason, event: 'auto_apply_disabled' });
         return;
       }
@@ -277,9 +395,7 @@ class UpdateOrchestrator {
       await this.markFailure(runId, error, false);
     } finally {
       this.isRunning = false;
-      if (fsSync.existsSync(this.lockPath)) {
-        fsSync.unlinkSync(this.lockPath);
-      }
+      this.releaseLock(runId);
     }
   }
 
@@ -289,51 +405,64 @@ class UpdateOrchestrator {
       throw new Error('Commit alvo inválido');
     }
 
-    this.state.status = 'downloading';
-    this.state.previousCommit = check.currentCommit;
-    this.state.targetCommit = check.targetCommit;
-    this.state.rollbackPerformed = false;
-    await this.saveState();
+    await this.setState('downloading', {
+      previousCommit: check.currentCommit,
+      targetCommit: check.targetCommit,
+      rollbackPerformed: false
+    }, 'downloading');
 
     await execCommand(`git merge --ff-only ${check.targetCommit}`, options);
     await this.appendHistory({ runId, event: 'merged_target', targetCommit: check.targetCommit });
 
-    this.state.status = 'installing';
-    await this.saveState();
-
+    await this.setState('installing', {}, 'installing');
     try {
-      await execCommand(this.config.installCommand, options);
+      await execCommand(this.installCommand, options);
     } catch (installError) {
       await this.appendHistory({ runId, event: 'install_fallback', error: installError.message });
-      await execCommand(this.config.fallbackInstallCommand, options);
+      await execCommand(this.fallbackInstallCommand, options);
     }
 
-    this.state.status = 'restarting';
-    this.state.restartRequestedAt = new Date().toISOString();
-    await this.saveState();
+    await this.setState('restarting', {
+      restartRequestedAt: new Date().toISOString()
+    }, 'restart_requested');
     await this.appendHistory({ runId, event: 'restart_requested', rollback: false });
-
     await this.requestRestart();
   }
 
   async validateAfterRestart() {
     await this.init();
-    this.state.status = 'validating';
-    await this.saveState();
+    await this.setState('validating', {}, 'validating');
 
-    const healthy = await this.runHealthCheck();
-    if (healthy) {
-      this.state.status = 'idle';
-      this.state.currentCommit = await this.getCurrentCommitSafe();
-      this.state.lastSuccessAt = new Date().toISOString();
-      this.state.lastError = null;
-      this.state.rollbackPerformed = false;
-      this.state.consecutiveFailures = 0;
-      await this.saveState();
+    const health = await this.runHealthCheck();
+    await this.appendHistory({
+      event: 'health_check',
+      ok: health.ok,
+      attempts: health.attempts,
+      durationMs: health.durationMs,
+      path: this.config.healthPath
+    });
+
+    if (health.ok) {
+      await this.setState('idle', {
+        currentCommit: await this.getCurrentCommitSafe(),
+        lastSuccessAt: new Date().toISOString(),
+        lastError: null,
+        rollbackPerformed: false,
+        consecutiveFailures: 0
+      }, 'validation_success');
       await this.appendHistory({
         event: 'validation_success',
         currentCommit: this.state.currentCommit
       });
+      return;
+    }
+
+    if (this.state.rollbackPerformed) {
+      await this.markFailure(
+        this.state.lastRunId || 'validation',
+        new Error('Health check falhou após rollback'),
+        true
+      );
       return;
     }
 
@@ -347,10 +476,10 @@ class UpdateOrchestrator {
       return;
     }
 
-    this.state.status = 'rollback';
-    this.state.rollbackPerformed = true;
-    this.state.lastError = cause.message;
-    await this.saveState();
+    await this.setState('rollback', {
+      rollbackPerformed: true,
+      lastError: cause.message
+    }, 'rollback_started');
     await this.appendHistory({
       event: 'rollback_started',
       previousCommit: this.state.previousCommit,
@@ -360,14 +489,18 @@ class UpdateOrchestrator {
     try {
       await execCommand(`git reset --hard ${this.state.previousCommit}`, options);
       try {
-        await execCommand(this.config.installCommand, options);
+        await execCommand(this.installCommand, options);
       } catch {
-        await execCommand(this.config.fallbackInstallCommand, options);
+        await execCommand(this.fallbackInstallCommand, options);
       }
-      this.state.status = 'restarting';
-      this.state.restartRequestedAt = new Date().toISOString();
-      await this.saveState();
-      await this.appendHistory({ event: 'rollback_restart_requested', previousCommit: this.state.previousCommit });
+
+      await this.setState('restarting', {
+        restartRequestedAt: new Date().toISOString()
+      }, 'rollback_restart_requested');
+      await this.appendHistory({
+        event: 'rollback_restart_requested',
+        previousCommit: this.state.previousCommit
+      });
       await this.requestRestart();
     } catch (error) {
       await this.markFailure('rollback', error, true);
@@ -375,37 +508,41 @@ class UpdateOrchestrator {
   }
 
   async markFailure(runId, error, critical) {
-    this.state.status = critical ? 'critical' : 'idle';
-    this.state.lastError = error.message;
-    this.state.consecutiveFailures = (this.state.consecutiveFailures || 0) + 1;
+    const nextConsecutiveFailures = (this.state.consecutiveFailures || 0) + 1;
+    let status = critical ? 'critical' : 'idle';
+    let message = error.message;
 
-    if (this.state.consecutiveFailures >= this.config.maxConsecutiveFailures) {
+    if (nextConsecutiveFailures >= this.config.maxConsecutiveFailures) {
       this.config.enabled = false;
       await this.saveConfig();
       this.setupScheduler();
-      this.state.status = 'critical';
-      this.state.lastError = `Circuit breaker ativado: ${error.message}`;
+      status = 'critical';
+      message = `Circuit breaker ativado: ${error.message}`;
     }
 
-    await this.saveState();
+    await this.setState(status, {
+      lastError: message,
+      consecutiveFailures: nextConsecutiveFailures
+    }, 'cycle_failed');
+
     await this.appendHistory({
       runId,
       event: 'cycle_failed',
       critical: Boolean(critical),
-      error: error.message,
-      consecutiveFailures: this.state.consecutiveFailures
+      error: message,
+      consecutiveFailures: nextConsecutiveFailures
     });
   }
 
   async requestRestart() {
     const pm2Available = await this.isPm2Available();
+    const appName = process.env.PM2_APP_NAME || 'DePara';
 
     if (pm2Available) {
-      await execCommand('pm2 restart DePara');
+      await execCommand(`pm2 restart ${appName}`);
       return;
     }
 
-    // Fallback para ambiente sem PM2: depende de supervisor externo.
     setTimeout(() => process.exit(0), 1000);
   }
 
@@ -422,20 +559,19 @@ class UpdateOrchestrator {
     const retries = Math.max(1, Number(this.config.healthRetries) || 5);
     const timeoutMs = Math.max(500, Number(this.config.healthTimeoutMs) || 3000);
     const port = process.env.PORT || 3000;
+    const startAt = Date.now();
 
-    for (let attempt = 0; attempt < retries; attempt += 1) {
+    for (let attempt = 1; attempt <= retries; attempt += 1) {
       const ok = await new Promise((resolve) => {
         const req = http.request(
           {
             hostname: '127.0.0.1',
             port,
-            path: '/health',
+            path: this.config.healthPath || '/health',
             method: 'GET',
             timeout: timeoutMs
           },
-          (res) => {
-            resolve(res.statusCode >= 200 && res.statusCode < 300);
-          }
+          (res) => resolve(res.statusCode >= 200 && res.statusCode < 300)
         );
 
         req.on('error', () => resolve(false));
@@ -446,11 +582,22 @@ class UpdateOrchestrator {
         req.end();
       });
 
-      if (ok) return true;
+      if (ok) {
+        return {
+          ok: true,
+          attempts: attempt,
+          durationMs: Date.now() - startAt
+        };
+      }
+
       await new Promise((r) => setTimeout(r, 1500));
     }
 
-    return false;
+    return {
+      ok: false,
+      attempts: retries,
+      durationMs: Date.now() - startAt
+    };
   }
 
   async getCurrentCommitSafe() {
