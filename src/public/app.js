@@ -162,6 +162,7 @@ class DeParaUI {
             dedicatedSessionId: null
         };
         this.isDedicatedScreensaverWindow = this.isDedicatedScreensaverRoute();
+        this.trayMinimized = false;
         this.screensaverClockInterval = null;
         this.screensaverDedicatedSyncInterval = null;
         this.refreshSchedulerInterval = null;
@@ -1705,6 +1706,9 @@ class DeParaUI {
             if (!response.ok || !result.success) {
                 throw new Error(result?.error?.message || `HTTP ${response.status}`);
             }
+            if (result?.skipped) {
+                return false;
+            }
 
             this.screensaverState.dedicatedActive = true;
             this.screensaverState.dedicatedSessionId = result?.data?.sessionId || null;
@@ -1737,7 +1741,7 @@ class DeParaUI {
     }
 
     async armDedicatedScreensaverTimer() {
-        if (!this.screensaverConfig.enabled || this.isDedicatedScreensaverWindow) return;
+        if (!this.screensaverConfig.enabled || this.isDedicatedScreensaverWindow || !this.trayMinimized) return;
         try {
             await fetch('/api/tray/screensaver/arm', {
                 method: 'POST',
@@ -1759,6 +1763,15 @@ class DeParaUI {
             });
         } catch (error) {
             console.warn('Erro ao desarmar timer dedicado do screensaver:', error);
+        }
+    }
+
+    async handleAppMinimizedToTray() {
+        if (this.isDedicatedScreensaverWindow) return;
+        this.trayMinimized = true;
+        await this.disarmDedicatedScreensaverTimer();
+        if (this.screensaverConfig.enabled && !this.screensaverState.isActive) {
+            await this.armDedicatedScreensaverTimer();
         }
     }
 
@@ -1792,6 +1805,7 @@ class DeParaUI {
 
             this.screensaverState.dedicatedActive = Boolean(result?.data?.screensaverDedicatedActive);
             this.screensaverState.dedicatedSessionId = result?.data?.screensaverSessionId || null;
+            this.trayMinimized = Boolean(result?.data?.trayMinimized);
             this.updateScreensaverStatusLabel();
         } catch (error) {
             console.warn('Erro ao sincronizar status do screensaver dedicado:', error);
@@ -1823,6 +1837,10 @@ class DeParaUI {
         const activityEvents = ['mousemove', 'mousedown', 'wheel', 'touchstart', 'keydown'];
         activityEvents.forEach((eventName) => {
             document.addEventListener(eventName, () => {
+                if (this.trayMinimized && !document.hidden) {
+                    this.trayMinimized = false;
+                    this.disarmDedicatedScreensaverTimer();
+                }
                 if (!this.screensaverState.isActive) {
                     this.resetScreensaverTimer();
                 }
@@ -1844,28 +1862,25 @@ class DeParaUI {
         }, true);
 
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                if (!this.screensaverState.isActive && this.screensaverConfig.enabled) {
-                    this.armDedicatedScreensaverTimer();
+            if (!document.hidden) {
+                this.trayMinimized = false;
+                this.disarmDedicatedScreensaverTimer();
+                if (!this.screensaverState.isActive) this.resetScreensaverTimer();
+                if (!this.isDedicatedScreensaverWindow) {
+                    this.syncDedicatedScreensaverStatus();
                 }
-                return;
-            }
-            this.disarmDedicatedScreensaverTimer();
-            if (!this.screensaverState.isActive) this.resetScreensaverTimer();
-            if (!this.isDedicatedScreensaverWindow) {
-                this.syncDedicatedScreensaverStatus();
             }
         });
 
         this.resetScreensaverTimer();
         this.updateScreensaverStatusLabel();
-        if (document.hidden && this.screensaverConfig.enabled) {
-            this.armDedicatedScreensaverTimer();
+        if (!this.isDedicatedScreensaverWindow) {
+            this.syncDedicatedScreensaverStatus();
         }
 
         if (!this.isDedicatedScreensaverWindow && !this.screensaverDedicatedSyncInterval) {
             this.screensaverDedicatedSyncInterval = setInterval(() => {
-                if (document.hidden || this.screensaverState.dedicatedActive) {
+                if (this.screensaverState.dedicatedActive || this.trayMinimized) {
                     this.syncDedicatedScreensaverStatus();
                 }
             }, 45000);
@@ -2089,14 +2104,6 @@ class DeParaUI {
     async activateScreensaver(options = {}) {
         if (this.screensaverState.isActive || !this.screensaverConfig.enabled) return;
 
-        if (!options.forceLocal && !this.isDedicatedScreensaverWindow && document.hidden) {
-            const opened = await this.openDedicatedScreensaverWindow();
-            if (opened) {
-                this.updateScreensaverStatusLabel();
-            }
-            return;
-        }
-
         this.screensaverState.savedUIState = this.captureUIState();
         this.screensaverState.isActive = true;
         this.screensaverState.startedSlideshowSession = false;
@@ -2189,9 +2196,6 @@ class DeParaUI {
         this.screensaverState.isActive = false;
         this.updateScreensaverStatusLabel();
         this.resetScreensaverTimer();
-        if (document.hidden && this.screensaverConfig.enabled) {
-            this.armDedicatedScreensaverTimer();
-        }
     }
 
     // Mostrar ajuda de atalhos
@@ -4633,6 +4637,15 @@ class DeParaUI {
         
         console.log('Ã°Å¸â€Â Fullscreen ativo:', isFullscreen);
         
+        const viewer = document.getElementById('slideshow-viewer');
+        const viewerVisible = viewer && window.getComputedStyle(viewer).display !== 'none';
+        const slideshowActive = viewerVisible && (
+            this.screensaverState?.isActive || (Array.isArray(this.slideshowImages) && this.slideshowImages.length > 0)
+        );
+        if (!slideshowActive) {
+            return;
+        }
+
         // Garantir que os controles estÃƒÂ¡ticos permaneÃƒÂ§am visÃƒÂ­veis
         const staticControls = document.getElementById('static-slideshow-controls');
         if (staticControls) {
@@ -4641,8 +4654,7 @@ class DeParaUI {
             console.log('Ã¢Å“â€¦ Controles estÃƒÂ¡ticos mantidos visÃƒÂ­veis apÃƒÂ³s mudanÃƒÂ§a de fullscreen');
         }
         
-        // Garantir que o viewer permaneÃƒÂ§a visÃƒÂ­vel
-        const viewer = document.getElementById('slideshow-viewer');
+        // Garantir que o viewer permaneÃƒÂ§a visÃÂ­vel no contexto do slideshow/screenaver
         if (viewer) {
             viewer.style.display = 'flex';
             console.log('Ã¢Å“â€¦ Viewer mantido visÃƒÂ­vel apÃƒÂ³s mudanÃƒÂ§a de fullscreen');
@@ -7741,6 +7753,10 @@ async function minimizeToTray() {
 
         if (result.success) {
             logger.info('Ã¢Å“â€¦ AplicaÃƒÂ§ÃƒÂ£o minimizada para system tray');
+            const activeUi = window.deParaUI || ui;
+            if (activeUi && typeof activeUi.handleAppMinimizedToTray === 'function') {
+                await activeUi.handleAppMinimizedToTray();
+            }
             showToast('AplicaÃƒÂ§ÃƒÂ£o minimizada para system tray', 'success');
         } else {
             logger.warn('Ã¢Å¡Â Ã¯Â¸Â Erro ao minimizar para system tray:', result.error);

@@ -18,6 +18,7 @@ const dedicatedScreensaverState = {
     browser: null,
     sessionId: null,
     openedAt: null,
+    trayMinimized: false,
     armed: false,
     armTimeoutId: null,
     armDueAt: null
@@ -141,18 +142,6 @@ function isProcessRunning(pid) {
     }
 }
 
-async function forceActiveWindowFullscreen() {
-    const hasWmctrl = await commandExists('wmctrl');
-    if (!hasWmctrl) return false;
-
-    try {
-        await execPromise('bash -lc "for i in 1 2 3; do sleep 1; wmctrl -r :ACTIVE: -b add,fullscreen >/dev/null 2>&1 || true; done"');
-        return true;
-    } catch {
-        return false;
-    }
-}
-
 async function focusScreensaverWindowByPid(pid, retries = 10, intervalMs = 400) {
     if (!pid) return false;
     const hasWmctrl = await commandExists('wmctrl');
@@ -270,6 +259,7 @@ router.post('/minimize', async (req, res) => {
         logger.info('Minimizando aplicacao para system tray...');
         const command = 'wmctrl -l | grep -E "(DePara|localhost:3000|Chromium|Chrome|Firefox)" | awk \'{print $1}\' | while read window_id; do wmctrl -i -r "$window_id" -b add,hidden,below,sticky 2>/dev/null; wmctrl -i -r "$window_id" -e 0,-1,-1,1,1 2>/dev/null; done';
         await execPromise(command);
+        dedicatedScreensaverState.trayMinimized = true;
 
         res.status(200).json({
             success: true,
@@ -297,6 +287,8 @@ router.post('/restore', async (req, res) => {
         logger.info('Restaurando aplicacao do system tray...');
         const command = 'wmctrl -l | grep -E "(DePara|localhost:3000|Chromium|Chrome|Firefox)" | awk \'{print $1}\' | while read window_id; do wmctrl -i -r "$window_id" -b remove,hidden 2>/dev/null; wmctrl -i -a "$window_id" 2>/dev/null; done';
         await execPromise(command);
+        dedicatedScreensaverState.trayMinimized = false;
+        disarmDedicatedScreensaver();
 
         res.status(200).json({
             success: true,
@@ -378,9 +370,7 @@ router.post('/screensaver/open', async (req, res) => {
         disarmDedicatedScreensaver();
         if (isProcessRunning(dedicatedScreensaverState.pid)) {
             const focused = await focusScreensaverWindowByPid(dedicatedScreensaverState.pid);
-            if (!focused) {
-                await forceActiveWindowFullscreen();
-            }
+            if (!focused) logger.warn('Nao foi possivel focar janela dedicada existente pelo PID');
             res.status(200).json({
                 success: true,
                 already_open: true,
@@ -403,6 +393,18 @@ router.post('/screensaver/open', async (req, res) => {
                     message: 'Sessao grafica nao detectada',
                     details: 'DISPLAY/WAYLAND_DISPLAY ausente. Nao foi possivel abrir janela dedicada.'
                 }
+            });
+            return;
+        }
+
+        if (!dedicatedScreensaverState.trayMinimized) {
+            res.status(200).json({
+                success: true,
+                skipped: true,
+                data: {
+                    reason: 'tray_not_minimized'
+                },
+                timestamp: new Date().toISOString()
             });
             return;
         }
@@ -431,9 +433,7 @@ router.post('/screensaver/open', async (req, res) => {
         dedicatedScreensaverState.openedAt = new Date().toISOString();
 
         const focused = await focusScreensaverWindowByPid(dedicatedScreensaverState.pid);
-        if (!focused) {
-            forceActiveWindowFullscreen().catch(() => undefined);
-        }
+        if (!focused) logger.warn('Nao foi possivel focar janela dedicada aberta pelo PID');
 
         logger.info('Screensaver dedicado aberto', {
             sessionId: dedicatedScreensaverState.sessionId,
@@ -471,6 +471,19 @@ router.post('/screensaver/open', async (req, res) => {
 router.post('/screensaver/arm', async (req, res) => {
     try {
         const idleMinutes = Math.max(1, Number(req.body?.idleMinutes) || 3);
+        if (!dedicatedScreensaverState.trayMinimized) {
+            disarmDedicatedScreensaver();
+            res.status(200).json({
+                success: true,
+                skipped: true,
+                data: {
+                    armed: false,
+                    reason: 'tray_not_minimized'
+                },
+                timestamp: new Date().toISOString()
+            });
+            return;
+        }
         disarmDedicatedScreensaver();
         dedicatedScreensaverState.armed = true;
         dedicatedScreensaverState.armDueAt = new Date(Date.now() + idleMinutes * 60 * 1000).toISOString();
@@ -502,9 +515,7 @@ router.post('/screensaver/arm', async (req, res) => {
                 dedicatedScreensaverState.sessionId = `ss_${Date.now()}`;
                 dedicatedScreensaverState.openedAt = new Date().toISOString();
                 const focused = await focusScreensaverWindowByPid(dedicatedScreensaverState.pid);
-                if (!focused) {
-                    forceActiveWindowFullscreen().catch(() => undefined);
-                }
+                if (!focused) logger.warn('Nao foi possivel focar janela dedicada aberta por arm timer');
                 logger.info('Screensaver dedicado aberto por arm timer', {
                     sessionId: dedicatedScreensaverState.sessionId,
                     pid: dedicatedScreensaverState.pid
@@ -560,6 +571,7 @@ router.post('/screensaver/close', async (req, res) => {
         disarmDedicatedScreensaver();
         const wasOpen = isProcessRunning(dedicatedScreensaverState.pid);
         await closeDedicatedScreensaverProcess();
+        dedicatedScreensaverState.trayMinimized = false;
 
         logger.info('Screensaver dedicado fechado', { wasOpen });
         res.status(200).json({
@@ -597,6 +609,7 @@ router.get('/status', async (req, res) => {
             data: {
                 wmctrlAvailable,
                 graphicalSession: hasGraphicalSession() || Boolean(process.env.DISPLAY),
+                trayMinimized: dedicatedScreensaverState.trayMinimized,
                 screensaverDedicatedActive: dedicatedActive,
                 screensaverSessionId: dedicatedScreensaverState.sessionId,
                 screensaverArmed: dedicatedScreensaverState.armed,

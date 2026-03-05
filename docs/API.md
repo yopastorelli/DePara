@@ -38,14 +38,19 @@ Erro:
 - `POST /api/tray/restore`
 - `POST /api/tray/open-dedicated`
 - `POST /api/tray/screensaver/open`
+- `POST /api/tray/screensaver/arm`
+- `POST /api/tray/screensaver/disarm`
 - `POST /api/tray/screensaver/close`
 - `GET /api/tray/status`
 
 `GET /api/tray/status` retorna:
 - `wmctrlAvailable`
 - `graphicalSession`
+- `trayMinimized`
 - `screensaverDedicatedActive`
 - `screensaverSessionId`
+- `screensaverArmed`
+- `screensaverArmDueAt`
 
 ## Auto-update
 - `GET /api/update/auto/status`
