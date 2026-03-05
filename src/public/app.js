@@ -3917,228 +3917,105 @@ class DeParaUI {
 
     // Abrir modal de slideshow
     showSlideshowModal() {
-        console.log('Ã°Å¸â€Â DEBUG - showSlideshowModal chamada');
-        // Carregar configuraÃƒÂ§ÃƒÂµes salvas
         this.loadSlideshowConfig();
-        console.log('Ã°Å¸â€Â DEBUG - ConfiguraÃƒÂ§ÃƒÂµes carregadas no modal:', this.slideshowConfig);
-        
-        // Aplicar configuraÃƒÂ§ÃƒÂµes ao modal
         this.applySlideshowConfigToModal();
-        
-        // Carregar pasta salva
+
         const savedPath = localStorage.getItem('slideshowSelectedPath');
         if (savedPath) {
-            document.getElementById('slideshow-folder-path').value = savedPath;
+            const field = document.getElementById('slideshow-folder-path');
+            if (field) field.value = savedPath;
         }
-        
-        document.getElementById('slideshow-config-modal').style.display = 'flex';
+
+        const modal = document.getElementById('slideshow-config-modal');
+        if (!modal) return;
+
+        const closeBtn = modal.querySelector('.close-slideshow-config-btn');
+        const cancelBtn = modal.querySelector('.slideshow-close-btn');
+
+        if (closeBtn && closeBtn.dataset.listenerAdded !== 'true') {
+            closeBtn.addEventListener('click', () => this.closeSlideshowModal());
+            closeBtn.dataset.listenerAdded = 'true';
+        }
+
+        if (cancelBtn && cancelBtn.dataset.listenerAdded !== 'true') {
+            cancelBtn.addEventListener('click', () => this.closeSlideshowModal());
+            cancelBtn.dataset.listenerAdded = 'true';
+        }
+
+        if (modal.dataset.overlayCloseBound !== 'true') {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    this.closeSlideshowModal();
+                }
+            });
+            modal.dataset.overlayCloseBound = 'true';
+        }
+
+        modal.style.display = 'flex';
     }
 
     // Fechar modal de slideshow
     closeSlideshowModal() {
-        document.getElementById('slideshow-config-modal').style.display = 'none';
+        const modal = document.getElementById('slideshow-config-modal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
     }
 
     // Navegar para pasta de slideshow
     browseSlideshowFolder() {
-        console.log('Ã°Å¸â€œÂ Abrindo seletor de pasta para slideshow...');
-        this.showToast('Selecione uma pasta local. Isso nao faz upload de arquivos.', 'info');
-        
-        // Verificar se o campo existe antes de criar o input
-        const slideshowField = document.getElementById('slideshow-folder-path');
-        console.log('Ã°Å¸â€Â Campo slideshow encontrado ANTES da seleÃƒÂ§ÃƒÂ£o:', slideshowField);
-        
-        if (!slideshowField) {
-            console.error('Ã¢ÂÅ’ Campo slideshow-folder-path nÃƒÂ£o encontrado no DOM');
-            this.showToast('Erro: campo nÃƒÂ£o encontrado no DOM', 'error');
-            return;
-        }
-        
-        // Usar diÃƒÂ¡logo nativo para seleÃƒÂ§ÃƒÂ£o de pasta
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.webkitdirectory = true;
-        input.directory = true;
-        input.multiple = false;
-        input.style.display = 'none';
-        
-        input.addEventListener('change', (event) => {
-            const files = event.target.files;
-            console.log('Ã°Å¸â€œÂ Itens locais selecionados:', files);
-            
-            if (files && files.length > 0) {
-                // Pegar o caminho da primeira pasta selecionada
-                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
-                
-                console.log('Ã°Å¸â€œÂ Pasta selecionada para slideshow:', fullPath);
-                console.log('Ã°Å¸â€œÂ Caminho original:', files[0].path);
-                console.log('Ã°Å¸â€œÂ Caminho webkit:', files[0].webkitRelativePath);
-                
-                // Verificar novamente se o campo existe
-                const slideshowField = document.getElementById('slideshow-folder-path');
-                console.log('Ã°Å¸â€Â Campo slideshow encontrado APÃƒâ€œS seleÃƒÂ§ÃƒÂ£o:', slideshowField);
-                
-                if (slideshowField) {
-                    // ForÃƒÂ§ar atualizaÃƒÂ§ÃƒÂ£o do valor
-                    slideshowField.value = fullPath;
-                    
-                    // Disparar evento de input para garantir que o valor seja reconhecido
-                    slideshowField.dispatchEvent(new Event('input', { bubbles: true }));
-                    slideshowField.dispatchEvent(new Event('change', { bubbles: true }));
-                    
-                    console.log('Ã¢Å“â€¦ Campo slideshow atualizado:', slideshowField.value);
-                    console.log('Ã¢Å“â€¦ Valor do campo apÃƒÂ³s atualizaÃƒÂ§ÃƒÂ£o:', slideshowField.value);
-                    console.log('Ã¢Å“â€¦ Campo visÃƒÂ­vel:', slideshowField.offsetParent !== null);
-                    console.log('Ã¢Å“â€¦ Campo display:', window.getComputedStyle(slideshowField).display);
-                    
-                    this.showToast(`Pasta selecionada: ${fullPath}`, 'success');
-                } else {
-                    console.error('Ã¢ÂÅ’ Campo slideshow-folder-path nÃƒÂ£o encontrado apÃƒÂ³s seleÃƒÂ§ÃƒÂ£o');
-                    this.showToast('Erro: campo nÃƒÂ£o encontrado apÃƒÂ³s seleÃƒÂ§ÃƒÂ£o', 'error');
-                }
+        this.showFolderBrowser('source', (selectedPath) => {
+            const field = document.getElementById('slideshow-folder-path');
+            if (field) {
+                field.value = selectedPath;
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+                this.showToast(`Pasta selecionada: ${selectedPath}`, 'success');
             } else {
-                console.log('Ã¢Å¡Â Ã¯Â¸Â Nenhum arquivo selecionado');
-            }
-            
-            // Remover o input apÃƒÂ³s uso
-            if (document.body.contains(input)) {
-                document.body.removeChild(input);
+                this.showToast('Erro: campo de pasta do slideshow nao encontrado', 'error');
             }
         });
-        
-        // Adicionar ao DOM e clicar
-        document.body.appendChild(input);
-        input.click();
     }
 
 
     // Navegar para pasta de fotos excluÃƒÂ­das
     browseDeletedFolder() {
-        console.log('Ã°Å¸â€œÂ Abrindo seletor de pasta para fotos excluÃƒÂ­das...');
-        
-        // Usar o mesmo mÃƒÂ©todo que funciona para o slideshow principal
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.webkitdirectory = true;
-        input.directory = true;
-        input.multiple = false;
-        input.style.display = 'none';
-        
-        input.addEventListener('change', (event) => {
-            const files = event.target.files;
-            if (files && files.length > 0) {
-                // Pegar o caminho da primeira pasta selecionada (mesmo mÃƒÂ©todo do slideshow)
-                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
-                
-                console.log('Ã°Å¸â€œÂ Pasta selecionada para fotos excluÃƒÂ­das:', fullPath);
-                
-                // Atualizar o campo de pasta de fotos excluÃƒÂ­das
-                const deletedField = document.getElementById('slideshow-deleted-folder');
-                if (deletedField) {
-                    deletedField.value = fullPath;
-                    this.showToast(`Pasta de fotos excluÃƒÂ­das: ${fullPath}`, 'success');
-                    console.log('Ã¢Å“â€¦ Campo atualizado:', deletedField.value);
-                } else {
-                    console.error('Ã¢ÂÅ’ Campo nÃƒÂ£o encontrado');
-                    this.showToast('Erro: campo nÃƒÂ£o encontrado', 'error');
-                }
-            }
-            
-            // Remover o input apÃƒÂ³s uso
-            if (document.body.contains(input)) {
-                document.body.removeChild(input);
+        this.showFolderBrowser('source', (selectedPath) => {
+            const field = document.getElementById('slideshow-deleted-folder');
+            if (field) {
+                field.value = selectedPath;
+                this.showToast(`Pasta de fotos excluidas: ${selectedPath}`, 'success');
+            } else {
+                this.showToast('Erro: campo de pasta de fotos excluidas nao encontrado', 'error');
             }
         });
-        
-        // Adicionar ao DOM e clicar
-        document.body.appendChild(input);
-        input.click();
     }
 
     // Navegar para pasta de fotos ocultas
     browseHiddenFolder() {
-        console.log('Ã°Å¸â€œÂ Abrindo seletor de pasta para fotos ocultas...');
-        
-        // Usar o mesmo mÃƒÂ©todo que funciona para o slideshow principal
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.webkitdirectory = true;
-        input.directory = true;
-        input.multiple = false;
-        input.style.display = 'none';
-        
-        input.addEventListener('change', (event) => {
-            const files = event.target.files;
-            if (files && files.length > 0) {
-                // Pegar o caminho da primeira pasta selecionada (mesmo mÃƒÂ©todo do slideshow)
-                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
-                
-                console.log('Ã°Å¸â€œÂ Pasta selecionada para fotos ocultas:', fullPath);
-                
-                // Atualizar o campo de pasta de fotos ocultas
-                const hiddenField = document.getElementById('slideshow-hidden-folder');
-                if (hiddenField) {
-                    hiddenField.value = fullPath;
-                    this.showToast(`Pasta de fotos ocultas: ${fullPath}`, 'success');
-                    console.log('Ã¢Å“â€¦ Campo atualizado:', hiddenField.value);
-                } else {
-                    console.error('Ã¢ÂÅ’ Campo nÃƒÂ£o encontrado');
-                    this.showToast('Erro: campo nÃƒÂ£o encontrado', 'error');
-                }
-            }
-            
-            // Remover o input apÃƒÂ³s uso
-            if (document.body.contains(input)) {
-                document.body.removeChild(input);
+        this.showFolderBrowser('source', (selectedPath) => {
+            const field = document.getElementById('slideshow-hidden-folder');
+            if (field) {
+                field.value = selectedPath;
+                this.showToast(`Pasta de fotos ocultas: ${selectedPath}`, 'success');
+            } else {
+                this.showToast('Erro: campo de pasta de fotos ocultas nao encontrado', 'error');
             }
         });
-        
-        // Adicionar ao DOM e clicar
-        document.body.appendChild(input);
-        input.click();
     }
 
     // Navegar pela pasta de fotos para ajustar
     browseAdjustableFolder() {
-        console.log('Ã°Å¸â€œÂ Abrindo seletor de pasta para fotos para ajustar...');
-        
-        // Usar o mesmo mÃƒÂ©todo que funciona para o slideshow principal
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.webkitdirectory = true;
-        input.directory = true;
-        input.multiple = false;
-        input.style.display = 'none';
-        
-        input.addEventListener('change', (event) => {
-            const files = event.target.files;
-            if (files && files.length > 0) {
-                // Pegar o caminho da primeira pasta selecionada (mesmo mÃƒÂ©todo do slideshow)
-                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
-                
-                console.log('Ã°Å¸â€œÂ Pasta selecionada para fotos para ajustar:', fullPath);
-                
-                // Atualizar o campo de pasta de fotos para ajustar
-                const adjustableField = document.getElementById('slideshow-adjustable-folder');
-                if (adjustableField) {
-                    adjustableField.value = fullPath;
-                    this.showToast(`Pasta de fotos para ajustar: ${fullPath}`, 'success');
-                    console.log('Ã¢Å“â€¦ Campo atualizado:', adjustableField.value);
-                } else {
-                    console.error('Ã¢ÂÅ’ Campo nÃƒÂ£o encontrado');
-                    this.showToast('Erro: campo nÃƒÂ£o encontrado', 'error');
-                }
-            }
-            
-            // Remover o input apÃƒÂ³s uso
-            if (document.body.contains(input)) {
-                document.body.removeChild(input);
+        this.showFolderBrowser('source', (selectedPath) => {
+            const field = document.getElementById('slideshow-adjustable-folder');
+            if (field) {
+                field.value = selectedPath;
+                this.showToast(`Pasta de fotos para ajustar: ${selectedPath}`, 'success');
+            } else {
+                this.showToast('Erro: campo de pasta para ajustar nao encontrado', 'error');
             }
         });
-        
-        // Adicionar ao DOM e clicar
-        document.body.appendChild(input);
-        input.click();
     }
 
     // Configurar event listeners para o modal de seleÃƒÂ§ÃƒÂ£o de pasta do slideshow
@@ -6579,10 +6456,27 @@ setupEventListeners() {
 
     // Aplicar atualizaÃƒÂ§ÃƒÂµes
     async applyUpdates() {
+        const applyBtn = document.getElementById('apply-updates-btn');
         try {
-            const applyBtn = document.getElementById('apply-updates-btn');
             if (applyBtn) {
                 applyBtn.disabled = true;
+                applyBtn.innerHTML = '<span class="material-icons">hourglass_empty</span> Verificando update...';
+            }
+
+            const checkResponse = await fetch('/api/update/auto/check-now', { method: 'POST' });
+            const checkResult = await checkResponse.json();
+            if (!checkResult.success) {
+                throw new Error(checkResult.error?.message || 'Falha ao verificar atualizacoes');
+            }
+
+            const hasUpdates = Boolean(checkResult?.data?.check?.hasUpdates);
+            if (!hasUpdates) {
+                showToast('Sem atualizacao pendente no origin/main. Aplicacao ja esta atualizada.', 'info');
+                this.updateUpdateStatus(checkResult.data);
+                return;
+            }
+
+            if (applyBtn) {
                 applyBtn.innerHTML = '<span class="material-icons">hourglass_empty</span> Executando ciclo...';
             }
 
@@ -6598,13 +6492,12 @@ setupEventListeners() {
                 throw new Error(result.error?.message || 'Falha ao iniciar ciclo');
             }
 
-            showToast('Ciclo automÃƒÂ¡tico iniciado. ReinÃƒÂ­cio ocorrerÃƒÂ¡ automaticamente.', 'success');
-            setTimeout(() => this.checkForUpdates(), 1000);
+            showToast('Ciclo automatico iniciado. Reinicio ocorrera automaticamente.', 'success');
+            setTimeout(() => this.checkForUpdates(true), 1000);
         } catch (error) {
             logger.error('Erro ao disparar ciclo de update:', error);
-            showToast(error.message || 'Erro ao iniciar ciclo de atualizaÃƒÂ§ÃƒÂ£o', 'error');
+            showToast(error.message || 'Erro ao iniciar ciclo de atualizacao', 'error');
         } finally {
-            const applyBtn = document.getElementById('apply-updates-btn');
             if (applyBtn) {
                 applyBtn.disabled = false;
                 applyBtn.innerHTML = '<span class="material-icons">download</span> Executar Ciclo Agora';
