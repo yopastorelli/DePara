@@ -1694,6 +1694,7 @@ class DeParaUI {
         if (this.screensaverState.dedicatedActive) {
             return true;
         }
+        this.disarmDedicatedScreensaverTimer();
 
         try {
             const response = await fetch('/api/tray/screensaver/open', {
@@ -1712,6 +1713,52 @@ class DeParaUI {
         } catch (error) {
             console.warn('Erro ao abrir screensaver dedicado:', error);
             return false;
+        }
+    }
+
+    persistSlideshowSelectedPath(rawPath) {
+        const normalizedPath = (rawPath || '').trim();
+        if (!normalizedPath) return '';
+
+        try {
+            localStorage.setItem('slideshowSelectedPath', normalizedPath);
+        } catch (error) {
+            console.warn('Falha ao persistir pasta do slideshow:', error);
+        }
+
+        const field = document.getElementById('slideshow-folder-path');
+        if (field) {
+            field.value = normalizedPath;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        return normalizedPath;
+    }
+
+    async armDedicatedScreensaverTimer() {
+        if (!this.screensaverConfig.enabled || this.isDedicatedScreensaverWindow) return;
+        try {
+            await fetch('/api/tray/screensaver/arm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idleMinutes: this.screensaverConfig.idleMinutes })
+            });
+        } catch (error) {
+            console.warn('Erro ao armar timer dedicado do screensaver:', error);
+        }
+    }
+
+    async disarmDedicatedScreensaverTimer() {
+        if (this.isDedicatedScreensaverWindow) return;
+        try {
+            await fetch('/api/tray/screensaver/disarm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                keepalive: true
+            });
+        } catch (error) {
+            console.warn('Erro ao desarmar timer dedicado do screensaver:', error);
         }
     }
 
@@ -1797,7 +1844,13 @@ class DeParaUI {
         }, true);
 
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden) return;
+            if (document.hidden) {
+                if (!this.screensaverState.isActive && this.screensaverConfig.enabled) {
+                    this.armDedicatedScreensaverTimer();
+                }
+                return;
+            }
+            this.disarmDedicatedScreensaverTimer();
             if (!this.screensaverState.isActive) this.resetScreensaverTimer();
             if (!this.isDedicatedScreensaverWindow) {
                 this.syncDedicatedScreensaverStatus();
@@ -1806,6 +1859,9 @@ class DeParaUI {
 
         this.resetScreensaverTimer();
         this.updateScreensaverStatusLabel();
+        if (document.hidden && this.screensaverConfig.enabled) {
+            this.armDedicatedScreensaverTimer();
+        }
 
         if (!this.isDedicatedScreensaverWindow && !this.screensaverDedicatedSyncInterval) {
             this.screensaverDedicatedSyncInterval = setInterval(() => {
@@ -1869,11 +1925,13 @@ class DeParaUI {
             if (this.screensaverState.isActive || this.screensaverState.dedicatedActive) {
                 this.deactivateScreensaver();
             }
+            this.disarmDedicatedScreensaverTimer();
             this.updateScreensaverStatusLabel();
             this.showToast('Screensaver desativado', 'info');
             return;
         }
 
+        this.disarmDedicatedScreensaverTimer();
         this.resetScreensaverTimer();
         this.updateScreensaverStatusLabel();
         this.showToast(`Screensaver ativo (${this.screensaverConfig.idleMinutes} min)`, 'success');
@@ -2131,6 +2189,9 @@ class DeParaUI {
         this.screensaverState.isActive = false;
         this.updateScreensaverStatusLabel();
         this.resetScreensaverTimer();
+        if (document.hidden && this.screensaverConfig.enabled) {
+            this.armDedicatedScreensaverTimer();
+        }
     }
 
     // Mostrar ajuda de atalhos
@@ -3989,6 +4050,15 @@ class DeParaUI {
     }
 
     // Aplicar configuraÃƒÂ§ÃƒÂµes salvas ao modal
+    saveSlideshowSettingsFromModal() {
+        const folderPath = document.getElementById('slideshow-folder-path')?.value?.trim() || '';
+        this.applySlideshowConfigFromModal();
+        if (folderPath) {
+            this.persistSlideshowSelectedPath(folderPath);
+        }
+        this.showToast('Configuracoes do slideshow salvas', 'success');
+    }
+
     applySlideshowConfigToModal() {
         document.getElementById('slideshow-interval').value = this.slideshowConfig.interval;
         document.getElementById('slideshow-random').checked = this.slideshowConfig.random;
@@ -4043,6 +4113,7 @@ class DeParaUI {
         };
 
         bindOnce('.slideshow-start-btn', () => this.startSlideshowFromModal());
+        bindOnce('.slideshow-save-btn', () => this.saveSlideshowSettingsFromModal());
         bindOnce('.slideshow-browse-btn', () => this.browseSlideshowFolder());
         bindOnce('.slideshow-browse-deleted-btn', () => this.browseDeletedFolder());
         bindOnce('.slideshow-browse-hidden-btn', () => this.browseHiddenFolder());
@@ -4139,9 +4210,7 @@ class DeParaUI {
         this.showFolderBrowser('source', (selectedPath) => {
             const field = document.getElementById('slideshow-folder-path');
             if (field) {
-                field.value = selectedPath;
-                field.dispatchEvent(new Event('input', { bubbles: true }));
-                field.dispatchEvent(new Event('change', { bubbles: true }));
+                this.persistSlideshowSelectedPath(selectedPath);
                 this.showToast(`Pasta selecionada: ${selectedPath}`, 'success');
             } else {
                 this.showToast('Erro: campo de pasta do slideshow nao encontrado', 'error');
@@ -4296,27 +4365,22 @@ class DeParaUI {
             return;
         }
 
-        // Se o caminho for relativo, construir o caminho absoluto
         if (!folderPath.startsWith('/') && !folderPath.match(/^[A-Za-z]:/)) {
             const basePath = '/mnt/lytspot/@SYNC@/_@@PICZ & VIDEOS LYT @@_/_@LYT PicZ por ANO@_';
             folderPath = `${basePath}/${folderPath}`;
-            console.log('Ã°Å¸â€â€” Caminho relativo convertido para absoluto:', folderPath);
+            console.log('Caminho relativo convertido para absoluto:', folderPath);
         }
-        
-        // Verificar se o caminho jÃƒÂ¡ contÃƒÂ©m a pasta base (evitar duplicaÃƒÂ§ÃƒÂ£o)
+
         if (folderPath.includes('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/')) {
             folderPath = folderPath.replace('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/', '/_@LYT PicZ por ANO@_/');
-            console.log('Ã°Å¸â€Â§ Caminho duplicado corrigido:', folderPath);
+            console.log('Caminho duplicado corrigido:', folderPath);
         }
 
-        // Aplicar configuraÃƒÂ§ÃƒÂµes do modal
+        this.persistSlideshowSelectedPath(folderPath);
         this.applySlideshowConfigFromModal();
-
-        // Fechar modal de configuraÃƒÂ§ÃƒÂ£o
         this.closeSlideshowModal();
 
-        // SEMPRE forÃƒÂ§ar busca recursiva para encontrar TODAS as imagens
-        console.log('Ã°Å¸â€Â ForÃƒÂ§ando busca recursiva para encontrar TODAS as imagens na pasta e subpastas');
+        console.log('Forcando busca recursiva para encontrar todas as imagens.');
         await this.loadSlideshowImages(folderPath, this.slideshowConfig.extensions, true, this.slideshowConfig.interval);
     }
 
@@ -9648,7 +9712,12 @@ function updateDynamicPaths() {
     const slideshowInput = document.getElementById('slideshow-folder-path');
     if (slideshowInput && pathMappings['dynamic-pictures-placeholder']) {
         slideshowInput.placeholder = pathMappings['dynamic-pictures-placeholder'];
-        slideshowInput.value = pathMappings['dynamic-pictures-placeholder'];
+        const savedPath = localStorage.getItem('slideshowSelectedPath');
+        if (savedPath && savedPath.trim()) {
+            slideshowInput.value = savedPath.trim();
+        } else if (!slideshowInput.value || !slideshowInput.value.trim()) {
+            slideshowInput.value = pathMappings['dynamic-pictures-placeholder'];
+        }
     }
 }
 

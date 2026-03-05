@@ -17,7 +17,10 @@ const dedicatedScreensaverState = {
     pid: null,
     browser: null,
     sessionId: null,
-    openedAt: null
+    openedAt: null,
+    armed: false,
+    armTimeoutId: null,
+    armDueAt: null
 };
 
 function execPromise(command, options = {}) {
@@ -155,6 +158,15 @@ function clearDedicatedScreensaverState() {
     dedicatedScreensaverState.browser = null;
     dedicatedScreensaverState.sessionId = null;
     dedicatedScreensaverState.openedAt = null;
+}
+
+function disarmDedicatedScreensaver() {
+    if (dedicatedScreensaverState.armTimeoutId) {
+        clearTimeout(dedicatedScreensaverState.armTimeoutId);
+        dedicatedScreensaverState.armTimeoutId = null;
+    }
+    dedicatedScreensaverState.armed = false;
+    dedicatedScreensaverState.armDueAt = null;
 }
 
 async function closeDedicatedScreensaverProcess() {
@@ -309,6 +321,7 @@ router.post('/open-dedicated', async (req, res) => {
  */
 router.post('/screensaver/open', async (req, res) => {
     try {
+        disarmDedicatedScreensaver();
         if (isProcessRunning(dedicatedScreensaverState.pid)) {
             await forceActiveWindowFullscreen();
             res.status(200).json({
@@ -392,11 +405,96 @@ router.post('/screensaver/open', async (req, res) => {
 });
 
 /**
+ * Arm dedicated screensaver open after idle period.
+ * POST /api/tray/screensaver/arm
+ */
+router.post('/screensaver/arm', async (req, res) => {
+    try {
+        const idleMinutes = Math.max(1, Number(req.body?.idleMinutes) || 3);
+        disarmDedicatedScreensaver();
+        dedicatedScreensaverState.armed = true;
+        dedicatedScreensaverState.armDueAt = new Date(Date.now() + idleMinutes * 60 * 1000).toISOString();
+        dedicatedScreensaverState.armTimeoutId = setTimeout(async () => {
+            try {
+                if (isProcessRunning(dedicatedScreensaverState.pid)) {
+                    disarmDedicatedScreensaver();
+                    return;
+                }
+                const port = process.env.PORT || 3000;
+                const targetUrl = `http://127.0.0.1:${port}${SCREEN_SAVER_ROUTE}`;
+                const launchConfig = await resolveBrowserLaunch(targetUrl, {
+                    kiosk: true,
+                    profileDir: SCREEN_SAVER_PROFILE_DIR
+                });
+                if (!launchConfig) {
+                    logger.warn('Nao foi possivel abrir screensaver dedicado: browser nao encontrado');
+                    disarmDedicatedScreensaver();
+                    return;
+                }
+                if (!hasGraphicalSession() && !process.env.DISPLAY) {
+                    logger.warn('Nao foi possivel abrir screensaver dedicado: sessao grafica ausente');
+                    disarmDedicatedScreensaver();
+                    return;
+                }
+                const child = spawnDetachedBrowser(launchConfig);
+                dedicatedScreensaverState.pid = child.pid;
+                dedicatedScreensaverState.browser = launchConfig.name;
+                dedicatedScreensaverState.sessionId = `ss_${Date.now()}`;
+                dedicatedScreensaverState.openedAt = new Date().toISOString();
+                forceActiveWindowFullscreen().catch(() => undefined);
+                logger.info('Screensaver dedicado aberto por arm timer', {
+                    sessionId: dedicatedScreensaverState.sessionId,
+                    pid: dedicatedScreensaverState.pid
+                });
+            } catch (error) {
+                logger.warn('Falha ao abrir screensaver dedicado via arm timer', { error: error.message });
+            } finally {
+                disarmDedicatedScreensaver();
+            }
+        }, idleMinutes * 60 * 1000);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                armed: true,
+                idleMinutes,
+                dueAt: dedicatedScreensaverState.armDueAt
+            },
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: {
+                message: 'Erro ao armar screensaver dedicado',
+                details: error.message
+            }
+        });
+    }
+});
+
+/**
+ * Disarm dedicated screensaver open timer.
+ * POST /api/tray/screensaver/disarm
+ */
+router.post('/screensaver/disarm', async (req, res) => {
+    disarmDedicatedScreensaver();
+    res.status(200).json({
+        success: true,
+        data: {
+            armed: false
+        },
+        timestamp: new Date().toISOString()
+    });
+});
+
+/**
  * Close dedicated screensaver window.
  * POST /api/tray/screensaver/close
  */
 router.post('/screensaver/close', async (req, res) => {
     try {
+        disarmDedicatedScreensaver();
         const wasOpen = isProcessRunning(dedicatedScreensaverState.pid);
         await closeDedicatedScreensaverProcess();
 
@@ -437,7 +535,9 @@ router.get('/status', async (req, res) => {
                 wmctrlAvailable,
                 graphicalSession: hasGraphicalSession() || Boolean(process.env.DISPLAY),
                 screensaverDedicatedActive: dedicatedActive,
-                screensaverSessionId: dedicatedScreensaverState.sessionId
+                screensaverSessionId: dedicatedScreensaverState.sessionId,
+                screensaverArmed: dedicatedScreensaverState.armed,
+                screensaverArmDueAt: dedicatedScreensaverState.armDueAt
             },
             timestamp: new Date().toISOString()
         });
