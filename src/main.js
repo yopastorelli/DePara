@@ -38,7 +38,8 @@ async function initializeDirectories() {
         'backups',
         'temp',
         'public/uploads',
-        'public/downloads'
+        'public/downloads',
+        'data'
     ];
 
     console.log('🔧 Inicializando diretórios da aplicação...');

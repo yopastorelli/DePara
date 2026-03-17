@@ -563,6 +563,29 @@ router.post('/screensaver/disarm', async (req, res) => {
 });
 
 /**
+ * Maximize the active OS window (Linux/RP4 via wmctrl/xdotool).
+ * POST /api/tray/maximize
+ */
+router.post('/maximize', async (req, res) => {
+    try {
+        if (await commandExists('wmctrl')) {
+            await execPromise('wmctrl -r :ACTIVE: -b add,maximized_vert,maximized_horz');
+            logger.info('Janela maximizada via wmctrl');
+        } else if (await commandExists('xdotool')) {
+            const winId = (await execPromise('xdotool getactivewindow')).trim();
+            if (winId) {
+                await execPromise(`xdotool windowsize ${winId} 100% 100%`);
+                logger.info('Janela maximizada via xdotool');
+            }
+        }
+        res.json({ success: true });
+    } catch (err) {
+        logger.warn('Falha ao maximizar janela', { error: err.message });
+        res.json({ success: false, error: err.message });
+    }
+});
+
+/**
  * Close dedicated screensaver window.
  * POST /api/tray/screensaver/close
  */

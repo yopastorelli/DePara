@@ -173,8 +173,8 @@ class DeParaUI {
     }
 
     async init() {
-        // Carregar configuraÃƒÂ§ÃƒÂµes do slideshow
-        console.log('Ã°Å¸â€Â DEBUG - Inicializando DeParaUI...');
+        // Carregar configuraÃƒÂ§ÃƒÂµes do servidor primeiro (persiste entre reinicializacões)
+        await this.loadServerConfig();
         this.loadSlideshowConfig();
         console.log('Ã°Å¸â€Â DEBUG - ConfiguraÃƒÂ§ÃƒÂµes carregadas:', this.slideshowConfig);
         
@@ -1730,6 +1730,13 @@ class DeParaUI {
             console.warn('Falha ao persistir pasta do slideshow:', error);
         }
 
+        // Persistir no servidor (sobrevive a resets de localStorage)
+        fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: 'slideshowSelectedPath', value: normalizedPath })
+        }).catch(err => console.warn('Erro ao persistir slideshowSelectedPath no servidor:', err));
+
         const field = document.getElementById('slideshow-folder-path');
         if (field) {
             field.value = normalizedPath;
@@ -1828,6 +1835,20 @@ class DeParaUI {
             `;
             document.head.appendChild(style);
         }
+
+        // Aplicar CSS fullscreen imediatamente (nao depende de gesto do usuario)
+        const viewer = document.getElementById('slideshow-viewer');
+        if (viewer) viewer.classList.add('fullscreen-override');
+        document.body.classList.add('slideshow-active-fullscreen');
+
+        // Tentar fullscreen nativo apos delay (browser precisa de tempo para inicializar)
+        setTimeout(() => {
+            const target = document.documentElement;
+            const fn = target.requestFullscreen || target.webkitRequestFullscreen
+                || target.mozRequestFullScreen || target.msRequestFullscreen;
+            if (fn) fn.call(target).catch(() => {});
+            fetch('/api/tray/maximize', { method: 'POST' }).catch(() => {});
+        }, 500);
     }
 
     initScreensaverManager() {
@@ -1931,6 +1952,12 @@ class DeParaUI {
             exitMode: 'esc_only'
         };
         localStorage.setItem('screensaverConfig', JSON.stringify(this.screensaverConfig));
+        // Persistir no servidor
+        fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: 'screensaverConfig', value: this.screensaverConfig })
+        }).catch(() => {});
 
         if (!this.screensaverConfig.enabled) {
             if (this.screensaverState.timerId) {
@@ -3977,6 +4004,28 @@ class DeParaUI {
     };
     preloadedImages = new Map();
 
+    // Carrega configuracões salvas no servidor e mescla no localStorage
+    async loadServerConfig() {
+        try {
+            const res = await fetch('/api/config');
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data.success || !data.config) return;
+            const cfg = data.config;
+            if (cfg.slideshowConfig) {
+                localStorage.setItem('slideshowConfig', JSON.stringify(cfg.slideshowConfig));
+            }
+            if (cfg.slideshowSelectedPath) {
+                localStorage.setItem('slideshowSelectedPath', cfg.slideshowSelectedPath);
+            }
+            if (cfg.screensaverConfig) {
+                localStorage.setItem('screensaverConfig', JSON.stringify(cfg.screensaverConfig));
+            }
+        } catch (err) {
+            console.warn('loadServerConfig: falha ao carregar config do servidor', err);
+        }
+    }
+
     // Carregar configuraÃƒÂ§ÃƒÂµes do slideshow do localStorage
     loadSlideshowConfig() {
         const saved = localStorage.getItem('slideshowConfig');
@@ -3999,10 +4048,15 @@ class DeParaUI {
     saveSlideshowConfig() {
         try {
             localStorage.setItem('slideshowConfig', JSON.stringify(this.slideshowConfig));
-            console.log('Ã°Å¸â€™Â¾ ConfiguraÃƒÂ§ÃƒÂµes do slideshow salvas:', this.slideshowConfig);
         } catch (error) {
-            console.warn('Ã¢Å¡Â Ã¯Â¸Â Erro ao salvar configuraÃƒÂ§ÃƒÂµes do slideshow:', error);
+            console.warn('Erro ao salvar slideshowConfig no localStorage:', error);
         }
+        // Persistir no servidor (sobrevive a resets de localStorage)
+        fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: 'slideshowConfig', value: this.slideshowConfig })
+        }).catch(err => console.warn('Erro ao persistir slideshowConfig no servidor:', err));
     }
 
     // Aplicar configuraÃƒÂ§ÃƒÂµes do modal para o objeto de configuraÃƒÂ§ÃƒÂ£o
@@ -4582,41 +4636,50 @@ class DeParaUI {
         });
 
         // Entrar em fullscreen automaticamente
-        this.enterFullscreen();
+        this.enterFullscreen(this.isDedicatedScreensaverWindow || this.screensaverState.isActive);
 
         // Atualizar exibiÃƒÂ§ÃƒÂ£o e iniciar auto-play APÃƒâ€œS a imagem ser carregada
         this.updateSlideDisplay();
     }
 
     // Entrar em fullscreen
-    enterFullscreen() {
-        console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Entrando em fullscreen...');
-        
+    // isAutoTriggered=true quando disparado por screensaver/auto (sem gesto do usuário)
+    enterFullscreen(isAutoTriggered = false) {
         const viewer = document.getElementById('slideshow-viewer');
         if (!viewer) return;
 
-        // Tentar diferentes mÃƒÂ©todos de fullscreen
-        if (viewer.requestFullscreen) {
-            viewer.requestFullscreen().catch(err => {
-                console.warn('Erro ao entrar em fullscreen:', err);
+        // CSS fullscreen: funciona sem gesto do usuário e é imediato
+        viewer.classList.add('fullscreen-override');
+        document.body.classList.add('slideshow-active-fullscreen');
+
+        // Quando automático ou dedicated window: maximizar via OS
+        const needsMaximize = isAutoTriggered || this.isDedicatedScreensaverWindow || this.screensaverState.isActive;
+        if (needsMaximize) {
+            fetch('/api/tray/maximize', { method: 'POST' }).catch(() => {});
+        }
+
+        // Fullscreen nativo no documento inteiro (requer gesto; silencia erro se bloqueado)
+        const target = document.documentElement;
+        const requestFn = target.requestFullscreen
+            || target.webkitRequestFullscreen
+            || target.mozRequestFullScreen
+            || target.msRequestFullscreen;
+        if (requestFn) {
+            requestFn.call(target).catch(() => {
+                // Bloqueado sem gesto -- CSS fullscreen já cobre a tela
             });
-        } else if (viewer.webkitRequestFullscreen) {
-            viewer.webkitRequestFullscreen();
-        } else if (viewer.mozRequestFullScreen) {
-            viewer.mozRequestFullScreen();
-        } else if (viewer.msRequestFullscreen) {
-            viewer.msRequestFullscreen();
-        } else {
-            console.warn('Fullscreen nÃƒÂ£o suportado neste navegador');
         }
     }
 
     // Sair do fullscreen
     exitFullscreen() {
-        console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Saindo do fullscreen...');
-        
+        // Remover CSS fullscreen override
+        const viewer = document.getElementById('slideshow-viewer');
+        if (viewer) viewer.classList.remove('fullscreen-override');
+        document.body.classList.remove('slideshow-active-fullscreen');
+
         if (document.exitFullscreen) {
-            document.exitFullscreen();
+            document.exitFullscreen().catch(() => {});
         } else if (document.webkitExitFullscreen) {
             document.webkitExitFullscreen();
         } else if (document.mozCancelFullScreen) {

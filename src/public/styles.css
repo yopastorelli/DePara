@@ -3867,3 +3867,20 @@ body {
     object-fit: contain;
 }
 
+/* Fullscreen CSS fallback — funciona sem gesto do usuário (auto-screensaver) */
+.slideshow-viewer.fullscreen-override {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000 !important;
+}
+
+body.slideshow-active-fullscreen {
+    overflow: hidden !important;
+}
+
