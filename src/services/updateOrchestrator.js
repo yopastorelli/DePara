@@ -353,25 +353,40 @@ class UpdateOrchestrator {
 
   async checkForUpdates() {
     await this.init();
-    return this.checkForUpdatesInternal();
+    return this.checkForUpdatesInternal({ passive: true });
   }
 
-  async checkForUpdatesInternal() {
-    const options = { cwd: this.repoRoot };
-    await execCommand('git fetch origin main --prune', options);
-    const { stdout: currentCommit } = await execCommand('git rev-parse HEAD', options);
-    const { stdout: targetCommit } = await execCommand('git rev-parse origin/main', options);
-    const { stdout: countRaw } = await execCommand('git rev-list HEAD..origin/main --count', options);
+  async checkForUpdatesInternal(params = {}) {
+    const { passive = false } = params;
+    const execOptions = { cwd: this.repoRoot };
+    await execCommand('git fetch origin main --prune', execOptions);
+    const { stdout: currentCommit } = await execCommand('git rev-parse HEAD', execOptions);
+    const { stdout: targetCommit } = await execCommand('git rev-parse origin/main', execOptions);
+    const { stdout: countRaw } = await execCommand('git rev-list HEAD..origin/main --count', execOptions);
     const commitsAhead = parseInt(countRaw || '0', 10) || 0;
+    const hasUpdates = commitsAhead > 0;
 
-    await this.setState(this.state.status, {
-      lastCheckAt: new Date().toISOString(),
-      currentCommit,
-      targetCommit
-    }, 'check_result');
+    if (passive && !hasUpdates) {
+      await this.setState('idle', {
+        lastCheckAt: new Date().toISOString(),
+        currentCommit,
+        targetCommit,
+        lastSuccessAt: new Date().toISOString(),
+        lastError: null,
+        rollbackPerformed: false,
+        consecutiveFailures: 0
+      }, 'check_result');
+    } else {
+      await this.setState(this.state.status, {
+        lastCheckAt: new Date().toISOString(),
+        currentCommit,
+        targetCommit,
+        lastError: passive ? null : this.state.lastError
+      }, 'check_result');
+    }
 
     return {
-      hasUpdates: commitsAhead > 0,
+      hasUpdates,
       commitsAhead,
       currentCommit,
       targetCommit,
