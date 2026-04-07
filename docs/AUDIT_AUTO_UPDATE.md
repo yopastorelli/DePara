@@ -12,7 +12,9 @@
 4. Havendo update e `autoApply=true`:
   - `git merge --ff-only <targetCommit>`
   - `npm ci --omit=dev` (fallback `npm install --production`)
-  - restart (`pm2 restart $PM2_APP_NAME`, default `DePara`)
+  - restart preferencial via PM2 (`pm2 restart $PM2_APP_NAME`, default `DePara`) quando o processo estiver registrado
+  - fallback para `systemctl restart depara.service` ou `systemctl --user restart depara.service`
+  - último fallback: `process.exit(0)` para supervisor externo subir novamente o processo
 5. Pós-restart: validação via health (`healthPath`, default `/health`).
 6. Falha de health:
   - rollback imediato para `previousCommit`
@@ -45,7 +47,7 @@
 - Correção: com `rollbackPerformed=true`, falha vira `critical`.
 
 5. **Acoplamento fixo ao PM2 app name**
-- Correção: `PM2_APP_NAME` via env, fallback `DePara`.
+- Correção: `PM2_APP_NAME` via env, fallback `DePara`, com fallback explícito para `systemd` quando o processo PM2 não existir.
 
 6. **Observabilidade limitada**
 - Correção: `lastRunId`, `lastEvent`, histórico de transições e métricas de health check.
@@ -53,13 +55,13 @@
 ## Pré-condições Operacionais (RP4)
 - Worktree git limpa ou estratégia explícita para mudanças locais.
 - Usuário com permissão de `git fetch/merge` e `npm`.
-- PM2 instalado e processo com nome compatível (`PM2_APP_NAME` se customizado).
+- PM2 instalado com processo compatível, ou serviço `depara.service` disponível no `systemd`.
 - Porta/health local acessível (`127.0.0.1:$PORT`).
 
 ## Riscos Residuais
 - Falhas de sistema operacional (`apt/dpkg/initramfs`, kernel) são externas ao app.
 - Falhas de rede/credenciais no `git fetch` impedem update.
-- Se supervisor externo não existir fora do PM2, fallback `process.exit(0)` pode não subir processo.
+- Se não houver PM2 válido nem serviço `systemd`, o fallback final depende de supervisor externo para subir o processo.
 
 ## Recomendações
 - Em produção, usar canal `origin/main`.

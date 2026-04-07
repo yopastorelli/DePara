@@ -585,13 +585,25 @@ class UpdateOrchestrator {
   async requestRestart() {
     const pm2Available = await this.isPm2Available();
     const appName = process.env.PM2_APP_NAME || 'DePara';
+    const systemdServiceName = process.env.SYSTEMD_SERVICE_NAME || 'depara.service';
 
-    if (pm2Available) {
+    if (pm2Available && await this.isPm2ProcessRegistered(appName)) {
       await execCommand(`pm2 restart ${appName}`);
       return;
     }
 
-    setTimeout(() => process.exit(0), 1000);
+    if (pm2Available) {
+      logger.warn('PM2 disponivel, mas processo nao encontrado. Tentando fallback.', { appName });
+    }
+
+    if (await this.isSystemctlAvailable()) {
+      const restarted = await this.restartViaSystemd(systemdServiceName);
+      if (restarted) {
+        return;
+      }
+    }
+
+    this.scheduleProcessExit();
   }
 
   async isPm2Available() {
@@ -601,6 +613,59 @@ class UpdateOrchestrator {
     } catch {
       return false;
     }
+  }
+
+  async isPm2ProcessRegistered(appName) {
+    try {
+      const { stdout } = await execCommand('pm2 jlist');
+      const processList = JSON.parse(stdout || '[]');
+      return Array.isArray(processList) && processList.some((processInfo) => {
+        return processInfo?.name === appName || processInfo?.pm2_env?.name === appName;
+      });
+    } catch (error) {
+      logger.warn('Falha ao consultar processos PM2', { error: error.message, appName });
+      return false;
+    }
+  }
+
+  async isSystemctlAvailable() {
+    try {
+      await execCommand('systemctl --version');
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async restartViaSystemd(serviceName) {
+    const service = (serviceName || '').trim();
+    if (!service) {
+      return false;
+    }
+
+    const commands = [
+      `systemctl restart ${service}`,
+      `systemctl --user restart ${service}`
+    ];
+
+    for (const command of commands) {
+      try {
+        await execCommand(command);
+        return true;
+      } catch (error) {
+        logger.warn('Falha ao reiniciar via systemd', {
+          error: error.message,
+          command,
+          service
+        });
+      }
+    }
+
+    return false;
+  }
+
+  scheduleProcessExit() {
+    setTimeout(() => process.exit(0), 1000);
   }
 
   async runHealthCheck() {

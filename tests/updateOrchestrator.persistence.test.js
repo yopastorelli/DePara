@@ -83,4 +83,18 @@ describe('UpdateOrchestrator persistence layout', () => {
     expect(migratedConfig.autoApply).toBe(false);
     expect(migratedConfig.checkIntervalMinutes).toBe(15);
   });
+
+  it('falls back to systemd when pm2 exists but the process name is not registered', async () => {
+    jest.spyOn(orchestrator, 'isPm2Available').mockResolvedValue(true);
+    jest.spyOn(orchestrator, 'isPm2ProcessRegistered').mockResolvedValue(false);
+    jest.spyOn(orchestrator, 'isSystemctlAvailable').mockResolvedValue(true);
+    const restartViaSystemdSpy = jest.spyOn(orchestrator, 'restartViaSystemd').mockResolvedValue(true);
+    const exitSpy = jest.spyOn(orchestrator, 'scheduleProcessExit').mockImplementation(() => {});
+
+    await orchestrator.requestRestart();
+
+    expect(orchestrator.isPm2ProcessRegistered).toHaveBeenCalledWith('DePara');
+    expect(restartViaSystemdSpy).toHaveBeenCalledWith('depara.service');
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
 });
