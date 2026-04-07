@@ -36,7 +36,7 @@ describe('UpdateOrchestrator passive checks', () => {
     await cleanupDir(tempDir);
   });
 
-  it('clears stale failure state when a passive check finds no pending updates', async () => {
+  it('clears stale failure state and re-enables updates when a passive check finds no pending updates', async () => {
     jest.doMock('child_process', () => ({
       exec: jest.fn((command, options, callback) => {
         if (typeof options === 'function') {
@@ -76,15 +76,22 @@ describe('UpdateOrchestrator passive checks', () => {
       consecutiveFailures: 3,
       rollbackPerformed: true
     });
-    orchestrator.config = orchestrator.getDefaultConfig();
+    orchestrator.config = {
+      ...orchestrator.getDefaultConfig(),
+      enabled: false
+    };
     orchestrator.isInitialized = true;
 
-    const result = await orchestrator.checkForUpdatesInternal({ passive: true });
+    const result = await orchestrator.checkForUpdatesInternal({
+      passive: true,
+      clearDisabledOnClean: true
+    });
 
     expect(result.hasUpdates).toBe(false);
     expect(orchestrator.state.status).toBe('idle');
     expect(orchestrator.state.lastError).toBeNull();
     expect(orchestrator.state.consecutiveFailures).toBe(0);
     expect(orchestrator.state.rollbackPerformed).toBe(false);
+    expect(orchestrator.config.enabled).toBe(true);
   });
 });

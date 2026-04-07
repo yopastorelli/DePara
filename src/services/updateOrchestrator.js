@@ -89,6 +89,7 @@ class UpdateOrchestrator {
     await this.cleanupStaleLock();
     await this.saveConfig();
     await this.saveState();
+    await this.attemptPassiveRecoveryOnInit();
 
     this.setupScheduler();
     this.isInitialized = true;
@@ -99,6 +100,29 @@ class UpdateOrchestrator {
           logger.error('Falha na validação pós-restart', { error: error.message });
         });
       }, 5000);
+    }
+  }
+
+  async attemptPassiveRecoveryOnInit() {
+    const shouldAttemptRecovery =
+      !this.config.enabled ||
+      this.state.status === 'critical' ||
+      Boolean(this.state.lastError) ||
+      (this.state.consecutiveFailures || 0) > 0;
+
+    if (!shouldAttemptRecovery) {
+      return;
+    }
+
+    try {
+      await this.checkForUpdatesInternal({
+        passive: true,
+        clearDisabledOnClean: true
+      });
+    } catch (error) {
+      logger.warn('Falha na reconciliacao passiva do auto-update', {
+        error: error.message
+      });
     }
   }
 
@@ -353,11 +377,14 @@ class UpdateOrchestrator {
 
   async checkForUpdates() {
     await this.init();
-    return this.checkForUpdatesInternal({ passive: true });
+    return this.checkForUpdatesInternal({
+      passive: true,
+      clearDisabledOnClean: true
+    });
   }
 
   async checkForUpdatesInternal(params = {}) {
-    const { passive = false } = params;
+    const { passive = false, clearDisabledOnClean = false } = params;
     const execOptions = { cwd: this.repoRoot };
     await execCommand('git fetch origin main --prune', execOptions);
     const { stdout: currentCommit } = await execCommand('git rev-parse HEAD', execOptions);
@@ -376,6 +403,15 @@ class UpdateOrchestrator {
         rollbackPerformed: false,
         consecutiveFailures: 0
       }, 'check_result');
+
+      if (clearDisabledOnClean && !this.config.enabled) {
+        this.config.enabled = true;
+        await this.saveConfig();
+        await this.appendHistory({
+          event: 'circuit_breaker_cleared',
+          reason: 'passive_clean_check'
+        });
+      }
     } else {
       await this.setState(this.state.status, {
         lastCheckAt: new Date().toISOString(),
