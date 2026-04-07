@@ -1,50 +1,45 @@
 /**
- * Rota de Persistência de Configurações do Cliente
- * Salva/carrega configurações em arquivo JSON no servidor,
- * garantindo que as configs sobrevivam a resets de localStorage.
- *
- * GET  /api/config       — lê todas as configurações salvas
- * POST /api/config       — salva { key, value } no arquivo
+ * Rota de persistencia de configuracoes funcionais da UI.
+ * GET  /api/config
+ * POST /api/config
  */
 
 const express = require('express');
-const router = express.Router();
-const path = require('path');
-const fs = require('fs');
 const logger = require('../utils/logger');
+const configStore = require('../utils/configStore');
 
-const CONFIG_FILE = path.join(__dirname, '../../data/depara-config.json');
+const router = express.Router();
 
-function readConfig() {
-    try {
-        if (!fs.existsSync(CONFIG_FILE)) return {};
-        return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-    } catch {
-        return {};
-    }
-}
-
-// GET /api/config — retorna todas as configurações salvas
-router.get('/', (req, res) => {
-    res.json({ success: true, config: readConfig() });
+router.get('/', async (req, res) => {
+  try {
+    const config = await configStore.getConfig();
+    res.json({ success: true, config });
+  } catch (error) {
+    logger.error('Erro ao carregar config', { error: error.message });
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-// POST /api/config — { key: string, value: any }
-router.post('/', (req, res) => {
-    try {
-        const { key, value } = req.body;
-        if (!key || typeof key !== 'string') {
-            return res.status(400).json({ success: false, error: 'key obrigatório' });
-        }
-        const config = readConfig();
-        config[key] = value;
-        fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true });
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-        res.json({ success: true });
-    } catch (err) {
-        logger.error('Erro ao salvar config', { error: err.message });
-        res.status(500).json({ success: false, error: err.message });
+router.post('/', async (req, res) => {
+  try {
+    const { key, value, config, ...partialConfig } = req.body || {};
+
+    let savedConfig;
+    if (key && typeof key === 'string') {
+      savedConfig = await configStore.setConfigValue(key, value);
+    } else if (config && typeof config === 'object' && !Array.isArray(config)) {
+      savedConfig = await configStore.updateConfig(config);
+    } else if (Object.keys(partialConfig).length > 0) {
+      savedConfig = await configStore.updateConfig(partialConfig);
+    } else {
+      return res.status(400).json({ success: false, error: 'payload obrigatorio' });
     }
+
+    res.json({ success: true, config: savedConfig });
+  } catch (error) {
+    logger.error('Erro ao salvar config', { error: error.message });
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 module.exports = router;

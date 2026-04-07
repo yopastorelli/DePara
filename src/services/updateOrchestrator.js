@@ -23,7 +23,8 @@ function execCommand(command, options = {}) {
 class UpdateOrchestrator {
   constructor() {
     this.repoRoot = path.resolve(__dirname, '../..');
-    this.dataDir = path.join(this.repoRoot, 'src', 'data');
+    this.dataDir = process.env.DEPARA_DATA_DIR || path.join(this.repoRoot, 'data');
+    this.legacyDataDir = path.join(this.repoRoot, 'src', 'data');
     this.configPath = path.join(this.dataDir, 'update-config.json');
     this.statePath = path.join(this.dataDir, 'update-state.json');
     this.historyPath = path.join(this.dataDir, 'update-history.log');
@@ -75,6 +76,7 @@ class UpdateOrchestrator {
     if (this.isInitialized) return;
 
     await fs.mkdir(this.dataDir, { recursive: true });
+    await this.migrateLegacyDataDir();
     await this.ensureFile(this.configPath, this.getDefaultConfig());
     await this.ensureFile(this.statePath, this.getDefaultState());
     await this.ensureFile(this.historyPath, null, true);
@@ -97,6 +99,29 @@ class UpdateOrchestrator {
           logger.error('Falha na validação pós-restart', { error: error.message });
         });
       }, 5000);
+    }
+  }
+
+  async migrateLegacyDataDir() {
+    if (this.legacyDataDir === this.dataDir) return;
+    if (!fsSync.existsSync(this.legacyDataDir)) return;
+
+    const filesToMigrate = [
+      'update-config.json',
+      'update-state.json',
+      'update-history.log',
+      'update.lock'
+    ];
+
+    for (const fileName of filesToMigrate) {
+      const legacyPath = path.join(this.legacyDataDir, fileName);
+      const targetPath = path.join(this.dataDir, fileName);
+
+      if (!fsSync.existsSync(legacyPath) || fsSync.existsSync(targetPath)) {
+        continue;
+      }
+
+      await fs.copyFile(legacyPath, targetPath);
     }
   }
 

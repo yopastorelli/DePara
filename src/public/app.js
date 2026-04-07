@@ -150,7 +150,8 @@ class DeParaUI {
         this.settings = {};
         this.currentWorkflowStep = 1;
         this.isExecutingOperation = false;
-        this.screensaverConfig = this.getScreensaverConfig();
+        this.persistedConfig = null;
+        this.screensaverConfig = this.getDefaultScreensaverConfig();
         this.screensaverState = {
             isActive: false,
             timerId: null,
@@ -175,7 +176,6 @@ class DeParaUI {
     async init() {
         // Carregar configuraÃƒÂ§ÃƒÂµes do servidor primeiro (persiste entre reinicializacões)
         await this.loadServerConfig();
-        this.loadSlideshowConfig();
         console.log('Ã°Å¸â€Â DEBUG - ConfiguraÃƒÂ§ÃƒÂµes carregadas:', this.slideshowConfig);
         
         logger.info('Ã°Å¸Å¡â‚¬ Inicializando DePara UI...', {
@@ -961,7 +961,7 @@ class DeParaUI {
     
     // Carregar pasta salva do slideshow
     loadSlideshowSavedPath() {
-        const savedPath = localStorage.getItem('slideshowSelectedPath');
+        const savedPath = this.getSlideshowSelectedPath();
         if (savedPath) {
             const slideshowField = document.getElementById('slideshow-folder-path');
             if (slideshowField) {
@@ -1646,7 +1646,7 @@ class DeParaUI {
         });
     }
 
-    getScreensaverConfig() {
+    getScreensaverConfigLegacy() {
         const defaults = {
             enabled: true,
             idleMinutes: 3,
@@ -1720,7 +1720,7 @@ class DeParaUI {
         }
     }
 
-    persistSlideshowSelectedPath(rawPath) {
+    persistSlideshowSelectedPathLegacy(rawPath) {
         const normalizedPath = (rawPath || '').trim();
         if (!normalizedPath) return '';
 
@@ -2121,8 +2121,8 @@ class DeParaUI {
     }
 
     getScreensaverSourcePath() {
-        const localPath = localStorage.getItem('slideshowSelectedPath');
-        if (localPath && localPath.trim()) return localPath.trim();
+        const localPath = this.getSlideshowSelectedPath();
+        if (localPath) return localPath;
         const fieldPath = document.getElementById('slideshow-folder-path')?.value?.trim();
         if (fieldPath) return fieldPath;
         return '';
@@ -4004,25 +4004,201 @@ class DeParaUI {
     };
     preloadedImages = new Map();
 
+    getDefaultSlideshowConfig() {
+        return {
+            interval: 3,
+            random: false,
+            preload: true,
+            extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
+            recursive: true,
+            deletedFolder: '',
+            hiddenFolder: '',
+            adjustableFolder: ''
+        };
+    }
+
+    getDefaultScreensaverConfig() {
+        return {
+            enabled: true,
+            idleMinutes: 3,
+            exitMode: 'esc_only'
+        };
+    }
+
+    getDefaultAppSettings() {
+        return {
+            port: 3000,
+            logLevel: 'info',
+            environment: 'production',
+            logDirectory: 'logs/'
+        };
+    }
+
+    normalizeSlideshowConfig(config = {}) {
+        const defaults = this.getDefaultSlideshowConfig();
+        const normalizedExtensions = Array.isArray(config.extensions)
+            ? Array.from(new Set(config.extensions
+                .map(ext => typeof ext === 'string' ? ext.trim().toLowerCase() : '')
+                .filter(Boolean)
+                .map(ext => ext.startsWith('.') ? ext : `.${ext}`)))
+            : [];
+
+        return {
+            interval: Math.max(1, Math.min(60, Number(config.interval) || defaults.interval)),
+            random: config.random === undefined ? defaults.random : Boolean(config.random),
+            preload: config.preload === undefined ? defaults.preload : Boolean(config.preload),
+            extensions: normalizedExtensions.length > 0 ? normalizedExtensions : [...defaults.extensions],
+            recursive: config.recursive === undefined ? defaults.recursive : Boolean(config.recursive),
+            deletedFolder: typeof config.deletedFolder === 'string' ? config.deletedFolder.trim() : '',
+            hiddenFolder: typeof config.hiddenFolder === 'string' ? config.hiddenFolder.trim() : '',
+            adjustableFolder: typeof config.adjustableFolder === 'string' ? config.adjustableFolder.trim() : ''
+        };
+    }
+
+    normalizeScreensaverConfig(config = {}) {
+        const defaults = this.getDefaultScreensaverConfig();
+        return {
+            enabled: config.enabled === undefined ? defaults.enabled : Boolean(config.enabled),
+            idleMinutes: Math.max(1, Math.min(180, Number(config.idleMinutes) || defaults.idleMinutes)),
+            exitMode: 'esc_only'
+        };
+    }
+
+    normalizeAppSettings(settings = {}) {
+        const defaults = this.getDefaultAppSettings();
+        return {
+            port: Math.max(1, Number(settings.port) || defaults.port),
+            logLevel: typeof settings.logLevel === 'string' && settings.logLevel.trim()
+                ? settings.logLevel.trim()
+                : defaults.logLevel,
+            environment: typeof settings.environment === 'string' && settings.environment.trim()
+                ? settings.environment.trim()
+                : defaults.environment,
+            logDirectory: typeof settings.logDirectory === 'string' && settings.logDirectory.trim()
+                ? settings.logDirectory.trim()
+                : defaults.logDirectory
+        };
+    }
+
+    syncFunctionalConfigToLocalCache() {
+        try {
+            localStorage.setItem('slideshowConfig', JSON.stringify(this.slideshowConfig));
+            localStorage.setItem('slideshowSelectedPath', this.getSlideshowSelectedPath());
+            localStorage.setItem('screensaverConfig', JSON.stringify(this.screensaverConfig));
+        } catch (error) {
+            console.warn('Falha ao sincronizar cache local de configuracoes:', error);
+        }
+    }
+
+    applyFunctionalConfig(config = {}) {
+        this.persistedConfig = config || {};
+        this.slideshowConfig = this.normalizeSlideshowConfig(config.slideshowConfig || this.slideshowConfig);
+        this.screensaverConfig = this.normalizeScreensaverConfig(config.screensaverConfig || this.screensaverConfig);
+        this.settings = this.normalizeAppSettings(config.appSettings || this.settings);
+        this.persistedConfig.slideshowConfig = this.slideshowConfig;
+        this.persistedConfig.screensaverConfig = this.screensaverConfig;
+        this.persistedConfig.appSettings = this.settings;
+        this.persistedConfig.slideshowSelectedPath = typeof config.slideshowSelectedPath === 'string'
+            ? config.slideshowSelectedPath.trim()
+            : (this.persistedConfig.slideshowSelectedPath || '');
+        this.syncFunctionalConfigToLocalCache();
+    }
+
+    async saveFunctionalConfig(partialConfig = {}) {
+        const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ config: partialConfig })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (!result.success || !result.config) {
+            throw new Error(result.error || 'Falha ao salvar configuracoes');
+        }
+
+        this.applyFunctionalConfig(result.config);
+        return result.config;
+    }
+
+    async migrateLegacyFunctionalConfig(serverConfig = {}) {
+        const patch = {};
+
+        try {
+            const savedSlideshowConfig = localStorage.getItem('slideshowConfig');
+            if (savedSlideshowConfig) {
+                const legacySlideshowConfig = this.normalizeSlideshowConfig(JSON.parse(savedSlideshowConfig));
+                const currentSlideshowConfig = this.normalizeSlideshowConfig(serverConfig.slideshowConfig || {});
+                const shouldPromoteSlideshow =
+                    !serverConfig.slideshowConfig ||
+                    JSON.stringify(currentSlideshowConfig) === JSON.stringify(this.getDefaultSlideshowConfig());
+
+                if (shouldPromoteSlideshow && JSON.stringify(legacySlideshowConfig) !== JSON.stringify(this.getDefaultSlideshowConfig())) {
+                    patch.slideshowConfig = legacySlideshowConfig;
+                }
+            }
+
+            const savedSlideshowPath = localStorage.getItem('slideshowSelectedPath');
+            if (savedSlideshowPath && !serverConfig.slideshowSelectedPath) {
+                patch.slideshowSelectedPath = savedSlideshowPath.trim();
+            }
+
+            const savedScreensaverConfig = localStorage.getItem('screensaverConfig');
+            if (savedScreensaverConfig) {
+                const legacyScreensaverConfig = this.normalizeScreensaverConfig(JSON.parse(savedScreensaverConfig));
+                const currentScreensaverConfig = this.normalizeScreensaverConfig(serverConfig.screensaverConfig || {});
+                const shouldPromoteScreensaver =
+                    !serverConfig.screensaverConfig ||
+                    JSON.stringify(currentScreensaverConfig) === JSON.stringify(this.getDefaultScreensaverConfig());
+
+                if (shouldPromoteScreensaver && JSON.stringify(legacyScreensaverConfig) !== JSON.stringify(this.getDefaultScreensaverConfig())) {
+                    patch.screensaverConfig = legacyScreensaverConfig;
+                }
+            }
+        } catch (error) {
+            console.warn('Falha ao migrar configuracoes legadas do navegador:', error);
+        }
+
+        if (Object.keys(patch).length === 0) {
+            return serverConfig;
+        }
+
+        try {
+            return await this.saveFunctionalConfig(patch);
+        } catch (error) {
+            console.warn('Falha ao promover configuracoes legadas para o arquivo local:', error);
+            return serverConfig;
+        }
+    }
+
     // Carrega configuracões salvas no servidor e mescla no localStorage
-    async loadServerConfig() {
+    async loadServerConfigLegacy() {
         try {
             const res = await fetch('/api/config');
-            if (!res.ok) return;
+            if (!res.ok) {
+                this.applyFunctionalConfig({
+                    slideshowConfig: this.getDefaultSlideshowConfig(),
+                    slideshowSelectedPath: '',
+                    screensaverConfig: this.getDefaultScreensaverConfig(),
+                    appSettings: this.getDefaultAppSettings()
+                });
+                return;
+            }
             const data = await res.json();
             if (!data.success || !data.config) return;
-            const cfg = data.config;
-            if (cfg.slideshowConfig) {
-                localStorage.setItem('slideshowConfig', JSON.stringify(cfg.slideshowConfig));
-            }
-            if (cfg.slideshowSelectedPath) {
-                localStorage.setItem('slideshowSelectedPath', cfg.slideshowSelectedPath);
-            }
-            if (cfg.screensaverConfig) {
-                localStorage.setItem('screensaverConfig', JSON.stringify(cfg.screensaverConfig));
-            }
+            const hydratedConfig = await this.migrateLegacyFunctionalConfig(data.config);
+            this.applyFunctionalConfig(hydratedConfig);
         } catch (err) {
             console.warn('loadServerConfig: falha ao carregar config do servidor', err);
+            this.applyFunctionalConfig({
+                slideshowConfig: this.getDefaultSlideshowConfig(),
+                slideshowSelectedPath: '',
+                screensaverConfig: this.getDefaultScreensaverConfig(),
+                appSettings: this.getDefaultAppSettings()
+            });
         }
     }
 
@@ -4045,7 +4221,7 @@ class DeParaUI {
     }
 
     // Salvar configuraÃƒÂ§ÃƒÂµes do slideshow no localStorage
-    saveSlideshowConfig() {
+    saveSlideshowConfigLegacy() {
         try {
             localStorage.setItem('slideshowConfig', JSON.stringify(this.slideshowConfig));
         } catch (error) {
@@ -4102,18 +4278,17 @@ class DeParaUI {
         
         console.log('Ã°Å¸â€Â DEBUG - ConfiguraÃƒÂ§ÃƒÂ£o atualizada:', this.slideshowConfig);
 
-        this.saveSlideshowConfig();
         console.log('Ã¢Å¡â„¢Ã¯Â¸Â ConfiguraÃƒÂ§ÃƒÂµes aplicadas:', this.slideshowConfig);
         console.log('Ã°Å¸â€Â DEBUG - ConfiguraÃƒÂ§ÃƒÂµes salvas no localStorage:', localStorage.getItem('slideshowConfig'));
     }
 
     // Aplicar configuraÃƒÂ§ÃƒÂµes salvas ao modal
-    saveSlideshowSettingsFromModal() {
+    async saveSlideshowSettingsFromModal() {
         const folderPath = document.getElementById('slideshow-folder-path')?.value?.trim() || '';
-        this.applySlideshowConfigFromModal();
         if (folderPath) {
-            this.persistSlideshowSelectedPath(folderPath);
+            await this.persistSlideshowSelectedPath(folderPath);
         }
+        await this.persistSlideshowConfigFromModal(false);
         this.showToast('Configuracoes do slideshow salvas', 'success');
     }
 
@@ -4155,6 +4330,127 @@ class DeParaUI {
             console.error('Ã¢ÂÅ’ Campo slideshow-adjustable-folder nÃƒÂ£o encontrado');
         }
     }
+
+    async loadServerConfig() {
+        try {
+            const res = await fetch('/api/config');
+            if (!res.ok) {
+                this.applyFunctionalConfig({
+                    slideshowConfig: this.getDefaultSlideshowConfig(),
+                    slideshowSelectedPath: '',
+                    screensaverConfig: this.getDefaultScreensaverConfig(),
+                    appSettings: this.getDefaultAppSettings()
+                });
+                return;
+            }
+
+            const data = await res.json();
+            if (!data.success || !data.config) {
+                return;
+            }
+
+            const hydratedConfig = await this.migrateLegacyFunctionalConfig(data.config);
+            this.applyFunctionalConfig(hydratedConfig);
+        } catch (err) {
+            console.warn('loadServerConfig: falha ao carregar config do servidor', err);
+            this.applyFunctionalConfig({
+                slideshowConfig: this.getDefaultSlideshowConfig(),
+                slideshowSelectedPath: '',
+                screensaverConfig: this.getDefaultScreensaverConfig(),
+                appSettings: this.getDefaultAppSettings()
+            });
+        }
+    }
+
+    loadSlideshowConfigLegacy() {
+        try {
+            const cached = localStorage.getItem('slideshowConfig');
+            if (cached) {
+                this.slideshowConfig = this.normalizeSlideshowConfig(JSON.parse(cached));
+            } else {
+                this.slideshowConfig = this.normalizeSlideshowConfig(this.persistedConfig?.slideshowConfig || {});
+            }
+            console.log('Configuracoes do slideshow carregadas:', this.slideshowConfig);
+        } catch (error) {
+            console.warn('Erro ao carregar configuracoes do slideshow:', error);
+            this.slideshowConfig = this.normalizeSlideshowConfig(this.persistedConfig?.slideshowConfig || {});
+        }
+    }
+
+    getSlideshowSelectedPath() {
+        return typeof this.persistedConfig?.slideshowSelectedPath === 'string'
+            ? this.persistedConfig.slideshowSelectedPath.trim()
+            : '';
+    }
+
+    async saveSlideshowConfig() {
+        this.slideshowConfig = this.normalizeSlideshowConfig(this.slideshowConfig);
+        const savedConfig = await this.saveFunctionalConfig({
+            slideshowConfig: this.slideshowConfig
+        });
+        return savedConfig.slideshowConfig;
+    }
+
+    async persistSlideshowConfigFromModal(showToast = false) {
+        this.applySlideshowConfigFromModal();
+        await this.saveSlideshowConfig();
+        if (showToast) {
+            this.showToast('Configuracoes do slideshow salvas', 'success');
+        }
+        return this.slideshowConfig;
+    }
+
+    async persistSlideshowSelectedPath(rawPath) {
+        const normalizedPath = (rawPath || '').trim();
+        if (!normalizedPath) return '';
+
+        this.persistedConfig = this.persistedConfig || {};
+        this.persistedConfig.slideshowSelectedPath = normalizedPath;
+        this.syncFunctionalConfigToLocalCache();
+
+        try {
+            await this.saveFunctionalConfig({
+                slideshowSelectedPath: normalizedPath
+            });
+        } catch (error) {
+            console.warn('Erro ao persistir slideshowSelectedPath no servidor:', error);
+        }
+
+        const field = document.getElementById('slideshow-folder-path');
+        if (field) {
+            field.value = normalizedPath;
+        }
+
+        return normalizedPath;
+    }
+
+    applyScreensaverConfigLegacy(nextConfig) {
+        this.screensaverConfig = this.normalizeScreensaverConfig(nextConfig);
+        this.syncFunctionalConfigToLocalCache();
+        this.saveFunctionalConfig({
+            screensaverConfig: this.screensaverConfig
+        }).catch(() => {});
+
+        if (!this.screensaverConfig.enabled) {
+            if (this.screensaverState.timerId) {
+                clearTimeout(this.screensaverState.timerId);
+                this.screensaverState.timerId = null;
+            }
+            if (this.screensaverState.isActive || this.screensaverState.dedicatedActive) {
+                this.deactivateScreensaver();
+            }
+            this.disarmDedicatedScreensaverTimer();
+            this.updateScreensaverStatusLabel();
+            this.showToast('Screensaver desativado', 'info');
+            return;
+        }
+
+        this.disarmDedicatedScreensaverTimer();
+        this.resetScreensaverTimer();
+        this.updateScreensaverStatusLabel();
+        this.showToast(`Screensaver ativo (${this.screensaverConfig.idleMinutes} min)`, 'success');
+    }
+
     // Adicionar event listeners para slideshow
     addSlideshowEventListeners() {
         if (this.slideshowListenersBound) {
@@ -4170,6 +4466,14 @@ class DeParaUI {
             element.dataset.listenerAdded = 'true';
         };
 
+        const bindInputOnce = (selector, handler) => {
+            const element = document.querySelector(selector);
+            if (!element) return;
+            if (element.dataset.changeListenerAdded === 'true') return;
+            element.addEventListener('change', handler);
+            element.dataset.changeListenerAdded = 'true';
+        };
+
         bindOnce('.slideshow-start-btn', () => this.startSlideshowFromModal());
         bindOnce('.slideshow-save-btn', () => this.saveSlideshowSettingsFromModal());
         bindOnce('.slideshow-browse-btn', () => this.browseSlideshowFolder());
@@ -4178,6 +4482,15 @@ class DeParaUI {
         bindOnce('.slideshow-browse-adjustable-btn', () => this.browseAdjustableFolder());
         bindOnce('.close-slideshow-config-btn', () => this.closeSlideshowModal());
         bindOnce('.slideshow-close-btn', () => this.closeSlideshowModal());
+        bindInputOnce('#slideshow-folder-path', async (event) => {
+            const nextPath = event.target?.value?.trim() || '';
+            if (nextPath) {
+                await this.persistSlideshowSelectedPath(nextPath);
+            }
+        });
+        bindInputOnce('#slideshow-deleted-folder', async () => this.persistSlideshowConfigFromModal(false));
+        bindInputOnce('#slideshow-hidden-folder', async () => this.persistSlideshowConfigFromModal(false));
+        bindInputOnce('#slideshow-adjustable-folder', async () => this.persistSlideshowConfigFromModal(false));
 
 
         const slideshowConfigModal = document.getElementById('slideshow-config-modal');
@@ -4220,7 +4533,7 @@ class DeParaUI {
         this.loadSlideshowConfig();
         this.applySlideshowConfigToModal();
 
-        const savedPath = localStorage.getItem('slideshowSelectedPath');
+        const savedPath = this.getSlideshowSelectedPath();
         if (savedPath) {
             const field = document.getElementById('slideshow-folder-path');
             if (field) field.value = savedPath;
@@ -4265,10 +4578,10 @@ class DeParaUI {
 
     // Navegar para pasta de slideshow
     browseSlideshowFolder() {
-        this.showFolderBrowser('source', (selectedPath) => {
+        this.showFolderBrowser('source', async (selectedPath) => {
             const field = document.getElementById('slideshow-folder-path');
             if (field) {
-                this.persistSlideshowSelectedPath(selectedPath);
+                await this.persistSlideshowSelectedPath(selectedPath);
                 this.showToast(`Pasta selecionada: ${selectedPath}`, 'success');
             } else {
                 this.showToast('Erro: campo de pasta do slideshow nao encontrado', 'error');
@@ -4279,10 +4592,11 @@ class DeParaUI {
 
     // Navegar para pasta de fotos excluÃƒÂ­das
     browseDeletedFolder() {
-        this.showFolderBrowser('source', (selectedPath) => {
+        this.showFolderBrowser('source', async (selectedPath) => {
             const field = document.getElementById('slideshow-deleted-folder');
             if (field) {
                 field.value = selectedPath;
+                await this.persistSlideshowConfigFromModal(false);
                 this.showToast(`Pasta de fotos excluidas: ${selectedPath}`, 'success');
             } else {
                 this.showToast('Erro: campo de pasta de fotos excluidas nao encontrado', 'error');
@@ -4292,10 +4606,11 @@ class DeParaUI {
 
     // Navegar para pasta de fotos ocultas
     browseHiddenFolder() {
-        this.showFolderBrowser('source', (selectedPath) => {
+        this.showFolderBrowser('source', async (selectedPath) => {
             const field = document.getElementById('slideshow-hidden-folder');
             if (field) {
                 field.value = selectedPath;
+                await this.persistSlideshowConfigFromModal(false);
                 this.showToast(`Pasta de fotos ocultas: ${selectedPath}`, 'success');
             } else {
                 this.showToast('Erro: campo de pasta de fotos ocultas nao encontrado', 'error');
@@ -4305,10 +4620,11 @@ class DeParaUI {
 
     // Navegar pela pasta de fotos para ajustar
     browseAdjustableFolder() {
-        this.showFolderBrowser('source', (selectedPath) => {
+        this.showFolderBrowser('source', async (selectedPath) => {
             const field = document.getElementById('slideshow-adjustable-folder');
             if (field) {
                 field.value = selectedPath;
+                await this.persistSlideshowConfigFromModal(false);
                 this.showToast(`Pasta de fotos para ajustar: ${selectedPath}`, 'success');
             } else {
                 this.showToast('Erro: campo de pasta para ajustar nao encontrado', 'error');
@@ -4434,8 +4750,8 @@ class DeParaUI {
             console.log('Caminho duplicado corrigido:', folderPath);
         }
 
-        this.persistSlideshowSelectedPath(folderPath);
-        this.applySlideshowConfigFromModal();
+        await this.persistSlideshowSelectedPath(folderPath);
+        await this.persistSlideshowConfigFromModal(false);
         this.closeSlideshowModal();
 
         console.log('Forcando busca recursiva para encontrar todas as imagens.');
@@ -7527,13 +7843,7 @@ setupEventListeners() {
     // MÃƒÂ©todos de configuraÃƒÂ§ÃƒÂµes
     async loadSettings() {
         try {
-            this.settings = {
-                port: 3000,
-                logLevel: 'info',
-                environment: 'production',
-                logDirectory: 'logs/'
-            };
-
+            this.settings = this.normalizeAppSettings(this.persistedConfig?.appSettings || this.settings || this.getDefaultAppSettings());
             this.populateSettingsForm();
         } catch (error) {
             console.error('Erro ao carregar configuraÃƒÂ§ÃƒÂµes:', error);
@@ -7553,15 +7863,18 @@ setupEventListeners() {
     }
 
     async saveSettings() {
-        const settings = {
+        const settings = this.normalizeAppSettings({
             port: parseInt(document.getElementById('app-port').value),
             logLevel: document.getElementById('log-level').value,
             environment: document.getElementById('environment').value,
             logDirectory: document.getElementById('log-directory').value
-        };
+        });
 
         try {
             this.settings = settings;
+            await this.saveFunctionalConfig({
+                appSettings: settings
+            });
             this.showToast('ConfiguraÃƒÂ§ÃƒÂµes salvas com sucesso!', 'success');
         } catch (error) {
             console.error('Erro ao salvar configuraÃƒÂ§ÃƒÂµes:', error);
@@ -9404,7 +9717,7 @@ function closeSlideshowConfigModal() {
 
 function resetSlideshowFolderForm() {
     // NÃƒÂ£o limpar o campo de pasta se houver uma pasta salva
-    const savedPath = localStorage.getItem('slideshowSelectedPath');
+    const savedPath = window.deParaUI?.getSlideshowSelectedPath?.() || '';
     if (!savedPath) {
         document.getElementById('slideshow-folder-path').value = '';
     }
@@ -9791,7 +10104,7 @@ function updateDynamicPaths() {
     const slideshowInput = document.getElementById('slideshow-folder-path');
     if (slideshowInput && pathMappings['dynamic-pictures-placeholder']) {
         slideshowInput.placeholder = pathMappings['dynamic-pictures-placeholder'];
-        const savedPath = localStorage.getItem('slideshowSelectedPath');
+        const savedPath = window.deParaUI?.getSlideshowSelectedPath?.() || localStorage.getItem('slideshowSelectedPath');
         if (savedPath && savedPath.trim()) {
             slideshowInput.value = savedPath.trim();
         } else if (!slideshowInput.value || !slideshowInput.value.trim()) {

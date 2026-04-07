@@ -21,6 +21,7 @@ const packageInfo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'packa
 const logger = require('./utils/logger');
 const routes = require('./routes');
 const updateOrchestrator = require('./services/updateOrchestrator');
+const configStore = require('./utils/configStore');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter, normalRateLimiter, strictRateLimiter } = require('./middleware/rateLimiter');
 
@@ -168,6 +169,7 @@ async function startServer() {
     try {
         // Inicializar diretórios necessários
         await initializeDirectories();
+        await configStore.ensureConfigFile();
         await updateOrchestrator.init();
 
         // Iniciar servidor

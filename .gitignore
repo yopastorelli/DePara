@@ -47,4 +47,5 @@ coverage/
 # yarn.lock
 
 # Dados de persistência
+data/
 src/data/

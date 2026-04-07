@@ -1,7 +1,7 @@
 # Configuracao
 
 ## Screensaver
-Persistencia em `localStorage.screensaverConfig`:
+Persistencia canonicamente em `data/depara-config.json` no bloco `screensaverConfig`.
 ```json
 {
   "enabled": true,
@@ -17,7 +17,9 @@ Comportamento:
 - app minimizada: abre janela dedicada fullscreen.
 
 ## Slideshow
-Persistencia em `localStorage.slideshowConfig` e `localStorage.slideshowSelectedPath`.
+Persistencia canonicamente em `data/depara-config.json`:
+- `slideshowConfig`
+- `slideshowSelectedPath`
 
 Atalhos vigentes no viewer:
 - `ArrowLeft` / `ArrowRight`
@@ -39,9 +41,10 @@ Config principal via `PUT /api/update/auto/config`:
 - `maxConsecutiveFailures`
 
 Arquivos de estado:
-- `src/data/update-config.json`
-- `src/data/update-state.json`
-- `src/data/update-history.log`
+- `data/update-config.json`
+- `data/update-state.json`
+- `data/update-history.log`
+- `data/update.lock`
 
 ## PM2
 Variaveis uteis:

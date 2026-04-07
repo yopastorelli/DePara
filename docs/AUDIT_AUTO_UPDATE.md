@@ -7,7 +7,7 @@
 
 ## Fluxo Atual (após hardening)
 1. Scheduler interno dispara `startUpdateCycle`.
-2. Lock em disco (`src/data/update.lock`) evita concorrência.
+2. Lock em disco (`data/update.lock`) evita concorrência.
 3. Checagem remota: `git fetch origin main --prune` e comparação `HEAD` vs `origin/main`.
 4. Havendo update e `autoApply=true`:
   - `git merge --ff-only <targetCommit>`
@@ -26,12 +26,6 @@
 - `PUT /api/update/auto/config`
 - `POST /api/update/auto/trigger`
 - `GET /api/update/auto/history`
-
-Compatibilidade legada preservada:
-- `/api/update/check`
-- `/api/update/apply`
-- `/api/update/restart`
-- `/api/update/status`
 
 ## Riscos Encontrados e Correções
 1. **Status “parado” no painel**
