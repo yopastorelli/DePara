@@ -37,9 +37,15 @@ class UpdateOrchestrator {
     this.config = null;
     this.state = null;
     this.timer = null;
+    this.restartExitTimer = null;
+    this.postRestartValidationTimer = null;
     this.isInitialized = false;
     this.isRunning = false;
     this.lockOwnerRunId = null;
+  }
+
+  isSideEffectsDisabled() {
+    return process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS === 'true';
   }
 
   getDefaultConfig() {
@@ -95,11 +101,14 @@ class UpdateOrchestrator {
     this.isInitialized = true;
 
     if (this.state.status === 'restarting' || this.state.status === 'validating') {
-      setTimeout(() => {
+      this.postRestartValidationTimer = setTimeout(() => {
         this.validateAfterRestart().catch((error) => {
           logger.error('Falha na validação pós-restart', { error: error.message });
         });
       }, 5000);
+      if (typeof this.postRestartValidationTimer.unref === 'function') {
+        this.postRestartValidationTimer.unref();
+      }
     }
   }
 
@@ -219,12 +228,16 @@ class UpdateOrchestrator {
       this.timer = null;
     }
 
+    if (process.env.DEPARA_DISABLE_UPDATE_SCHEDULER === 'true') return;
     if (!this.config.enabled) return;
     const intervalMs = Math.max(1, Number(this.config.checkIntervalMinutes) || 60) * 60 * 1000;
 
     this.timer = setInterval(() => {
       this.startUpdateCycle({ reason: 'scheduler' });
     }, intervalMs);
+    if (typeof this.timer.unref === 'function') {
+      this.timer.unref();
+    }
   }
 
   async cleanupStaleLock() {
@@ -634,6 +647,11 @@ class UpdateOrchestrator {
   }
 
   async requestRestart() {
+    if (this.isSideEffectsDisabled()) {
+      logger.info('Reinicio suprimido por configuracao de teste');
+      return;
+    }
+
     const pm2Available = await this.isPm2Available();
     const appName = process.env.PM2_APP_NAME || 'DePara';
     const systemdServiceName = process.env.SYSTEMD_SERVICE_NAME || 'depara.service';
@@ -716,7 +734,15 @@ class UpdateOrchestrator {
   }
 
   scheduleProcessExit() {
-    setTimeout(() => process.exit(0), 1000);
+    if (this.isSideEffectsDisabled()) {
+      logger.info('Process exit suprimido por configuracao de teste');
+      return;
+    }
+
+    this.restartExitTimer = setTimeout(() => process.exit(0), 1000);
+    if (typeof this.restartExitTimer.unref === 'function') {
+      this.restartExitTimer.unref();
+    }
   }
 
   async runHealthCheck() {
@@ -771,6 +797,26 @@ class UpdateOrchestrator {
     } catch {
       return null;
     }
+  }
+
+  async shutdown() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+
+    if (this.restartExitTimer) {
+      clearTimeout(this.restartExitTimer);
+      this.restartExitTimer = null;
+    }
+
+    if (this.postRestartValidationTimer) {
+      clearTimeout(this.postRestartValidationTimer);
+      this.postRestartValidationTimer = null;
+    }
+
+    this.isRunning = false;
+    this.isInitialized = false;
   }
 }
 

@@ -1,44 +1,42 @@
-# Instalacao
+# Instalação e Execução
 
-## Requisitos
-- Node.js >= 18
-- npm >= 9
+## Requisitos canônicos
+- Node.js `>=18`
+- npm `>=9`
 - Git
-- (RP4 recomendado) PM2
+- PM2 somente para operação RP4/produção
 
-## Local/Linux
+## Setup local
 ```bash
-git clone https://github.com/yopastorelli/DePara.git
-cd DePara
-npm ci --omit=dev || npm install --production
-npm start
+npm ci
+npm run lint
+npm run test:unit
+npm run test:smoke
+npm run start
 ```
 
-## RP4 com PM2
+## Variáveis úteis
+- `PORT`: porta HTTP
+- `LOG_FILE`: caminho do log
+- `DEPARA_DATA_DIR`: diretório de dados
+- `DEPARA_CONFIG_FILE`: caminho do config principal
+- `DEPARA_LOG_DIR`, `DEPARA_BACKUP_DIR`, `DEPARA_TEMP_DIR`: diretórios isoláveis para teste
+- `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true`: desliga restart/update destrutivo
+- `DEPARA_DISABLE_UPDATE_SCHEDULER=true`: desliga scheduler do auto-update
+
+## Execução RP4 com PM2
 ```bash
-cd ~/DePara
 git fetch origin
 git checkout main
 git pull --ff-only origin main
-npm ci --omit=dev || npm install --production
-sudo npm i -g pm2
+npm ci --omit=dev
 pm2 start src/main.js --name DePara --env production
 pm2 save
 ```
 
-## Validacao pos-instalacao
+## Validação mínima pós-start
 ```bash
 curl -s http://127.0.0.1:3000/health
+curl -s http://127.0.0.1:3000/api/status
 curl -s http://127.0.0.1:3000/api/update/auto/status
-curl -s http://127.0.0.1:3000/api/tray/status
-```
-
-## Atualizacao segura (RP4)
-```bash
-cd ~/DePara
-git fetch origin
-git checkout main
-git pull --ff-only origin main
-npm ci --omit=dev || npm install --production
-pm2 restart DePara
 ```

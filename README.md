@@ -1,60 +1,37 @@
 # DePara
 
-Aplicacao web para operacoes de arquivos, agendamentos, slideshow e atualizacao automatica no Raspberry Pi.
+Superfície operacional canônica para IA desenvolvedora.
 
-## Estado atual
-- Versao da app: `2.0.0`
-- Entrada principal: `src/main.js`
-- UI: `http://127.0.0.1:3000/ui`
-- Health: `http://127.0.0.1:3000/health`
-
-## Funcionalidades
-- Operacoes de arquivos: mover, copiar, apagar (imediatas e agendadas)
-- Slideshow com acoes por foto: apagar, ocultar, ajustar e favoritar
-- Screensaver por inatividade (saida somente com `ESC`)
-- Screensaver dedicado fullscreen quando a app estiver minimizada
-- Auto-update com check manual e ciclo automatico
-
-## Instalacao rapida
+## Começo rápido
 ```bash
-git clone https://github.com/yopastorelli/DePara.git
-cd DePara
-npm ci --omit=dev || npm install --production
-npm start
+npm ci
+npm run lint
+npm run test:unit
+npm run test:smoke
+npm run start
 ```
 
-## Execucao com PM2 (recomendado no RP4)
-```bash
-pm2 start src/main.js --name DePara --env production
-pm2 save
-```
+UI local:
+- `http://127.0.0.1:3000/ui`
 
-## Atualizar no RP4
-```bash
-cd ~/DePara
-git fetch origin
-git checkout main
-git pull --ff-only origin main
-npm ci --omit=dev || npm install --production
-pm2 restart DePara
-```
+Health:
+- `http://127.0.0.1:3000/health`
+- `http://127.0.0.1:3000/api/health`
 
-## Endpoints principais
-- `GET /health`
-- `GET /api/health`
-- `POST /api/files/execute`
-- `POST /api/files/schedule`
-- `GET /api/files/scheduled`
-- `POST /api/update/auto/check-now`
-- `GET /api/update/auto/status`
-- `GET /api/tray/status`
-- `POST /api/tray/screensaver/open`
-- `POST /api/tray/screensaver/close`
+## Fonte de verdade
+- Código de entrada: `src/main.js`
+- Versão e engines: `package.json`
+- Config persistida: `data/depara-config.json`
+- Estado de update: `data/update-*.json`, `data/update-history.log`
+- Docs canônicas: [docs/README.md](docs/README.md)
 
-## Documentacao
-- [Indice de docs](docs/README.md)
-- [Instalacao](docs/INSTALLATION.md)
-- [Configuracao](docs/CONFIGURATION.md)
-- [API](docs/API.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-- [Auditoria auto-update](docs/AUDIT_AUTO_UPDATE.md)
+## Invariantes para IA
+- Use `package.json` como única fonte de versão e requisitos.
+- Não reintroduza documentação paralela na raiz.
+- Não execute fluxos destrutivos de update em testes; use `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true`.
+- Valide mudanças com `lint`, `test:unit`, `test:smoke` e, quando disponível, `test:e2e`.
+
+## Vibe Coding
+- Comece por [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- Use [docs/TESTING.md](docs/TESTING.md) para subir a stack de verificação.
+- Use [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) quando um fluxo quebrar.

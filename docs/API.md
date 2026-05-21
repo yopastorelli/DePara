@@ -1,64 +1,63 @@
-# API DePara (vigente)
+# Contrato de API
 
-Base URL:
-- `http://127.0.0.1:3000/api`
+## Endpoints canônicos
 
-Health global:
+### Health e status
 - `GET /health`
-
-## Resposta padrao
-Sucesso:
-```json
-{ "success": true, "data": {}, "timestamp": "2026-03-05T00:00:00.000Z" }
-```
-Erro:
-```json
-{ "error": { "message": "...", "details": "..." } }
-```
-
-## Health e status
 - `GET /api/health`
+- `GET /api/health/detailed`
+- `GET /api/health/connectivity`
 - `GET /api/status`
 - `GET /api/status/resources`
 
-## Operacoes de arquivos
+### Config
+- `GET /api/config`
+- `POST /api/config`
+
+### Arquivos
 - `POST /api/files/execute`
 - `POST /api/files/schedule`
 - `GET /api/files/scheduled`
-- `PUT /api/files/schedule/:operationId`
-- `DELETE /api/files/schedule/:operationId`
-- `POST /api/files/schedule/:operationId/execute`
-
-## Slideshow
 - `POST /api/files/list-images`
-- `GET /api/files/image/:encodedPath`
+- `POST /api/files/list-folders`
+- `GET /api/files/image/:imagePath(*)`
 
-## Tray e screensaver dedicado
-- `POST /api/tray/minimize`
-- `POST /api/tray/restore`
-- `POST /api/tray/open-dedicated`
-- `POST /api/tray/screensaver/open`
-- `POST /api/tray/screensaver/arm`
-- `POST /api/tray/screensaver/disarm`
-- `POST /api/tray/screensaver/close`
-- `GET /api/tray/status`
-
-`GET /api/tray/status` retorna:
-- `wmctrlAvailable`
-- `graphicalSession`
-- `trayMinimized`
-- `screensaverDedicatedActive`
-- `screensaverSessionId`
-- `screensaverArmed`
-- `screensaverArmDueAt`
-
-## Auto-update
+### Update
 - `GET /api/update/auto/status`
-- `PUT /api/update/auto/config`
 - `POST /api/update/auto/check-now`
+- `PUT /api/update/auto/config`
 - `POST /api/update/auto/trigger`
-- `GET /api/update/auto/history?limit=10`
+- `GET /api/update/auto/history`
 - `GET /api/update/auto/diagnostics`
 
-## Logs frontend
-- `POST /api/logs`
+### Tray
+- `GET /api/tray/status`
+
+## Payloads mínimos
+
+`POST /api/config`
+```json
+{
+  "config": {
+    "slideshowSelectedPath": "C:/Fotos",
+    "slideshowConfig": {
+      "interval": 3,
+      "extensions": [".jpg", ".png"],
+      "recursive": true
+    }
+  }
+}
+```
+
+`POST /api/files/execute`
+```json
+{
+  "action": "copy",
+  "sourcePath": "C:/origem/arquivo.txt",
+  "targetPath": "C:/destino/arquivo.txt"
+}
+```
+
+## Endpoints legados
+- Superfícies `GET /api/update/check`, `POST /api/update/apply`, `POST /api/update/restart` e `GET /api/update/status` permanecem por compatibilidade.
+- Não use endpoints legados em novos testes ou novos fluxos de IA.

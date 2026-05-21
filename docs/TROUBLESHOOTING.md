@@ -1,52 +1,35 @@
 # Troubleshooting
 
-## 1) Rota nao encontrada para update
-Sintoma:
-- `POST /api/update/auto/check-now` retorna 404
-
-Checklist:
+## UI não abre ou quebra no carregamento
 ```bash
-cd ~/DePara
-git branch --show-current
-git rev-parse --short HEAD
-grep -n "auto/check-now" src/routes/update.js
-pm2 delete DePara 2>/dev/null || true
-sudo fuser -k 3000/tcp || true
-pm2 start /home/$USER/DePara/src/main.js --name DePara --cwd /home/$USER/DePara --env production
-pm2 save
+npm run lint
+npm run test:unit
 ```
+- Suspeita principal: parser quebrado em `src/public/app.js`.
 
-## 2) PM2 reiniciando em loop / porta 3000 ocupada
+## Config não persiste
 ```bash
-sudo ss -lptn 'sport = :3000'
-pm2 logs DePara --lines 120
-sudo fuser -k 3000/tcp
-pm2 restart DePara
+curl -s http://127.0.0.1:3000/api/config
 ```
+- Verifique `DEPARA_DATA_DIR` e `DEPARA_CONFIG_FILE`.
+- Verifique escrita em `data/depara-config.json`.
 
-## 3) Screensaver dedicado nao abre minimizado
-Validar:
+## Operações de arquivo falham
 ```bash
-curl -s http://127.0.0.1:3000/api/tray/status
+npm run test:smoke
 ```
-Campos esperados:
-- `graphicalSession: true`
-- `wmctrlAvailable: true` (recomendado)
+- Valide `sourcePath`, `targetPath` e permissões do diretório real.
+- Valide as restrições de `validateSafePath`.
 
-Se `graphicalSession=false`, configurar ambiente do PM2 com `DISPLAY`/`XAUTHORITY`.
-
-## 4) Kernel/apt quebrado (initramfs)
-Esse problema e do sistema operacional, nao da app.
-
-Fluxo recomendado:
-- estabilizar SO (dpkg/apt/initramfs)
-- reboot validando kernel
-- depois retomar deploy do DePara
-
-## 5) Diagnostico rapido
+## Update em estado estranho
 ```bash
-curl -s http://127.0.0.1:3000/health
 curl -s http://127.0.0.1:3000/api/update/auto/status
 curl -s http://127.0.0.1:3000/api/update/auto/diagnostics
-curl -s "http://127.0.0.1:3000/api/update/auto/history?limit=10"
 ```
+- Em teste, confirme `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true`.
+- Em RP4 real, confirme PM2 ou systemd configurados.
+
+## Navegação rápida para IA
+- Arquitetura: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Testes: [TESTING.md](TESTING.md)
+- Operação RP4: [RP4-OPS.md](RP4-OPS.md)

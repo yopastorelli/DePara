@@ -1,19 +1,7 @@
-/**
- * Middleware de Rate Limiting para DePara
- * Sistema básico de controle de taxa de requisições por IP
- *
- * @author yopastorelli
- * @version 1.0.0
- */
-
 const logger = require('../utils/logger');
 
-// Armazenamento em memória para IPs e suas requisições
 const requestStore = new Map();
 
-/**
- * Classe de erro para rate limiting
- */
 class RateLimitError extends Error {
   constructor(message, resetTime) {
     super(message);
@@ -22,15 +10,10 @@ class RateLimitError extends Error {
   }
 }
 
-/**
- * Middleware de rate limiting
- */
 const rateLimiter = (options = {}) => {
   const {
-    windowMs = 15 * 60 * 1000, // 15 minutos
-    maxRequests = 100, // Máximo de requisições por janela
-    skipSuccessfulRequests = false,
-    skipFailedRequests = false,
+    windowMs = 15 * 60 * 1000,
+    maxRequests = 100,
     keyGenerator = (req) => req.ip,
     handler = null
   } = options;
@@ -39,7 +22,6 @@ const rateLimiter = (options = {}) => {
     const key = keyGenerator(req);
     const now = Date.now();
 
-    // Obter ou criar registro para este IP
     if (!requestStore.has(key)) {
       requestStore.set(key, {
         requests: [],
@@ -48,21 +30,17 @@ const rateLimiter = (options = {}) => {
     }
 
     const record = requestStore.get(key);
+    record.lastReset = now;
+    record.requests = record.requests.filter((timestamp) => now - timestamp < windowMs);
 
-    // Limpar requisições antigas
-    record.requests = record.requests.filter(timestamp => now - timestamp < windowMs);
-
-    // Verificar se excedeu o limite
     if (record.requests.length >= maxRequests) {
       const resetTime = record.requests[0] + windowMs;
       const remainingTime = Math.ceil((resetTime - now) / 1000);
-
       const error = new RateLimitError(
         `Rate limit excedido. Tente novamente em ${remainingTime} segundos.`,
         resetTime
       );
 
-      // Log do rate limit
       logger.warn('Rate limit excedido', {
         ip: key,
         userAgent: req.get('User-Agent'),
@@ -71,7 +49,6 @@ const rateLimiter = (options = {}) => {
         remainingTime
       });
 
-      // Usar handler customizado ou enviar erro padrão
       if (handler) {
         return handler(req, res, next, error);
       }
@@ -87,10 +64,8 @@ const rateLimiter = (options = {}) => {
       });
     }
 
-    // Registrar esta requisição
     record.requests.push(now);
 
-    // Adicionar headers informativos
     const remainingRequests = Math.max(0, maxRequests - record.requests.length);
     const resetTime = record.requests.length > 0 ? record.requests[0] + windowMs : now + windowMs;
 
@@ -100,52 +75,45 @@ const rateLimiter = (options = {}) => {
       'X-RateLimit-Reset': new Date(resetTime).toISOString()
     });
 
-    next();
+    return next();
   };
 };
 
-/**
- * Limpeza periódica do armazenamento
- * Remove registros antigos para evitar vazamento de memória
- */
 const cleanupOldRecords = () => {
   const now = Date.now();
-  const maxAge = 60 * 60 * 1000; // 1 hora
+  const maxAge = 60 * 60 * 1000;
 
   for (const [key, record] of requestStore.entries()) {
-    // Remover registros com mais de 1 hora sem atividade
     if (now - record.lastReset > maxAge) {
       requestStore.delete(key);
     }
   }
 };
 
-// Executar limpeza a cada 30 minutos
-setInterval(cleanupOldRecords, 30 * 60 * 1000);
+const cleanupInterval = setInterval(cleanupOldRecords, 30 * 60 * 1000);
+if (typeof cleanupInterval.unref === 'function') {
+  cleanupInterval.unref();
+}
 
-// Middleware específico para operações críticas
 const strictRateLimiter = rateLimiter({
-  windowMs: 5 * 60 * 1000, // 5 minutos
-  maxRequests: 20, // 20 requisições por 5 minutos
+  windowMs: 5 * 60 * 1000,
+  maxRequests: 20,
   keyGenerator: (req) => `${req.ip}:${req.path}`
 });
 
-// Middleware para operações normais
 const normalRateLimiter = rateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  maxRequests: 100 // 100 requisições por 15 minutos
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 100
 });
 
-// Middleware permissivo para leitura
 const readRateLimiter = rateLimiter({
-  windowMs: 60 * 1000, // 1 minuto
-  maxRequests: 200 // 200 requisições por minuto (aumentado para slideshow)
+  windowMs: 60 * 1000,
+  maxRequests: 200
 });
 
-// Middleware muito permissivo para slideshow
 const slideshowRateLimiter = rateLimiter({
-  windowMs: 60 * 1000, // 1 minuto
-  maxRequests: 500 // 500 requisições por minuto para slideshow
+  windowMs: 60 * 1000,
+  maxRequests: 500
 });
 
 module.exports = {
@@ -154,5 +122,7 @@ module.exports = {
   normalRateLimiter,
   readRateLimiter,
   slideshowRateLimiter,
-  RateLimitError
+  RateLimitError,
+  resetRateLimiterStore: () => requestStore.clear(),
+  stopRateLimiterCleanup: () => clearInterval(cleanupInterval)
 };

@@ -1,15 +1,15 @@
-# Documentacao DePara
+# Docs Canônicas DePara
 
-Este diretorio contem apenas documentacao vigente.
+Ordem de leitura para IA desenvolvedora:
 
-## Guias ativos
-- [INSTALLATION.md](INSTALLATION.md): instalacao local e no RP4 com PM2
-- [CONFIGURATION.md](CONFIGURATION.md): configuracoes operacionais (screensaver, slideshow, auto-update)
-- [API.md](API.md): endpoints e payloads atuais
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md): diagnostico rapido de problemas comuns
-- [AUDIT_AUTO_UPDATE.md](AUDIT_AUTO_UPDATE.md): hardening e riscos residuais do auto-update
+1. [ARCHITECTURE.md](ARCHITECTURE.md)
+2. [INSTALLATION.md](INSTALLATION.md)
+3. [API.md](API.md)
+4. [TESTING.md](TESTING.md)
+5. [RP4-OPS.md](RP4-OPS.md)
+6. [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
-## Regras de manutencao da documentacao
-- Atualizar docs junto com mudancas de endpoint/fluxo.
-- Evitar duplicar instrucoes entre arquivos.
-- Remover guias obsoletos em vez de manter paralelo legado.
+## Regras
+- Não duplique instruções fora desta pasta e do `README.md`.
+- Se um fluxo mudar, atualize código, testes e docs na mesma alteração.
+- Considere qualquer documento removido da raiz como não canônico.

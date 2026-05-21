@@ -1,15 +1,7 @@
-/**
- * Rotas Principais da API DePara
- * 
- * @author yopastorelli
- * @version 1.0.0
- */
-
 const express = require('express');
-const router = express.Router();
-const logger = require('../utils/logger');
 
-// Importar rotas específicas
+const logger = require('../utils/logger');
+const { getAppMetadata } = require('../utils/appMetadata');
 const healthRoutes = require('./health');
 const statusRoutes = require('./status');
 const fileOperationsRoutes = require('./fileOperations');
@@ -19,21 +11,20 @@ const desktopRoutes = require('./desktop');
 const logsRoutes = require('./logs');
 const configRoutes = require('./config');
 
-// Middleware de logging para todas as rotas
+const router = express.Router();
+const appMetadata = getAppMetadata();
+
 router.use((req, res, next) => {
   const startTime = Date.now();
-  
-  // Log do início da requisição
+
   logger.startOperation('API Request', {
     method: req.method,
     path: req.path,
     ip: req.ip
   });
 
-  // Interceptar o final da resposta para logging
   res.on('finish', () => {
-    const duration = Date.now() - startTime;
-    logger.endOperation('API Request', duration, {
+    logger.endOperation('API Request', Date.now() - startTime, {
       method: req.method,
       path: req.path,
       statusCode: res.statusCode
@@ -43,60 +34,45 @@ router.use((req, res, next) => {
   next();
 });
 
-// Rota de documentação da API
 router.get('/docs', (req, res) => {
   res.json({
-    message: 'Documentação da API DePara v2.0.0',
-    version: '2.0.0',
-    description: 'Sistema simplificado focado em operações de arquivos',
+    message: `Documentacao da API ${appMetadata.displayName} v${appMetadata.version}`,
+    version: appMetadata.version,
+    description: appMetadata.description,
+    canonicalDocs: '/docs/README.md',
     endpoints: {
       health: {
-        GET: '/api/health - Status da aplicação'
+        GET: '/api/health'
       },
       status: {
-        GET: '/api/status - Informações detalhadas do sistema'
+        GET: '/api/status'
+      },
+      config: {
+        GET: '/api/config',
+        POST: '/api/config'
       },
       files: {
-        POST: '/api/files/execute - Executar operação imediata',
-        POST: '/api/files/schedule - Agendar operação periódica',
-        GET: '/api/files/scheduled - Listar operações agendadas',
-        POST: '/api/files/batch - Operação em lote',
-        GET: '/api/files/templates - Templates pré-configurados'
-      }
-    },
-    examples: {
-      execute: {
-        method: 'POST',
-        url: '/api/files/execute',
-        body: {
-          action: 'move',
-          sourcePath: '/origem/arquivo.txt',
-          targetPath: '/destino/arquivo.txt',
-          options: {
-            backupBeforeMove: true,
-            preserveStructure: true
-          }
-        }
+        POST: '/api/files/execute',
+        POST: '/api/files/schedule',
+        GET: '/api/files/scheduled',
+        POST: '/api/files/list-images',
+        POST: '/api/files/list-folders'
       },
-      schedule: {
-        method: 'POST',
-        url: '/api/files/schedule',
-        body: {
-          frequency: '1h',
-          action: 'copy',
-          sourcePath: '/origem',
-          targetPath: '/destino',
-          options: {
-            batch: true,
-            preserveStructure: false
-          }
-        }
+      update: {
+        GET: '/api/update/auto/status',
+        POST: '/api/update/auto/check-now',
+        PUT: '/api/update/auto/config',
+        POST: '/api/update/auto/trigger',
+        GET: '/api/update/auto/history',
+        GET: '/api/update/auto/diagnostics'
+      },
+      tray: {
+        GET: '/api/tray/status'
       }
     }
   });
 });
 
-// Aplicar rotas específicas
 router.use('/health', healthRoutes);
 router.use('/status', statusRoutes);
 router.use('/files', fileOperationsRoutes);
@@ -106,11 +82,10 @@ router.use('/desktop', desktopRoutes);
 router.use('/logs', logsRoutes);
 router.use('/config', configRoutes);
 
-// Rota padrão da API
 router.get('/', (req, res) => {
   res.json({
-    message: 'DePara API v2.0.0',
-    description: 'Sistema de Gerenciamento de Arquivos com Operações Automáticas',
+    message: `${appMetadata.displayName} API v${appMetadata.version}`,
+    description: appMetadata.description,
     documentation: '/api/docs',
     health: '/api/health',
     status: '/api/status',

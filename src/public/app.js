@@ -9150,7 +9150,7 @@ function showToast(message, type = 'info', showSystemNotification = false) {
 }
 
 // Enhanced operation feedback with notifications
-async function executeFileOperationDirect(file, operation, destination) {
+async function executeFileOperationDirectLegacy(file, operation, destination) {
     try {
         const preserveStructure = document.getElementById('preserve-structure-modal')?.checked ?? true;
 

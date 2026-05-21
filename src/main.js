@@ -1,229 +1,266 @@
-/**
- * DePara - Sistema de Conversão e Mapeamento de Dados
- * Arquivo principal da aplicação
- * 
- * @author yopastorelli
- * @version 1.0.0
- */
-
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
-const fs = require('fs');
 require('dotenv').config();
 
-// Carregar informações do package.json de forma segura
-const packageInfo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
-
-// Importar módulos da aplicação
 const logger = require('./utils/logger');
+const { getAppMetadata } = require('./utils/appMetadata');
 const routes = require('./routes');
 const updateOrchestrator = require('./services/updateOrchestrator');
 const configStore = require('./utils/configStore');
 const errorHandler = require('./middleware/errorHandler');
-const { readRateLimiter, normalRateLimiter, strictRateLimiter } = require('./middleware/rateLimiter');
+const { readRateLimiter } = require('./middleware/rateLimiter');
 
-// Configurações da aplicação
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-let server;
+const appMetadata = getAppMetadata();
 
-/**
- * Inicializa diretórios necessários para a aplicação
- */
-async function initializeDirectories() {
-    const directories = [
-        'logs',
-        'backups',
-        'temp',
-        'public/uploads',
-        'public/downloads',
-        'data'
-    ];
-
-    console.log('🔧 Inicializando diretórios da aplicação...');
-
-    for (const dir of directories) {
-        try {
-            await fs.promises.access(dir);
-            console.log(`✅ Diretório existe: ${dir}`);
-        } catch {
-            await fs.promises.mkdir(dir, { recursive: true });
-            console.log(`📁 Diretório criado: ${dir}`);
-        }
-    }
-
-    console.log('🎯 Inicialização de diretórios concluída!\n');
-}
-
-// Inicializar aplicação Express
 const app = express();
 
-// Middleware de segurança simplificado para uso local
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      // Removido upgradeInsecureRequests para desenvolvimento local
-    },
-  },
-  // Desabilitar HSTS para desenvolvimento local
-  hsts: false,
-  // Simplificar outras configurações
-  noSniff: true,
-  xssFilter: true,
-  hidePoweredBy: true
-}));
+let server = null;
+let processHandlersRegistered = false;
 
-// Middleware de CORS removido - aplicação roda apenas localmente
-// Não há necessidade de CORS para uso local no Raspberry Pi
-
-// Rate limiting para todas as rotas
-app.use('/api', readRateLimiter); // Rate limiting permissivo para leitura
-
-// Middleware de parsing com limites adequados para processamento local
-const MAX_PAYLOAD = process.env.MAX_PAYLOAD || '100mb'; // Muito maior para dados locais
-app.use(express.json({ limit: MAX_PAYLOAD }));
-app.use(express.urlencoded({ extended: true, limit: MAX_PAYLOAD }));
-
-// Middleware de logging
-app.use(morgan('combined', {
-  stream: {
-    write: (message) => logger.info(message.trim())
-  }
-}));
-
-// Middleware para servir arquivos estáticos da interface web
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Servir arquivos estáticos para a interface web
-app.use('/ui', express.static(path.join(__dirname, 'public')));
-
-// Middleware de request logging
-app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path} - ${req.ip}`, {
-    method: req.method,
-    path: req.path,
-    ip: req.ip,
-    userAgent: req.get('User-Agent')
-  });
-  next();
-});
-
-// Rotas da API
-app.use('/api', routes);
-
-// Rota de health check
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: NODE_ENV,
-    version: packageInfo.version
-  });
-});
-
-// Rota raiz para API
-app.get('/', (req, res) => {
-    res.json({
-        message: 'DePara API - Sistema de Conversão e Mapeamento de Dados',
-        version: '1.0.0',
-        endpoints: {
-            health: '/api/health',
-            status: '/api/status',
-            files: '/api/files',
-            ui: '/ui'
-        },
-        documentation: '/api/docs'
-    });
-});
-
-// Rota para a interface web
-app.get('/ui', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Middleware de tratamento de erros
-app.use(errorHandler);
-
-// Middleware para rotas não encontradas
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Rota não encontrada',
-    path: req.originalUrl,
-    method: req.method
-  });
-});
-
-// Inicializar servidor
-async function startServer() {
-    try {
-        // Inicializar diretórios necessários
-        await initializeDirectories();
-        await configStore.ensureConfigFile();
-        await updateOrchestrator.init();
-
-        // Iniciar servidor
-        server = app.listen(PORT, () => {
-            logger.info(`🚀 Servidor DePara iniciado na porta ${PORT}`);
-            logger.info(`📊 API disponível em: http://localhost:${PORT}`);
-            logger.info(`🌐 Interface web disponível em: http://localhost:${PORT}/ui`);
-            logger.info(`📚 Documentação da API: http://localhost:${PORT}/api/docs`);
-        });
-
-        return server;
-    } catch (error) {
-        console.error('❌ Erro crítico durante inicialização:', error);
-        process.exit(1);
-    }
+function getRepoRoot() {
+  return path.resolve(__dirname, '..');
 }
 
-// Iniciar aplicação
-startServer();
+function getRuntimeDirectories() {
+  const repoRoot = getRepoRoot();
+  const runtimePublicDir = process.env.DEPARA_RUNTIME_PUBLIC_DIR || path.join(repoRoot, 'public');
 
-// Tratamento de erros não capturados
-process.on('uncaughtException', (error) => {
-  logger.error('Erro não capturado:', error);
-  process.exit(1);
-});
+  return [
+    process.env.DEPARA_LOG_DIR || path.join(repoRoot, 'logs'),
+    process.env.DEPARA_BACKUP_DIR || path.join(repoRoot, 'backups'),
+    process.env.DEPARA_TEMP_DIR || path.join(repoRoot, 'temp'),
+    path.join(runtimePublicDir, 'uploads'),
+    path.join(runtimePublicDir, 'downloads'),
+    configStore.getDataDir()
+  ];
+}
 
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Promise rejeitada não tratada:', { reason, promise });
-  process.exit(1);
-});
+async function initializeDirectories() {
+  const fs = require('fs').promises;
+  const directories = getRuntimeDirectories();
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM recebido, encerrando servidor...');
-  if (server) {
-    server.close(() => {
-      logger.info('Servidor encerrado com sucesso');
-      process.exit(0);
-    });
-  } else {
-    process.exit(0);
+  for (const directory of directories) {
+    await fs.mkdir(directory, { recursive: true });
   }
-});
+}
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT recebido, encerrando servidor...');
-  if (server) {
-    server.close(() => {
-      logger.info('Servidor encerrado com sucesso');
-      process.exit(0);
-    });
-  } else {
-    process.exit(0);
+function configureApp() {
+  if (app.locals.configured) {
+    return app;
   }
-});
+
+  app.disable('x-powered-by');
+
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"]
+      }
+    },
+    hsts: false,
+    noSniff: true,
+    xssFilter: true
+  }));
+
+  app.use('/api', readRateLimiter);
+
+  const maxPayload = process.env.MAX_PAYLOAD || '100mb';
+  app.use(express.json({ limit: maxPayload }));
+  app.use(express.urlencoded({ extended: true, limit: maxPayload }));
+
+  app.use(morgan('combined', {
+    stream: {
+      write: (message) => logger.info(message.trim())
+    }
+  }));
+
+  app.use(express.static(path.join(__dirname, 'public')));
+  app.use('/ui', express.static(path.join(__dirname, 'public')));
+
+  app.use((req, res, next) => {
+    logger.info(`${req.method} ${req.path} - ${req.ip}`, {
+      method: req.method,
+      path: req.path,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+    next();
+  });
+
+  app.use('/api', routes);
+
+  app.get('/health', (req, res) => {
+    res.status(200).json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: NODE_ENV,
+      version: appMetadata.version
+    });
+  });
+
+  app.get('/', (req, res) => {
+    res.json({
+      name: appMetadata.displayName,
+      version: appMetadata.version,
+      description: appMetadata.description,
+      endpoints: {
+        health: '/health',
+        apiHealth: '/api/health',
+        status: '/api/status',
+        files: '/api/files',
+        config: '/api/config',
+        update: '/api/update',
+        ui: '/ui'
+      },
+      documentation: '/api/docs'
+    });
+  });
+
+  app.get('/ui', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
+
+  app.use(errorHandler);
+
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      error: 'Rota não encontrada',
+      path: req.originalUrl,
+      method: req.method
+    });
+  });
+
+  app.locals.configured = true;
+  return app;
+}
+
+function registerProcessHandlers() {
+  if (processHandlersRegistered || process.env.DEPARA_DISABLE_PROCESS_HOOKS === 'true') {
+    return;
+  }
+
+  const shutdownAndExit = async (exitCode) => {
+    try {
+      await stopServer();
+    } finally {
+      process.exit(exitCode);
+    }
+  };
+
+  process.on('uncaughtException', (error) => {
+    logger.error('Erro não capturado:', { error: error.message, stack: error.stack });
+    shutdownAndExit(1);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    logger.error('Promise rejeitada não tratada:', { reason });
+    shutdownAndExit(1);
+  });
+
+  process.on('SIGTERM', () => {
+    logger.info('SIGTERM recebido, encerrando servidor...');
+    shutdownAndExit(0);
+  });
+
+  process.on('SIGINT', () => {
+    logger.info('SIGINT recebido, encerrando servidor...');
+    shutdownAndExit(0);
+  });
+
+  processHandlersRegistered = true;
+}
+
+async function startServer(options = {}) {
+  const { port = PORT, registerHandlers = false } = options;
+
+  configureApp();
+
+  if (server) {
+    return server;
+  }
+
+  if (registerHandlers) {
+    registerProcessHandlers();
+  }
+
+  await initializeDirectories();
+  await configStore.ensureConfigFile();
+  await updateOrchestrator.init();
+
+  server = await new Promise((resolve, reject) => {
+    const createdServer = app.listen(port, () => resolve(createdServer));
+    createdServer.on('error', reject);
+  });
+
+  logger.info(`Servidor ${appMetadata.displayName} iniciado na porta ${port}`);
+  logger.info(`API disponível em: http://127.0.0.1:${port}`);
+  logger.info(`Interface web disponível em: http://127.0.0.1:${port}/ui`);
+
+  return server;
+}
+
+async function stopServer() {
+  const activeServer = server;
+  server = null;
+
+  if (typeof updateOrchestrator.shutdown === 'function') {
+    await updateOrchestrator.shutdown();
+  }
+
+  if (activeServer) {
+    await new Promise((resolve, reject) => {
+      activeServer.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+
+  if (typeof logger.close === 'function') {
+    logger.close();
+  }
+}
+
+configureApp();
+
+app.startServer = startServer;
+app.stopServer = stopServer;
+app.close = (callback) => {
+  return stopServer()
+    .then(() => {
+      if (typeof callback === 'function') {
+        callback();
+      }
+    })
+    .catch((error) => {
+      if (typeof callback === 'function') {
+        callback(error);
+        return;
+      }
+      throw error;
+    });
+};
+app.initializeDirectories = initializeDirectories;
+
+if (require.main === module) {
+  startServer({ registerHandlers: true }).catch((error) => {
+    console.error('Erro crítico durante inicialização:', error);
+    process.exit(1);
+  });
+}
 
 module.exports = app;

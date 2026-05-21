@@ -643,6 +643,7 @@ class FileOperationsManager {
             // Verificar se é um diretório para operação recursiva
             const stats = await fs.stat(safeSourcePath);
             const isDirectory = stats.isDirectory();
+            const fileSize = stats.size;
 
             // Verificar permissões no Raspberry Pi
             await this.checkRaspberryPiPermissions(safeSourcePath, safeTargetPath, 'move');
@@ -920,14 +921,14 @@ class FileOperationsManager {
             logger.endOperation('File Delete', duration, {
                 operationId,
                 success: true,
-                fileSize,
+                fileSize: stats.size,
                 backupCreated: this.backupConfig.enabled || options.forceBackup
             });
 
             return {
                 success: true,
                 operationId,
-                fileSize,
+                fileSize: stats.size,
                 backupCreated: this.backupConfig.enabled || options.forceBackup,
                 duration
             };
