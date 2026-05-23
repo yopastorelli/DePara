@@ -37,3 +37,8 @@
 - Não derive versão de strings hardcoded no código.
 - Não rode `git merge`, `npm install` ou restart real em testes.
 - Não crie novas docs na raiz para “explicar melhor” um fluxo existente.
+
+## Agendamento canonico
+- A aba `Operacoes Agendadas` opera apenas sobre a configuracao persistida: editar, duplicar, pausar, retomar, executar agora e excluir.
+- O estado `active` e parte do contrato persistido; pausar nao pode remover a operacao do store.
+- O botao `Agendar` em `fileops` deve abrir o mesmo modal canonico hidratado pelo draft atual.

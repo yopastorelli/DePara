@@ -32,6 +32,8 @@ Health:
 - Não incluir em commit: `.claude/`, `backups/`, `test-results/`.
 - Logging em `console` fica desligado por padrão em `production` e `test`; debug só por flag explícita.
 - `fileops` continua sendo a superfície canônica para `move`, `copy`, `delete` e agendamento derivado do mesmo draft.
+- `Operacoes Agendadas` existe para gerir operacoes persistidas; nao e uma segunda superficie de modelagem.
+- `pause` e `resume` de operacoes agendadas usam `PUT /api/files/schedule/:id` com `active: boolean`.
 
 ## Ordem de leitura para IA
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)

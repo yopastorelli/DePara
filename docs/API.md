@@ -18,6 +18,10 @@
 - `POST /api/files/execute`
 - `POST /api/files/schedule`
 - `GET /api/files/scheduled`
+- `GET /api/files/schedule/:operationId`
+- `PUT /api/files/schedule/:operationId`
+- `DELETE /api/files/schedule/:operationId`
+- `POST /api/files/schedule/:operationId/execute`
 - `POST /api/files/list-images`
 - `POST /api/files/list-folders`
 - `GET /api/files/image/:imagePath(*)`
@@ -54,3 +58,10 @@ Novas UIs, testes e automações devem usar exclusivamente `/api/update/auto/*`.
 ## Política operacional
 - Produção RP4 assume `PM2` como único supervisor suportado.
 - Logging em `console` não faz parte do contrato operacional padrão em `production` ou `test`.
+
+## Contrato de agendamento
+- `POST /api/files/schedule` exige `name`, `frequency`, `action` e `sourcePath`.
+- `targetPath` continua obrigatorio para `move` e `copy`.
+- `PUT /api/files/schedule/:operationId` aceita atualizacao parcial de `name`, `frequency`, `action`, `sourcePath`, `targetPath`, `options` e `active`.
+- `active=false` pausa sem excluir. `active=true` rearma o timer quando a frequencia nao e `manual`.
+- `GET /api/files/scheduled` e `GET /api/files/schedule/:operationId` devem refletir `active` como estado persistido.

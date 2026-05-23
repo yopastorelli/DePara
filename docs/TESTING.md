@@ -29,3 +29,8 @@ npm run test:e2e
 - slideshow lista imagens e navega com fixtures válidas
 - fileops usa o draft canônico para executar e agendar
 - update diagnostics expõe readiness operacional coerente
+
+## Cobertura especifica de agendamento
+- agendamento cobre create, edit, duplicate, pause/resume e execute-now com persistencia e reidratacao
+- `test:unit` e `test:smoke` fecham o contrato do scheduler em qualquer ambiente
+- o viewer fullscreen do slideshow deve ser tratado como verificacao RP4/Linux quando o runner local for Windows headless
