@@ -103,21 +103,34 @@ test.describe('DePara UI E2E', () => {
     await page.locator('#schedule-name').fill('E2E Schedule');
     await page.locator('#schedule-frequency').selectOption('manual');
 
+    const createResponses = [];
+    page.on('response', (response) => {
+      if (
+        response.url().includes('/api/files/schedule') &&
+        response.request().method() === 'POST' &&
+        !response.url().includes('/execute')
+      ) {
+        createResponses.push(response);
+      }
+    });
+
     const createResponsePromise = page.waitForResponse((response) =>
       response.url().includes('/api/files/schedule') &&
       response.request().method() === 'POST' &&
       !response.url().includes('/execute')
     );
 
-    await page.evaluate(() => window.scheduleOperation());
+    await page.locator('#schedule-modal .schedule-operation-btn').click();
 
     const createResponse = await createResponsePromise;
     const createPayload = await createResponse.json();
     expect(createResponse.ok(), JSON.stringify(createPayload)).toBeTruthy();
     expect(createPayload.success).toBeTruthy();
+    await expect.poll(() => createResponses.length).toBe(1);
 
     await page.locator('.nav-btn[data-tab="scheduled"]').click();
     await expect(page.locator('#scheduled-operations-list')).toContainText('E2E Schedule');
+    await expect(page.locator('#scheduled-operations-list .operation-item')).toHaveCount(1);
 
     const operationItem = page.locator('#scheduled-operations-list .operation-item', {
       has: page.locator('h4', { hasText: 'E2E Schedule' })
@@ -149,7 +162,7 @@ test.describe('DePara UI E2E', () => {
     const editResponsePromise = page.waitForResponse((response) =>
       response.url().includes('/api/files/schedule/') && response.request().method() === 'PUT'
     );
-    await page.evaluate(() => window.scheduleOperation());
+    await page.locator('#schedule-modal .schedule-operation-btn').click();
     const editPayload = await (await editResponsePromise).json();
     expect(editPayload.success).toBeTruthy();
     await expect(page.locator('#scheduled-operations-list')).toContainText('E2E Schedule Edited');
@@ -169,7 +182,7 @@ test.describe('DePara UI E2E', () => {
       response.request().method() === 'POST' &&
       !response.url().includes('/execute')
     );
-    await page.evaluate(() => window.scheduleOperation());
+    await page.locator('#schedule-modal .schedule-operation-btn').click();
     const duplicatePayload = await (await duplicateResponsePromise).json();
     expect(duplicatePayload.success).toBeTruthy();
     await expect(page.locator('#scheduled-operations-list')).toContainText('E2E Schedule Edited (Cópia)');

@@ -3100,7 +3100,6 @@ class DeParaUI {
         // BotÃƒÆ’Ã‚Âµes de agendamento
         this.addButtonListener('.close-schedule-btn', () => hideScheduleModal());
         this.addButtonListener('.cancel-schedule-btn', () => hideScheduleModal());
-        this.addButtonListener('.schedule-operation-btn', () => performScheduleOperation());
         
         // BotÃƒÆ’Ã‚Âµes de filtros rÃƒÆ’Ã‚Â¡pidos (event delegation)
         document.addEventListener('click', (e) => {
@@ -9160,6 +9159,12 @@ function hideScheduleModal() {
 
 async function performScheduleOperation() {
     const modal = document.getElementById('schedule-modal');
+    const submitBtn = modal?.querySelector('.schedule-operation-btn');
+
+    if (modal?.dataset.submittingSchedule === 'true') {
+        return false;
+    }
+
     const isEditing = modal.dataset.scheduleMode === 'edit' && modal.dataset.editingOperationId;
     const name = document.getElementById('schedule-name').value.trim();
     const action = document.getElementById('schedule-action').value;
@@ -9178,16 +9183,25 @@ async function performScheduleOperation() {
             window.deParaUI?.showFieldError?.(document.getElementById('schedule-source'), 'Origem obrigatória');
         }
         showToast(!name ? 'Defina um nome para a operação agendada.' : 'Preencha os campos obrigatórios do agendamento.', 'error');
-        return;
+        return false;
     }
 
     if ((action === 'move' || action === 'copy') && !targetPath) {
         window.deParaUI?.showFieldError?.(document.getElementById('schedule-target'), 'Destino obrigatório');
         showToast('Selecione a pasta de destino para concluir o agendamento.', 'error');
-        return;
+        return false;
     }
 
     try {
+        if (modal) {
+            modal.dataset.submittingSchedule = 'true';
+        }
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.dataset.originalLabel = submitBtn.textContent;
+            submitBtn.textContent = isEditing ? 'Salvando...' : 'Agendando...';
+        }
+
         const requestData = {
             name,
             frequency,
@@ -9226,13 +9240,25 @@ async function performScheduleOperation() {
             showToast(`Operação "${name}" ${isEditing ? 'editada' : 'agendada'} com sucesso!`, 'success', true);
             hideScheduleModal();
             forceReloadScheduledOperations();
+            return true;
         } else {
             showToast(result.error?.message || 'Erro ao salvar operação agendada', 'error', true);
         }
     } catch (error) {
         console.error('Erro ao agendar operação:', error);
         showToast('Erro ao agendar operação', 'error');
+    } finally {
+        if (modal) {
+            delete modal.dataset.submittingSchedule;
+        }
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = submitBtn.dataset.originalLabel || (isEditing ? 'Salvar Alterações' : 'Agendar');
+            delete submitBtn.dataset.originalLabel;
+        }
     }
+
+    return false;
 }
 let isLoadingTemplates = false;
 let isLoadingScheduledOperations = false;
