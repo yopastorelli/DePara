@@ -7349,7 +7349,7 @@ setupEventListeners() {
             }
 
 
-            showToast('No RP4, reinicie a aplicação com `pm2 restart DePara`.', 'info');
+            showToast('No RP4, reinicie a aplicação com pm2 restart DePara.', 'info');
         } catch (error) {
             logger.error('Erro ao reiniciar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
             showToast(error.message || 'Erro ao reiniciar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
@@ -9464,7 +9464,7 @@ function showToast(message, type = 'info', showSystemNotification = false) {
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `
         <span class="toast-message">${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">ÃƒÆ’Ã¢â‚¬â€</button>
+        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
     `;
 
     container.appendChild(toast);
@@ -9732,7 +9732,7 @@ function showDestinationModal(file, operation) {
         <div class="modal-content">
             <div class="modal-header">
                 <h3>${operation === 'move' ? 'Mover' : 'Copiar'} Arquivo</h3>
-                <button class="modal-close" onclick="this.closest('.modal').remove()">ÃƒÆ’Ã¢â‚¬â€</button>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
             </div>
             <div class="modal-body">
                 <div class="file-info">
@@ -9894,7 +9894,7 @@ function showIgnoredPatternsModal(data) {
         <div class="modal-content large-modal">
             <div class="modal-header">
                 <h3>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â¡ÃƒÂ¯Ã‚Â¸Ã‚Â Arquivos Automaticamente Ignorados</h3>
-                <button class="modal-close" onclick="this.closest('.modal').remove()">ÃƒÆ’Ã¢â‚¬â€</button>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
             </div>
             <div class="modal-body">
                 <div class="ignored-description">
