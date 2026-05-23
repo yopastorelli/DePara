@@ -80,6 +80,7 @@ install_dependencies() {
     log "Instalando dependencias Node.js de producao..."
     cd "$DEPARA_DIR"
     npm ci --omit=dev
+    node bootstrap-runtime-release.js
     success "Dependencias de producao instaladas."
 }
 

@@ -10,10 +10,15 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
+const { getRuntimeDataDir, getSourceRepoRoot } = require('../utils/runtimePaths');
 
 class FolderManager {
     constructor() {
-        this.configFile = path.join(__dirname, '..', '..', 'data', 'folders.json');
+        this.configFile = path.join(getRuntimeDataDir(), 'folders.json');
+        this.legacyConfigFiles = [
+            path.join(getSourceRepoRoot(), 'data', 'folders.json'),
+            path.join(getSourceRepoRoot(), 'src', 'data', 'folders.json')
+        ];
         this.folders = [];
         this.watchers = new Map();
         this.initialized = false;
@@ -43,7 +48,6 @@ class FolderManager {
             logger.info(`Diretório de dados criado: ${dataDir}`);
         }
     }
-
     async loadFolders() {
         try {
             const data = await fs.readFile(this.configFile, 'utf8');
@@ -51,15 +55,33 @@ class FolderManager {
             logger.info(`${this.folders.length} pastas carregadas`);
         } catch (error) {
             if (error.code === 'ENOENT') {
-                // Arquivo não existe, criar com configuração padrão
-                this.folders = this.getDefaultFolders();
-                await this.saveFolders();
-                logger.info('Configuração padrão de pastas criada');
+                if (await this.tryMigrateLegacyFolders()) {
+                    logger.info(`${this.folders.length} pastas migradas do legado`);
+                } else {
+                    this.folders = this.getDefaultFolders();
+                    await this.saveFolders();
+                    logger.info('Configuracao padrao de pastas criada');
+                }
             } else {
                 logger.error('Erro ao carregar pastas:', error);
                 this.folders = [];
             }
         }
+    }
+
+    async tryMigrateLegacyFolders() {
+        for (const legacyPath of this.legacyConfigFiles) {
+            if (!fsSync.existsSync(legacyPath)) {
+                continue;
+            }
+
+            const data = await fs.readFile(legacyPath, 'utf8');
+            this.folders = JSON.parse(data);
+            await this.saveFolders();
+            return true;
+        }
+
+        return false;
     }
 
     getDefaultFolders() {

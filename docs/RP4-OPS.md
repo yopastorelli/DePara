@@ -4,6 +4,7 @@
 - Plataforma principal: Raspberry Pi 4
 - Supervisor canônico: PM2
 - Runtime operacional padrão: `DEPARA_RUNTIME_ROOT=/home/yo/.depara`
+- Release ativo padrão: `/home/yo/.depara/current -> /home/yo/.depara/releases/<commit>`
 - `systemd` só pode existir como bootstrap do PM2 salvo
 - O atalho do menu chama apenas `start-depara.sh open`
 
@@ -31,9 +32,9 @@ curl -s http://127.0.0.1:3000/api/update/auto/diagnostics
 ## Fluxo canônico de update
 1. `POST /api/update/auto/check-now`
 2. `POST /api/update/auto/trigger`
-3. O ciclo aplica `git fetch`, sincronização do worktree, `npm ci` e restart controlado do processo
-4. `/health` fecha a validação do ciclo
-5. Em falha, o orchestrator registra a etapa e o diagnóstico resultante
+3. O ciclo faz `git fetch`, prepara um novo release limpo em staging e instala dependências no release
+4. O orchestrator ativa o novo release em `current`, despacha restart via PM2 e valida `/health`
+5. Em falha de validação, o orchestrator restaura o release anterior e despacha rollback automático
 
 ## Boot e menu
 - Backend: `pm2 start ecosystem.config.js --env production`
@@ -42,7 +43,6 @@ curl -s http://127.0.0.1:3000/api/update/auto/diagnostics
 - O launcher do menu não sobe servidor, não executa `npm install` e não substitui o PM2
 
 ## Bloqueios de publicação
-- worktree com artefato não deliberado
 - scheduler stale
 - processo fora do PM2
 - UI ou automação ainda usando endpoints legados de update

@@ -14,6 +14,7 @@ const util = require('util');
 const execAsync = util.promisify(exec);
 
 const logger = require('./logger');
+const { getRuntimeBackupsDir, getRuntimeDataDir } = require('./runtimePaths');
 const {
     fixFilePermissions,
     ensureWritableTarget,
@@ -422,10 +423,9 @@ class FileOperationsManager {
     constructor() {
         this.operations = new Map();
         this.schedules = new Map();
-        const runtimeRoot = process.env.DEPARA_RUNTIME_ROOT || path.join(os.homedir(), '.depara');
 
         // Persistência de operações agendadas
-        this.dataDir = process.env.DEPARA_DATA_DIR || path.join(__dirname, '..', 'data');
+        this.dataDir = getRuntimeDataDir();
         this.persistenceFile = path.join(this.dataDir, 'scheduled-operations.json');
 
         // Configurações otimizadas para Raspberry Pi
@@ -434,7 +434,7 @@ class FileOperationsManager {
         this.streamHighWaterMark = process.env.STREAM_HIGH_WATER_MARK || 64 * 1024; // 64KB para RPi
         this.backupConfig = {
             enabled: true,
-            backupDir: process.env.DEPARA_BACKUP_DIR || path.join(runtimeRoot, 'backups'),
+            backupDir: getRuntimeBackupsDir(),
             retentionDays: 30,
             compressBackups: true
         };

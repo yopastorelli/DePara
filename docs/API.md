@@ -127,7 +127,14 @@ Os payloads de `status` e `diagnostics` do auto-update devem expor, no mínimo:
 - `runtime.scheduler.stale`
 - `runtime.lock`
 - `runtime.lastFailureStage`
+- `runtime.release.current`
+- `runtime.release.target`
+- `runtime.release.previous`
+- `runtime.release.staging`
+- `runtime.release.activationState`
 
 ## Política operacional
 - Produção RP4 assume PM2 como único supervisor suportado.
+- O estado preservado entre releases fica em `~/.depara/data`.
+- `runtime.worktree` pode continuar aparecendo em diagnósticos, mas não é mais gate primário do auto-update no RP4.
 - Logging em `console` não faz parte do contrato operacional padrão em `production` ou `test`.

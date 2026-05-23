@@ -29,6 +29,8 @@ npm run start
 - `PORT`: porta HTTP, default `3000`
 - `DEPARA_RUNTIME_ROOT`: raiz operacional do runtime, default `~/.depara`
 - `DEPARA_DATA_DIR`: diretório de dados persistidos
+- `DEPARA_RELEASES_DIR`: diretório de releases imutáveis
+- `DEPARA_CURRENT_DIR`: wrapper estável apontando para o release ativo
 - `DEPARA_CONFIG_FILE`: arquivo principal de config
 - `DEPARA_LOG_DIR` e `LOG_FILE`: logs
 - `DEPARA_BACKUP_DIR`: backups operacionais
@@ -45,11 +47,15 @@ git fetch origin
 git checkout main
 git pull --ff-only origin main
 npm ci --omit=dev
+node bootstrap-runtime-release.js
 npm install -g pm2
 pm2 start ecosystem.config.js --env production
 pm2 save
 pm2 startup
 ```
+
+- O bootstrap publica o release inicial em `~/.depara/releases/<commit>` e grava o wrapper canônico em `~/.depara/current`.
+- Depois da instalação, o runtime ativo não roda mais em cima do checkout Git.
 
 ## Launcher e menu RP4
 ```bash

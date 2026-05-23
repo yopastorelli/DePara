@@ -24,6 +24,7 @@ describe('API smoke', () => {
     jest.resetModules();
     runtimeRoot = createTempDir('depara-smoke-');
     process.env.NODE_ENV = 'test';
+    process.env.DEPARA_RUNTIME_ROOT = runtimeRoot;
     process.env.DEPARA_DATA_DIR = path.join(runtimeRoot, 'data');
     process.env.DEPARA_CONFIG_FILE = path.join(runtimeRoot, 'data', 'depara-config.json');
     process.env.LOG_FILE = path.join(runtimeRoot, 'logs', 'app.log');
@@ -37,6 +38,7 @@ describe('API smoke', () => {
     if (app && typeof app.close === 'function') {
       await app.close();
     }
+    delete process.env.DEPARA_RUNTIME_ROOT;
     delete process.env.DEPARA_DATA_DIR;
     delete process.env.DEPARA_CONFIG_FILE;
     delete process.env.LOG_FILE;

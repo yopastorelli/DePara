@@ -28,10 +28,12 @@ describe('UpdateOrchestrator passive checks', () => {
   beforeEach(() => {
     jest.resetModules();
     tempDir = createTempDir();
+    process.env.DEPARA_RUNTIME_ROOT = tempDir;
     process.env.DEPARA_DATA_DIR = tempDir;
   });
 
   afterEach(async () => {
+    delete process.env.DEPARA_RUNTIME_ROOT;
     delete process.env.DEPARA_DATA_DIR;
     await cleanupDir(tempDir);
   });
@@ -58,7 +60,7 @@ describe('UpdateOrchestrator passive checks', () => {
           return;
         }
 
-        if (command === 'git rev-list HEAD..origin/main --count') {
+        if (command === 'git rev-list 190a6204..origin/main --count') {
           callback(null, '0\n', '');
           return;
         }

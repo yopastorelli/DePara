@@ -25,20 +25,36 @@ async function cleanupDir(dirPath) {
 describe('UpdateOrchestrator persistence layout', () => {
   let repoRoot;
   let dataDir;
+  let runtimeRoot;
+  let releasesDir;
+  let currentDir;
   let legacyDataDir;
   let orchestrator;
 
   beforeEach(() => {
     jest.resetModules();
     repoRoot = createTempRepo();
-    dataDir = path.join(repoRoot, 'data');
+    runtimeRoot = path.join(repoRoot, '.runtime');
+    dataDir = path.join(runtimeRoot, 'data');
+    releasesDir = path.join(runtimeRoot, 'releases');
+    currentDir = path.join(runtimeRoot, 'current');
     legacyDataDir = path.join(repoRoot, 'src', 'data');
+    process.env.DEPARA_RUNTIME_ROOT = runtimeRoot;
     process.env.DEPARA_DATA_DIR = dataDir;
+    process.env.DEPARA_RELEASES_DIR = releasesDir;
+    process.env.DEPARA_CURRENT_DIR = currentDir;
+    process.env.DEPARA_UPDATE_SOURCE_ROOT = repoRoot;
     orchestrator = require('../src/services/updateOrchestrator');
 
     orchestrator.repoRoot = repoRoot;
+    orchestrator.runtimeRoot = runtimeRoot;
     orchestrator.dataDir = dataDir;
     orchestrator.legacyDataDir = legacyDataDir;
+    orchestrator.legacyRepoDataDir = path.join(repoRoot, 'data');
+    orchestrator.releasesDir = releasesDir;
+    orchestrator.currentDir = currentDir;
+    orchestrator.currentEntryPath = path.join(currentDir, 'src', 'main.js');
+    orchestrator.currentReleaseMetaPath = path.join(currentDir, 'release.json');
     orchestrator.configPath = path.join(dataDir, 'update-config.json');
     orchestrator.statePath = path.join(dataDir, 'update-state.json');
     orchestrator.historyPath = path.join(dataDir, 'update-history.log');
@@ -57,7 +73,11 @@ describe('UpdateOrchestrator persistence layout', () => {
     }
     jest.restoreAllMocks();
     delete process.env.DEPARA_ALLOW_SYSTEMD_FALLBACK;
+    delete process.env.DEPARA_RUNTIME_ROOT;
     delete process.env.DEPARA_DATA_DIR;
+    delete process.env.DEPARA_RELEASES_DIR;
+    delete process.env.DEPARA_CURRENT_DIR;
+    delete process.env.DEPARA_UPDATE_SOURCE_ROOT;
     await cleanupDir(repoRoot);
   });
 
@@ -128,5 +148,28 @@ describe('UpdateOrchestrator persistence layout', () => {
     expect(runtime.worktree.clean).toBe(false);
     expect(runtime.worktree.entries).toEqual(['M README.md', 'M src/public/app.js']);
     expect(runtime.worktree.summary).toContain('README.md');
+  });
+
+  it('creates runtime release metadata and exposes it in runtime status', async () => {
+    await orchestrator.init();
+
+    const releasePath = path.join(releasesDir, 'abc1234');
+    await fsp.mkdir(releasePath, { recursive: true });
+    await orchestrator.writeCurrentReleaseMeta({
+      activeRelease: 'abc1234',
+      activeCommit: 'abc1234',
+      activePath: releasePath,
+      previousRelease: null,
+      previousCommit: null,
+      updatedAt: new Date().toISOString()
+    });
+    await orchestrator.reconcileReleaseState();
+
+    const runtime = await orchestrator.getRuntimeStatus();
+
+    expect(fs.existsSync(path.join(currentDir, 'src', 'main.js'))).toBe(true);
+    expect(fs.existsSync(path.join(currentDir, 'release.json'))).toBe(true);
+    expect(runtime.release.current).toBe('abc1234');
+    expect(runtime.release.activationState).toBeDefined();
   });
 });

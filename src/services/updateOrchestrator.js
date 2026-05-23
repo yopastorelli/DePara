@@ -4,6 +4,15 @@ const path = require('path');
 const http = require('http');
 const { exec } = require('child_process');
 const logger = require('../utils/logger');
+const {
+  getRuntimeRoot,
+  getRuntimeDataDir,
+  getRuntimeCurrentDir,
+  getRuntimeCurrentEntryPath,
+  getRuntimeCurrentReleaseMetaPath,
+  getRuntimeReleasesDir,
+  getSourceRepoRoot
+} = require('../utils/runtimePaths');
 
 function execCommand(command, options = {}) {
   return new Promise((resolve, reject) => {
@@ -22,13 +31,19 @@ function execCommand(command, options = {}) {
 
 class UpdateOrchestrator {
   constructor() {
-    this.repoRoot = path.resolve(__dirname, '../..');
-    this.dataDir = process.env.DEPARA_DATA_DIR || path.join(this.repoRoot, 'data');
+    this.repoRoot = getSourceRepoRoot();
+    this.runtimeRoot = getRuntimeRoot();
+    this.dataDir = getRuntimeDataDir();
     this.legacyDataDir = path.join(this.repoRoot, 'src', 'data');
+    this.legacyRepoDataDir = path.join(this.repoRoot, 'data');
     this.configPath = path.join(this.dataDir, 'update-config.json');
     this.statePath = path.join(this.dataDir, 'update-state.json');
     this.historyPath = path.join(this.dataDir, 'update-history.log');
     this.lockPath = path.join(this.dataDir, 'update.lock');
+    this.releasesDir = getRuntimeReleasesDir();
+    this.currentDir = getRuntimeCurrentDir();
+    this.currentEntryPath = getRuntimeCurrentEntryPath();
+    this.currentReleaseMetaPath = getRuntimeCurrentReleaseMetaPath();
 
     this.installCommand = 'npm ci --omit=dev';
     this.fallbackInstallCommand = 'npm install --production';
@@ -76,6 +91,11 @@ class UpdateOrchestrator {
       lastSchedulerTriggerAt: null,
       lastHealthCheckAt: null,
       lastSupervisor: null,
+      currentRelease: null,
+      targetRelease: null,
+      previousRelease: null,
+      stagingRelease: null,
+      activationState: 'idle',
       rollbackPerformed: false,
       consecutiveFailures: 0,
       restartRequestedAt: null
@@ -86,7 +106,10 @@ class UpdateOrchestrator {
     if (this.isInitialized) return;
 
     await fs.mkdir(this.dataDir, { recursive: true });
+    await fs.mkdir(this.releasesDir, { recursive: true });
+    await fs.mkdir(path.join(this.currentDir, 'src'), { recursive: true });
     await this.migrateLegacyDataDir();
+    await this.ensureCurrentReleaseWrapper();
     await this.ensureFile(this.configPath, this.getDefaultConfig());
     await this.ensureFile(this.statePath, this.getDefaultState());
     await this.ensureFile(this.historyPath, null, true);
@@ -95,6 +118,7 @@ class UpdateOrchestrator {
     this.state = await this.readJson(this.statePath, this.getDefaultState());
     this.config = this.normalizeConfig(this.config);
     this.state = this.normalizeState(this.state);
+    await this.reconcileReleaseState();
     this.state.currentCommit = await this.getCurrentCommitSafe();
     await this.cleanupStaleLock();
     await this.saveConfig();
@@ -140,9 +164,6 @@ class UpdateOrchestrator {
   }
 
   async migrateLegacyDataDir() {
-    if (this.legacyDataDir === this.dataDir) return;
-    if (!fsSync.existsSync(this.legacyDataDir)) return;
-
     const filesToMigrate = [
       'update-config.json',
       'update-state.json',
@@ -150,15 +171,22 @@ class UpdateOrchestrator {
       'update.lock'
     ];
 
+    const legacyRoots = [this.legacyRepoDataDir, this.legacyDataDir]
+      .filter((legacyDir, index, all) => legacyDir !== this.dataDir && all.indexOf(legacyDir) === index);
+
     for (const fileName of filesToMigrate) {
-      const legacyPath = path.join(this.legacyDataDir, fileName);
       const targetPath = path.join(this.dataDir, fileName);
+      if (fsSync.existsSync(targetPath)) continue;
 
-      if (!fsSync.existsSync(legacyPath) || fsSync.existsSync(targetPath)) {
-        continue;
+      for (const legacyDir of legacyRoots) {
+        const legacyPath = path.join(legacyDir, fileName);
+        if (!fsSync.existsSync(legacyPath)) {
+          continue;
+        }
+
+        await fs.copyFile(legacyPath, targetPath);
+        break;
       }
-
-      await fs.copyFile(legacyPath, targetPath);
     }
   }
 
@@ -355,6 +383,87 @@ class UpdateOrchestrator {
     }
   }
 
+  getReleaseId(commit) {
+    if (!commit) return null;
+    return String(commit).trim().replace(/[^a-z0-9._-]/gi, '_');
+  }
+
+  getReleasePath(releaseId) {
+    return path.join(this.releasesDir, releaseId);
+  }
+
+  getCurrentWrapperContent() {
+    return `'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const metaPath = path.join(__dirname, '..', 'release.json');
+
+function loadActiveRelease() {
+  if (!fs.existsSync(metaPath)) {
+    throw new Error('Release metadata not found at ' + metaPath);
+  }
+
+  const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+  if (!meta.activePath) {
+    throw new Error('Active release path missing in ' + metaPath);
+  }
+
+  return meta.activePath;
+}
+
+const activeReleasePath = loadActiveRelease();
+process.env.DEPARA_APP_ROOT = activeReleasePath;
+
+module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
+`;
+  }
+
+  async ensureCurrentReleaseWrapper() {
+    await fs.mkdir(path.dirname(this.currentEntryPath), { recursive: true });
+    if (!fsSync.existsSync(this.currentEntryPath)) {
+      await fs.writeFile(this.currentEntryPath, this.getCurrentWrapperContent(), 'utf8');
+    }
+
+    if (!fsSync.existsSync(this.currentReleaseMetaPath)) {
+      await fs.writeFile(this.currentReleaseMetaPath, JSON.stringify({
+        activeRelease: null,
+        activeCommit: null,
+        activePath: null,
+        previousRelease: null,
+        previousCommit: null,
+        updatedAt: null
+      }, null, 2), 'utf8');
+    }
+  }
+
+  async readCurrentReleaseMeta() {
+    await this.ensureCurrentReleaseWrapper();
+    return this.readJson(this.currentReleaseMetaPath, {
+      activeRelease: null,
+      activeCommit: null,
+      activePath: null,
+      previousRelease: null,
+      previousCommit: null,
+      updatedAt: null
+    });
+  }
+
+  async writeCurrentReleaseMeta(meta) {
+    await this.ensureCurrentReleaseWrapper();
+    await fs.writeFile(this.currentReleaseMetaPath, JSON.stringify(meta, null, 2), 'utf8');
+  }
+
+  async reconcileReleaseState() {
+    const activeRelease = await this.readCurrentReleaseMeta();
+    this.state.currentRelease = activeRelease.activeRelease || null;
+    this.state.currentCommit = activeRelease.activeCommit || this.state.currentCommit || null;
+    this.state.previousRelease = activeRelease.previousRelease || this.state.previousRelease || null;
+    this.state.previousCommit = activeRelease.previousCommit || this.state.previousCommit || null;
+    this.state.activationState = this.state.activationState || 'idle';
+  }
+
   getLastSchedulerTimestamp() {
     return this.state.lastSchedulerTriggerAt || this.state.lastRunAt || this.state.lastCheckAt || null;
   }
@@ -421,12 +530,20 @@ class UpdateOrchestrator {
   async getRuntimeStatus() {
     const supervisor = await this.detectSupervisorStatus();
     const worktree = await this.getTrackedWorktreeStatus();
+    const activeRelease = await this.readCurrentReleaseMeta();
     return {
       platformTarget: 'rp4',
       supervisor,
       scheduler: this.getSchedulerRuntimeStatus(),
       lock: this.readLockDetails(),
       worktree,
+      release: {
+        current: activeRelease.activeRelease || this.state.currentRelease || null,
+        target: this.state.targetRelease || null,
+        previous: activeRelease.previousRelease || this.state.previousRelease || null,
+        staging: this.state.stagingRelease || null,
+        activationState: this.state.activationState || 'idle'
+      },
       autoUpdateOperationallyReady: supervisor.operationallyReady,
       lastFailureStage: this.state.lastFailureStage || null
     };
@@ -586,13 +703,116 @@ class UpdateOrchestrator {
     });
   }
 
+  async exportCommitToDirectory(commit, destinationPath) {
+    const archivePath = path.join(this.releasesDir, `${this.getReleaseId(commit)}.tar`);
+    await fs.rm(destinationPath, { recursive: true, force: true });
+    await fs.mkdir(destinationPath, { recursive: true });
+
+    try {
+      await this.runCommandForStage(
+        `git archive --format=tar ${commit} -o "${archivePath}"`,
+        { cwd: this.repoRoot },
+        'git_archive',
+        'Falha ao gerar release do commit alvo'
+      );
+      await this.runCommandForStage(
+        `tar -xf "${archivePath}" -C "${destinationPath}"`,
+        { cwd: this.repoRoot },
+        'release_extract',
+        'Falha ao extrair release do commit alvo'
+      );
+    } finally {
+      await fs.rm(archivePath, { force: true });
+    }
+  }
+
+  async installReleaseDependencies(runId, releasePath) {
+    try {
+      await this.runCommandForStage(
+        this.installCommand,
+        { cwd: releasePath },
+        'npm_ci',
+        'Falha ao instalar dependencias do release com npm ci'
+      );
+    } catch (installError) {
+      await this.appendHistory({
+        runId,
+        event: 'install_fallback',
+        stage: installError.stage || 'npm_ci',
+        error: installError.message
+      });
+      await this.runCommandForStage(
+        this.fallbackInstallCommand,
+        { cwd: releasePath },
+        'npm_install_fallback',
+        'Falha ao instalar dependencias do release com fallback'
+      );
+    }
+  }
+
+  async prepareRelease(runId, targetCommit) {
+    const releaseId = this.getReleaseId(targetCommit);
+    const releasePath = this.getReleasePath(releaseId);
+    const stagingPath = path.join(this.releasesDir, `.staging-${runId}-${releaseId}`);
+
+    if (!fsSync.existsSync(releasePath)) {
+      await this.exportCommitToDirectory(targetCommit, stagingPath);
+      await this.installReleaseDependencies(runId, stagingPath);
+      await fs.rm(releasePath, { recursive: true, force: true });
+      await fs.rename(stagingPath, releasePath);
+    } else {
+      await fs.rm(stagingPath, { recursive: true, force: true });
+    }
+
+    return {
+      releaseId,
+      releasePath,
+      commit: targetCommit
+    };
+  }
+
+  async activateRelease(release) {
+    const activeRelease = await this.readCurrentReleaseMeta();
+    await this.writeCurrentReleaseMeta({
+      activeRelease: release.releaseId,
+      activeCommit: release.commit,
+      activePath: release.releasePath,
+      previousRelease: activeRelease.activeRelease || null,
+      previousCommit: activeRelease.activeCommit || null,
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  async restorePreviousRelease() {
+    const activeRelease = await this.readCurrentReleaseMeta();
+    if (!activeRelease.previousRelease || !activeRelease.previousCommit) {
+      return false;
+    }
+
+    const previousPath = this.getReleasePath(activeRelease.previousRelease);
+    if (!fsSync.existsSync(previousPath)) {
+      return false;
+    }
+
+    await this.writeCurrentReleaseMeta({
+      activeRelease: activeRelease.previousRelease,
+      activeCommit: activeRelease.previousCommit,
+      activePath: previousPath,
+      previousRelease: activeRelease.activeRelease || null,
+      previousCommit: activeRelease.activeCommit || null,
+      updatedAt: new Date().toISOString()
+    });
+    return true;
+  }
+
   async checkForUpdatesInternal(params = {}) {
     const { passive = false, clearDisabledOnClean = false } = params;
     const execOptions = { cwd: this.repoRoot };
     await this.runCommandForStage('git fetch origin main --prune', execOptions, 'git_fetch', 'Falha ao buscar origin/main');
-    const { stdout: currentCommit } = await this.runCommandForStage('git rev-parse HEAD', execOptions, 'git_rev_parse_head');
+    const currentCommit = await this.getCurrentCommitSafe();
     const { stdout: targetCommit } = await this.runCommandForStage('git rev-parse origin/main', execOptions, 'git_rev_parse_target');
-    const { stdout: countRaw } = await this.runCommandForStage('git rev-list HEAD..origin/main --count', execOptions, 'git_rev_list_count');
+    const baselineCommit = currentCommit || targetCommit;
+    const { stdout: countRaw } = await this.runCommandForStage(`git rev-list ${baselineCommit}..origin/main --count`, execOptions, 'git_rev_list_count');
     const commitsAhead = parseInt(countRaw || '0', 10) || 0;
     const hasUpdates = commitsAhead > 0;
 
@@ -736,56 +956,50 @@ class UpdateOrchestrator {
   }
 
   async applyUpdate(runId, check) {
-    const options = { cwd: this.repoRoot };
     if (!/^[0-9a-f]{7,40}$/i.test(check.targetCommit)) {
       throw this.createStageError('target_commit_validation', 'Commit alvo inválido');
     }
 
-    await this.ensureCleanTrackedWorktree(options);
-    await this.appendHistory({ runId, event: 'worktree_clean' });
-
     await this.setState('downloading', {
       previousCommit: check.currentCommit,
       targetCommit: check.targetCommit,
+      previousRelease: this.state.currentRelease || null,
+      targetRelease: this.getReleaseId(check.targetCommit),
+      stagingRelease: this.getReleaseId(check.targetCommit),
+      activationState: 'staging',
       rollbackPerformed: false
     }, 'downloading');
 
-    await this.runCommandForStage(
-      `git merge --ff-only ${check.targetCommit}`,
-      options,
-      'git_merge_ff_only',
-      'Falha ao aplicar merge fast-forward do update'
-    );
-    await this.appendHistory({ runId, event: 'merged_target', targetCommit: check.targetCommit });
+    const release = await this.prepareRelease(runId, check.targetCommit);
+    await this.appendHistory({
+      runId,
+      event: 'release_prepared',
+      releaseId: release.releaseId,
+      targetCommit: release.commit
+    });
 
-    await this.setState('installing', {}, 'installing');
-    try {
-      await this.runCommandForStage(
-        this.installCommand,
-        options,
-        'npm_ci',
-        'Falha ao instalar dependências com npm ci'
-      );
-    } catch (installError) {
-      await this.appendHistory({
-        runId,
-        event: 'install_fallback',
-        stage: installError.stage || 'npm_ci',
-        error: installError.message
-      });
-      await this.runCommandForStage(
-        this.fallbackInstallCommand,
-        options,
-        'npm_install_fallback',
-        'Falha ao instalar dependências com fallback'
-      );
-    }
+    await this.setState('installing', {
+      stagingRelease: null,
+      targetRelease: release.releaseId,
+      activationState: 'activating'
+    }, 'installing');
+    await this.activateRelease(release);
 
     await this.setState('restarting', {
       restartRequestedAt: new Date().toISOString(),
-      lastSupervisor: 'pm2'
+      lastSupervisor: 'pm2',
+      currentCommit: release.commit,
+      currentRelease: release.releaseId,
+      targetRelease: release.releaseId,
+      activationState: 'restarting'
     }, 'restart_requested');
-    await this.appendHistory({ runId, event: 'restart_requested', rollback: false });
+    await this.appendHistory({
+      runId,
+      event: 'restart_requested',
+      rollback: false,
+      releaseId: release.releaseId,
+      targetCommit: release.commit
+    });
     await this.requestRestart();
   }
 
@@ -806,11 +1020,18 @@ class UpdateOrchestrator {
     });
 
     if (health.ok) {
+      const activeRelease = await this.readCurrentReleaseMeta();
       await this.setState('idle', {
-        currentCommit: await this.getCurrentCommitSafe(),
+        currentCommit: activeRelease.activeCommit || await this.getCurrentCommitSafe(),
+        currentRelease: activeRelease.activeRelease || null,
+        previousCommit: activeRelease.previousCommit || this.state.previousCommit,
+        previousRelease: activeRelease.previousRelease || this.state.previousRelease,
         lastSuccessAt: new Date().toISOString(),
         lastError: null,
         lastFailureStage: null,
+        targetRelease: null,
+        stagingRelease: null,
+        activationState: 'active',
         rollbackPerformed: false,
         consecutiveFailures: 0
       }, 'validation_success');
@@ -834,7 +1055,6 @@ class UpdateOrchestrator {
   }
 
   async rollbackAndRestart(cause) {
-    const options = { cwd: this.repoRoot };
     if (!this.state.previousCommit) {
       await this.markFailure('rollback', cause, true);
       return;
@@ -842,43 +1062,37 @@ class UpdateOrchestrator {
 
     await this.setState('rollback', {
       rollbackPerformed: true,
-      lastError: cause.message
+      lastError: cause.message,
+      activationState: 'rollback'
     }, 'rollback_started');
     await this.appendHistory({
       event: 'rollback_started',
       previousCommit: this.state.previousCommit,
+      previousRelease: this.state.previousRelease,
       error: cause.message
     });
 
     try {
-      await this.runCommandForStage(
-        `git reset --hard ${this.state.previousCommit}`,
-        options,
-        'git_rollback_reset',
-        'Falha ao executar rollback do commit anterior'
-      );
-      try {
-        await this.runCommandForStage(
-          this.installCommand,
-          options,
-          'npm_ci_rollback',
-          'Falha ao reinstalar dependências no rollback'
-        );
-      } catch {
-        await this.runCommandForStage(
-          this.fallbackInstallCommand,
-          options,
-          'npm_install_rollback_fallback',
-          'Falha no fallback de dependências durante rollback'
+      const restored = await this.restorePreviousRelease();
+      if (!restored) {
+        throw this.createStageError(
+          'release_restore',
+          'Falha ao restaurar release anterior durante rollback'
         );
       }
 
       await this.setState('restarting', {
-        restartRequestedAt: new Date().toISOString()
+        restartRequestedAt: new Date().toISOString(),
+        currentCommit: this.state.previousCommit,
+        currentRelease: this.state.previousRelease,
+        targetRelease: null,
+        stagingRelease: null,
+        activationState: 'rollback_restart'
       }, 'rollback_restart_requested');
       await this.appendHistory({
         event: 'rollback_restart_requested',
-        previousCommit: this.state.previousCommit
+        previousCommit: this.state.previousCommit,
+        previousRelease: this.state.previousRelease
       });
       await this.requestRestart();
     } catch (error) {
@@ -1085,6 +1299,11 @@ class UpdateOrchestrator {
   }
 
   async getCurrentCommitSafe() {
+    const activeRelease = await this.readCurrentReleaseMeta();
+    if (activeRelease.activeCommit) {
+      return activeRelease.activeCommit;
+    }
+
     try {
       const { stdout } = await execCommand('git rev-parse HEAD', { cwd: this.repoRoot });
       return stdout;

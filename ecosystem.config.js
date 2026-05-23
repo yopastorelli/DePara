@@ -3,12 +3,15 @@ const path = require('path');
 
 const runtimeRoot = process.env.DEPARA_RUNTIME_ROOT || path.join(os.homedir(), '.depara');
 const logsDir = path.join(runtimeRoot, 'logs');
+const currentRoot = path.join(runtimeRoot, 'current');
+const currentEntry = path.join(currentRoot, 'src', 'main.js');
 
 module.exports = {
   apps: [
     {
       name: 'DePara',
-      script: 'src/main.js',
+      script: currentEntry,
+      cwd: currentRoot,
       instances: 1,
       exec_mode: 'fork',
       watch: false,
@@ -28,6 +31,7 @@ module.exports = {
         LOG_LEVEL: 'warn',
         LOG_TO_CONSOLE: 'false',
         DEPARA_RUNTIME_ROOT: runtimeRoot,
+        DEPARA_UPDATE_SOURCE_ROOT: __dirname,
         PM2_APP_NAME: 'DePara',
         DEPARA_ALLOW_SYSTEMD_FALLBACK: 'false'
       },
@@ -37,6 +41,7 @@ module.exports = {
         LOG_LEVEL: 'warn',
         LOG_TO_CONSOLE: 'false',
         DEPARA_RUNTIME_ROOT: runtimeRoot,
+        DEPARA_UPDATE_SOURCE_ROOT: __dirname,
         PM2_APP_NAME: 'DePara',
         DEPARA_ALLOW_SYSTEMD_FALLBACK: 'false'
       },
@@ -44,7 +49,8 @@ module.exports = {
         NODE_ENV: 'development',
         PORT: 3000,
         LOG_LEVEL: 'debug',
-        LOG_TO_CONSOLE: 'true'
+        LOG_TO_CONSOLE: 'true',
+        DEPARA_UPDATE_SOURCE_ROOT: __dirname
       },
       env_raspberry: {
         NODE_ENV: 'production',
@@ -52,6 +58,7 @@ module.exports = {
         LOG_LEVEL: 'warn',
         LOG_TO_CONSOLE: 'false',
         DEPARA_RUNTIME_ROOT: runtimeRoot,
+        DEPARA_UPDATE_SOURCE_ROOT: __dirname,
         PM2_APP_NAME: 'DePara',
         DEPARA_ALLOW_SYSTEMD_FALLBACK: 'false',
         UV_THREADPOOL_SIZE: 4,

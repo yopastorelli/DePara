@@ -1,24 +1,28 @@
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
+const { getRuntimeDataDir, getSourceRepoRoot } = require('./runtimePaths');
 
 const DEFAULT_CONFIG_VERSION = 1;
 const DEFAULT_SLIDESHOW_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
 
 function getRepoRoot() {
-  return path.resolve(__dirname, '../..');
+  return getSourceRepoRoot();
 }
 
 function getDataDir() {
-  return process.env.DEPARA_DATA_DIR || path.join(getRepoRoot(), 'data');
+  return getRuntimeDataDir();
 }
 
 function getConfigPath() {
   return process.env.DEPARA_CONFIG_FILE || path.join(getDataDir(), 'depara-config.json');
 }
 
-function getLegacyConfigPath() {
-  return path.join(getRepoRoot(), 'src', 'data', 'depara-config.json');
+function getLegacyConfigPaths() {
+  return [
+    path.join(getRepoRoot(), 'data', 'depara-config.json'),
+    path.join(getRepoRoot(), 'src', 'data', 'depara-config.json')
+  ];
 }
 
 function getDefaultConfig() {
@@ -136,14 +140,19 @@ async function writeConfigAtomic(config) {
 
 async function migrateLegacyConfigIfNeeded() {
   const targetPath = getConfigPath();
-  const legacyPath = getLegacyConfigPath();
-
-  if (fsSync.existsSync(targetPath) || !fsSync.existsSync(legacyPath)) {
+  if (fsSync.existsSync(targetPath)) {
     return;
   }
 
-  await ensureDirectory();
-  await fs.copyFile(legacyPath, targetPath);
+  for (const legacyPath of getLegacyConfigPaths()) {
+    if (!fsSync.existsSync(legacyPath)) {
+      continue;
+    }
+
+    await ensureDirectory();
+    await fs.copyFile(legacyPath, targetPath);
+    return;
+  }
 }
 
 async function readRawConfig() {
