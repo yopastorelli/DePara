@@ -33,31 +33,24 @@
 ### Tray
 - `GET /api/tray/status`
 
-## Payloads mínimos
+## Diagnóstico de update
+- `status` e `diagnostics` devem expor:
+  - `runtime.supervisor.supervisor`
+  - `runtime.supervisor.pm2.available`
+  - `runtime.supervisor.pm2.registered`
+  - `runtime.scheduler.lastCycleAt`
+  - `runtime.scheduler.stale`
+  - `runtime.lock`
+  - `runtime.lastFailureStage`
 
-`POST /api/config`
-```json
-{
-  "config": {
-    "slideshowSelectedPath": "C:/Fotos",
-    "slideshowConfig": {
-      "interval": 3,
-      "extensions": [".jpg", ".png"],
-      "recursive": true
-    }
-  }
-}
-```
+## Endpoints removidos
+- `GET /api/update/check`
+- `POST /api/update/apply`
+- `POST /api/update/restart`
+- `GET /api/update/status`
 
-`POST /api/files/execute`
-```json
-{
-  "action": "copy",
-  "sourcePath": "C:/origem/arquivo.txt",
-  "targetPath": "C:/destino/arquivo.txt"
-}
-```
+Novas UIs, testes e automações devem usar exclusivamente `/api/update/auto/*`.
 
-## Endpoints legados
-- Superfícies `GET /api/update/check`, `POST /api/update/apply`, `POST /api/update/restart` e `GET /api/update/status` permanecem por compatibilidade.
-- Não use endpoints legados em novos testes ou novos fluxos de IA.
+## Política operacional
+- Produção RP4 assume `PM2` como único supervisor suportado.
+- Logging em `console` não faz parte do contrato operacional padrão em `production` ou `test`.

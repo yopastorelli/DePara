@@ -1,35 +1,40 @@
 # Troubleshooting
 
-## UI não abre ou quebra no carregamento
+## UI quebra no carregamento
 ```bash
 npm run lint
-npm run test:unit
+npm run test:e2e
 ```
-- Suspeita principal: parser quebrado em `src/public/app.js`.
+- Suspeita principal: regressão em `src/public/app.js` ou módulos carregados por `index.html`
 
 ## Config não persiste
 ```bash
 curl -s http://127.0.0.1:3000/api/config
 ```
-- Verifique `DEPARA_DATA_DIR` e `DEPARA_CONFIG_FILE`.
-- Verifique escrita em `data/depara-config.json`.
+- Verifique `DEPARA_DATA_DIR`
+- Verifique `DEPARA_CONFIG_FILE`
+- Verifique permissão de escrita do runtime
 
 ## Operações de arquivo falham
 ```bash
 npm run test:smoke
 ```
-- Valide `sourcePath`, `targetPath` e permissões do diretório real.
-- Valide as restrições de `validateSafePath`.
+- Valide `sourcePath`, `targetPath` e permissões do diretório real
+- Verifique `DEPARA_BACKUP_DIR` e `DEPARA_TEMP_DIR`
+- Confirme que a operação não está usando caminho fora da política de segurança
 
 ## Update em estado estranho
 ```bash
+pm2 status
+pm2 logs DePara --lines 100
 curl -s http://127.0.0.1:3000/api/update/auto/status
 curl -s http://127.0.0.1:3000/api/update/auto/diagnostics
 ```
-- Em teste, confirme `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true`.
-- Em RP4 real, confirme PM2 ou systemd configurados.
+- Se `runtime.supervisor.pm2.registered=false`, o auto-update não pode rodar
+- Se `runtime.scheduler.stale=true`, trate como processo sem persistência ou scheduler morto
+- Se `runtime.lastFailureStage` estiver preenchido, trate essa etapa como causa raiz
 
-## Navegação rápida para IA
-- Arquitetura: [ARCHITECTURE.md](ARCHITECTURE.md)
-- Testes: [TESTING.md](TESTING.md)
-- Operação RP4: [RP4-OPS.md](RP4-OPS.md)
+## Legado interno que não deve voltar para fluxos novos
+- Endpoints legados de update
+- Restart direto pela UI fora do PM2
+- Escrita de backup/logs no repositório por default
