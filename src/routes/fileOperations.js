@@ -589,25 +589,35 @@ router.post('/execute', normalRateLimiter, async (req, res) => {
  */
 router.post('/schedule', async (req, res) => {
     try {
-        const { operationId, name, frequency, action, sourcePath, targetPath, options = {} } = req.body;
+        const { operationId, name, frequency, action, sourcePath, targetPath, active, options = {} } = req.body;
 
-        // Log detalhado dos dados recebidos
-        logger.info(`📥 Dados recebidos para agendamento:`, { 
+        logger.debug('Dados recebidos para agendamento', { 
             operationId, 
             name, 
             frequency, 
             action, 
             sourcePath, 
-            targetPath, 
+            targetPath,
+            active,
             options 
         });
 
         // Validação
-        if (!frequency || !action || !sourcePath) {
+        if (!name || !frequency || !action || !sourcePath) {
             return res.status(400).json({
                 error: {
                     message: 'Parâmetros obrigatórios ausentes',
-                    required: ['frequency', 'action', 'sourcePath']
+                    required: ['name', 'frequency', 'action', 'sourcePath']
+                }
+            });
+        }
+
+        const normalizedAction = action.toLowerCase();
+        if ((normalizedAction === 'move' || normalizedAction === 'copy') && !targetPath) {
+            return res.status(400).json({
+                error: {
+                    message: 'Destino obrigatório para operações de mover ou copiar',
+                    field: 'targetPath'
                 }
             });
         }
@@ -621,11 +631,10 @@ router.post('/schedule', async (req, res) => {
             action,
             sourcePath,
             targetPath,
+            active: active !== false,
             options
         };
 
-        logger.info(`🔧 Configuração criada:`, { id, config });
-        logger.info(`📝 Nome da operação: "${name}" (tipo: ${typeof name})`);
         fileOperationsManager.scheduleOperation(id, config);
 
         logger.info(`Operação agendada: ${id}`);
@@ -683,19 +692,23 @@ router.delete('/schedule/:operationId', strictRateLimiter, async (req, res) => {
  * PUT /api/files/schedule/:operationId
  */
 router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
+    const startTime = Date.now();
     try {
         const { operationId } = req.params;
-        const { name, frequency, action, sourcePath, targetPath, options = {} } = req.body;
+        const { name, frequency, action, sourcePath, targetPath, active, options } = req.body;
 
-        // Log detalhado dos dados recebidos para debug
-        logger.info(`📝 Editando operação agendada: ${operationId}`, { 
+        logger.debug('Editando operação agendada', { 
             operationId, 
             body: req.body,
             params: req.params
         });
 
-        // Sanitização e validação robusta dos parâmetros
-        let sanitizedName, sanitizedFrequency, sanitizedAction, sanitizedSourcePath, sanitizedTargetPath;
+        let sanitizedName;
+        let sanitizedFrequency;
+        let sanitizedAction;
+        let sanitizedSourcePath;
+        let sanitizedTargetPath;
+        let sanitizedActive;
         
         try {
             if (name !== undefined) {
@@ -751,6 +764,13 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
                     allowRelative: true
                 });
             }
+
+            if (active !== undefined) {
+                if (typeof active !== 'boolean') {
+                    throw new ValidationError('active deve ser booleano', 'active', active);
+                }
+                sanitizedActive = active;
+            }
         } catch (validationError) {
             return res.status(400).json({
                 error: {
@@ -769,8 +789,9 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
         if (sanitizedSourcePath !== undefined) newConfig.sourcePath = sanitizedSourcePath;
         if (sanitizedTargetPath !== undefined) newConfig.targetPath = sanitizedTargetPath;
         if (options !== undefined) newConfig.options = options;
+        if (sanitizedActive !== undefined) newConfig.active = sanitizedActive;
 
-        logger.info(`🔧 Configuração preparada para edição:`, { 
+        logger.debug('Configuração preparada para edição', { 
             operationId, 
             newConfig,
             sanitizedFields: {
@@ -778,7 +799,8 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
                 frequency: sanitizedFrequency,
                 action: sanitizedAction,
                 sourcePath: sanitizedSourcePath,
-                targetPath: sanitizedTargetPath
+                targetPath: sanitizedTargetPath,
+                active: sanitizedActive
             }
         });
 
@@ -787,7 +809,7 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
             return res.status(400).json({
                 error: {
                     message: 'Nenhum campo para atualização fornecido',
-                    details: 'Forneça pelo menos um dos campos: name, frequency, action, sourcePath, targetPath, options'
+                    details: 'Forneça pelo menos um dos campos: name, frequency, action, sourcePath, targetPath, options, active'
                 }
             });
         }
@@ -797,7 +819,6 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
             newConfig
         });
 
-        logger.info(`Editando operação agendada: ${operationId}`, { operationId, newConfig });
         const result = fileOperationsManager.editScheduledOperation(operationId, newConfig);
 
         const duration = Date.now() - startTime;
@@ -893,16 +914,25 @@ router.post('/schedule/:operationId/execute', strictRateLimiter, async (req, res
         if ((operation.action === 'move' || operation.action === 'copy')) {
             try {
                 const targetStats = await fs.stat(operation.targetPath);
-                logger.info(`📁 Destino existe: ${operation.targetPath}`, { 
+                logger.info(`Destino existe para execu??o agendada: ${operation.targetPath}`, {
                     isDirectory: targetStats.isDirectory(),
                     isFile: targetStats.isFile()
                 });
             } catch (targetError) {
-                logger.error(`❌ Destino não existe: ${operation.targetPath}`, { error: targetError.message });
-                return res.status(400).json({
-                    success: false,
-                    error: `Destino não existe: ${operation.targetPath}`
-                });
+                const parentDir = path.dirname(operation.targetPath);
+
+                try {
+                    const parentStats = await fs.stat(parentDir);
+                    logger.info(`Destino ser? criado dentro de: ${parentDir}`, {
+                        isDirectory: parentStats.isDirectory()
+                    });
+                } catch (parentError) {
+                    logger.error(`Destino inv?lido: ${operation.targetPath}`, { error: parentError.message });
+                    return res.status(400).json({
+                        success: false,
+                        error: `Destino inv?lido: ${operation.targetPath}`
+                    });
+                }
             }
         }
         

@@ -1,4 +1,4 @@
-// DePara Web Interface - JavaScript
+﻿// DePara Web Interface - JavaScript
 // @author yopastorelli
 // @version 2.0.0
 
@@ -30,7 +30,7 @@ class Logger {
             url: window.location.href
         };
 
-        // Adicionar ao histÃƒÂ³rico
+        // Adicionar ao histÃƒÆ’Ã‚Â³rico
         this.logs.push(logEntry);
         if (this.logs.length > this.maxLogs) {
             this.logs.shift();
@@ -49,7 +49,7 @@ class Logger {
             console.log(consoleLine);
         }
 
-        // Enviar logs crÃƒÂ­ticos para o servidor
+        // Enviar logs crÃƒÆ’Ã‚Â­ticos para o servidor
         if (level === 'error' || level === 'warn') {
             this.sendLogToServer(logEntry);
         }
@@ -59,13 +59,13 @@ class Logger {
 
     getLevelEmoji(level) {
         const emojis = {
-            error: 'Ã¢ÂÅ’',
-            warn: 'Ã¢Å¡Â Ã¯Â¸Â',
-            info: 'Ã¢â€žÂ¹Ã¯Â¸Â',
-            debug: 'Ã°Å¸â€Â',
-            success: 'Ã¢Å“â€¦'
+            error: 'ÃƒÂ¢Ã‚ÂÃ…â€™',
+            warn: 'ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â',
+            info: 'ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â',
+            debug: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â',
+            success: 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦'
         };
-        return emojis[level] || 'Ã°Å¸â€œÂ';
+        return emojis[level] || 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â';
     }
 
     getLevelColor(level) {
@@ -115,7 +115,7 @@ class Logger {
                 body: JSON.stringify(logEntry)
             });
         } catch (error) {
-            // Silenciar erro para nÃƒÂ£o criar loop
+            // Silenciar erro para nÃƒÆ’Ã‚Â£o criar loop
             console.warn('Falha ao enviar log para servidor:', error);
         }
     }
@@ -139,7 +139,7 @@ class Logger {
     }
 }
 
-// InstÃƒÂ¢ncia global do logger
+// InstÃƒÆ’Ã‚Â¢ncia global do logger
 const logger = new Logger();
 
 class DeParaUI {
@@ -174,11 +174,11 @@ class DeParaUI {
     }
 
     async init() {
-        // Carregar configuraÃƒÂ§ÃƒÂµes do servidor primeiro (persiste entre reinicializacões)
+        // Carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do servidor primeiro (persiste entre reinicializacÃµes)
         await this.loadServerConfig();
-        console.log('Ã°Å¸â€Â DEBUG - ConfiguraÃƒÂ§ÃƒÂµes carregadas:', this.slideshowConfig);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes carregadas:', this.slideshowConfig);
         
-        logger.info('Ã°Å¸Å¡â‚¬ Inicializando DePara UI...', {
+        logger.info('ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬ Inicializando DePara UI...', {
             version: '2.0.0',
             userAgent: navigator.userAgent,
             timestamp: new Date().toISOString()
@@ -198,9 +198,9 @@ class DeParaUI {
             this.initializeCache();
             logger.success('Cache inicializado');
 
-            // Carregar configuraÃƒÂ§ÃƒÂµes
+            // Carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
             await this.loadSettings();
-            logger.success('ConfiguraÃƒÂ§ÃƒÂµes carregadas');
+            logger.success('ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes carregadas');
 
             // Carregar pastas
             await this.loadFolders();
@@ -214,13 +214,13 @@ class DeParaUI {
             this.startUnifiedRefreshScheduler();
             logger.success('Scheduler unificado iniciado');
 
-            // Testar conexÃƒÂ£o com API
+            // Testar conexÃƒÆ’Ã‚Â£o com API
             const apiOnline = await this.testApiConnection();
             if (apiOnline) {
                 this.showToast('DePara iniciado com sucesso!', 'success');
                 logger.success('API conectada', { apiStatus: 'online' });
             } else {
-                this.showToast('API nÃƒÂ£o estÃƒÂ¡ respondendo. Verifique se o servidor estÃƒÂ¡ rodando.', 'warning');
+                this.showToast('API nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ respondendo. Verifique se o servidor estÃƒÆ’Ã‚Â¡ rodando.', 'warning');
                 logger.warn('API offline', { apiStatus: 'offline' });
             }
 
@@ -228,9 +228,9 @@ class DeParaUI {
             this.updateApiStatus();
             logger.success('Status da API sincronizado');
 
-            // Inicializar grÃƒÂ¡ficos
+            // Inicializar grÃƒÆ’Ã‚Â¡ficos
             this.initializeCharts();
-            logger.success('GrÃƒÂ¡ficos inicializados');
+            logger.success('GrÃƒÆ’Ã‚Â¡ficos inicializados');
 
             // Configurar atalhos de teclado
             this.setupKeyboardShortcuts();
@@ -247,22 +247,22 @@ class DeParaUI {
             this.setupDashboardFullscreenControls();
             logger.success('Controles de fullscreen do dashboard configurados');
 
-            // ForÃƒÂ§ar atualizaÃƒÂ§ÃƒÂ£o inicial da dashboard
+            // ForÃƒÆ’Ã‚Â§ar atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o inicial da dashboard
             await this.updateDashboard();
             logger.success('Dashboard atualizada');
 
-            // Mostrar onboarding se necessÃƒÂ¡rio
+            // Mostrar onboarding se necessÃƒÆ’Ã‚Â¡rio
             if (!this.isDedicatedScreensaverWindow && !localStorage.getItem('depara-onboarding-completed')) {
                 setTimeout(() => this.showOnboarding(), 1000);
             }
 
-            // Configurar event listeners para substituir violaÃƒÂ§ÃƒÂµes de CSP
+            // Configurar event listeners para substituir violaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de CSP
             this.setupCSPSafeEventListeners();
 
-            // Configurar validaÃƒÂ§ÃƒÂ£o de operaÃƒÂ§ÃƒÂµes
+            // Configurar validaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
             this.setupOperationValidation();
 
-            // Garantir que o campo de origem esteja sempre visÃƒÂ­vel
+            // Garantir que o campo de origem esteja sempre visÃƒÆ’Ã‚Â­vel
             this.ensureSourceFieldVisible();
             this.refreshFileOpsState();
             
@@ -273,7 +273,7 @@ class DeParaUI {
             }
 
             const initDuration = Date.now() - startTime;
-            logger.success('Ã°Å¸Å½â€° InicializaÃƒÂ§ÃƒÂ£o completa!', {
+            logger.success('ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â° InicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o completa!', {
                 duration: `${initDuration}ms`,
                 components: [
                     'eventListeners',
@@ -291,15 +291,15 @@ class DeParaUI {
             });
 
         } catch (error) {
-            logger.error('Ã¢ÂÅ’ Erro durante inicializaÃƒÂ§ÃƒÂ£o', {
+            logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro durante inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', {
                 error: error.message,
                 stack: error.stack,
                 userAgent: navigator.userAgent,
                 timestamp: new Date().toISOString()
             });
-            this.showToast('Erro na inicializaÃƒÂ§ÃƒÂ£o. Verifique o console.', 'error');
+            this.showToast('Erro na inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o. Verifique o console.', 'error');
         } finally {
-            // Esconder splash screen apÃƒÂ³s inicializaÃƒÂ§ÃƒÂ£o
+            // Esconder splash screen apÃƒÆ’Ã‚Â³s inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
             setTimeout(() => this.hideSplashScreen(), 2000);
         }
     }
@@ -324,7 +324,7 @@ class DeParaUI {
         }
     }
 
-    // Testa conexÃƒÂ£o com a API
+    // Testa conexÃƒÆ’Ã‚Â£o com a API
     async testApiConnection() {
         try {
             const response = await fetch('/api/health', {
@@ -335,7 +335,7 @@ class DeParaUI {
             });
             return response.ok;
         } catch (error) {
-            console.warn('Erro ao testar conexÃƒÂ£o com API:', error);
+            console.warn('Erro ao testar conexÃƒÆ’Ã‚Â£o com API:', error);
             return false;
         }
     }
@@ -346,29 +346,29 @@ class DeParaUI {
         const apiStatusIconElement = document.getElementById('api-status-icon');
 
         if (!apiStatusElement || !apiStatusIconElement) {
-            console.warn('Elementos de status da API nÃƒÂ£o encontrados');
+            console.warn('Elementos de status da API nÃƒÆ’Ã‚Â£o encontrados');
             return;
         }
 
         try {
-            console.log('Ã°Å¸â€Â Verificando status da API...');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Verificando status da API...');
             const isOnline = await this.testApiConnection();
 
             if (isOnline) {
-                console.log('Ã¢Å“â€¦ API estÃƒÂ¡ online');
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ API estÃƒÆ’Ã‚Â¡ online');
                 apiStatusElement.textContent = 'Online';
                 apiStatusElement.className = 'value online';
                 apiStatusIconElement.textContent = 'api';
                 apiStatusIconElement.className = 'material-icons online';
             } else {
-                console.log('Ã¢ÂÅ’ API estÃƒÂ¡ offline');
+                console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ API estÃƒÆ’Ã‚Â¡ offline');
                 apiStatusElement.textContent = 'Offline';
                 apiStatusElement.className = 'value offline';
                 apiStatusIconElement.textContent = 'error';
                 apiStatusIconElement.className = 'material-icons offline';
             }
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao verificar status da API:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao verificar status da API:', error);
             apiStatusElement.textContent = 'Erro';
             apiStatusElement.className = 'value offline';
             apiStatusIconElement.textContent = 'error';
@@ -415,7 +415,7 @@ class DeParaUI {
             // Atualizar status do sistema
             await this.updateSystemStatus();
 
-            // Atualizar atividades recentes se estiver visÃƒÂ­vel
+            // Atualizar atividades recentes se estiver visÃƒÆ’Ã‚Â­vel
             await this.loadRecentActivities();
 
             // Atualizar contadores
@@ -459,7 +459,7 @@ class DeParaUI {
         }
     }
 
-    // Carregar operaÃƒÂ§ÃƒÂµes agendadas para o dashboard
+    // Carregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas para o dashboard
     async loadDashboardScheduledOperations() {
         try {
             const data = window.DeParaRuntimeStatus
@@ -467,24 +467,24 @@ class DeParaUI {
                 : await (await fetch('/api/files/scheduled')).json();
             this.updateDashboardScheduledOperations(data.data || []);
         } catch (error) {
-            console.warn('Erro ao carregar operaÃƒÂ§ÃƒÂµes agendadas para dashboard:', error);
+            console.warn('Erro ao carregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas para dashboard:', error);
         }
     }
 
-    // Atualizar exibiÃƒÂ§ÃƒÂ£o de operaÃƒÂ§ÃƒÂµes agendadas no dashboard
+    // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas no dashboard
     updateDashboardScheduledOperations(operations) {
         const container = document.querySelector('#dashboard .scheduled-operations .operations-list');
         if (!container) return;
 
         if (operations.length === 0) {
-            container.innerHTML = '<p class="empty-state">Nenhuma operaÃƒÂ§ÃƒÂ£o agendada</p>';
+            container.innerHTML = '<p class="empty-state">Nenhuma operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o agendada</p>';
             return;
         }
 
         container.innerHTML = operations.slice(0, 5).map(op => `
             <div class="operation-item ${op.active ? 'active' : 'paused'}">
                 <div class="operation-info">
-                    <h4>${op.name || 'OperaÃƒÂ§ÃƒÂ£o sem nome'}</h4>
+                    <h4>${op.name || 'OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o sem nome'}</h4>
                     <p>${op.action} - ${op.frequency}</p>
                 </div>
                 <div class="operation-status">
@@ -496,25 +496,25 @@ class DeParaUI {
         `).join('');
 
         if (operations.length > 5) {
-            container.innerHTML += `<p class="more-operations">+${operations.length - 5} operaÃƒÂ§ÃƒÂµes adicionais</p>`;
+            container.innerHTML += `<p class="more-operations">+${operations.length - 5} operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes adicionais</p>`;
         }
     }
 
     // Atualizar display do status do sistema
     updateSystemStatusDisplay(data) {
         try {
-            logger.debug('Ã°Å¸â€œÅ  Atualizando display de status do sistema', {
+            logger.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Atualizando display de status do sistema', {
                 memory: data.memory,
                 disk: data.disk,
                 activeOperations: data.activeOperations
             });
 
-            // Atualizar uso de memÃƒÂ³ria
+            // Atualizar uso de memÃƒÆ’Ã‚Â³ria
             const memoryElement = document.getElementById('memory-usage');
             if (memoryElement && data.memory) {
                 const memoryUsage = data.memory.percentage || 0;
                 memoryElement.textContent = `${memoryUsage}%`;
-                logger.debug('Ã¢Å“â€¦ MemÃƒÂ³ria atualizada', { memoryUsage });
+                logger.debug('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ MemÃƒÆ’Ã‚Â³ria atualizada', { memoryUsage });
             }
 
             // Atualizar uso de disco
@@ -522,7 +522,7 @@ class DeParaUI {
             if (diskElement && data.disk && data.disk.drives) {
                 const drives = data.disk.drives;
                 if (drives.length > 0) {
-                    // Filtrar apenas discos vÃƒÂ¡lidos (com tamanho > 0)
+                    // Filtrar apenas discos vÃƒÆ’Ã‚Â¡lidos (com tamanho > 0)
                     const validDrives = drives.filter(drive => drive.total > 0);
                     
                     if (validDrives.length > 0) {
@@ -545,14 +545,14 @@ class DeParaUI {
                                 // Adicionar ao tooltip
                                 tooltipText += `${index + 1}. ${driveMountpoint}: ${driveUsedGB} GB / ${driveTotalGB} GB (${drive.percentage}%)\n`;
                                 
-                                // Adicionar ao texto principal (mÃƒÂ¡ximo 3 discos visÃƒÂ­veis)
+                                // Adicionar ao texto principal (mÃƒÆ’Ã‚Â¡ximo 3 discos visÃƒÆ’Ã‚Â­veis)
                                 if (index < 3) {
                                     if (index > 0) diskText += ' | ';
                                     diskText += `${driveUsedGB} GB / ${driveTotalGB} GB (${driveMountpoint})`;
                                 }
                             });
                             
-                            // Se hÃƒÂ¡ mais de 3 discos, adicionar contador
+                            // Se hÃƒÆ’Ã‚Â¡ mais de 3 discos, adicionar contador
                             if (validDrives.length > 3) {
                                 diskText += ` +${validDrives.length - 3}`;
                             }
@@ -567,17 +567,17 @@ class DeParaUI {
                 } else {
                     diskElement.textContent = 'N/A';
                 }
-                logger.debug('Ã¢Å“â€¦ Disco atualizado', { drives, validDrives: drives.filter(d => d.total > 0) });
+                logger.debug('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Disco atualizado', { drives, validDrives: drives.filter(d => d.total > 0) });
             }
 
-            // Atualizar operaÃƒÂ§ÃƒÂµes ativas - buscar operaÃƒÂ§ÃƒÂµes agendadas
+            // Atualizar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas - buscar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas
             const activeOpsElement = document.getElementById('active-ops');
             if (activeOpsElement) {
                 this.updateActiveOperationsCount();
             }
 
         } catch (error) {
-            logger.error('Ã¢ÂÅ’ Erro ao atualizar display de status', {
+            logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao atualizar display de status', {
                 error: error.message,
                 stack: error.stack,
                 data: data
@@ -588,18 +588,18 @@ class DeParaUI {
     // Atualizar display de atividades recentes
     updateActivitiesDisplay(data) {
         try {
-            logger.debug('Ã°Å¸â€œâ€¹ Atualizando display de atividades', {
+            logger.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Atualizando display de atividades', {
                 activitiesCount: data?.activities?.length || 0,
                 hasData: !!data
             });
 
             const activityList = document.getElementById('recent-activity');
             if (!activityList) {
-                logger.warn('Ã¢Å¡Â Ã¯Â¸Â Elemento recent-activity nÃƒÂ£o encontrado');
+                logger.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Elemento recent-activity nÃƒÆ’Ã‚Â£o encontrado');
                 return;
             }
 
-            // Se nÃƒÂ£o hÃƒÂ¡ dados ou atividades
+            // Se nÃƒÆ’Ã‚Â£o hÃƒÆ’Ã‚Â¡ dados ou atividades
             if (!data || !data.activities || data.activities.length === 0) {
                 activityList.innerHTML = `
                     <div class="activity-item">
@@ -607,7 +607,7 @@ class DeParaUI {
                         <span>Nenhuma atividade recente</span>
                     </div>
                 `;
-                logger.info('Ã¢â€žÂ¹Ã¯Â¸Â Nenhuma atividade para exibir');
+                logger.info('ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â Nenhuma atividade para exibir');
                 return;
             }
 
@@ -627,13 +627,13 @@ class DeParaUI {
             }).join('');
 
             activityList.innerHTML = activitiesHtml;
-            logger.success('Ã¢Å“â€¦ Atividades renderizadas', {
+            logger.success('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Atividades renderizadas', {
                 activitiesCount: data.activities.length,
                 displayedCount: Math.min(data.activities.length, 10)
             });
 
         } catch (error) {
-            logger.error('Ã¢ÂÅ’ Erro ao atualizar display de atividades', {
+            logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao atualizar display de atividades', {
                 error: error.message,
                 stack: error.stack,
                 data: data
@@ -641,7 +641,7 @@ class DeParaUI {
         }
     }
 
-    // Obter ÃƒÂ­cone apropriado para o tipo de atividade
+    // Obter ÃƒÆ’Ã‚Â­cone apropriado para o tipo de atividade
     getActivityIcon(type) {
         const iconMap = {
             'move': 'drive_file_move',
@@ -667,9 +667,9 @@ class DeParaUI {
         const diffDays = Math.floor(diffMs / 86400000);
 
         if (diffMins < 1) return 'agora';
-        if (diffMins < 60) return `${diffMins}min atrÃƒÂ¡s`;
-        if (diffHours < 24) return `${diffHours}h atrÃƒÂ¡s`;
-        return `${diffDays}d atrÃƒÂ¡s`;
+        if (diffMins < 60) return `${diffMins}min atrÃƒÆ’Ã‚Â¡s`;
+        if (diffHours < 24) return `${diffHours}h atrÃƒÆ’Ã‚Â¡s`;
+        return `${diffDays}d atrÃƒÆ’Ã‚Â¡s`;
     }
 
     // Navegar para caminho de origem
@@ -677,7 +677,7 @@ class DeParaUI {
         if (typeof this.showFolderBrowser === 'function') {
             this.showFolderBrowser('source');
         } else {
-            console.warn('FunÃƒÂ§ÃƒÂ£o showFolderBrowser nÃƒÂ£o encontrada');
+            console.warn('FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o showFolderBrowser nÃƒÆ’Ã‚Â£o encontrada');
             // Fallback: apenas focar no input
             const input = document.getElementById('source-path');
             if (input) {
@@ -692,7 +692,7 @@ class DeParaUI {
         if (typeof this.showFolderBrowser === 'function') {
             this.showFolderBrowser('target');
         } else {
-            console.warn('FunÃƒÂ§ÃƒÂ£o showFolderBrowser nÃƒÂ£o encontrada');
+            console.warn('FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o showFolderBrowser nÃƒÆ’Ã‚Â£o encontrada');
             // Fallback: apenas focar no input
             const input = document.getElementById('dest-path');
             if (input) {
@@ -702,10 +702,10 @@ class DeParaUI {
         }
     }
 
-    // Executar operaÃƒÂ§ÃƒÂ£o simples
+    // Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o simples
     async executeSimpleOperation(action) {
         if (this.isExecutingOperation) {
-            this.showToast('OperaÃƒÂ§ÃƒÂ£o jÃƒÂ¡ em andamento. Aguarde...', 'warning');
+            this.showToast('OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o jÃƒÆ’Ã‚Â¡ em andamento. Aguarde...', 'warning');
             return;
         }
 
@@ -714,7 +714,7 @@ class DeParaUI {
         const recursive = document.getElementById('recursive-option').checked;
         const backup = document.getElementById('backup-option').checked;
 
-        // ValidaÃƒÂ§ÃƒÂ£o bÃƒÂ¡sica
+        // ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o bÃƒÆ’Ã‚Â¡sica
         if (!sourcePath) {
             this.showToast('Digite o caminho de origem', 'error');
             return;
@@ -729,7 +729,7 @@ class DeParaUI {
         this.isExecutingOperation = true;
 
         try {
-            // Mostrar resultado da operaÃƒÂ§ÃƒÂ£o
+            // Mostrar resultado da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
             const resultDiv = document.getElementById('operation-result');
             const resultIcon = document.getElementById('result-icon');
             const resultText = document.getElementById('result-text');
@@ -737,10 +737,10 @@ class DeParaUI {
             if (resultDiv && resultIcon && resultText) {
                 resultDiv.style.display = 'block';
                 resultIcon.textContent = 'hourglass_empty';
-                resultText.textContent = 'Executando operaÃƒÂ§ÃƒÂ£o...';
+                resultText.textContent = 'Executando operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o...';
             }
 
-            // Preparar dados da operaÃƒÂ§ÃƒÂ£o
+            // Preparar dados da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
             const operationData = {
                 action: action,
                 sourcePath: sourcePath,
@@ -749,7 +749,7 @@ class DeParaUI {
                 createBackup: backup
             };
 
-            logger.info('Ã°Å¸â€â€ž Executando operaÃƒÂ§ÃƒÂ£o', {
+            logger.info('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Executando operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', {
                 operation: operationData.action,
                 sourcePath: operationData.sourcePath,
                 targetPath: operationData.targetPath,
@@ -772,12 +772,12 @@ class DeParaUI {
                 // Sucesso
                 if (resultDiv && resultIcon && resultText) {
                     resultIcon.textContent = 'check_circle';
-                    resultText.textContent = `OperaÃƒÂ§ÃƒÂ£o concluÃƒÂ­da com sucesso! ${result.message || ''}`;
+                    resultText.textContent = `OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o concluÃƒÆ’Ã‚Â­da com sucesso! ${result.message || ''}`;
                     resultDiv.className = 'operation-result success';
                 }
-                this.showToast('OperaÃƒÂ§ÃƒÂ£o executada com sucesso!', 'success');
+                this.showToast('OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o executada com sucesso!', 'success');
 
-                logger.success('Ã¢Å“â€¦ OperaÃƒÂ§ÃƒÂ£o executada com sucesso', {
+                logger.success('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o executada com sucesso', {
                     operation: operationData.action,
                     message: result.message,
                     responseTime: Date.now() - Date.now() // TODO: calcular tempo real
@@ -788,14 +788,14 @@ class DeParaUI {
 
             } else {
                 // Erro
-                const errorMsg = result.message || 'Erro desconhecido na operaÃƒÂ§ÃƒÂ£o';
+                const errorMsg = result.message || 'Erro desconhecido na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o';
                 if (resultDiv && resultIcon && resultText) {
                     resultIcon.textContent = 'error';
                     resultText.textContent = `Erro: ${errorMsg}`;
                     resultDiv.className = 'operation-result error';
                 }
                 this.showToast(errorMsg, 'error');
-                logger.error('Ã¢ÂÅ’ Erro na operaÃƒÂ§ÃƒÂ£o', {
+                logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', {
                     operation: operationData.action,
                     error: errorMsg,
                     result: result,
@@ -804,9 +804,9 @@ class DeParaUI {
             }
 
         } catch (error) {
-            const errorMsg = error.message || 'Erro de conexÃƒÂ£o';
+            const errorMsg = error.message || 'Erro de conexÃƒÆ’Ã‚Â£o';
 
-            logger.error('Ã¢ÂÅ’ Erro ao executar operaÃƒÂ§ÃƒÂ£o', {
+            logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', {
                 operation: operation,
                 error: errorMsg,
                 stack: error.stack,
@@ -827,14 +827,14 @@ class DeParaUI {
             this.showToast(errorMsg, 'error');
         } finally {
             this.isExecutingOperation = false;
-            logger.debug('Ã°Å¸â€â€ž OperaÃƒÂ§ÃƒÂ£o finalizada', { operation });
+            logger.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o finalizada', { operation });
         }
     }
 
     // Iniciar slideshow
     async startSlideshow() {
-        console.log('Ã°Å¸â€Â DEBUG - startSlideshow chamada');
-        console.log('Ã°Å¸â€Â DEBUG - ConfiguraÃƒÂ§ÃƒÂµes antes do slideshow:', this.slideshowConfig);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - startSlideshow chamada');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes antes do slideshow:', this.slideshowConfig);
         
         const folderPath = document.getElementById('slideshow-folder-path').value.trim();
 
@@ -843,7 +843,7 @@ class DeParaUI {
             return;
         }
 
-        // Coletar extensÃƒÂµes selecionadas
+        // Coletar extensÃƒÆ’Ã‚Âµes selecionadas
         const selectedExtensions = [];
         const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]:checked');
         extensionCheckboxes.forEach(checkbox => {
@@ -851,17 +851,17 @@ class DeParaUI {
         });
 
         if (selectedExtensions.length === 0) {
-            this.showToast('Selecione pelo menos uma extensÃƒÂ£o de arquivo', 'error');
+            this.showToast('Selecione pelo menos uma extensÃƒÆ’Ã‚Â£o de arquivo', 'error');
             return;
         }
 
-        console.log('Ã°Å¸Å½Â¬ Iniciando slideshow:', { folderPath, selectedExtensions });
+        console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¬ Iniciando slideshow:', { folderPath, selectedExtensions });
 
         await this.loadSlideshowImages(folderPath, selectedExtensions, true, this.slideshowConfig.interval);
         this.startSlideshowViewer();
     }
 
-    // ValidaÃƒÂ§ÃƒÂ£o de campos com feedback visual
+    // ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de campos com feedback visual
     validateField(field, type) {
         const value = field.value.trim();
         const validationDiv = field.parentNode.querySelector('.validation-message');
@@ -876,36 +876,36 @@ class DeParaUI {
             case 'name':
                 if (!value) {
                     isValid = false;
-                    message = 'Nome ÃƒÂ© obrigatÃƒÂ³rio';
+                    message = 'Nome ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio';
                 } else if (value.length < 3) {
                     isValid = false;
                     message = 'Nome deve ter pelo menos 3 caracteres';
                 } else if (!/^[a-zA-Z0-9\s\-_]+$/.test(value)) {
                     isValid = false;
-                    message = 'Nome contÃƒÂ©m caracteres invÃƒÂ¡lidos';
+                    message = 'Nome contÃƒÆ’Ã‚Â©m caracteres invÃƒÆ’Ã‚Â¡lidos';
                 }
                 break;
 
             case 'path':
                 if (!value) {
                     isValid = false;
-                    message = 'Caminho ÃƒÂ© obrigatÃƒÂ³rio';
+                    message = 'Caminho ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio';
                 } else if (!/^[a-zA-Z0-9\s\-_\/\\:.]+$/.test(value)) {
                     isValid = false;
-                    message = 'Caminho contÃƒÂ©m caracteres invÃƒÂ¡lidos';
+                    message = 'Caminho contÃƒÆ’Ã‚Â©m caracteres invÃƒÆ’Ã‚Â¡lidos';
                 }
                 break;
 
             case 'email':
                 if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
                     isValid = false;
-                    message = 'Email invÃƒÂ¡lido';
+                    message = 'Email invÃƒÆ’Ã‚Â¡lido';
                 }
                 break;
 
             default:
                 isValid = !!value;
-                message = 'Campo obrigatÃƒÂ³rio';
+                message = 'Campo obrigatÃƒÆ’Ã‚Â³rio';
         }
 
         // Atualizar feedback visual
@@ -926,7 +926,7 @@ class DeParaUI {
         return isValid;
     }
 
-    // ValidaÃƒÂ§ÃƒÂ£o de formulÃƒÂ¡rio completo
+    // ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de formulÃƒÆ’Ã‚Â¡rio completo
     validateForm(formSelector) {
         const form = document.querySelector(formSelector);
         if (!form) return false;
@@ -944,16 +944,16 @@ class DeParaUI {
         return isValid;
     }
 
-    // Garantir que o campo de origem esteja sempre visÃƒÂ­vel
+    // Garantir que o campo de origem esteja sempre visÃƒÆ’Ã‚Â­vel
     ensureSourceFieldVisible() {
         const sourceField = document.getElementById('source-folder-path');
         const sourceFieldParent = sourceField?.parentElement;
         
         if (sourceFieldParent) {
             sourceFieldParent.style.display = 'block';
-            console.log('Ã¢Å“â€¦ Campo de origem garantido como visÃƒÂ­vel na inicializaÃƒÂ§ÃƒÂ£o');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Campo de origem garantido como visÃƒÆ’Ã‚Â­vel na inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
         } else {
-            console.warn('Ã¢Å¡Â Ã¯Â¸Â Campo source-folder-path nÃƒÂ£o encontrado');
+            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Campo source-folder-path nÃƒÆ’Ã‚Â£o encontrado');
         }
     }
     
@@ -968,18 +968,18 @@ class DeParaUI {
                 if (!savedPath.startsWith('/') && !savedPath.match(/^[A-Za-z]:/)) {
                     const basePath = '/mnt/lytspot/@SYNC@/_@@PICZ & VIDEOS LYT @@_/_@LYT PicZ por ANO@_';
                     finalPath = `${basePath}/${savedPath}`;
-                    console.log('Ã°Å¸â€â€” Caminho relativo convertido para absoluto na inicializaÃƒÂ§ÃƒÂ£o:', finalPath);
+                    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬â€ Caminho relativo convertido para absoluto na inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', finalPath);
                 }
                 
-                // Verificar se o caminho jÃƒÂ¡ contÃƒÂ©m a pasta base (evitar duplicaÃƒÂ§ÃƒÂ£o)
+                // Verificar se o caminho jÃƒÆ’Ã‚Â¡ contÃƒÆ’Ã‚Â©m a pasta base (evitar duplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o)
                 if (finalPath.includes('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/')) {
                     finalPath = finalPath.replace('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/', '/_@LYT PicZ por ANO@_/');
-                    console.log('Ã°Å¸â€Â§ Caminho duplicado corrigido na inicializaÃƒÂ§ÃƒÂ£o:', finalPath);
+                    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ Caminho duplicado corrigido na inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', finalPath);
                 }
                 
                 slideshowField.value = finalPath;
-                console.log('Ã°Å¸â€œâ€š Pasta do slideshow carregada na inicializaÃƒÂ§ÃƒÂ£o:', finalPath);
-                console.log('Ã°Å¸Å½Â¯ Busca recursiva serÃƒÂ¡ forÃƒÂ§ada para encontrar TODAS as imagens');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¡ Pasta do slideshow carregada na inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', finalPath);
+                console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ Busca recursiva serÃƒÆ’Ã‚Â¡ forÃƒÆ’Ã‚Â§ada para encontrar TODAS as imagens');
             }
         }
     }
@@ -993,7 +993,7 @@ class DeParaUI {
         return array;
     }
 
-    // ValidaÃƒÂ§ÃƒÂ£o em tempo real para campos de operaÃƒÂ§ÃƒÂ£o
+    // ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o em tempo real para campos de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     setupOperationValidation() {
         // Campos de origem e destino no dashboard
         const sourcePath = document.getElementById('source-path');
@@ -1005,7 +1005,7 @@ class DeParaUI {
                 this.updateOperationButtonsState();
             });
             sourcePath.addEventListener('input', () => {
-                // Limpar validaÃƒÂ§ÃƒÂ£o quando usuÃƒÂ¡rio comeÃƒÂ§a a digitar
+                // Limpar validaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o quando usuÃƒÆ’Ã‚Â¡rio comeÃƒÆ’Ã‚Â§a a digitar
                 const validationDiv = sourcePath.parentNode.querySelector('.validation-message');
                 if (validationDiv) {
                     validationDiv.textContent = '';
@@ -1013,7 +1013,7 @@ class DeParaUI {
                     sourcePath.classList.remove('invalid', 'valid');
                     sourcePath.parentNode.classList.remove('error');
                 }
-                // Atualizar estado dos botÃƒÂµes
+                // Atualizar estado dos botÃƒÆ’Ã‚Âµes
                 this.updateOperationButtonsState();
             });
         }
@@ -1031,13 +1031,13 @@ class DeParaUI {
                     destPath.classList.remove('invalid', 'valid');
                     destPath.parentNode.classList.remove('error');
                 }
-                // Atualizar estado dos botÃƒÂµes
+                // Atualizar estado dos botÃƒÆ’Ã‚Âµes
                 this.updateOperationButtonsState();
             });
         }
     }
 
-    // Feedback visual para botÃƒÂµes de operaÃƒÂ§ÃƒÂ£o
+    // Feedback visual para botÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     updateOperationButtonsState() {
         const sourcePath = document.getElementById('source-path');
         const destPath = document.getElementById('dest-path');
@@ -1050,14 +1050,14 @@ class DeParaUI {
             const operation = btn.getAttribute('data-operation');
 
             if (operation === 'delete') {
-                // Delete sÃƒÂ³ precisa do caminho de origem
+                // Delete sÃƒÆ’Ã‚Â³ precisa do caminho de origem
                 btn.disabled = !hasSourcePath;
-                btn.title = hasSourcePath ? 'Executar operaÃƒÂ§ÃƒÂ£o de exclusÃƒÂ£o' : 'Digite o caminho de origem primeiro';
+                btn.title = hasSourcePath ? 'Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de exclusÃƒÆ’Ã‚Â£o' : 'Digite o caminho de origem primeiro';
             } else {
                 // Move e copy precisam de origem e destino
                 btn.disabled = !(hasSourcePath && hasDestPath);
                 btn.title = (hasSourcePath && hasDestPath) ?
-                    `Executar operaÃƒÂ§ÃƒÂ£o de ${operation}` :
+                    `Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de ${operation}` :
                     'Digite os caminhos de origem e destino primeiro';
             }
 
@@ -1073,13 +1073,11 @@ class DeParaUI {
     // Atualizar contadores
     async updateCounters() {
         try {
-            // Contar operaÃƒÂ§ÃƒÂµes ativas
+            // Contar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas
             const scheduledResponse = await fetch('/api/files/scheduled');
             if (scheduledResponse.ok) {
                 const scheduledData = await scheduledResponse.json();
-                const activeOps = scheduledData.data.filter(op =>
-                    op.status === 'running' || op.status === 'scheduled'
-                ).length;
+                const activeOps = (scheduledData.data || []).filter(op => op.active !== false).length;
                 document.getElementById('active-ops').textContent = activeOps;
             }
         } catch (error) {
@@ -1087,21 +1085,21 @@ class DeParaUI {
         }
     }
 
-    // Atualizar contador de operaÃƒÂ§ÃƒÂµes ativas
+    // Atualizar contador de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas
     async updateActiveOperationsCount() {
         try {
             const response = await fetch('/api/files/scheduled');
             if (response.ok) {
                 const data = await response.json();
-                const activeOps = data.data ? data.data.length : 0;
+                const activeOps = data.data ? data.data.filter(op => op.active !== false).length : 0;
                 const activeOpsElement = document.getElementById('active-ops');
                 if (activeOpsElement) {
                     activeOpsElement.textContent = activeOps;
-                    logger.debug('Ã¢Å“â€¦ OperaÃƒÂ§ÃƒÂµes ativas atualizadas', { activeOps });
+                    logger.debug('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas atualizadas', { activeOps });
                 }
             }
         } catch (error) {
-            logger.warn('Erro ao atualizar contador de operaÃƒÂ§ÃƒÂµes ativas:', error);
+            logger.warn('Erro ao atualizar contador de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas:', error);
             const activeOpsElement = document.getElementById('active-ops');
             if (activeOpsElement) {
                 activeOpsElement.textContent = '0';
@@ -1122,7 +1120,7 @@ class DeParaUI {
         this.cacheExpiry = 5 * 60 * 1000; // 5 minutos
     }
 
-    // Verificar se cache ÃƒÂ© vÃƒÂ¡lido
+    // Verificar se cache ÃƒÆ’Ã‚Â© vÃƒÆ’Ã‚Â¡lido
     isCacheValid(key) {
         const timestamp = this.cache.timestamps[key];
         if (!timestamp) return false;
@@ -1144,7 +1142,7 @@ class DeParaUI {
             return data;
         } catch (error) {
             console.warn(`Erro ao carregar ${key}:`, error);
-            // Retornar cache antigo se disponÃƒÂ­vel
+            // Retornar cache antigo se disponÃƒÆ’Ã‚Â­vel
             if (this.cache[key]) {
                 console.log(`Retornando cache antigo para ${key}`);
                 return this.cache[key];
@@ -1153,7 +1151,7 @@ class DeParaUI {
         }
     }
 
-    // Limpar cache especÃƒÂ­fico
+    // Limpar cache especÃƒÆ’Ã‚Â­fico
     clearCache(key = null) {
         if (key) {
             this.cache[key] = null;
@@ -1165,25 +1163,25 @@ class DeParaUI {
         }
     }
 
-    // MÃƒÂ©todos de cache especÃƒÂ­ficos
+    // MÃƒÆ’Ã‚Â©todos de cache especÃƒÆ’Ã‚Â­ficos
     async loadSettingsCached() {
         return this.getCachedData('settings', async () => {
             const response = await fetch('/api/health');
-            if (!response.ok) throw new Error('Erro ao carregar configuraÃƒÂ§ÃƒÂµes');
+            if (!response.ok) throw new Error('Erro ao carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes');
             return response.json();
         });
     }
 
     async loadFoldersCached() {
         return this.getCachedData('folders', async () => {
-            // Simular carregamento de pastas (implementar conforme necessÃƒÂ¡rio)
+            // Simular carregamento de pastas (implementar conforme necessÃƒÆ’Ã‚Â¡rio)
             return [];
         });
     }
 
     async loadWorkflowsCached() {
         return this.getCachedData('workflows', async () => {
-            // Simular carregamento de workflows (implementar conforme necessÃƒÂ¡rio)
+            // Simular carregamento de workflows (implementar conforme necessÃƒÆ’Ã‚Â¡rio)
             return [];
         });
     }
@@ -1191,7 +1189,7 @@ class DeParaUI {
     async loadOperationsCached() {
         return this.getCachedData('operations', async () => {
             const response = await fetch('/api/files/scheduled');
-            if (!response.ok) throw new Error('Erro ao carregar operaÃƒÂ§ÃƒÂµes');
+            if (!response.ok) throw new Error('Erro ao carregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes');
             return response.json();
         });
     }
@@ -1199,12 +1197,12 @@ class DeParaUI {
     async loadStatsCached() {
         return this.getCachedData('stats', async () => {
             const response = await fetch('/api/files/stats');
-            if (!response.ok) throw new Error('Erro ao carregar estatÃƒÂ­sticas');
+            if (!response.ok) throw new Error('Erro ao carregar estatÃƒÆ’Ã‚Â­sticas');
             return response.json();
         }, false); // Stats sempre frescos
     }
 
-    // Sistema de GrÃƒÂ¡ficos
+    // Sistema de GrÃƒÆ’Ã‚Â¡ficos
     initializeCharts() {
         this.chartData = {
             operations: 0,
@@ -1216,7 +1214,7 @@ class DeParaUI {
 
     async updateCharts() {
         try {
-            // Obter dados de operaÃƒÂ§ÃƒÂµes
+            // Obter dados de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
             const operationsResponse = await fetch('/api/files/scheduled');
             if (operationsResponse.ok) {
                 const operationsData = await operationsResponse.json();
@@ -1240,7 +1238,7 @@ class DeParaUI {
 
             this.renderChart();
         } catch (error) {
-            console.warn('Erro ao atualizar grÃƒÂ¡ficos:', error);
+            console.warn('Erro ao atualizar grÃƒÆ’Ã‚Â¡ficos:', error);
         }
     }
 
@@ -1255,10 +1253,10 @@ class DeParaUI {
         // Limpar canvas
         ctx.clearRect(0, 0, width, height);
 
-        // Dados do grÃƒÂ¡fico
+        // Dados do grÃƒÆ’Ã‚Â¡fico
         const data = [
-            { label: 'OperaÃƒÂ§ÃƒÂµes', value: this.chartData.operations, color: '#667eea', max: 20 },
-            { label: 'MemÃƒÂ³ria', value: this.chartData.memory, color: '#764ba2', max: 100 },
+            { label: 'OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', value: this.chartData.operations, color: '#667eea', max: 20 },
+            { label: 'MemÃƒÆ’Ã‚Â³ria', value: this.chartData.memory, color: '#764ba2', max: 100 },
             { label: 'Disco', value: this.chartData.disk, color: '#f093fb', max: 100 }
         ];
 
@@ -1294,7 +1292,7 @@ class DeParaUI {
         });
     }
 
-    // FunÃƒÂ§ÃƒÂ£o global para atualizar grÃƒÂ¡ficos
+    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o global para atualizar grÃƒÆ’Ã‚Â¡ficos
     refreshCharts() {
         if (window.deParaUI) {
             window.deParaUI.updateCharts();
@@ -1304,16 +1302,16 @@ class DeParaUI {
     // Sistema de Atalhos de Teclado
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (event) => {
-            // Ignorar se usuÃƒÂ¡rio estÃƒÂ¡ digitando em input
+            // Ignorar se usuÃƒÆ’Ã‚Â¡rio estÃƒÆ’Ã‚Â¡ digitando em input
             if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
                 return;
             }
 
-            // Ctrl+S: Salvar configuraÃƒÂ§ÃƒÂµes
+            // Ctrl+S: Salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
             if (event.ctrlKey && event.key === 's') {
                 event.preventDefault();
                 this.quickSave();
-                this.showToast('ConfiguraÃƒÂ§ÃƒÂµes salvas!', 'success');
+                this.showToast('ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes salvas!', 'success');
                 return;
             }
 
@@ -1339,14 +1337,14 @@ class DeParaUI {
                 return;
             }
 
-            // Alt+F: Ir para OperaÃƒÂ§ÃƒÂµes de Arquivos
+            // Alt+F: Ir para OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de Arquivos
             if (event.altKey && event.key === 'f') {
                 event.preventDefault();
                 this.switchTab('fileops');
                 return;
             }
 
-            // Alt+S: Ir para OperaÃƒÂ§ÃƒÂµes Agendadas
+            // Alt+S: Ir para OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes Agendadas
             if (event.altKey && event.key === 's') {
                 event.preventDefault();
                 this.switchTab('scheduled');
@@ -1360,7 +1358,7 @@ class DeParaUI {
                 return;
             }
 
-            // Alt+C: Ir para ConfiguraÃƒÂ§ÃƒÂµes
+            // Alt+C: Ir para ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
             if (event.altKey && event.key === 'c') {
                 event.preventDefault();
                 this.switchTab('settings');
@@ -1398,11 +1396,11 @@ class DeParaUI {
 
     // Entrar em fullscreen do dashboard
     enterDashboardFullscreen() {
-        console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Entrando em fullscreen do dashboard...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Entrando em fullscreen do dashboard...');
         
         const element = document.documentElement;
         
-        // Tentar diferentes mÃƒÂ©todos de fullscreen
+        // Tentar diferentes mÃƒÆ’Ã‚Â©todos de fullscreen
         if (element.requestFullscreen) {
             element.requestFullscreen().then(() => {
                 this.showDashboardFullscreenControls();
@@ -1419,13 +1417,13 @@ class DeParaUI {
             element.msRequestFullscreen();
             this.showDashboardFullscreenControls();
         } else {
-            console.warn('Fullscreen nÃƒÂ£o suportado neste navegador');
+            console.warn('Fullscreen nÃƒÆ’Ã‚Â£o suportado neste navegador');
         }
     }
 
     // Sair do fullscreen do dashboard
     exitDashboardFullscreen() {
-        console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Saindo do fullscreen do dashboard...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Saindo do fullscreen do dashboard...');
         
         if (document.exitFullscreen) {
             document.exitFullscreen();
@@ -1447,7 +1445,7 @@ class DeParaUI {
             controls.style.display = 'flex';
             controls.style.flexDirection = 'row';
             controls.style.alignItems = 'center';
-            console.log('Ã¢Å“â€¦ Controles de fullscreen do dashboard mostrados');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Controles de fullscreen do dashboard mostrados');
             
             // Adicionar fade-in para melhor UX
             controls.style.opacity = '0';
@@ -1471,19 +1469,19 @@ class DeParaUI {
             
             setTimeout(() => {
                 controls.style.display = 'none';
-                console.log('Ã¢Å“â€¦ Controles de fullscreen do dashboard escondidos');
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Controles de fullscreen do dashboard escondidos');
             }, 300);
         }
     }
 
-    // Fechar aplicaÃƒÂ§ÃƒÂ£o
+    // Fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     closeApplication() {
-        console.log('Ã°Å¸Å¡Âª Fechando aplicaÃƒÂ§ÃƒÂ£o...');
+        console.log('ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Âª Fechando aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o...');
         
         // Primeiro sair do fullscreen se estiver ativo
         this.exitDashboardFullscreen();
         
-        // Aguardar um pouco para garantir que as operaÃƒÂ§ÃƒÂµes sejam concluÃƒÂ­das
+        // Aguardar um pouco para garantir que as operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes sejam concluÃƒÆ’Ã‚Â­das
         setTimeout(() => {
             // Tentar fechar a janela do navegador/Electron
             if (window.close) {
@@ -1492,61 +1490,61 @@ class DeParaUI {
                 // Se estiver rodando no Electron
                 window.electronAPI.closeApp();
             } else {
-                // Fallback: mostrar mensagem para o usuÃƒÂ¡rio
-                alert('Para fechar a aplicaÃƒÂ§ÃƒÂ£o, use Alt+F4 ou feche a janela do navegador.');
+                // Fallback: mostrar mensagem para o usuÃƒÆ’Ã‚Â¡rio
+                alert('Para fechar a aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o, use Alt+F4 ou feche a janela do navegador.');
             }
         }, 500);
     }
 
     // Configurar controles de fullscreen do dashboard
     setupDashboardFullscreenControls() {
-        // BotÃƒÂ£o sair do fullscreen
+        // BotÃƒÆ’Ã‚Â£o sair do fullscreen
         const exitFullscreenBtn = document.getElementById('dashboard-exit-fullscreen-btn');
         if (exitFullscreenBtn) {
             exitFullscreenBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â BotÃƒÂ£o sair do fullscreen do dashboard clicado');
-                logger.info('BotÃƒÂ£o sair fullscreen clicado', { source: 'dashboard-controls' });
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â BotÃƒÆ’Ã‚Â£o sair do fullscreen do dashboard clicado');
+                logger.info('BotÃƒÆ’Ã‚Â£o sair fullscreen clicado', { source: 'dashboard-controls' });
                 this.exitDashboardFullscreen();
             });
-            console.log('Ã¢Å“â€¦ Listener do botÃƒÂ£o exit fullscreen do dashboard adicionado');
-            logger.debug('Listener do botÃƒÂ£o exit fullscreen configurado');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Listener do botÃƒÆ’Ã‚Â£o exit fullscreen do dashboard adicionado');
+            logger.debug('Listener do botÃƒÆ’Ã‚Â£o exit fullscreen configurado');
         } else {
-            console.warn('Ã¢Å¡Â Ã¯Â¸Â BotÃƒÂ£o exit fullscreen nÃƒÂ£o encontrado');
-            logger.warn('BotÃƒÂ£o exit fullscreen nÃƒÂ£o encontrado no DOM');
+            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â BotÃƒÆ’Ã‚Â£o exit fullscreen nÃƒÆ’Ã‚Â£o encontrado');
+            logger.warn('BotÃƒÆ’Ã‚Â£o exit fullscreen nÃƒÆ’Ã‚Â£o encontrado no DOM');
         }
 
-        // BotÃƒÂ£o fechar aplicaÃƒÂ§ÃƒÂ£o
+        // BotÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         const closeAppBtn = document.getElementById('dashboard-close-app-btn');
         if (closeAppBtn) {
             closeAppBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Ã°Å¸Å¡Âª BotÃƒÂ£o fechar aplicaÃƒÂ§ÃƒÂ£o do dashboard clicado');
-                logger.info('BotÃƒÂ£o fechar aplicaÃƒÂ§ÃƒÂ£o clicado', { source: 'dashboard-controls' });
+                console.log('ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Âª BotÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do dashboard clicado');
+                logger.info('BotÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o clicado', { source: 'dashboard-controls' });
                 this.closeApplication();
             });
-            console.log('Ã¢Å“â€¦ Listener do botÃƒÂ£o fechar aplicaÃƒÂ§ÃƒÂ£o do dashboard adicionado');
-            logger.debug('Listener do botÃƒÂ£o fechar aplicaÃƒÂ§ÃƒÂ£o configurado');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Listener do botÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do dashboard adicionado');
+            logger.debug('Listener do botÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o configurado');
         } else {
-            console.warn('Ã¢Å¡Â Ã¯Â¸Â BotÃƒÂ£o fechar aplicaÃƒÂ§ÃƒÂ£o nÃƒÂ£o encontrado');
-            logger.warn('BotÃƒÂ£o fechar aplicaÃƒÂ§ÃƒÂ£o nÃƒÂ£o encontrado no DOM');
+            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â BotÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o encontrado');
+            logger.warn('BotÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o encontrado no DOM');
         }
 
-        // BotÃƒÂ£o de fullscreen no header
+        // BotÃƒÆ’Ã‚Â£o de fullscreen no header
         const headerFullscreenBtn = document.getElementById('header-fullscreen-btn');
         if (headerFullscreenBtn) {
             headerFullscreenBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â BotÃƒÂ£o fullscreen do header clicado');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â BotÃƒÆ’Ã‚Â£o fullscreen do header clicado');
                 this.toggleDashboardFullscreen();
             });
-            console.log('Ã¢Å“â€¦ Listener do botÃƒÂ£o fullscreen do header adicionado');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Listener do botÃƒÆ’Ã‚Â£o fullscreen do header adicionado');
         }
 
-        // Listener para mudanÃƒÂ§as de fullscreen do dashboard
+        // Listener para mudanÃƒÆ’Ã‚Â§as de fullscreen do dashboard
         document.addEventListener('fullscreenchange', () => {
             this.handleDashboardFullscreenChange();
         });
@@ -1561,18 +1559,18 @@ class DeParaUI {
         });
     }
 
-    // Lidar com mudanÃƒÂ§as de fullscreen do dashboard
+    // Lidar com mudanÃƒÆ’Ã‚Â§as de fullscreen do dashboard
     handleDashboardFullscreenChange() {
-        console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â MudanÃƒÂ§a de fullscreen do dashboard detectada');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â MudanÃƒÆ’Ã‚Â§a de fullscreen do dashboard detectada');
         
         const isFullscreen = !!(document.fullscreenElement || 
                                document.webkitFullscreenElement || 
                                document.mozFullScreenElement || 
                                document.msFullscreenElement);
         
-        console.log('Ã°Å¸â€Â Fullscreen do dashboard ativo:', isFullscreen);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Fullscreen do dashboard ativo:', isFullscreen);
         
-        // Atualizar botÃƒÂ£o do header
+        // Atualizar botÃƒÆ’Ã‚Â£o do header
         this.updateHeaderFullscreenButton(isFullscreen);
         
         if (isFullscreen) {
@@ -1582,7 +1580,7 @@ class DeParaUI {
         }
     }
 
-    // Atualizar botÃƒÂ£o de fullscreen no header
+    // Atualizar botÃƒÆ’Ã‚Â£o de fullscreen no header
     updateHeaderFullscreenButton(isFullscreen) {
         const headerBtn = document.getElementById('header-fullscreen-btn');
         if (headerBtn) {
@@ -1590,26 +1588,26 @@ class DeParaUI {
             const text = headerBtn.querySelector('span:not(.material-icons)') || headerBtn.childNodes[headerBtn.childNodes.length - 1];
             
             if (isFullscreen) {
-                // Modo fullscreen - esconder botÃƒÂ£o do header para evitar redundÃƒÂ¢ncia
+                // Modo fullscreen - esconder botÃƒÆ’Ã‚Â£o do header para evitar redundÃƒÆ’Ã‚Â¢ncia
                 headerBtn.style.display = 'none';
-                console.log('Ã°Å¸â€Â BotÃƒÂ£o de fullscreen do header escondido em modo fullscreen');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â BotÃƒÆ’Ã‚Â£o de fullscreen do header escondido em modo fullscreen');
             } else {
-                // Modo normal - mostrar botÃƒÂ£o do header
+                // Modo normal - mostrar botÃƒÆ’Ã‚Â£o do header
                 headerBtn.style.display = 'flex';
                 if (icon) icon.textContent = 'fullscreen';
                 if (text) text.textContent = 'Tela Cheia';
                 headerBtn.title = 'Alternar tela cheia (F11)';
                 headerBtn.style.background = 'rgba(52,144,220,0.1)';
                 headerBtn.style.borderColor = 'rgba(52,144,220,0.3)';
-                console.log('Ã°Å¸â€Â BotÃƒÂ£o de fullscreen do header mostrado em modo normal');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â BotÃƒÆ’Ã‚Â£o de fullscreen do header mostrado em modo normal');
             }
         }
     }
 
-    // Salvar configuraÃƒÂ§ÃƒÂµes rapidamente
+    // Salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes rapidamente
     async quickSave() {
         try {
-            // Salvar configuraÃƒÂ§ÃƒÂµes da aba atual
+            // Salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes da aba atual
             if (this.currentTab === 'settings') {
                 await this.saveSettings();
             } else if (this.currentTab === 'backups') {
@@ -1622,7 +1620,7 @@ class DeParaUI {
 
     // Atualizar todos os dados
     async refreshAllData() {
-        this.clearCache(); // Limpar cache para forÃƒÂ§ar atualizaÃƒÂ§ÃƒÂ£o
+        this.clearCache(); // Limpar cache para forÃƒÆ’Ã‚Â§ar atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         await this.refreshDashboardData();
         await this.updateCharts();
         await this.loadOperationsCached();
@@ -2226,18 +2224,18 @@ class DeParaUI {
     // Mostrar ajuda de atalhos
     showKeyboardHelp() {
         const shortcuts = [
-            { key: 'Ctrl+S', description: 'Salvar configuraÃƒÂ§ÃƒÂµes' },
+            { key: 'Ctrl+S', description: 'Salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes' },
             { key: 'Ctrl+R', description: 'Atualizar dados' },
             { key: 'F1', description: 'Mostrar esta ajuda' },
             { key: 'Alt+D', description: 'Ir para Dashboard' },
-            { key: 'Alt+F', description: 'Ir para OperaÃƒÂ§ÃƒÂµes de Arquivos' },
-            { key: 'Alt+S', description: 'Ir para OperaÃƒÂ§ÃƒÂµes Agendadas' },
+            { key: 'Alt+F', description: 'Ir para OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de Arquivos' },
+            { key: 'Alt+S', description: 'Ir para OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes Agendadas' },
             { key: 'Alt+B', description: 'Ir para Backups' },
-            { key: 'Alt+C', description: 'Ir para ConfiguraÃƒÂ§ÃƒÂµes' },
+            { key: 'Alt+C', description: 'Ir para ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes' },
             { key: 'Esc', description: 'Fechar modais' }
         ];
 
-        let helpText = 'Ã°Å¸Å½Â¹ Atalhos de Teclado DisponÃƒÂ­veis:\n\n';
+        let helpText = 'ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¹ Atalhos de Teclado DisponÃƒÆ’Ã‚Â­veis:\n\n';
         shortcuts.forEach(shortcut => {
             helpText += `${shortcut.key.padEnd(10)} - ${shortcut.description}\n`;
         });
@@ -2245,7 +2243,7 @@ class DeParaUI {
         alert(helpText);
     }
 
-    // Sistema de Busca em OperaÃƒÂ§ÃƒÂµes
+    // Sistema de Busca em OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
     filterScheduledOperations(searchTerm) {
         const searchInput = document.getElementById('scheduled-search');
         const clearButton = document.querySelector('.clear-search');
@@ -2256,7 +2254,7 @@ class DeParaUI {
         const operationItems = operationsList.querySelectorAll('.operation-item');
 
         if (searchTerm.trim() === '') {
-            // Mostrar todas as operaÃƒÂ§ÃƒÂµes
+            // Mostrar todas as operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
             operationItems.forEach(item => {
                 item.style.display = 'block';
             });
@@ -2298,7 +2296,7 @@ class DeParaUI {
             const countElement = document.querySelector('.search-results-count') ||
                                this.createSearchResultsCount();
 
-            countElement.textContent = `Encontrados ${visibleItems.length} de ${totalItems.length} operaÃƒÂ§ÃƒÂµes`;
+            countElement.textContent = `Encontrados ${visibleItems.length} de ${totalItems.length} operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes`;
         } else {
             const countElement = document.querySelector('.search-results-count');
             if (countElement) {
@@ -2338,14 +2336,14 @@ class DeParaUI {
         }
     }
 
-    // FunÃƒÂ§ÃƒÂ£o global para busca
+    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o global para busca
     filterScheduledOperationsGlobal(searchTerm) {
         if (window.deParaUI) {
             window.deParaUI.filterScheduledOperations(searchTerm);
         }
     }
 
-    // FunÃƒÂ§ÃƒÂµes globais serÃƒÂ£o definidas apÃƒÂ³s a inicializaÃƒÂ§ÃƒÂ£o
+    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes globais serÃƒÆ’Ã‚Â£o definidas apÃƒÆ’Ã‚Â³s a inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
 
     // Sistema de Loading States
     showLoading(elementId, message = 'Carregando...') {
@@ -2377,7 +2375,7 @@ class DeParaUI {
             border-radius: 8px;
         `;
 
-        // Tornar elemento relativo se nÃƒÂ£o for
+        // Tornar elemento relativo se nÃƒÆ’Ã‚Â£o for
         const currentPosition = window.getComputedStyle(element).position;
         if (currentPosition === 'static') {
             element.style.position = 'relative';
@@ -2393,7 +2391,7 @@ class DeParaUI {
         }
     }
 
-    // Wrapper para funÃƒÂ§ÃƒÂµes assÃƒÂ­ncronas com loading
+    // Wrapper para funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes assÃƒÆ’Ã‚Â­ncronas com loading
     async withLoading(elementId, asyncFunction, message = 'Carregando...') {
         try {
             this.showLoading(elementId, message);
@@ -2404,7 +2402,7 @@ class DeParaUI {
         }
     }
 
-    // Loading para botÃƒÂµes
+    // Loading para botÃƒÆ’Ã‚Âµes
     setButtonLoading(button, loading = true, originalText = null) {
         if (loading) {
             button.disabled = true;
@@ -2423,7 +2421,7 @@ class DeParaUI {
         }
     }
 
-    // Loading para formulÃƒÂ¡rios
+    // Loading para formulÃƒÆ’Ã‚Â¡rios
     setFormLoading(form, loading = true) {
         const inputs = form.querySelectorAll('input, select, textarea, button');
         inputs.forEach(input => {
@@ -2448,7 +2446,7 @@ class DeParaUI {
     skipOnboarding() {
         document.getElementById('onboarding-overlay').style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
-        this.showToast('Tutorial pulado! VocÃƒÂª pode acessÃƒÂ¡-lo novamente pelo botÃƒÂ£o de ajuda.', 'info');
+        this.showToast('Tutorial pulado! VocÃƒÆ’Ã‚Âª pode acessÃƒÆ’Ã‚Â¡-lo novamente pelo botÃƒÆ’Ã‚Â£o de ajuda.', 'info');
     }
 
     startOnboarding() {
@@ -2460,76 +2458,76 @@ class DeParaUI {
     closeOnboarding() {
         document.getElementById('onboarding-overlay').style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
-        this.showToast('Tutorial fechado! Use o botÃƒÂ£o de ajuda se precisar de orientaÃƒÂ§ÃƒÂµes.', 'info');
+        this.showToast('Tutorial fechado! Use o botÃƒÆ’Ã‚Â£o de ajuda se precisar de orientaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes.', 'info');
     }
 
-    // ConfiguraÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida e automÃƒÂ¡tica
+    // ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida e automÃƒÆ’Ã‚Â¡tica
     async quickSetup() {
         document.getElementById('onboarding-overlay').style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
 
-        // Mostrar confirmaÃƒÂ§ÃƒÂ£o antes de criar pastas automaticamente
+        // Mostrar confirmaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o antes de criar pastas automaticamente
         const confirmed = await this.showQuickSetupConfirmation();
 
         if (!confirmed) {
-            this.showToast('ConfiguraÃƒÂ§ÃƒÂ£o cancelada. VocÃƒÂª pode configurar manualmente.', 'info');
+            this.showToast('ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o cancelada. VocÃƒÆ’Ã‚Âª pode configurar manualmente.', 'info');
             return;
         }
 
-        this.showToast('Ã°Å¸Å¡â‚¬ Criando pastas e templates...', 'info');
+        this.showToast('ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬ Criando pastas e templates...', 'info');
 
         try {
-            // Criar pastas padrÃƒÂ£o automaticamente
+            // Criar pastas padrÃƒÆ’Ã‚Â£o automaticamente
             await this.createDefaultFolders();
 
-            // Configurar templates bÃƒÂ¡sicos
+            // Configurar templates bÃƒÆ’Ã‚Â¡sicos
             await this.createDefaultTemplates();
 
-            this.showToast('Ã¢Å“â€¦ ConfiguraÃƒÂ§ÃƒÂ£o automÃƒÂ¡tica concluÃƒÂ­da!', 'success');
+            this.showToast('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o automÃƒÆ’Ã‚Â¡tica concluÃƒÆ’Ã‚Â­da!', 'success');
 
             // Mostrar modal de pastas configuradas
             this.showQuickSetupResults();
 
         } catch (error) {
-            console.error('Erro na configuraÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida:', error);
-            this.showToast('Ã¢ÂÅ’ Erro na configuraÃƒÂ§ÃƒÂ£o automÃƒÂ¡tica. Configure manualmente.', 'error');
+            console.error('Erro na configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida:', error);
+            this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro na configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o automÃƒÆ’Ã‚Â¡tica. Configure manualmente.', 'error');
         }
     }
 
-    // Mostrar confirmaÃƒÂ§ÃƒÂ£o antes da configuraÃƒÂ§ÃƒÂ£o automÃƒÂ¡tica
+    // Mostrar confirmaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o antes da configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o automÃƒÆ’Ã‚Â¡tica
     async showQuickSetupConfirmation() {
         return new Promise((resolve) => {
             const confirmationHtml = `
                 <div style="text-align: center; padding: 20px;">
-                    <h3 style="color: #2196F3; margin-bottom: 15px;">Ã°Å¸â€Â§ ConfiguraÃƒÂ§ÃƒÂ£o AutomÃƒÂ¡tica</h3>
+                    <h3 style="color: #2196F3; margin-bottom: 15px;">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o AutomÃƒÆ’Ã‚Â¡tica</h3>
                     <p style="margin-bottom: 20px; color: #666;">
-                        O sistema pode criar automaticamente pastas e templates bÃƒÂ¡sicos para vocÃƒÂª comeÃƒÂ§ar a usar imediatamente.
+                        O sistema pode criar automaticamente pastas e templates bÃƒÆ’Ã‚Â¡sicos para vocÃƒÆ’Ã‚Âª comeÃƒÆ’Ã‚Â§ar a usar imediatamente.
                     </p>
 
                     <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
-                        <h4 style="margin-bottom: 10px; color: #333;">Ã°Å¸â€œÂ Pastas que serÃƒÂ£o criadas:</h4>
+                        <h4 style="margin-bottom: 10px; color: #333;">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Pastas que serÃƒÆ’Ã‚Â£o criadas:</h4>
                         <ul style="margin: 0; padding-left: 20px; color: #555;">
                             <li><strong>Documentos Entrada</strong> - Para arquivos de entrada</li>
                             <li><strong>Documentos Processados</strong> - Para arquivos processados</li>
-                            <li><strong>Backup AutomÃƒÂ¡tico</strong> - Para backups</li>
+                            <li><strong>Backup AutomÃƒÆ’Ã‚Â¡tico</strong> - Para backups</li>
                         </ul>
                     </div>
 
                     <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
-                        <h4 style="margin-bottom: 10px; color: #333;">Ã¢Å¡â„¢Ã¯Â¸Â Templates que serÃƒÂ£o criados:</h4>
+                        <h4 style="margin-bottom: 10px; color: #333;">ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â Templates que serÃƒÆ’Ã‚Â£o criados:</h4>
                         <ul style="margin: 0; padding-left: 20px; color: #555;">
-                            <li><strong>Backup DiÃƒÂ¡rio</strong> - Backup automÃƒÂ¡tico diÃƒÂ¡rio</li>
-                            <li><strong>Limpeza Semanal</strong> - Limpeza de arquivos temporÃƒÂ¡rios</li>
+                            <li><strong>Backup DiÃƒÆ’Ã‚Â¡rio</strong> - Backup automÃƒÆ’Ã‚Â¡tico diÃƒÆ’Ã‚Â¡rio</li>
+                            <li><strong>Limpeza Semanal</strong> - Limpeza de arquivos temporÃƒÆ’Ã‚Â¡rios</li>
                         </ul>
                     </div>
 
                     <p style="color: #ff9800; font-size: 14px; margin-bottom: 20px;">
-                        Ã¢Å¡Â Ã¯Â¸Â <strong>AtenÃƒÂ§ÃƒÂ£o:</strong> Isso criarÃƒÂ¡ pastas no seu sistema de arquivos. VocÃƒÂª pode remover ou modificar tudo depois.
+                        ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â <strong>AtenÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:</strong> Isso criarÃƒÆ’Ã‚Â¡ pastas no seu sistema de arquivos. VocÃƒÆ’Ã‚Âª pode remover ou modificar tudo depois.
                     </p>
                 </div>
             `;
 
-            // Criar modal de confirmaÃƒÂ§ÃƒÂ£o
+            // Criar modal de confirmaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
             const modal = document.createElement('div');
             modal.style.cssText = `
                 position: fixed;
@@ -2549,21 +2547,21 @@ class DeParaUI {
                     ${confirmationHtml}
                     <div style="padding: 20px; border-top: 1px solid #eee; text-align: center; display: flex; gap: 10px; justify-content: center;">
                         <button class="quick-setup-cancel-btn" style="background: #757575; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
-                            Ã¢ÂÅ’ Cancelar
+                            ÃƒÂ¢Ã‚ÂÃ…â€™ Cancelar
                         </button>
                         <button class="quick-setup-approve-btn" style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
-                            Ã¢Å“â€¦ Aprovar e Continuar
+                            ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Aprovar e Continuar
                         </button>
                     </div>
                 </div>
             `;
 
-            // Armazenar funÃƒÂ§ÃƒÂ£o de resoluÃƒÂ§ÃƒÂ£o
+            // Armazenar funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de resoluÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
             window.quickSetupResolve = resolve;
 
             document.body.appendChild(modal);
 
-            // Configurar event listeners para os botÃƒÂµes
+            // Configurar event listeners para os botÃƒÆ’Ã‚Âµes
             const cancelBtn = modal.querySelector('.quick-setup-cancel-btn');
             const approveBtn = modal.querySelector('.quick-setup-approve-btn');
 
@@ -2583,7 +2581,7 @@ class DeParaUI {
         });
     }
 
-    // FunÃƒÂ§ÃƒÂ£o para obter caminhos padrÃƒÂ£o baseados na plataforma
+    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para obter caminhos padrÃƒÆ’Ã‚Â£o baseados na plataforma
     getDefaultPaths() {
         // Detectar se estamos no Windows ou Linux
         const isWindows = navigator.userAgent.indexOf('Windows') > -1;
@@ -2595,7 +2593,7 @@ class DeParaUI {
                 backup: 'C:\\Users\\User\\Documents\\Backup'
             };
         } else {
-            // Linux/Raspberry Pi - usar caminhos genÃƒÂ©ricos que serÃƒÂ£o resolvidos no backend
+            // Linux/Raspberry Pi - usar caminhos genÃƒÆ’Ã‚Â©ricos que serÃƒÆ’Ã‚Â£o resolvidos no backend
             return {
                 entrada: '/home/user/Documents/Entrada',
                 processados: '/home/user/Documents/Processados',
@@ -2604,13 +2602,13 @@ class DeParaUI {
         }
     }
 
-    // Criar pastas padrÃƒÂ£o automaticamente
+    // Criar pastas padrÃƒÆ’Ã‚Â£o automaticamente
     async createDefaultFolders() {
         const paths = this.getDefaultPaths();
         const defaultFolders = [
             { name: 'Documentos Entrada', path: paths.entrada, type: 'source', format: 'any' },
             { name: 'Documentos Processados', path: paths.processados, type: 'target', format: 'any' },
-            { name: 'Backup AutomÃƒÂ¡tico', path: paths.backup, type: 'target', format: 'any' }
+            { name: 'Backup AutomÃƒÆ’Ã‚Â¡tico', path: paths.backup, type: 'target', format: 'any' }
         ];
 
         for (const folder of defaultFolders) {
@@ -2623,12 +2621,12 @@ class DeParaUI {
         }
     }
 
-    // Criar templates bÃƒÂ¡sicos
+    // Criar templates bÃƒÆ’Ã‚Â¡sicos
     async createDefaultTemplates() {
         const templates = [
             {
-                name: 'Backup DiÃƒÂ¡rio',
-                description: 'Faz backup diÃƒÂ¡rio de documentos importantes',
+                name: 'Backup DiÃƒÆ’Ã‚Â¡rio',
+                description: 'Faz backup diÃƒÆ’Ã‚Â¡rio de documentos importantes',
                 action: 'copy',
                 source: paths.entrada,
                 target: paths.backup,
@@ -2637,7 +2635,7 @@ class DeParaUI {
             },
             {
                 name: 'Limpeza Semanal',
-                description: 'Remove arquivos temporÃƒÂ¡rios semanalmente',
+                description: 'Remove arquivos temporÃƒÆ’Ã‚Â¡rios semanalmente',
                 action: 'delete',
                 source: '/tmp',
                 target: '',
@@ -2656,32 +2654,32 @@ class DeParaUI {
         }
     }
 
-    // Mostrar resultados da configuraÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida
+    // Mostrar resultados da configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida
     showQuickSetupResults() {
         const results = `
         <div style="text-align: center; padding: 20px;">
-            <h3 style="color: #4caf50; margin-bottom: 15px;">Ã°Å¸Å½â€° ConfiguraÃƒÂ§ÃƒÂ£o ConcluÃƒÂ­da!</h3>
+            <h3 style="color: #4caf50; margin-bottom: 15px;">ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â° ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ConcluÃƒÆ’Ã‚Â­da!</h3>
             <p style="margin-bottom: 20px;">Pastas e templates foram criados automaticamente:</p>
 
             <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
-                <h4>Ã°Å¸â€œÂ Pastas Criadas:</h4>
+                <h4>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Pastas Criadas:</h4>
                 <ul style="margin: 10px 0;">
-                    <li>Ã°Å¸â€œÂ¥ <strong>Documentos Entrada</strong> - Para arquivos de entrada</li>
-                    <li>Ã°Å¸â€œÂ¤ <strong>Documentos Processados</strong> - Para arquivos processados</li>
-                    <li>Ã°Å¸â€™Â¾ <strong>Backup AutomÃƒÂ¡tico</strong> - Para backups</li>
+                    <li>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ <strong>Documentos Entrada</strong> - Para arquivos de entrada</li>
+                    <li>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ <strong>Documentos Processados</strong> - Para arquivos processados</li>
+                    <li>ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¾ <strong>Backup AutomÃƒÆ’Ã‚Â¡tico</strong> - Para backups</li>
                 </ul>
             </div>
 
             <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
-                <h4>Ã¢Å¡â„¢Ã¯Â¸Â Templates Criados:</h4>
+                <h4>ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â Templates Criados:</h4>
                 <ul style="margin: 10px 0;">
-                    <li>Ã°Å¸â€œâ€¦ <strong>Backup DiÃƒÂ¡rio</strong> - Backup automÃƒÂ¡tico diÃƒÂ¡rio</li>
-                    <li>Ã°Å¸Â§Â¹ <strong>Limpeza Semanal</strong> - Limpeza de arquivos temporÃƒÂ¡rios</li>
+                    <li>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ <strong>Backup DiÃƒÆ’Ã‚Â¡rio</strong> - Backup automÃƒÆ’Ã‚Â¡tico diÃƒÆ’Ã‚Â¡rio</li>
+                    <li>ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ <strong>Limpeza Semanal</strong> - Limpeza de arquivos temporÃƒÆ’Ã‚Â¡rios</li>
                 </ul>
             </div>
 
             <p style="color: #666; font-size: 14px;">
-                VocÃƒÂª pode personalizar essas configuraÃƒÂ§ÃƒÂµes nas abas "OperaÃƒÂ§ÃƒÂµes de Arquivos" e "ConfiguraÃƒÂ§ÃƒÂµes".
+                VocÃƒÆ’Ã‚Âª pode personalizar essas configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes nas abas "OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de Arquivos" e "ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes".
             </p>
         </div>
         `;
@@ -2706,7 +2704,7 @@ class DeParaUI {
                 ${results}
                 <div style="padding: 20px; border-top: 1px solid #eee; text-align: center;">
                     <button class="quick-setup-results-close-btn" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
-                        Ã°Å¸Å½Â¯ ComeÃƒÂ§ar a Usar!
+                        ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ ComeÃƒÆ’Ã‚Â§ar a Usar!
                     </button>
                 </div>
             </div>
@@ -2714,18 +2712,18 @@ class DeParaUI {
 
         document.body.appendChild(modal);
 
-        // Configurar event listener para o botÃƒÂ£o fechar
+        // Configurar event listener para o botÃƒÆ’Ã‚Â£o fechar
         const closeBtn = modal.querySelector('.quick-setup-results-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => modal.remove());
         }
     }
 
-    // Sistema de configuraÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida de pastas
+    // Sistema de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida de pastas
     async createQuickFolder(type) {
-        console.log(`Ã°Å¸Å¡â‚¬ Iniciando criaÃƒÂ§ÃƒÂ£o de pastas do tipo: ${type}`);
+        console.log(`ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬ Iniciando criaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pastas do tipo: ${type}`);
 
-        // Obter caminhos padrÃƒÂ£o baseados na plataforma
+        // Obter caminhos padrÃƒÆ’Ã‚Â£o baseados na plataforma
         const paths = this.getDefaultPaths();
         const isWindows = navigator.userAgent.indexOf('Windows') > -1;
         const basePath = isWindows ? 'C:\\Users\\User' : '/home/user';
@@ -2736,12 +2734,12 @@ class DeParaUI {
                 { name: 'Documentos Processados', path: paths.processados, type: 'target', format: 'any' }
             ],
             backup: [
-                { name: 'Backup DiÃƒÂ¡rio', path: isWindows ? basePath + '\\Backup\\Diario' : basePath + '/Backup/Diario', type: 'target', format: 'any' },
+                { name: 'Backup DiÃƒÆ’Ã‚Â¡rio', path: isWindows ? basePath + '\\Backup\\Diario' : basePath + '/Backup/Diario', type: 'target', format: 'any' },
                 { name: 'Backup Semanal', path: isWindows ? basePath + '\\Backup\\Semanal' : basePath + '/Backup/Semanal', type: 'target', format: 'any' }
             ],
             media: [
                 { name: 'Fotos', path: isWindows ? basePath + '\\Pictures' : basePath + '/Pictures', type: 'source', format: 'any' },
-                { name: 'VÃƒÂ­deos', path: isWindows ? basePath + '\\Videos' : basePath + '/Videos', type: 'source', format: 'any' }
+                { name: 'VÃƒÆ’Ã‚Â­deos', path: isWindows ? basePath + '\\Videos' : basePath + '/Videos', type: 'source', format: 'any' }
             ],
             temp: [
                 { name: 'Processamento', path: isWindows ? basePath + '\\Temp\\Processamento' : basePath + '/Temp/Processamento', type: 'temp', format: 'any' },
@@ -2751,22 +2749,22 @@ class DeParaUI {
 
         const folders = folderSets[type];
         if (!folders) {
-            console.error(`Ã¢ÂÅ’ Tipo de pasta invÃƒÂ¡lido: ${type}`);
-            this.showToast('Ã¢ÂÅ’ Tipo de pasta invÃƒÂ¡lido', 'error');
+            console.error(`ÃƒÂ¢Ã‚ÂÃ…â€™ Tipo de pasta invÃƒÆ’Ã‚Â¡lido: ${type}`);
+            this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Tipo de pasta invÃƒÆ’Ã‚Â¡lido', 'error');
             return;
         }
 
-        this.showToast(`Ã°Å¸Å¡â‚¬ Criando pastas de ${type}...`, 'info');
+        this.showToast(`ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬ Criando pastas de ${type}...`, 'info');
 
         try {
             // Criar pastas uma por vez para melhor controle
             for (const folder of folders) {
-                console.log(`Ã°Å¸â€œÂ Criando pasta: ${folder.name} em ${folder.path}`);
+                console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Criando pasta: ${folder.name} em ${folder.path}`);
                 try {
                     await this.createFolderOnServer(folder);
-                    console.log(`Ã¢Å“â€¦ Pasta criada: ${folder.name}`);
+                    console.log(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta criada: ${folder.name}`);
                 } catch (error) {
-                    console.warn(`Ã¢Å¡Â Ã¯Â¸Â Erro ao criar pasta ${folder.name}:`, error);
+                    console.warn(`ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Erro ao criar pasta ${folder.name}:`, error);
                     // Continua tentando as outras pastas
                 }
             }
@@ -2774,18 +2772,18 @@ class DeParaUI {
             // Criar templates relacionados
             await this.createRelatedTemplates(type);
 
-            this.showToast(`Ã¢Å“â€¦ Pastas de ${type} criadas com sucesso!`, 'success');
+            this.showToast(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pastas de ${type} criadas com sucesso!`, 'success');
             this.refreshFoldersList();
 
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro geral ao criar pastas:', error);
-            this.showToast('Ã¢ÂÅ’ Erro ao criar pastas', 'error');
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro geral ao criar pastas:', error);
+            this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao criar pastas', 'error');
         }
     }
 
     // Criar pasta no servidor
     async createFolderOnServer(folder) {
-        console.log(`Ã°Å¸Å’Â Enviando requisiÃƒÂ§ÃƒÂ£o para criar pasta:`, folder);
+        console.log(`ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â Enviando requisiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para criar pasta:`, folder);
 
         const response = await fetch('/api/files/folders', {
             method: 'POST',
@@ -2805,16 +2803,16 @@ class DeParaUI {
 
     // Criar templates relacionados ao tipo de pasta
     async createRelatedTemplates(type) {
-        console.log(`Ã°Å¸â€œÂ Criando templates relacionados ao tipo: ${type}`);
+        console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Criando templates relacionados ao tipo: ${type}`);
 
-        // Obter caminhos padrÃƒÂ£o baseados na plataforma
+        // Obter caminhos padrÃƒÆ’Ã‚Â£o baseados na plataforma
         const paths = this.getDefaultPaths();
 
         const templateSets = {
             documents: [
                 {
                     name: 'Backup Documentos',
-                    description: 'Faz backup diÃƒÂ¡rio de documentos importantes',
+                    description: 'Faz backup diÃƒÆ’Ã‚Â¡rio de documentos importantes',
                     action: 'copy',
                     sourcePath: paths.entrada,
                     targetPath: paths.processados,
@@ -2824,8 +2822,8 @@ class DeParaUI {
             ],
             backup: [
                 {
-                    name: 'Backup DiÃƒÂ¡rio',
-                    description: 'Backup automÃƒÂ¡tico diÃƒÂ¡rio',
+                    name: 'Backup DiÃƒÆ’Ã‚Â¡rio',
+                    description: 'Backup automÃƒÆ’Ã‚Â¡tico diÃƒÆ’Ã‚Â¡rio',
                     action: 'copy',
                     sourcePath: paths.entrada.replace('/Entrada', '').replace('\\Entrada', ''),
                     targetPath: paths.backup + (navigator.userAgent.indexOf('Windows') > -1 ? '\\Diario' : '/Diario'),
@@ -2855,8 +2853,8 @@ class DeParaUI {
             ],
             temp: [
                 {
-                    name: 'Limpar TemporÃƒÂ¡rios',
-                    description: 'Remove arquivos temporÃƒÂ¡rios semanalmente',
+                    name: 'Limpar TemporÃƒÆ’Ã‚Â¡rios',
+                    description: 'Remove arquivos temporÃƒÆ’Ã‚Â¡rios semanalmente',
                     action: 'delete',
                     sourcePath: '/home/pi/Temp',
                     targetPath: '',
@@ -2870,18 +2868,18 @@ class DeParaUI {
 
         for (const template of templates) {
             try {
-                console.log(`Ã°Å¸â€œâ€¹ Criando template: ${template.name}`);
+                console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Criando template: ${template.name}`);
                 await this.createTemplateOnServer(template);
-                console.log(`Ã¢Å“â€¦ Template criado: ${template.name}`);
+                console.log(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Template criado: ${template.name}`);
             } catch (error) {
-                console.warn(`Ã¢Å¡Â Ã¯Â¸Â Erro ao criar template ${template.name}:`, error);
+                console.warn(`ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Erro ao criar template ${template.name}:`, error);
             }
         }
     }
 
     // Criar template no servidor
     async createTemplateOnServer(template) {
-        console.log(`Ã°Å¸Å’Â Enviando requisiÃƒÂ§ÃƒÂ£o para criar template:`, template);
+        console.log(`ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â Enviando requisiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para criar template:`, template);
 
         const response = await fetch('/api/files/templates', {
             method: 'POST',
@@ -2906,7 +2904,7 @@ class DeParaUI {
 
     // Atualizar lista de pastas
     async refreshFoldersList() {
-        console.log('Ã°Å¸â€â€ž Atualizando lista de pastas...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Atualizando lista de pastas...');
 
         try {
             // Carregar pastas do servidor
@@ -2917,16 +2915,16 @@ class DeParaUI {
             this.updateFoldersDisplay();
             this.updateWorkflowsDisplay();
 
-            this.showToast('Ã¢Å“â€¦ Lista de pastas atualizada!', 'success');
-            console.log('Ã¢Å“â€¦ Lista de pastas atualizada com sucesso');
+            this.showToast('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Lista de pastas atualizada!', 'success');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Lista de pastas atualizada com sucesso');
 
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao atualizar lista de pastas:', error);
-            this.showToast('Ã¢ÂÅ’ Erro ao atualizar lista', 'error');
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao atualizar lista de pastas:', error);
+            this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao atualizar lista', 'error');
         }
     }
 
-    // Atualizar exibiÃƒÂ§ÃƒÂ£o de pastas
+    // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pastas
     updateFoldersDisplay() {
         const foldersList = document.getElementById('folders-list');
         if (!foldersList) return;
@@ -2936,7 +2934,7 @@ class DeParaUI {
                 <div class="empty-state">
                     <span class="material-icons">folder_open</span>
                     <p>Nenhuma pasta configurada</p>
-                    <small>Use a configuraÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida acima ou crie manualmente</small>
+                    <small>Use a configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida acima ou crie manualmente</small>
                 </div>
             `;
         } else {
@@ -2960,7 +2958,7 @@ class DeParaUI {
                 </div>
             `).join('');
 
-            // Configurar event listeners para os botÃƒÂµes de editar/deletar
+            // Configurar event listeners para os botÃƒÆ’Ã‚Âµes de editar/deletar
             const editButtons = foldersList.querySelectorAll('.edit-folder-btn');
             const deleteButtons = foldersList.querySelectorAll('.delete-folder-btn');
 
@@ -2980,7 +2978,7 @@ class DeParaUI {
         }
     }
 
-    // Obter ÃƒÂ­cone da pasta baseado no tipo
+    // Obter ÃƒÆ’Ã‚Â­cone da pasta baseado no tipo
     getFolderIcon(type) {
         const icons = {
             source: 'folder',
@@ -2993,19 +2991,19 @@ class DeParaUI {
 
     // Editar pasta
     editFolder(folderId) {
-        console.log(`Ã¢Å“ÂÃ¯Â¸Â Editando pasta: ${folderId}`);
+        console.log(`ÃƒÂ¢Ã…â€œÃ‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â Editando pasta: ${folderId}`);
         const folder = this.folders.find(f => f.id === folderId);
         if (folder) {
-            // Implementar modal de ediÃƒÂ§ÃƒÂ£o
+            // Implementar modal de ediÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
             this.showToast('Edicao rapida indisponivel no momento. Use excluir e criar novamente para alterar a pasta.', 'warning');
         } else {
-            this.showToast('Pasta nÃƒÂ£o encontrada', 'error');
+            this.showToast('Pasta nÃƒÆ’Ã‚Â£o encontrada', 'error');
         }
     }
 
     // Deletar pasta
     async deleteFolder(folderId) {
-        console.log(`Ã°Å¸â€”â€˜Ã¯Â¸Â Deletando pasta: ${folderId}`);
+        console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬ËœÃƒÂ¯Ã‚Â¸Ã‚Â Deletando pasta: ${folderId}`);
 
         if (confirm('Tem certeza que deseja excluir esta pasta?')) {
             try {
@@ -3014,27 +3012,27 @@ class DeParaUI {
                 });
 
                 if (response.ok) {
-                    this.showToast('Ã¢Å“â€¦ Pasta excluÃƒÂ­da com sucesso!', 'success');
+                    this.showToast('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta excluÃƒÆ’Ã‚Â­da com sucesso!', 'success');
                     await this.refreshFoldersList();
                 } else {
                     throw new Error(`Erro HTTP ${response.status}`);
                 }
             } catch (error) {
-                console.error('Ã¢ÂÅ’ Erro ao excluir pasta:', error);
-                this.showToast('Ã¢ÂÅ’ Erro ao excluir pasta', 'error');
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao excluir pasta:', error);
+                this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao excluir pasta', 'error');
             }
         }
     }
 
-    // Atualizar exibiÃƒÂ§ÃƒÂ£o de workflows (placeholder)
+    // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de workflows (placeholder)
     updateWorkflowsDisplay() {
-        console.log('Ã°Å¸â€â€ž Atualizando exibiÃƒÂ§ÃƒÂ£o de workflows...');
-        // Implementar conforme necessÃƒÂ¡rio
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Atualizando exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de workflows...');
+        // Implementar conforme necessÃƒÆ’Ã‚Â¡rio
     }
 
-    // Adicionar event listeners para operaÃƒÂ§ÃƒÂµes de arquivo
+    // Adicionar event listeners para operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de arquivo
     addFileOperationEventListeners() {
-        // Mostrar/ocultar filtro de extensÃƒÂµes quando recursÃƒÂ£o ÃƒÂ© selecionada
+        // Mostrar/ocultar filtro de extensÃƒÆ’Ã‚Âµes quando recursÃƒÆ’Ã‚Â£o ÃƒÆ’Ã‚Â© selecionada
         const recursiveCheckbox = document.getElementById('recursive-operation');
         const extensionsFilter = document.getElementById('extensions-filter');
 
@@ -3045,24 +3043,26 @@ class DeParaUI {
         }
     }
 
-    // Configurar event listeners para todos os novos botÃƒÂµes
+    // Configurar event listeners para todos os novos botÃƒÆ’Ã‚Âµes
     setupAdditionalEventListeners() {
-        // BotÃƒÂµes de dashboard
+        // BotÃƒÆ’Ã‚Âµes de dashboard
         this.addButtonListener('.refresh-charts-btn', () => this.updateCharts());
         this.addButtonListener('.clear-search-btn', () => this.clearSearch());
         this.addButtonListener('.schedule-modal-btn', () => {
             this.switchTab('scheduled');
-            this.showScheduleModal();
+            if (typeof window.showScheduleModal === 'function') {
+                window.showScheduleModal({ operation: {}, mode: 'create' });
+            }
         });
 
-        // BotÃƒÂµes de aÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida (interface antiga) - redirecionar para nova interface
+        // BotÃƒÆ’Ã‚Âµes de aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida (interface antiga) - redirecionar para nova interface
         this.addButtonListener('.action-move-btn', () => this.redirectToFileOperations('move'));
         this.addButtonListener('.action-copy-btn', () => this.redirectToFileOperations('copy'));
         this.addButtonListener('.action-delete-btn', () => this.redirectToFileOperations('delete'));
         this.addButtonListener('.action-schedule-btn', () => this.redirectToFileOperations('schedule'));
         this.addButtonListener('.action-slideshow-btn', () => this.showSlideshowModal());
 
-        // BotÃƒÂµes de backup
+        // BotÃƒÆ’Ã‚Âµes de backup
         this.addButtonListener('.load-backups-btn', () => {
             if (typeof loadBackups === 'function') loadBackups();
         });
@@ -3070,23 +3070,23 @@ class DeParaUI {
             if (typeof updateBackupConfig === 'function') updateBackupConfig();
         });
 
-        // BotÃƒÂµes de configuraÃƒÂ§ÃƒÂµes
+        // BotÃƒÆ’Ã‚Âµes de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
         this.addButtonListener('.show-ignored-btn', () => window.showIgnoredPatterns());
         this.addButtonListener('.save-settings-btn', () => this.saveSettings());
 
-        // BotÃƒÂµes de workflow
+        // BotÃƒÆ’Ã‚Âµes de workflow
         this.addButtonListener('.close-workflow-btn', () => window.closeWorkflowModal());
         this.addButtonListener('#prev-step', () => window.previousWorkflowStep());
         this.addButtonListener('#next-step', () => window.nextWorkflowStep());
         this.addButtonListener('#save-step', () => window.saveWorkflow());
         this.addButtonListener('.cancel-workflow-btn', () => window.closeWorkflowModal());
 
-        // BotÃƒÂµes de gerenciamento de pastas
+        // BotÃƒÆ’Ã‚Âµes de gerenciamento de pastas
         this.addButtonListener('.close-folder-manager-btn', () => window.closeFolderManagerModal());
         this.addButtonListener('.cancel-folder-manager-btn', () => window.closeFolderManagerModal());
         this.addButtonListener('.save-folder-btn', () => window.saveFolder());
 
-        // BotÃƒÂµes de operaÃƒÂ§ÃƒÂµes de arquivo
+        // BotÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de arquivo
         this.addButtonListener('.close-file-operation-btn', () => {
             if (typeof closeFileOperationModal === 'function') closeFileOperationModal();
         });
@@ -3097,12 +3097,12 @@ class DeParaUI {
             if (typeof executeFileOperation === 'function') executeFileOperation();
         });
 
-        // BotÃƒÂµes de agendamento
-        this.addButtonListener('.close-schedule-btn', () => window.closeScheduleModal());
-        this.addButtonListener('.cancel-schedule-btn', () => window.closeScheduleModal());
-        this.addButtonListener('.schedule-operation-btn', () => window.scheduleOperation());
+        // BotÃƒÆ’Ã‚Âµes de agendamento
+        this.addButtonListener('.close-schedule-btn', () => hideScheduleModal());
+        this.addButtonListener('.cancel-schedule-btn', () => hideScheduleModal());
+        this.addButtonListener('.schedule-operation-btn', () => performScheduleOperation());
         
-        // BotÃƒÂµes de filtros rÃƒÂ¡pidos (event delegation)
+        // BotÃƒÆ’Ã‚Âµes de filtros rÃƒÆ’Ã‚Â¡pidos (event delegation)
         document.addEventListener('click', (e) => {
             if (e.target.closest('.filter-btn')) {
                 const btn = e.target.closest('.filter-btn');
@@ -3110,12 +3110,19 @@ class DeParaUI {
             }
         });
         
-        // BotÃƒÂµes de navegaÃƒÂ§ÃƒÂ£o de pastas no modal de agendamento
+        // BotÃƒÆ’Ã‚Âµes de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pastas no modal de agendamento
         this.addButtonListener('#browse-source-btn', () => this.browsePathForSchedule('source'));
         this.addButtonListener('#browse-target-btn', () => this.browsePathForSchedule('target'));
         
-        // BotÃƒÂµes de operaÃƒÂ§ÃƒÂµes agendadas (event delegation)
+        // BotÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas (event delegation)
         document.addEventListener('click', (e) => {
+            if (e.target.closest('.schedule-btn')) {
+                if (typeof window.showScheduleModal === 'function') {
+                    this.configureOperation();
+                } else {
+                    this.showToast('Funcionalidade de agendamento nÃƒÆ’Ã‚Â£o disponÃƒÆ’Ã‚Â­vel', 'warning');
+                }
+            }
             if (e.target.closest('.cancel-scheduled-operation-btn')) {
                 const btn = e.target.closest('.cancel-scheduled-operation-btn');
                 const operationId = btn.getAttribute('data-operation-id');
@@ -3143,42 +3150,35 @@ class DeParaUI {
             }
         });
         
-        // BotÃƒÂ£o de reload da pÃƒÂ¡gina
+        // BotÃƒÆ’Ã‚Â£o de reload da pÃƒÆ’Ã‚Â¡gina
         this.addButtonListener('.reload-page-btn', () => window.location.reload());
 
-        // BotÃƒÂµes de slideshow
+        // BotÃƒÆ’Ã‚Âµes de slideshow
         this.addButtonListener('.close-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
         this.addButtonListener('.cancel-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
         this.addButtonListener('.close-slideshow-config-btn', () => window.closeSlideshowConfigModal());
-        // Event listeners antigos removidos - usando botÃƒÂµes estÃƒÂ¡ticos
+        // Event listeners antigos removidos - usando botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos
 
-        // BotÃƒÂ£o seletor de pasta
+        // BotÃƒÆ’Ã‚Â£o seletor de pasta
         this.addButtonListener('.select-folder-btn', () => {
             this.showFolderBrowser('source');
         });
 
-        // BotÃƒÂ£o seletor de pasta de destino
+        // BotÃƒÆ’Ã‚Â£o seletor de pasta de destino
         this.addButtonListener('.select-target-btn', () => {
             this.showFolderBrowser('target');
         });
 
-        // BotÃƒÂµes de operaÃƒÂ§ÃƒÂ£o
+        // BotÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         this.addButtonListener('.move-btn', () => this.selectOperation('move'));
         this.addButtonListener('.copy-btn', () => this.selectOperation('copy'));
         this.addButtonListener('.delete-btn', () => this.selectOperation('delete'));
 
-        // BotÃƒÂµes de sugestÃƒÂ£o de pasta
+        // BotÃƒÆ’Ã‚Âµes de sugestÃƒÆ’Ã‚Â£o de pasta
         this.addButtonListener('.suggestion-btn', (e) => this.selectSuggestedFolder(e));
 
-        // BotÃƒÂµes de aÃƒÂ§ÃƒÂ£o
+        // BotÃƒÆ’Ã‚Âµes de aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         this.addButtonListener('.execute-now-btn', () => this.executeNow());
-        this.addButtonListener('.schedule-btn', () => {
-            if (typeof showScheduleModal === 'function') {
-                this.configureOperation();
-            } else {
-                this.showToast('Funcionalidade de agendamento nÃƒÂ£o disponÃƒÂ­vel', 'warning');
-            }
-        });
 
         // Filtros de busca (input events)
         const searchInput = document.getElementById('scheduled-search');
@@ -3189,7 +3189,7 @@ class DeParaUI {
         }
     }
 
-    // FunÃƒÂ§ÃƒÂ£o auxiliar para adicionar event listeners de botÃƒÂµes
+    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o auxiliar para adicionar event listeners de botÃƒÆ’Ã‚Âµes
     addButtonListener(selector, callback) {
         const element = document.querySelector(selector);
         if (element) {
@@ -3199,13 +3199,13 @@ class DeParaUI {
 
     // Redirecionar da interface antiga para a nova
     redirectToFileOperations(operation) {
-        // Mudar para a aba de operaÃƒÂ§ÃƒÂµes de arquivos
+        // Mudar para a aba de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de arquivos
         this.switchTab('fileops');
 
-        // PrÃƒÂ©-selecionar a operaÃƒÂ§ÃƒÂ£o
+        // PrÃƒÆ’Ã‚Â©-selecionar a operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         setTimeout(() => {
             this.selectOperation(operation);
-            this.showToast(`Use a nova interface abaixo para configurar a operaÃƒÂ§ÃƒÂ£o de ${operation}`, 'info');
+            this.showToast(`Use a nova interface abaixo para configurar a operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de ${operation}`, 'info');
         }, 100);
     }
 
@@ -3213,7 +3213,7 @@ class DeParaUI {
     // OPERATION CONFIGURATION
     // ==========================================
 
-    // Estado da configuraÃƒÂ§ÃƒÂ£o atual
+    // Estado da configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o atual
     currentConfig = {
         sourcePath: '',
         operation: '',
@@ -3277,16 +3277,16 @@ class DeParaUI {
 
         if (!draft.sourcePath) {
             errors.push('Selecione a pasta de origem.');
-            if (sourceField) this.showFieldError(sourceField, 'Origem obrigatória');
+            if (sourceField) this.showFieldError(sourceField, 'Origem obrigatÃ³ria');
         }
 
         if (!draft.operation) {
-            errors.push('Selecione a ação.');
+            errors.push('Selecione a aÃ§Ã£o.');
         }
 
         if (needsTarget && !draft.targetPath) {
             errors.push('Selecione a pasta de destino.');
-            if (targetField) this.showFieldError(targetField, 'Destino obrigatório');
+            if (targetField) this.showFieldError(targetField, 'Destino obrigatÃ³rio');
         }
 
         return {
@@ -3307,23 +3307,23 @@ class DeParaUI {
             return;
         }
 
-        summarySource.textContent = draft.sourcePath || 'Não definida';
-        summaryAction.textContent = draft.operation ? draft.operation.toUpperCase() : 'Não definida';
+        summarySource.textContent = draft.sourcePath || 'NÃ£o definida';
+        summaryAction.textContent = draft.operation ? draft.operation.toUpperCase() : 'NÃ£o definida';
         summaryTarget.textContent = draft.operation === 'delete'
-            ? 'Não aplicável'
-            : (draft.targetPath || 'Não definido');
+            ? 'NÃ£o aplicÃ¡vel'
+            : (draft.targetPath || 'NÃ£o definido');
         summaryMode.textContent = draft.mode
-            ? (draft.mode === 'schedule' ? 'Agendamento' : 'Execução imediata')
+            ? (draft.mode === 'schedule' ? 'Agendamento' : 'ExecuÃ§Ã£o imediata')
             : 'Escolha executar ou agendar';
 
         if (!draft.sourcePath) {
-            summaryNote.textContent = 'Selecione a pasta de origem para começar.';
+            summaryNote.textContent = 'Selecione a pasta de origem para comeÃ§ar.';
         } else if (!draft.operation) {
-            summaryNote.textContent = 'Escolha a ação que deseja executar.';
+            summaryNote.textContent = 'Escolha a aÃ§Ã£o que deseja executar.';
         } else if ((draft.operation === 'move' || draft.operation === 'copy') && !draft.targetPath) {
-            summaryNote.textContent = 'A ação selecionada exige uma pasta de destino.';
+            summaryNote.textContent = 'A aÃ§Ã£o selecionada exige uma pasta de destino.';
         } else {
-            summaryNote.textContent = 'A operação está pronta para executar ou abrir o agendamento.';
+            summaryNote.textContent = 'A operaÃ§Ã£o estÃ¡ pronta para executar ou abrir o agendamento.';
         }
     }
 
@@ -3359,13 +3359,13 @@ class DeParaUI {
 
         if (targetHelp) {
             if (draft.operation === 'delete') {
-                targetHelp.textContent = 'Excluir cria backup quando configurado e não precisa de destino.';
+                targetHelp.textContent = 'Excluir cria backup quando configurado e nÃ£o precisa de destino.';
             } else if (draft.operation === 'move') {
-                targetHelp.textContent = 'Selecione a pasta de destino obrigatória para mover.';
+                targetHelp.textContent = 'Selecione a pasta de destino obrigatÃ³ria para mover.';
             } else if (draft.operation === 'copy') {
-                targetHelp.textContent = 'Selecione a pasta de destino obrigatória para copiar.';
+                targetHelp.textContent = 'Selecione a pasta de destino obrigatÃ³ria para copiar.';
             } else {
-                targetHelp.textContent = 'Selecione a pasta de destino quando a ação exigir.';
+                targetHelp.textContent = 'Selecione a pasta de destino quando a aÃ§Ã£o exigir.';
             }
         }
 
@@ -3473,7 +3473,7 @@ class DeParaUI {
                 document.getElementById('slideshow-adjustable-folder').value = normalizedPath;
                 break;
             default:
-                console.warn('Contexto de seleção de pasta não suportado:', selectionContext);
+                console.warn('Contexto de seleÃ§Ã£o de pasta nÃ£o suportado:', selectionContext);
                 break;
         }
     }
@@ -3488,11 +3488,11 @@ class DeParaUI {
         this.showFolderBrowser('target');
     }
 
-    // Mostrar diÃƒÂ¡logo nativo de seleÃƒÂ§ÃƒÂ£o de pasta
+    // Mostrar diÃƒÆ’Ã‚Â¡logo nativo de seleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pasta
     showNativeFolderDialog(targetType) {
         this.showFolderBrowser(targetType);
         return;
-        // Criar input file oculto para seleÃƒÂ§ÃƒÂ£o de pasta
+        // Criar input file oculto para seleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pasta
         const input = document.createElement('input');
         input.type = 'file';
         input.webkitdirectory = true;
@@ -3506,12 +3506,12 @@ class DeParaUI {
                 // Pegar o caminho da primeira pasta selecionada
                 const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
                 
-                console.log('Ã°Å¸â€œÂ Pasta selecionada:', fullPath);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Pasta selecionada:', fullPath);
                 
                 this.applyFolderSelection(targetType, fullPath);
             }
             
-            // Remover o input apÃƒÂ³s uso
+            // Remover o input apÃƒÆ’Ã‚Â³s uso
             document.body.removeChild(input);
         });
         
@@ -3550,7 +3550,7 @@ class DeParaUI {
                             <div class="empty-state">
                                 <span class="material-icons">folder_open</span>
                                 <p>Digite o caminho da pasta ou clique em "Atualizar" para navegar</p>
-                                <small>VocÃƒÂª pode inserir o caminho manualmente ou navegar pelas pastas</small>
+                                <small>VocÃƒÆ’Ã‚Âª pode inserir o caminho manualmente ou navegar pelas pastas</small>
                             </div>
                         </div>
                     </div>
@@ -3564,17 +3564,17 @@ class DeParaUI {
 
         document.body.appendChild(modal);
 
-        // Configurar event listeners apÃƒÂ³s criar o modal
+        // Configurar event listeners apÃƒÆ’Ã‚Â³s criar o modal
         this.setupFolderBrowserEventListeners(modal, browserContext, callback);
 
-        // Obter diretÃƒÂ³rio home do usuÃƒÂ¡rio automaticamente
+        // Obter diretÃƒÆ’Ã‚Â³rio home do usuÃƒÆ’Ã‚Â¡rio automaticamente
         this.setDefaultPath(modal, initialPath);
 
-        // NÃƒÂ£o carregar pastas automaticamente - permitir entrada manual
-        console.log('Ã°Å¸â€œÂ Modal de seleÃƒÂ§ÃƒÂ£o de pasta criado - entrada manual habilitada');
+        // NÃƒÆ’Ã‚Â£o carregar pastas automaticamente - permitir entrada manual
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Modal de seleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pasta criado - entrada manual habilitada');
     }
 
-    // Definir caminho padrÃƒÂ£o baseado no sistema operacional
+    // Definir caminho padrÃƒÆ’Ã‚Â£o baseado no sistema operacional
     async setDefaultPath(modal, preferredPath = '') {
         if (preferredPath) {
             const pathInput = modal.querySelector('#browser-path');
@@ -3585,7 +3585,7 @@ class DeParaUI {
         }
 
         try {
-            // Tentar obter o diretÃƒÂ³rio home via API
+            // Tentar obter o diretÃƒÆ’Ã‚Â³rio home via API
             const response = await fetch('/api/status/system');
             if (response.ok) {
                 const data = await response.json();
@@ -3593,27 +3593,27 @@ class DeParaUI {
                     const pathInput = modal.querySelector('#browser-path');
                     if (pathInput) {
                         pathInput.value = data.data.userHome;
-                        console.log('Ã°Å¸ÂÂ  DiretÃƒÂ³rio home detectado:', data.data.userHome);
+                        console.log('ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â  DiretÃƒÆ’Ã‚Â³rio home detectado:', data.data.userHome);
                         return;
                     }
                 }
             }
         } catch (error) {
-            console.log('Ã¢Å¡Â Ã¯Â¸Â NÃƒÂ£o foi possÃƒÂ­vel detectar diretÃƒÂ³rio home via API, usando padrÃƒÂ£o');
+            console.log('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel detectar diretÃƒÆ’Ã‚Â³rio home via API, usando padrÃƒÆ’Ã‚Â£o');
         }
 
-        // Fallback: usar caminho padrÃƒÂ£o baseado no sistema
+        // Fallback: usar caminho padrÃƒÆ’Ã‚Â£o baseado no sistema
         const pathInput = modal.querySelector('#browser-path');
         if (pathInput) {
             const defaultPath = this.getDefaultBrowserPath();
             pathInput.value = defaultPath;
-            console.log('Ã°Å¸ÂÂ  Usando caminho padrÃƒÂ£o:', defaultPath);
+            console.log('ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â  Usando caminho padrÃƒÆ’Ã‚Â£o:', defaultPath);
         }
     }
 
-    // Carregar pastas de um diretÃƒÂ³rio (para o modal de navegaÃƒÂ§ÃƒÂ£o)
+    // Carregar pastas de um diretÃƒÆ’Ã‚Â³rio (para o modal de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o)
     async loadFoldersForBrowser(path) {
-        console.log('Ã°Å¸â€Â Iniciando carregamento de pastas para navegaÃƒÂ§ÃƒÂ£o:', path);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Iniciando carregamento de pastas para navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', path);
 
         try {
             const response = await fetch('/api/files/list-folders', {
@@ -3622,43 +3622,43 @@ class DeParaUI {
                 body: JSON.stringify({ path })
             });
 
-            console.log('Ã°Å¸â€œÂ¡ Resposta da API:', response.status);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Resposta da API:', response.status);
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const result = await response.json();
-            console.log('Ã°Å¸â€œâ€¹ Resultado da API:', result);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Resultado da API:', result);
 
             if (result.success) {
-                console.log('Ã¢Å“â€¦ Pastas carregadas:', result.data.folders.length);
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pastas carregadas:', result.data.folders.length);
                 this.renderFolders(result.data.folders, result.data.currentPath || path);
             } else {
-                console.error('Ã¢ÂÅ’ Erro na resposta da API:', result.error);
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro na resposta da API:', result.error);
                 this.showToast('Erro ao carregar pastas: ' + (result.error?.message || 'Erro desconhecido'), 'error');
             }
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao carregar pastas:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar pastas:', error);
             this.showToast('Erro ao carregar pastas: ' + error.message, 'error');
         }
     }
 
     // Configurar event listeners para o navegador de pastas
     setupFolderBrowserEventListeners(modal, selectionContext, callback = null) {
-        // BotÃƒÂ£o fechar
+        // BotÃƒÆ’Ã‚Â£o fechar
         const closeBtn = modal.querySelector('.folder-browser-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => modal.remove());
         }
 
-        // BotÃƒÂ£o voltar
+        // BotÃƒÆ’Ã‚Â£o voltar
         const upBtn = modal.querySelector('.folder-browser-up-btn');
         if (upBtn) {
             upBtn.addEventListener('click', () => this.goUp(modal));
         }
 
-        // BotÃƒÂ£o atualizar/refresh
+        // BotÃƒÆ’Ã‚Â£o atualizar/refresh
         const refreshBtn = modal.querySelector('.folder-browser-refresh-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
@@ -3682,13 +3682,13 @@ class DeParaUI {
             });
         }
 
-        // BotÃƒÂ£o cancelar
+        // BotÃƒÆ’Ã‚Â£o cancelar
         const cancelBtn = modal.querySelector('.folder-browser-cancel-btn');
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => modal.remove());
         }
 
-        // BotÃƒÂ£o selecionar
+        // BotÃƒÆ’Ã‚Â£o selecionar
         const selectBtn = modal.querySelector('.folder-browser-select-btn');
         if (selectBtn) {
             selectBtn.addEventListener('click', () => {
@@ -3700,7 +3700,7 @@ class DeParaUI {
 
     // Renderizar lista de pastas
     renderFolders(folders, currentPath) {
-        console.log('Ã°Å¸Å½Â¨ Renderizando pastas:', folders?.length || 0, 'para o caminho:', currentPath);
+        console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¨ Renderizando pastas:', folders?.length || 0, 'para o caminho:', currentPath);
 
         const pathInput = document.getElementById('browser-path');
         if (pathInput) {
@@ -3709,17 +3709,17 @@ class DeParaUI {
 
         const folderList = document.getElementById('folder-list');
         if (!folderList) {
-            console.error('Ã¢ÂÅ’ Elemento folder-list nÃƒÂ£o encontrado!');
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Elemento folder-list nÃƒÆ’Ã‚Â£o encontrado!');
             return;
         }
 
         if (!folders || folders.length === 0) {
-            console.log('Ã°Å¸â€œÂ­ Nenhuma pasta encontrada');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â­ Nenhuma pasta encontrada');
             folderList.innerHTML = `
                 <div class="empty-state">
                     <span class="material-icons">folder_open</span>
                     <p>Nenhuma pasta encontrada</p>
-                    <small>Este diretÃƒÂ³rio nÃƒÂ£o contÃƒÂ©m subpastas ou o caminho nÃƒÂ£o existe</small>
+                    <small>Este diretÃƒÆ’Ã‚Â³rio nÃƒÆ’Ã‚Â£o contÃƒÆ’Ã‚Â©m subpastas ou o caminho nÃƒÆ’Ã‚Â£o existe</small>
                     <button class="btn btn-sm btn-outline folder-retry-btn" style="margin-top: 10px;">
                         <span class="material-icons">refresh</span>
                         Tentar Novamente
@@ -3727,7 +3727,7 @@ class DeParaUI {
                 </div>
             `;
             
-            // Configurar event listener para o botÃƒÂ£o de tentar novamente
+            // Configurar event listener para o botÃƒÆ’Ã‚Â£o de tentar novamente
             const retryBtn = folderList.querySelector('.folder-retry-btn');
             if (retryBtn) {
                 retryBtn.addEventListener('click', () => {
@@ -3737,7 +3737,7 @@ class DeParaUI {
             return;
         }
 
-        console.log('Ã°Å¸â€œÂ Renderizando pastas:', folders.map(f => f.name));
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Renderizando pastas:', folders.map(f => f.name));
 
         folderList.innerHTML = folders.map(folder => `
             <div class="folder-item" data-path="${folder.path}">
@@ -3756,17 +3756,17 @@ class DeParaUI {
 
         // Configurar event listeners para os itens de pasta
         const folderItems = folderList.querySelectorAll('.folder-item');
-        console.log('Ã°Å¸â€â€” Configurando event listeners para', folderItems.length, 'itens de pasta');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬â€ Configurando event listeners para', folderItems.length, 'itens de pasta');
 
         folderItems.forEach(item => {
             item.addEventListener('click', () => {
                 const path = item.getAttribute('data-path');
-                console.log('Ã°Å¸â€œâ€š Clicado na pasta:', path);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¡ Clicado na pasta:', path);
                 this.navigateTo(path);
             });
         });
 
-        console.log('Ã¢Å“â€¦ RenderizaÃƒÂ§ÃƒÂ£o completa');
+        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ RenderizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o completa');
     }
 
     // Navegar para uma pasta
@@ -3805,7 +3805,7 @@ class DeParaUI {
         return `/${parts.slice(0, -1).join('/')}`;
     }
 
-    // Voltar um nÃƒÂ­vel
+    // Voltar um nÃƒÆ’Ã‚Â­vel
     goUp(modal = null) {
         const pathInput = modal?.querySelector('#browser-path') || document.getElementById('browser-path');
         const currentPath = pathInput?.value || '';
@@ -3813,69 +3813,69 @@ class DeParaUI {
         this.loadFoldersForBrowser(parentPath);
     }
 
-    // Selecionar filtro rÃƒÂ¡pido
+    // Selecionar filtro rÃƒÆ’Ã‚Â¡pido
     selectFilter(event) {
         const button = event.target;
         const filter = button.getAttribute('data-filter');
         const filterInput = document.getElementById('schedule-filters');
         
-        console.log('Ã°Å¸â€Â BotÃƒÂ£o de filtro clicado:', button);
-        console.log('Ã°Å¸â€Â Filtro obtido:', filter);
-        console.log('Ã°Å¸â€Â Campo de input encontrado:', !!filterInput);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â BotÃƒÆ’Ã‚Â£o de filtro clicado:', button);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Filtro obtido:', filter);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Campo de input encontrado:', !!filterInput);
         
         if (filterInput) {
             filterInput.value = filter;
             
-            // Remover classe active de todos os botÃƒÂµes
+            // Remover classe active de todos os botÃƒÆ’Ã‚Âµes
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             
-            // Adicionar classe active ao botÃƒÂ£o clicado
+            // Adicionar classe active ao botÃƒÆ’Ã‚Â£o clicado
             button.classList.add('active');
             
-            console.log('Ã¢Å“â€¦ Filtro selecionado:', filter);
-            console.log('Ã¢Å“â€¦ Campo atualizado com:', filterInput.value);
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Filtro selecionado:', filter);
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Campo atualizado com:', filterInput.value);
             
-            // Atualizar resumo da operaÃƒÂ§ÃƒÂ£o se estiver visÃƒÂ­vel
+            // Atualizar resumo da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o se estiver visÃƒÆ’Ã‚Â­vel
             if (typeof updateOperationSummary === 'function') {
                 updateOperationSummary();
             }
         } else {
-            console.error('Ã¢ÂÅ’ Campo de filtros nÃƒÂ£o encontrado!');
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo de filtros nÃƒÆ’Ã‚Â£o encontrado!');
         }
     }
 
     // Navegar e selecionar pasta para o modal de agendamento
-    browsePathForSchedule(type) {
+    legacyBrowsePathForSchedule(type) {
         const currentPath = type === 'source' 
             ? document.getElementById('schedule-source').value || '/home/yo'
             : document.getElementById('schedule-target').value || '/home/yo';
             
-        console.log(`Ã°Å¸â€Â Abrindo navegador de pastas para ${type}:`, currentPath);
+        console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Abrindo navegador de pastas para ${type}:`, currentPath);
         
-        // Usar a funÃƒÂ§ÃƒÂ£o existente de navegaÃƒÂ§ÃƒÂ£o de pastas
+        // Usar a funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o existente de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pastas
         this.showFolderBrowser(currentPath, (selectedPath) => {
             if (type === 'source') {
                 document.getElementById('schedule-source').value = selectedPath;
-                console.log('Ã¢Å“â€¦ Pasta de origem selecionada:', selectedPath);
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta de origem selecionada:', selectedPath);
             } else {
                 document.getElementById('schedule-target').value = selectedPath;
-                console.log('Ã¢Å“â€¦ Pasta de destino selecionada:', selectedPath);
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta de destino selecionada:', selectedPath);
             }
         });
     }
 
-    // FunÃƒÂ§ÃƒÂ£o auxiliar para preencher campo com mÃƒÂºltiplas tentativas
+    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o auxiliar para preencher campo com mÃƒÆ’Ã‚Âºltiplas tentativas
     fillFieldWithRetry(field, value, fieldName) {
         if (!field) return false;
         
-        // Tentativa 1: MÃƒÂ©todo direto
+        // Tentativa 1: MÃƒÆ’Ã‚Â©todo direto
         field.value = value;
-        console.log(`Ã°Å¸â€â€ž Tentativa 1 - ${fieldName}:`, field.value);
+        console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Tentativa 1 - ${fieldName}:`, field.value);
         
         if (field.value === value) {
-            console.log(`Ã¢Å“â€¦ ${fieldName} preenchido com sucesso`);
+            console.log(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ${fieldName} preenchido com sucesso`);
             return true;
         }
         
@@ -3883,17 +3883,17 @@ class DeParaUI {
         field.value = value;
         field.dispatchEvent(new Event('input', { bubbles: true }));
         field.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log(`Ã°Å¸â€â€ž Tentativa 2 - ${fieldName} (com eventos):`, field.value);
+        console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Tentativa 2 - ${fieldName} (com eventos):`, field.value);
         
         if (field.value === value) {
-            console.log(`Ã¢Å“â€¦ ${fieldName} preenchido com eventos`);
+            console.log(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ${fieldName} preenchido com eventos`);
             return true;
         }
         
-        // Tentativa 3: ForÃƒÂ§ar com setTimeout
+        // Tentativa 3: ForÃƒÆ’Ã‚Â§ar com setTimeout
         setTimeout(() => {
             field.value = value;
-            console.log(`Ã°Å¸â€â€ž Tentativa 3 - ${fieldName} (timeout):`, field.value);
+            console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Tentativa 3 - ${fieldName} (timeout):`, field.value);
         }, 50);
         
         return field.value === value;
@@ -3902,9 +3902,9 @@ class DeParaUI {
     // Selecionar pasta atual
     selectCurrentFolder(targetType, callback = null) {
         const selectedPath = document.getElementById('browser-path').value;
-        console.log('Ã°Å¸Å½Â¯ Selecionando pasta:', selectedPath, 'para tipo:', targetType);
+        console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ Selecionando pasta:', selectedPath, 'para tipo:', targetType);
         
-        // Se hÃƒÂ¡ um callback, usar ele em vez da lÃƒÂ³gica padrÃƒÂ£o
+        // Se hÃƒÆ’Ã‚Â¡ um callback, usar ele em vez da lÃƒÆ’Ã‚Â³gica padrÃƒÆ’Ã‚Â£o
         if (callback && typeof callback === 'function') {
             callback(selectedPath);
             // Fechar modal
@@ -3917,56 +3917,56 @@ class DeParaUI {
             let sourceField = document.getElementById('source-folder-path'); // Campo complexo
             if (!sourceField) {
                 sourceField = document.getElementById('source-path'); // Campo simples
-                console.log('Ã°Å¸â€Â Campo source-path encontrado:', !!sourceField);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Campo source-path encontrado:', !!sourceField);
             } else {
-                console.log('Ã°Å¸â€Â Campo source-folder-path encontrado:', !!sourceField);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Campo source-folder-path encontrado:', !!sourceField);
             }
             
             if (sourceField) {
-                // Usar funÃƒÂ§ÃƒÂ£o auxiliar para preencher com mÃƒÂºltiplas tentativas
+                // Usar funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o auxiliar para preencher com mÃƒÆ’Ã‚Âºltiplas tentativas
                 const success = this.fillFieldWithRetry(sourceField, selectedPath, 'source-folder-path');
                 
                 if (success) {
                     this.currentConfig.sourcePath = selectedPath;
-                    console.log('Ã¢Å“â€¦ Campo de origem preenchido com sucesso');
+                    console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Campo de origem preenchido com sucesso');
                     this.showToast(`Pasta de origem selecionada: ${selectedPath}`, 'success');
                 } else {
-                    console.error('Ã¢ÂÅ’ Falha ao preencher campo de origem');
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Falha ao preencher campo de origem');
                     this.showToast('Erro: Falha ao preencher campo de origem', 'error');
                 }
             } else {
-                console.error('Ã¢ÂÅ’ Campo de pasta de origem nÃƒÂ£o encontrado');
-                console.error('Ã¢ÂÅ’ Tentou source-folder-path:', !!document.getElementById('source-folder-path'));
-                console.error('Ã¢ÂÅ’ Tentou source-path:', !!document.getElementById('source-path'));
-                this.showToast('Erro: Campo de pasta de origem nÃƒÂ£o encontrado', 'error');
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo de pasta de origem nÃƒÆ’Ã‚Â£o encontrado');
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Tentou source-folder-path:', !!document.getElementById('source-folder-path'));
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Tentou source-path:', !!document.getElementById('source-path'));
+                this.showToast('Erro: Campo de pasta de origem nÃƒÆ’Ã‚Â£o encontrado', 'error');
             }
         } else if (targetType === 'target') {
             // Verificar se existe o campo complexo primeiro (mais comum)
             let targetField = document.getElementById('target-folder-path'); // Campo complexo
             if (!targetField) {
                 targetField = document.getElementById('dest-path'); // Campo simples
-                console.log('Ã°Å¸â€Â Campo dest-path encontrado:', !!targetField);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Campo dest-path encontrado:', !!targetField);
             } else {
-                console.log('Ã°Å¸â€Â Campo target-folder-path encontrado:', !!targetField);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Campo target-folder-path encontrado:', !!targetField);
             }
             
             if (targetField) {
-                // Usar funÃƒÂ§ÃƒÂ£o auxiliar para preencher com mÃƒÂºltiplas tentativas
+                // Usar funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o auxiliar para preencher com mÃƒÆ’Ã‚Âºltiplas tentativas
                 const success = this.fillFieldWithRetry(targetField, selectedPath, 'target-folder-path');
                 
                 if (success) {
                     this.currentConfig.targetPath = selectedPath;
-                    console.log('Ã¢Å“â€¦ Campo de destino preenchido com sucesso');
+                    console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Campo de destino preenchido com sucesso');
                     this.showToast(`Pasta de destino selecionada: ${selectedPath}`, 'success');
                 } else {
-                    console.error('Ã¢ÂÅ’ Falha ao preencher campo de destino');
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Falha ao preencher campo de destino');
                     this.showToast('Erro: Falha ao preencher campo de destino', 'error');
                 }
             } else {
-                console.error('Ã¢ÂÅ’ Campo de pasta de destino nÃƒÂ£o encontrado');
-                console.error('Ã¢ÂÅ’ Tentou target-folder-path:', !!document.getElementById('target-folder-path'));
-                console.error('Ã¢ÂÅ’ Tentou dest-path:', !!document.getElementById('dest-path'));
-                this.showToast('Erro: Campo de pasta de destino nÃƒÂ£o encontrado', 'error');
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo de pasta de destino nÃƒÆ’Ã‚Â£o encontrado');
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Tentou target-folder-path:', !!document.getElementById('target-folder-path'));
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Tentou dest-path:', !!document.getElementById('dest-path'));
+                this.showToast('Erro: Campo de pasta de destino nÃƒÆ’Ã‚Â£o encontrado', 'error');
             }
         }
 
@@ -3974,7 +3974,7 @@ class DeParaUI {
         document.querySelector('.folder-browser-modal').closest('.modal').remove();
     }
 
-    // Overrides canônicos para fileops e browser de pastas
+    // Overrides canÃ´nicos para fileops e browser de pastas
     async showFolderBrowser(selectionContext, callback = null, startPath = '') {
         const browserContext = selectionContext || 'source';
         const initialPath = this.getFolderBrowserStartPath(browserContext, startPath) || this.getDefaultBrowserPath();
@@ -4008,7 +4008,7 @@ class DeParaUI {
                             <div class="empty-state">
                                 <span class="material-icons">folder_open</span>
                                 <p>Digite o caminho da pasta ou clique em "Atualizar" para navegar</p>
-                                <small>Você pode inserir o caminho manualmente ou navegar pelas pastas</small>
+                                <small>VocÃª pode inserir o caminho manualmente ou navegar pelas pastas</small>
                             </div>
                         </div>
                     </div>
@@ -4047,7 +4047,7 @@ class DeParaUI {
                 }
             }
         } catch (error) {
-            console.log('Falha ao detectar diretório home via API, usando padrão');
+            console.log('Falha ao detectar diretÃ³rio home via API, usando padrÃ£o');
         }
 
         const pathInput = modal.querySelector('#browser-path');
@@ -4166,7 +4166,7 @@ class DeParaUI {
 
     // Configurar event listeners seguros para CSP (substituir onclick/onchange inline)
     setupCSPSafeEventListeners() {
-        // Barra de busca de operaÃƒÂ§ÃƒÂµes agendadas
+        // Barra de busca de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas
         const searchInput = document.querySelector('.filter-scheduled-input');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
@@ -4174,7 +4174,7 @@ class DeParaUI {
             });
         }
 
-        // Selects do formulÃƒÂ¡rio de operaÃƒÂ§ÃƒÂµes
+        // Selects do formulÃƒÆ’Ã‚Â¡rio de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
         const sourceFolderSelect = document.querySelector('.source-folder-select');
         if (sourceFolderSelect) {
             sourceFolderSelect.addEventListener('change', () => {
@@ -4210,7 +4210,7 @@ class DeParaUI {
             });
         }
 
-        // Checkboxes de transformaÃƒÂ§ÃƒÂ£o
+        // Checkboxes de transformaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         const uppercaseCheckbox = document.querySelector('.transform-uppercase-checkbox');
         if (uppercaseCheckbox) {
             uppercaseCheckbox.addEventListener('change', () => {
@@ -4232,7 +4232,7 @@ class DeParaUI {
             });
         }
 
-        // Selects do formulÃƒÂ¡rio de pastas
+        // Selects do formulÃƒÆ’Ã‚Â¡rio de pastas
         const folderTypeSelect = document.querySelector('.folder-type-select');
         if (folderTypeSelect) {
             folderTypeSelect.addEventListener('change', () => {
@@ -4240,7 +4240,7 @@ class DeParaUI {
             });
         }
 
-        // Select do formulÃƒÂ¡rio de agendamento
+        // Select do formulÃƒÆ’Ã‚Â¡rio de agendamento
         const scheduleActionSelect = document.querySelector('.schedule-action-select');
         if (scheduleActionSelect) {
             scheduleActionSelect.addEventListener('change', () => {
@@ -4250,7 +4250,7 @@ class DeParaUI {
             });
         }
         
-        // Event listeners para atualizar resumo da operaÃƒÂ§ÃƒÂ£o
+        // Event listeners para atualizar resumo da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         const scheduleSourceInput = document.getElementById('schedule-source');
         const scheduleTargetInput = document.getElementById('schedule-target');
         
@@ -4289,7 +4289,7 @@ class DeParaUI {
             targetFolderPath.addEventListener('change', () => this.syncDraftFromFileOps());
         }
 
-        // Input de validaÃƒÂ§ÃƒÂ£o de nome
+        // Input de validaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de nome
         const nameInput = document.querySelector('.validate-name-input');
         if (nameInput) {
             nameInput.addEventListener('input', (e) => {
@@ -4297,7 +4297,7 @@ class DeParaUI {
             });
         }
 
-        // BotÃƒÂµes de navegaÃƒÂ§ÃƒÂ£o de pastas no dashboard
+        // BotÃƒÆ’Ã‚Âµes de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pastas no dashboard
         const browseSourceBtn = document.querySelector('.browse-source-btn');
         if (browseSourceBtn) {
             browseSourceBtn.addEventListener('click', () => {
@@ -4312,7 +4312,7 @@ class DeParaUI {
             });
         }
 
-        // BotÃƒÂµes de operaÃƒÂ§ÃƒÂµes simples
+        // BotÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes simples
         const simpleOperationBtns = document.querySelectorAll('.simple-operation-btn');
         simpleOperationBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -4344,16 +4344,16 @@ class DeParaUI {
         }
     }
 
-    // Selecionar operaÃƒÂ§ÃƒÂ£o
+    // Selecionar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     selectOperation(operation) {
-        console.log('Ã°Å¸Å½Â¯ Selecionando operaÃƒÂ§ÃƒÂ£o:', operation);
+        console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ Selecionando operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', operation);
         
-        // Remove classe active de todos os botÃƒÂµes
+        // Remove classe active de todos os botÃƒÆ’Ã‚Âµes
         document.querySelectorAll('.operation-btn').forEach(btn => {
             btn.classList.remove('active');
         });
 
-        // Adiciona classe active ao botÃƒÂ£o selecionado
+        // Adiciona classe active ao botÃƒÆ’Ã‚Â£o selecionado
         const selectedBtn = document.querySelector(`.${operation}-btn`);
         if (selectedBtn) {
             selectedBtn.classList.add('active');
@@ -4361,17 +4361,17 @@ class DeParaUI {
 
         this.currentConfig.operation = operation;
 
-        // Verificar se o campo de origem estÃƒÂ¡ visÃƒÂ­vel
+        // Verificar se o campo de origem estÃƒÆ’Ã‚Â¡ visÃƒÆ’Ã‚Â­vel
         const sourceField = document.getElementById('source-folder-path');
         const sourceFieldParent = sourceField?.parentElement;
-        console.log('Ã°Å¸â€Â Campo source-folder-path encontrado:', !!sourceField);
-        console.log('Ã°Å¸â€Â Campo source-folder-path visÃƒÂ­vel:', sourceFieldParent?.style.display !== 'none');
-        console.log('Ã°Å¸â€Â Campo source-folder-path display:', sourceFieldParent?.style.display);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Campo source-folder-path encontrado:', !!sourceField);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Campo source-folder-path visÃƒÆ’Ã‚Â­vel:', sourceFieldParent?.style.display !== 'none');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Campo source-folder-path display:', sourceFieldParent?.style.display);
 
-        // Garantir que o campo de origem esteja sempre visÃƒÂ­vel
+        // Garantir que o campo de origem esteja sempre visÃƒÆ’Ã‚Â­vel
         if (sourceFieldParent) {
             sourceFieldParent.style.display = 'block';
-            console.log('Ã¢Å“â€¦ Campo de origem forÃƒÂ§ado a ser visÃƒÂ­vel');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Campo de origem forÃƒÆ’Ã‚Â§ado a ser visÃƒÆ’Ã‚Â­vel');
         }
 
         // Controla a visibilidade e obrigatoriedade do campo destino
@@ -4380,24 +4380,24 @@ class DeParaUI {
         const targetHelp = document.getElementById('target-help');
 
         if (operation === 'delete') {
-            // Para apagar, o campo destino ÃƒÂ© opcional e fica oculto
+            // Para apagar, o campo destino ÃƒÆ’Ã‚Â© opcional e fica oculto
             targetField.style.display = 'none';
             targetInput.required = false;
             targetInput.value = ''; // Limpar valor
         } else {
-            // Para mover/copiar, o campo destino ÃƒÂ© obrigatÃƒÂ³rio e fica visÃƒÂ­vel
+            // Para mover/copiar, o campo destino ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio e fica visÃƒÆ’Ã‚Â­vel
             targetField.style.display = 'block';
             targetInput.required = true;
 
             // Atualizar texto de ajuda
             const operationText = operation === 'move' ? 'mover' : 'copiar';
-            targetHelp.textContent = `Selecione a pasta de destino (obrigatÃƒÂ³rio para ${operationText})`;
+            targetHelp.textContent = `Selecione a pasta de destino (obrigatÃƒÆ’Ã‚Â³rio para ${operationText})`;
         }
 
-        this.showToast(`OperaÃƒÂ§ÃƒÂ£o selecionada: ${operation}`, 'info');
+        this.showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o selecionada: ${operation}`, 'info');
     }
 
-    // Executar operaÃƒÂ§ÃƒÂ£o imediatamente
+    // Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o imediatamente
     async executeNow() {
         const sourcePath = this.currentConfig.sourcePath;
         const operation = this.currentConfig.operation;
@@ -4409,7 +4409,7 @@ class DeParaUI {
         }
 
         if (!operation) {
-            this.showToast('Selecione uma operaÃƒÂ§ÃƒÂ£o', 'error');
+            this.showToast('Selecione uma operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
             return;
         }
 
@@ -4421,7 +4421,7 @@ class DeParaUI {
         try {
             this.showToast(`Executando ${operation}...`, 'info');
 
-            // Executa a operaÃƒÂ§ÃƒÂ£o diretamente via API
+            // Executa a operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o diretamente via API
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
@@ -4440,26 +4440,26 @@ class DeParaUI {
             const result = await response.json();
 
             if (result.success) {
-                this.showToast(`OperaÃƒÂ§ÃƒÂ£o ${operation} executada com sucesso!`, 'success', true);
+                this.showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${operation} executada com sucesso!`, 'success', true);
             } else {
                 this.showToast(`Erro: ${result.error?.message || 'Erro desconhecido'}`, 'error');
             }
 
         } catch (error) {
-            console.error('Erro ao executar operaÃƒÂ§ÃƒÂ£o:', error);
-            this.showToast('Erro ao executar operaÃƒÂ§ÃƒÂ£o', 'error');
+            console.error('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+            this.showToast('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
         }
     }
 
-    // Configurar operaÃƒÂ§ÃƒÂ£o completa (para agendamento)
-    configureOperation() {
+    // Configurar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o completa (para agendamento)
+    legacyConfigureOperation() {
         // Obter valores atuais dos campos
         const sourcePath = document.getElementById('source-folder-path')?.value.trim() || this.currentConfig.sourcePath;
         const operation = this.currentConfig.operation;
         const targetPath = document.getElementById('target-folder-path')?.value.trim() || '';
 
-        console.log('Ã°Å¸â€Â§ Configurando operaÃƒÂ§ÃƒÂ£o:', { sourcePath, operation, targetPath });
-        console.log('Ã°Å¸â€Â§ currentConfig atual:', this.currentConfig);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ Configurando operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', { sourcePath, operation, targetPath });
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ currentConfig atual:', this.currentConfig);
 
         if (!sourcePath) {
             this.showToast('Selecione uma pasta de origem', 'error');
@@ -4467,7 +4467,7 @@ class DeParaUI {
         }
 
         if (!operation) {
-            this.showToast('Selecione uma operaÃƒÂ§ÃƒÂ£o', 'error');
+            this.showToast('Selecione uma operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
             return;
         }
 
@@ -4476,22 +4476,22 @@ class DeParaUI {
             return;
         }
 
-        // Atualizar configuraÃƒÂ§ÃƒÂ£o atual com valores dos campos
+        // Atualizar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o atual com valores dos campos
         this.currentConfig.sourcePath = sourcePath;
         this.currentConfig.operation = operation;
         this.currentConfig.targetPath = targetPath;
 
-        console.log('Ã¢Å“â€¦ ConfiguraÃƒÂ§ÃƒÂ£o atualizada:', this.currentConfig);
+        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o atualizada:', this.currentConfig);
 
-        this.showToast(`OperaÃƒÂ§ÃƒÂ£o configurada: ${operation} de ${sourcePath}`, 'success');
+        this.showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o configurada: ${operation} de ${sourcePath}`, 'success');
 
         // Abre o modal de agendamento
-        if (typeof showScheduleModal === 'function') {
-            showScheduleModal();
+        if (typeof window.showScheduleModal === 'function') {
+            window.showScheduleModal({ mode: 'create' });
         }
     }
 
-    // Overrides canônicos do fluxo fileops
+    // Overrides canÃ´nicos do fluxo fileops
     selectSuggestedFolder(event) {
         const button = event.target;
         const selectedPath = button.getAttribute('data-path');
@@ -4516,7 +4516,7 @@ class DeParaUI {
             ...(operation === 'delete' ? { targetPath: '' } : {})
         });
 
-        this.showToast(`Operação selecionada: ${operation}`, 'info');
+        this.showToast(`OperaÃ§Ã£o selecionada: ${operation}`, 'info');
     }
 
     async executeNow() {
@@ -4550,13 +4550,13 @@ class DeParaUI {
 
             const result = await response.json();
             if (result.success) {
-                this.showToast(`Operação ${operation} executada com sucesso!`, 'success', true);
+                this.showToast(`OperaÃ§Ã£o ${operation} executada com sucesso!`, 'success', true);
             } else {
-                this.showToast(result.error?.message || 'Erro ao executar operação', 'error');
+                this.showToast(result.error?.message || 'Erro ao executar operaÃ§Ã£o', 'error');
             }
         } catch (error) {
-            console.error('Erro ao executar operação:', error);
-            this.showToast('Erro ao executar operação', 'error');
+            console.error('Erro ao executar operaÃ§Ã£o:', error);
+            this.showToast('Erro ao executar operaÃ§Ã£o', 'error');
         } finally {
             this.isExecutingOperation = false;
             this.refreshFileOpsState();
@@ -4575,8 +4575,21 @@ class DeParaUI {
             mode: 'schedule'
         });
 
-        if (typeof showScheduleModal === 'function') {
-            showScheduleModal();
+        try {
+            const modal = document.getElementById('schedule-modal');
+            if (!modal) {
+                throw new Error('Modal de agendamento não encontrado');
+            }
+
+            modal.style.display = 'flex';
+            document.body.classList.add('modal-open');
+            populateScheduleModal(modal, {
+                ...validation.draft,
+                mode: 'schedule'
+            }, 'create');
+        } catch (error) {
+            console.error('Erro ao abrir modal canônico de agendamento:', error);
+            this.showToast('Não foi possível abrir o agendamento.', 'error');
         }
     }
 
@@ -4771,7 +4784,7 @@ class DeParaUI {
         }
     }
 
-    // Carrega configuracões salvas no servidor e mescla no localStorage
+    // Carrega configuracÃµes salvas no servidor e mescla no localStorage
     async loadServerConfigLegacy() {
         try {
             const res = await fetch('/api/config');
@@ -4799,25 +4812,25 @@ class DeParaUI {
         }
     }
 
-    // Carregar configuraÃƒÂ§ÃƒÂµes do slideshow do localStorage
+    // Carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow do localStorage
     loadSlideshowConfig() {
         const saved = localStorage.getItem('slideshowConfig');
         if (saved) {
             try {
                 this.slideshowConfig = { ...this.slideshowConfig, ...JSON.parse(saved) };
-                console.log('Ã°Å¸â€œâ€¹ ConfiguraÃƒÂ§ÃƒÂµes do slideshow carregadas:', this.slideshowConfig);
-                console.log('Ã°Å¸â€Â DEBUG - Pasta oculta carregada:', this.slideshowConfig.hiddenFolder);
-                console.log('Ã°Å¸â€Â DEBUG - Pasta excluÃƒÂ­da carregada:', this.slideshowConfig.deletedFolder);
-                console.log('Ã°Å¸â€Â DEBUG - Pasta ajustÃƒÂ¡vel carregada:', this.slideshowConfig.adjustableFolder);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow carregadas:', this.slideshowConfig);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Pasta oculta carregada:', this.slideshowConfig.hiddenFolder);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Pasta excluÃƒÆ’Ã‚Â­da carregada:', this.slideshowConfig.deletedFolder);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Pasta ajustÃƒÆ’Ã‚Â¡vel carregada:', this.slideshowConfig.adjustableFolder);
             } catch (error) {
-                console.warn('Ã¢Å¡Â Ã¯Â¸Â Erro ao carregar configuraÃƒÂ§ÃƒÂµes do slideshow:', error);
+                console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Erro ao carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow:', error);
             }
         } else {
-            console.log('Ã¢Å¡Â Ã¯Â¸Â Nenhuma configuraÃƒÂ§ÃƒÂ£o salva encontrada');
+            console.log('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Nenhuma configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o salva encontrada');
         }
     }
 
-    // Salvar configuraÃƒÂ§ÃƒÂµes do slideshow no localStorage
+    // Salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow no localStorage
     saveSlideshowConfigLegacy() {
         try {
             localStorage.setItem('slideshowConfig', JSON.stringify(this.slideshowConfig));
@@ -4832,20 +4845,20 @@ class DeParaUI {
         }).catch(err => console.warn('Erro ao persistir slideshowConfig no servidor:', err));
     }
 
-    // Aplicar configuraÃƒÂ§ÃƒÂµes do modal para o objeto de configuraÃƒÂ§ÃƒÂ£o
+    // Aplicar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do modal para o objeto de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     applySlideshowConfigFromModal() {
         const interval = parseInt(document.getElementById('slideshow-interval').value) || 3;
         const random = document.getElementById('slideshow-random').checked;
         const preload = document.getElementById('slideshow-preload').checked;
         const recursive = document.getElementById('slideshow-recursive').checked;
         
-        // Coletar extensÃƒÂµes selecionadas
+        // Coletar extensÃƒÆ’Ã‚Âµes selecionadas
         const extensionCheckboxes = document.querySelectorAll('.extensions-list input[type="checkbox"]');
         const extensions = Array.from(extensionCheckboxes)
             .filter(cb => cb.checked)
             .map(cb => cb.value);
 
-        // Coletar pastas de organizaÃƒÂ§ÃƒÂ£o
+        // Coletar pastas de organizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         const deletedField = document.getElementById('slideshow-deleted-folder');
         const hiddenField = document.getElementById('slideshow-hidden-folder');
         const adjustableField = document.getElementById('slideshow-adjustable-folder');
@@ -4854,13 +4867,13 @@ class DeParaUI {
         const hiddenFolder = hiddenField ? hiddenField.value.trim() : '';
         const adjustableFolder = adjustableField ? adjustableField.value.trim() : '';
         
-        console.log('Ã°Å¸â€Â DEBUG - Pastas coletadas:');
-        console.log('Ã°Å¸â€Â deletedField encontrado:', !!deletedField);
-        console.log('Ã°Å¸â€Â hiddenField encontrado:', !!hiddenField);
-        console.log('Ã°Å¸â€Â adjustableField encontrado:', !!adjustableField);
-        console.log('Ã°Å¸â€Â deletedFolder:', deletedFolder);
-        console.log('Ã°Å¸â€Â hiddenFolder:', hiddenFolder);
-        console.log('Ã°Å¸â€Â adjustableFolder:', adjustableFolder);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Pastas coletadas:');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â deletedField encontrado:', !!deletedField);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â hiddenField encontrado:', !!hiddenField);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â adjustableField encontrado:', !!adjustableField);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â deletedFolder:', deletedFolder);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â hiddenFolder:', hiddenFolder);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â adjustableFolder:', adjustableFolder);
 
         this.slideshowConfig = {
             interval: Math.max(1, Math.min(60, interval)),
@@ -4873,13 +4886,13 @@ class DeParaUI {
             adjustableFolder
         };
         
-        console.log('Ã°Å¸â€Â DEBUG - ConfiguraÃƒÂ§ÃƒÂ£o atualizada:', this.slideshowConfig);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o atualizada:', this.slideshowConfig);
 
-        console.log('Ã¢Å¡â„¢Ã¯Â¸Â ConfiguraÃƒÂ§ÃƒÂµes aplicadas:', this.slideshowConfig);
-        console.log('Ã°Å¸â€Â DEBUG - ConfiguraÃƒÂ§ÃƒÂµes salvas no localStorage:', localStorage.getItem('slideshowConfig'));
+        console.log('ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes aplicadas:', this.slideshowConfig);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes salvas no localStorage:', localStorage.getItem('slideshowConfig'));
     }
 
-    // Aplicar configuraÃƒÂ§ÃƒÂµes salvas ao modal
+    // Aplicar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes salvas ao modal
     async saveSlideshowSettingsFromModal() {
         const folderPath = document.getElementById('slideshow-folder-path')?.value?.trim() || '';
         if (folderPath) {
@@ -4895,36 +4908,36 @@ class DeParaUI {
         document.getElementById('slideshow-preload').checked = this.slideshowConfig.preload;
         document.getElementById('slideshow-recursive').checked = this.slideshowConfig.recursive;
 
-        // Aplicar extensÃƒÂµes selecionadas
+        // Aplicar extensÃƒÆ’Ã‚Âµes selecionadas
         const extensionCheckboxes = document.querySelectorAll('.extensions-list input[type="checkbox"]');
         extensionCheckboxes.forEach(cb => {
             cb.checked = this.slideshowConfig.extensions.includes(cb.value);
         });
 
-        // Aplicar pastas de organizaÃƒÂ§ÃƒÂ£o
+        // Aplicar pastas de organizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         const deletedField = document.getElementById('slideshow-deleted-folder');
         const hiddenField = document.getElementById('slideshow-hidden-folder');
         const adjustableField = document.getElementById('slideshow-adjustable-folder');
         
         if (deletedField) {
             deletedField.value = this.slideshowConfig.deletedFolder || '';
-            console.log('Ã°Å¸â€Â DEBUG - Campo deleted aplicado:', deletedField.value);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Campo deleted aplicado:', deletedField.value);
         } else {
-            console.error('Ã¢ÂÅ’ Campo slideshow-deleted-folder nÃƒÂ£o encontrado');
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo slideshow-deleted-folder nÃƒÆ’Ã‚Â£o encontrado');
         }
         
         if (hiddenField) {
             hiddenField.value = this.slideshowConfig.hiddenFolder || '';
-            console.log('Ã°Å¸â€Â DEBUG - Campo hidden aplicado:', hiddenField.value);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Campo hidden aplicado:', hiddenField.value);
         } else {
-            console.error('Ã¢ÂÅ’ Campo slideshow-hidden-folder nÃƒÂ£o encontrado');
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo slideshow-hidden-folder nÃƒÆ’Ã‚Â£o encontrado');
         }
 
         if (adjustableField) {
             adjustableField.value = this.slideshowConfig.adjustableFolder || '';
-            console.log('Ã°Å¸â€Â DEBUG - Campo adjustable aplicado:', adjustableField.value);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Campo adjustable aplicado:', adjustableField.value);
         } else {
-            console.error('Ã¢ÂÅ’ Campo slideshow-adjustable-folder nÃƒÂ£o encontrado');
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo slideshow-adjustable-folder nÃƒÆ’Ã‚Â£o encontrado');
         }
     }
 
@@ -5187,7 +5200,7 @@ class DeParaUI {
     }
 
 
-    // Navegar para pasta de fotos excluÃƒÂ­das
+    // Navegar para pasta de fotos excluÃƒÆ’Ã‚Â­das
     browseDeletedFolder() {
         this.showFolderBrowser('source', async (selectedPath) => {
             const field = document.getElementById('slideshow-deleted-folder');
@@ -5229,21 +5242,21 @@ class DeParaUI {
         });
     }
 
-    // Configurar event listeners para o modal de seleÃƒÂ§ÃƒÂ£o de pasta do slideshow
+    // Configurar event listeners para o modal de seleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pasta do slideshow
     setupSlideshowFolderEventListeners(modal) {
-        // BotÃƒÂ£o fechar
+        // BotÃƒÆ’Ã‚Â£o fechar
         const closeBtn = modal.querySelector('.slideshow-folder-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => modal.remove());
         }
 
-        // BotÃƒÂ£o testar
+        // BotÃƒÆ’Ã‚Â£o testar
         const testBtn = modal.querySelector('.slideshow-folder-test-btn');
         if (testBtn) {
             testBtn.addEventListener('click', () => this.testFolderPath());
         }
 
-        // BotÃƒÂµes de sugestÃƒÂ£o
+        // BotÃƒÆ’Ã‚Âµes de sugestÃƒÆ’Ã‚Â£o
         const suggestionBtns = modal.querySelectorAll('.slideshow-suggestion-btn');
         suggestionBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -5252,13 +5265,13 @@ class DeParaUI {
             });
         });
 
-        // BotÃƒÂ£o cancelar
+        // BotÃƒÆ’Ã‚Â£o cancelar
         const cancelBtn = modal.querySelector('.slideshow-folder-cancel-btn');
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => modal.remove());
         }
 
-        // BotÃƒÂ£o selecionar
+        // BotÃƒÆ’Ã‚Â£o selecionar
         const selectBtn = modal.querySelector('.slideshow-folder-select-btn');
         if (selectBtn) {
             selectBtn.addEventListener('click', () => {
@@ -5282,7 +5295,7 @@ class DeParaUI {
         const path = input.value.trim();
 
         if (!path) {
-            this.showToast('Digite um caminho vÃƒÂ¡lido', 'warning');
+            this.showToast('Digite um caminho vÃƒÆ’Ã‚Â¡lido', 'warning');
             return;
         }
 
@@ -5302,16 +5315,16 @@ class DeParaUI {
 
             if (result.success) {
                 const count = result.data.totalCount;
-                this.showToast(`Ã¢Å“â€¦ Pasta encontrada! ${count} imagem(ns) localizada(s)`, 'success');
+                this.showToast(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta encontrada! ${count} imagem(ns) localizada(s)`, 'success');
             } else {
-                this.showToast('Ã¢ÂÅ’ Pasta nÃƒÂ£o encontrada ou inacessÃƒÂ­vel', 'error');
+                this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Pasta nÃƒÆ’Ã‚Â£o encontrada ou inacessÃƒÆ’Ã‚Â­vel', 'error');
             }
         } catch (error) {
-            this.showToast('Ã¢ÂÅ’ Erro ao testar pasta', 'error');
+            this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao testar pasta', 'error');
         }
     }
 
-    // Confirmar seleÃƒÂ§ÃƒÂ£o de pasta
+    // Confirmar seleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pasta
     confirmFolderSelection() {
         const input = document.getElementById('folder-path-input');
         const slideshowInput = document.getElementById('slideshow-folder-path');
@@ -5358,20 +5371,20 @@ class DeParaUI {
     // Carregar imagens do slideshow
     async loadSlideshowImages(folderPath, extensions, recursive, interval) {
         try {
-            console.log('Ã°Å¸â€Â Iniciando carregamento de imagens...');
-            this.showToast('Ã°Å¸â€Â Procurando imagens...', 'info');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Iniciando carregamento de imagens...');
+            this.showToast('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Procurando imagens...', 'info');
 
-            // Preparar extensÃƒÂµes para a API
+            // Preparar extensÃƒÆ’Ã‚Âµes para a API
             const formattedExtensions = extensions.map(ext => ext.startsWith('.') ? ext : '.' + ext);
 
-            // SEMPRE forÃƒÂ§ar busca recursiva para encontrar TODAS as imagens
+            // SEMPRE forÃƒÆ’Ã‚Â§ar busca recursiva para encontrar TODAS as imagens
             const forceRecursive = true;
 
-            console.log('Ã°Å¸â€œÂ¡ Enviando requisiÃƒÂ§ÃƒÂ£o para API...');
-            console.log('Ã°Å¸â€â€” Caminho sendo enviado:', folderPath);
-            console.log('Ã°Å¸â€Â§ ExtensÃƒÂµes formatadas:', formattedExtensions);
-            console.log('Ã°Å¸â€â€ž Recursivo (forÃƒÂ§ado):', forceRecursive);
-            console.log('Ã°Å¸Å½Â¯ Buscando TODAS as imagens em:', folderPath, 'e todas as subpastas');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Enviando requisiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para API...');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬â€ Caminho sendo enviado:', folderPath);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ ExtensÃƒÆ’Ã‚Âµes formatadas:', formattedExtensions);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Recursivo (forÃƒÆ’Ã‚Â§ado):', forceRecursive);
+            console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ Buscando TODAS as imagens em:', folderPath, 'e todas as subpastas');
 
             const response = await fetch('/api/files/list-images', {
                 method: 'POST',
@@ -5385,15 +5398,15 @@ class DeParaUI {
                 })
             });
 
-            console.log('Ã°Å¸â€œÂ¡ Resposta recebida:', response.status, response.statusText);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Resposta recebida:', response.status, response.statusText);
 
             if (!response.ok) {
                 throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
             }
 
             const result = await response.json();
-            console.log('Ã°Å¸â€œÅ  Resultado da API:', result);
-            console.log('Ã°Å¸â€œÅ  Estrutura da resposta:', {
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Resultado da API:', result);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Estrutura da resposta:', {
                 success: result.success,
                 hasData: !!result.data,
                 hasImages: !!(result.data && result.data.images),
@@ -5404,33 +5417,33 @@ class DeParaUI {
                 throw new Error(result.error?.message || 'Erro ao listar imagens');
             }
 
-            // Verificar se a estrutura da resposta estÃƒÂ¡ correta
+            // Verificar se a estrutura da resposta estÃƒÆ’Ã‚Â¡ correta
             if (!result.data || !result.data.images) {
-                console.error('Ã¢ÂÅ’ Estrutura de resposta invÃƒÂ¡lida:', result);
-                throw new Error('Resposta da API nÃƒÂ£o contÃƒÂ©m dados de imagens');
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Estrutura de resposta invÃƒÆ’Ã‚Â¡lida:', result);
+                throw new Error('Resposta da API nÃƒÆ’Ã‚Â£o contÃƒÆ’Ã‚Â©m dados de imagens');
             }
 
             this.slideshowImages = result.data.images;
             this.slideshowInterval = interval * 1000;
 
-            console.log('Ã°Å¸â€œÂ¸ Imagens carregadas:', this.slideshowImages.length);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¸ Imagens carregadas:', this.slideshowImages.length);
 
             if (this.slideshowImages.length === 0) {
                 this.showToast('Nenhuma imagem encontrada na pasta', 'warning');
                 return;
             }
 
-            // Aplicar modo aleatÃƒÂ³rio se configurado
+            // Aplicar modo aleatÃƒÆ’Ã‚Â³rio se configurado
             if (this.slideshowConfig.random) {
             this.shuffleArray(this.slideshowImages);
-            console.log('Ã°Å¸Å½Â² Imagens embaralhadas para ordem aleatÃƒÂ³ria');
+            console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â² Imagens embaralhadas para ordem aleatÃƒÆ’Ã‚Â³ria');
             }
 
-            // Limpar cache de prÃƒÂ©-carregamento
+            // Limpar cache de prÃƒÆ’Ã‚Â©-carregamento
             this.preloadedImages.clear();
 
-            const modeText = this.slideshowConfig.random ? ' (ordem aleatÃƒÂ³ria)' : ' (ordem sequencial)';
-            this.showToast(`Ã¢Å“â€¦ ${this.slideshowImages.length} imagens encontradas${modeText}`, 'success');
+            const modeText = this.slideshowConfig.random ? ' (ordem aleatÃƒÆ’Ã‚Â³ria)' : ' (ordem sequencial)';
+            this.showToast(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ${this.slideshowImages.length} imagens encontradas${modeText}`, 'success');
             this.startSlideshowViewer();
 
         } catch (error) {
@@ -5439,7 +5452,7 @@ class DeParaUI {
         }
     }
 
-    // PrÃƒÂ©-carregar imagem
+    // PrÃƒÆ’Ã‚Â©-carregar imagem
     preloadImage(imagePath) {
         return new Promise((resolve, reject) => {
             if (this.preloadedImages.has(imagePath)) {
@@ -5450,26 +5463,26 @@ class DeParaUI {
             const img = new Image();
             img.onload = () => {
                 this.preloadedImages.set(imagePath, img);
-                console.log('Ã°Å¸â€“Â¼Ã¯Â¸Â Imagem prÃƒÂ©-carregada:', imagePath);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â Imagem prÃƒÆ’Ã‚Â©-carregada:', imagePath);
                 resolve(img);
             };
             img.onerror = () => {
-                console.warn('Ã¢Å¡Â Ã¯Â¸Â Erro ao prÃƒÂ©-carregar imagem:', imagePath);
+                console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Erro ao prÃƒÆ’Ã‚Â©-carregar imagem:', imagePath);
                 reject(new Error('Erro ao carregar imagem'));
             };
             img.src = imagePath;
         });
     }
 
-    // PrÃƒÂ©-carregar prÃƒÂ³xima imagem se habilitado
+    // PrÃƒÆ’Ã‚Â©-carregar prÃƒÆ’Ã‚Â³xima imagem se habilitado
     async preloadNextImage() {
         if (!this.slideshowConfig.preload || this.slideshowImages.length <= 1) {
             return;
         }
 
-        // Limitar prÃƒÂ©-carregamento para apenas 1 imagem (prÃƒÂ³xima)
+        // Limitar prÃƒÆ’Ã‚Â©-carregamento para apenas 1 imagem (prÃƒÆ’Ã‚Â³xima)
         if (this.preloadedImages.size >= 1) {
-            return; // MÃƒÂ¡ximo 1 imagem prÃƒÂ©-carregada
+            return; // MÃƒÆ’Ã‚Â¡ximo 1 imagem prÃƒÆ’Ã‚Â©-carregada
         }
 
         const nextIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
@@ -5481,35 +5494,35 @@ class DeParaUI {
         try {
             await this.preloadImage(imageUrl);
         } catch (error) {
-            console.warn('Erro ao prÃƒÂ©-carregar prÃƒÂ³xima imagem:', error);
+            console.warn('Erro ao prÃƒÆ’Ã‚Â©-carregar prÃƒÆ’Ã‚Â³xima imagem:', error);
         }
     }
 
     // Iniciar viewer do slideshow
     startSlideshowViewer() {
-        console.log('Ã°Å¸Å½Â¬ Iniciando viewer do slideshow...');
-        console.log('Ã°Å¸â€œÂ¸ Imagens disponÃƒÂ­veis:', this.slideshowImages?.length || 0);
-        console.log('Ã°Å¸â€œÂ¸ Primeira imagem:', this.slideshowImages?.[0]);
+        console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¬ Iniciando viewer do slideshow...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¸ Imagens disponÃƒÆ’Ã‚Â­veis:', this.slideshowImages?.length || 0);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¸ Primeira imagem:', this.slideshowImages?.[0]);
         
         // Limpar elementos antigos se existirem
         const oldElement = document.getElementById('slideshow-image-new');
         if (oldElement) {
             oldElement.remove();
-            console.log('Ã°Å¸Â§Â¹ Elemento antigo removido');
+            console.log('ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ Elemento antigo removido');
         }
         
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
-            console.error('Ã¢ÂÅ’ Nenhuma imagem disponÃƒÂ­vel para slideshow');
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Nenhuma imagem disponÃƒÆ’Ã‚Â­vel para slideshow');
             this.showToast('Nenhuma imagem encontrada para o slideshow', 'error');
             return;
         }
         
         // Mostrar viewer
         const viewer = document.getElementById('slideshow-viewer');
-        console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Elemento viewer encontrado:', !!viewer);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Elemento viewer encontrado:', !!viewer);
         
         if (viewer) {
-            console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Estilo atual do viewer:', {
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Estilo atual do viewer:', {
                 display: viewer.style.display,
                 visibility: viewer.style.visibility,
                 opacity: viewer.style.opacity,
@@ -5517,32 +5530,32 @@ class DeParaUI {
             });
             
             viewer.style.display = 'flex';
-            console.log('Ã¢Å“â€¦ Viewer exibido');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Viewer exibido');
             
-            // Mostrar controles estÃƒÂ¡ticos quando o viewer for exibido
+            // Mostrar controles estÃƒÆ’Ã‚Â¡ticos quando o viewer for exibido
             const staticControls = document.getElementById('static-slideshow-controls');
             if (staticControls) {
                 staticControls.style.display = 'block';
-                console.log('Ã¢Å“â€¦ Controles estÃƒÂ¡ticos exibidos com o viewer');
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Controles estÃƒÆ’Ã‚Â¡ticos exibidos com o viewer');
                 
-                // Configurar event listeners se ainda nÃƒÂ£o foram configurados
+                // Configurar event listeners se ainda nÃƒÆ’Ã‚Â£o foram configurados
                 this.setupStaticButtons();
             }
             
-            console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Estilo apÃƒÂ³s exibir:', {
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Estilo apÃƒÆ’Ã‚Â³s exibir:', {
                 display: viewer.style.display,
                 visibility: viewer.style.visibility,
                 opacity: viewer.style.opacity
             });
         } else {
-            console.error('Ã¢ÂÅ’ Elemento slideshow-viewer nÃƒÂ£o encontrado no DOM');
-            this.showToast('Erro: Elemento de visualizaÃƒÂ§ÃƒÂ£o nÃƒÂ£o encontrado', 'error');
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Elemento slideshow-viewer nÃƒÆ’Ã‚Â£o encontrado no DOM');
+            this.showToast('Erro: Elemento de visualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o encontrado', 'error');
             return;
         }
         
         this.currentSlideIndex = 0;
         this.slideshowPlaying = true;
-        console.log('Ã°Å¸Å½Â¯ ConfiguraÃƒÂ§ÃƒÂµes do slideshow:', {
+        console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow:', {
             currentSlideIndex: this.currentSlideIndex,
             slideshowPlaying: this.slideshowPlaying,
             totalImages: this.slideshowImages.length
@@ -5551,21 +5564,21 @@ class DeParaUI {
         // Entrar em fullscreen automaticamente
         this.enterFullscreen(this.isDedicatedScreensaverWindow || this.screensaverState.isActive);
 
-        // Atualizar exibiÃƒÂ§ÃƒÂ£o e iniciar auto-play APÃƒâ€œS a imagem ser carregada
+        // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o e iniciar auto-play APÃƒÆ’Ã¢â‚¬Å“S a imagem ser carregada
         this.updateSlideDisplay();
     }
 
     // Entrar em fullscreen
-    // isAutoTriggered=true quando disparado por screensaver/auto (sem gesto do usuário)
+    // isAutoTriggered=true quando disparado por screensaver/auto (sem gesto do usuÃ¡rio)
     enterFullscreen(isAutoTriggered = false) {
         const viewer = document.getElementById('slideshow-viewer');
         if (!viewer) return;
 
-        // CSS fullscreen: funciona sem gesto do usuário e é imediato
+        // CSS fullscreen: funciona sem gesto do usuÃ¡rio e Ã© imediato
         viewer.classList.add('fullscreen-override');
         document.body.classList.add('slideshow-active-fullscreen');
 
-        // Quando automático ou dedicated window: maximizar via OS
+        // Quando automÃ¡tico ou dedicated window: maximizar via OS
         const needsMaximize = isAutoTriggered || this.isDedicatedScreensaverWindow || this.screensaverState.isActive;
         if (needsMaximize) {
             fetch('/api/tray/maximize', { method: 'POST' }).catch(() => {});
@@ -5579,7 +5592,7 @@ class DeParaUI {
             || target.msRequestFullscreen;
         if (requestFn) {
             requestFn.call(target).catch(() => {
-                // Bloqueado sem gesto -- CSS fullscreen já cobre a tela
+                // Bloqueado sem gesto -- CSS fullscreen jÃ¡ cobre a tela
             });
         }
     }
@@ -5602,16 +5615,16 @@ class DeParaUI {
         }
     }
 
-    // Lidar com mudanÃƒÂ§as de fullscreen
+    // Lidar com mudanÃƒÆ’Ã‚Â§as de fullscreen
     handleFullscreenChange() {
-        console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â MudanÃƒÂ§a de fullscreen detectada');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â MudanÃƒÆ’Ã‚Â§a de fullscreen detectada');
         
         const isFullscreen = !!(document.fullscreenElement || 
                                document.webkitFullscreenElement || 
                                document.mozFullScreenElement || 
                                document.msFullscreenElement);
         
-        console.log('Ã°Å¸â€Â Fullscreen ativo:', isFullscreen);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Fullscreen ativo:', isFullscreen);
         
         const viewer = document.getElementById('slideshow-viewer');
         const viewerVisible = viewer && window.getComputedStyle(viewer).display !== 'none';
@@ -5622,27 +5635,27 @@ class DeParaUI {
             return;
         }
 
-        // Garantir que os controles estÃƒÂ¡ticos permaneÃƒÂ§am visÃƒÂ­veis
+        // Garantir que os controles estÃƒÆ’Ã‚Â¡ticos permaneÃƒÆ’Ã‚Â§am visÃƒÆ’Ã‚Â­veis
         const staticControls = document.getElementById('static-slideshow-controls');
         if (staticControls) {
             staticControls.style.display = 'block';
             staticControls.style.zIndex = '999999';
-            console.log('Ã¢Å“â€¦ Controles estÃƒÂ¡ticos mantidos visÃƒÂ­veis apÃƒÂ³s mudanÃƒÂ§a de fullscreen');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Controles estÃƒÆ’Ã‚Â¡ticos mantidos visÃƒÆ’Ã‚Â­veis apÃƒÆ’Ã‚Â³s mudanÃƒÆ’Ã‚Â§a de fullscreen');
         }
         
-        // Garantir que o viewer permaneÃƒÂ§a visÃÂ­vel no contexto do slideshow/screenaver
+        // Garantir que o viewer permaneÃƒÆ’Ã‚Â§a visÃƒÃ‚Â­vel no contexto do slideshow/screenaver
         if (viewer) {
             viewer.style.display = 'flex';
-            console.log('Ã¢Å“â€¦ Viewer mantido visÃƒÂ­vel apÃƒÂ³s mudanÃƒÂ§a de fullscreen');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Viewer mantido visÃƒÆ’Ã‚Â­vel apÃƒÆ’Ã‚Â³s mudanÃƒÆ’Ã‚Â§a de fullscreen');
         }
     }
 
-    // Atualizar exibiÃƒÂ§ÃƒÂ£o do slide atual
+    // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do slide atual
     async updateSlideDisplay() {
-        console.log('Ã°Å¸â€“Â¼Ã¯Â¸Â Atualizando exibiÃƒÂ§ÃƒÂ£o do slide...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â Atualizando exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do slide...');
         
         // Verificar contexto geral antes de prosseguir
-        console.log('Ã°Å¸Å’Â Contexto geral:', {
+        console.log('ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â Contexto geral:', {
             documentReady: document.readyState,
             windowLoaded: window.onload ? 'loaded' : 'not loaded',
             slideshowPlaying: this.slideshowPlaying,
@@ -5650,9 +5663,9 @@ class DeParaUI {
             totalImages: this.slideshowImages?.length || 0
         });
         
-        // Garantir que os controles estÃƒÂ¡ticos existam
+        // Garantir que os controles estÃƒÆ’Ã‚Â¡ticos existam
         if (this.slideshowImages && this.slideshowImages.length > 0) {
-            console.log('Ã°Å¸Å½Â® Usando controles estÃƒÂ¡ticos...');
+            console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â® Usando controles estÃƒÆ’Ã‚Â¡ticos...');
             this.createDynamicSlideshowControls();
         }
         
@@ -5663,25 +5676,25 @@ class DeParaUI {
         const errorElement = document.getElementById('slideshow-error');
         const imageContainer = document.querySelector('.slideshow-image-container');
         
-        // Se nÃƒÂ£o encontrar o elemento slideshow-image, tentar encontrar o slideshow-image-new
+        // Se nÃƒÆ’Ã‚Â£o encontrar o elemento slideshow-image, tentar encontrar o slideshow-image-new
         if (!imageElement) {
             imageElement = document.getElementById('slideshow-image-new');
             if (imageElement) {
-                console.log('Ã°Å¸â€â€ž Usando elemento slideshow-image-new encontrado');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Usando elemento slideshow-image-new encontrado');
             }
         }
 
-        // Verificar se o slideshow-viewer estÃƒÂ¡ visÃƒÂ­vel
+        // Verificar se o slideshow-viewer estÃƒÆ’Ã‚Â¡ visÃƒÆ’Ã‚Â­vel
         const viewer = document.getElementById('slideshow-viewer');
         if (viewer) {
-            console.log('Ã°Å¸Å½Â¬ Estado do viewer:', {
+            console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¬ Estado do viewer:', {
                 display: viewer.style.display,
                 visibility: viewer.style.visibility,
                 rect: viewer.getBoundingClientRect()
             });
         }
         
-        console.log('Ã°Å¸â€Â Elementos encontrados:', {
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Elementos encontrados:', {
             imageElement: !!imageElement,
             counterElement: !!counterElement,
             filenameElement: !!filenameElement,
@@ -5691,7 +5704,7 @@ class DeParaUI {
         });
         
         if (imageContainer) {
-            console.log('Ã°Å¸â€œÂ¦ Container da imagem:', {
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Container da imagem:', {
                 display: imageContainer.style.display,
                 visibility: imageContainer.style.visibility,
                 opacity: imageContainer.style.opacity,
@@ -5699,7 +5712,7 @@ class DeParaUI {
                 zIndex: imageContainer.style.zIndex
             });
             
-            // FORÃƒâ€¡AR ESTILOS NO CONTAINER para garantir que a imagem seja exibida
+            // FORÃƒÆ’Ã¢â‚¬Â¡AR ESTILOS NO CONTAINER para garantir que a imagem seja exibida
             imageContainer.style.display = 'flex';
             imageContainer.style.alignItems = 'center';
             imageContainer.style.justifyContent = 'center';
@@ -5711,7 +5724,7 @@ class DeParaUI {
             imageContainer.style.zIndex = '1';
             imageContainer.style.background = 'rgba(0, 0, 0, 0.1)';
             
-            console.log('Ã°Å¸â€œÂ¦ Container apÃƒÂ³s forÃƒÂ§ar estilos:', {
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Container apÃƒÆ’Ã‚Â³s forÃƒÆ’Ã‚Â§ar estilos:', {
                 display: imageContainer.style.display,
                 visibility: imageContainer.style.visibility,
                 opacity: imageContainer.style.opacity,
@@ -5724,7 +5737,7 @@ class DeParaUI {
         }
 
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
-            console.log('Ã¢ÂÅ’ Nenhuma imagem carregada');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Nenhuma imagem carregada');
             if (loadingElement) loadingElement.style.display = 'none';
             if (errorElement) errorElement.style.display = 'block';
             if (imageElement) imageElement.style.display = 'none';
@@ -5732,7 +5745,7 @@ class DeParaUI {
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
-        console.log('Ã°Å¸â€œÂ¸ Imagem atual:', currentImage);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¸ Imagem atual:', currentImage);
 
         // Mostrar loading
         if (loadingElement) loadingElement.style.display = 'block';
@@ -5743,7 +5756,7 @@ class DeParaUI {
         if (counterElement) counterElement.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
         if (filenameElement) filenameElement.textContent = currentImage.name;
         
-        // Atualizar caminho completo da imagem no rodapÃƒÂ©
+        // Atualizar caminho completo da imagem no rodapÃƒÆ’Ã‚Â©
         const pathElement = document.getElementById('slideshow-path');
         if (pathElement) {
             pathElement.textContent = currentImage.path;
@@ -5751,9 +5764,9 @@ class DeParaUI {
 
         // Construir URL da imagem
         const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
-        console.log('Ã°Å¸â€â€” URL da imagem:', imageUrl);
-        console.log('Ã°Å¸â€â€” Caminho original:', currentImage.path);
-        console.log('Ã°Å¸â€â€” Caminho codificado:', encodeURIComponent(currentImage.path));
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬â€ URL da imagem:', imageUrl);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬â€ Caminho original:', currentImage.path);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬â€ Caminho codificado:', encodeURIComponent(currentImage.path));
 
         try {
             // Carregar imagem diretamente
@@ -5761,7 +5774,7 @@ class DeParaUI {
             
             // Timeout para evitar loading infinito
             const loadTimeout = setTimeout(() => {
-                console.error('Ã¢ÂÂ° Timeout ao carregar imagem:', imageUrl);
+                console.error('ÃƒÂ¢Ã‚ÂÃ‚Â° Timeout ao carregar imagem:', imageUrl);
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (imageElement) imageElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'block';
@@ -5769,23 +5782,23 @@ class DeParaUI {
             
             img.onload = () => {
                 clearTimeout(loadTimeout);
-                console.log('Ã¢Å“â€¦ Imagem carregada com sucesso:', imageUrl);
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Imagem carregada com sucesso:', imageUrl);
 
                 if (imageElement) {
-                    // SOLUÃƒâ€¡ÃƒÆ’O RADICAL: Criar novo elemento se o atual nÃƒÂ£o funcionar
+                    // SOLUÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O RADICAL: Criar novo elemento se o atual nÃƒÆ’Ã‚Â£o funcionar
                     let targetElement = imageElement;
                     
                     // REMOVER imagem anterior para evitar empilhamento
                     const existingDynamicImage = document.getElementById('slideshow-image-new');
                     if (existingDynamicImage) {
                         existingDynamicImage.remove();
-                        console.log('Ã°Å¸â€”â€˜Ã¯Â¸Â Imagem anterior removida para evitar empilhamento');
+                        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬ËœÃƒÂ¯Ã‚Â¸Ã‚Â Imagem anterior removida para evitar empilhamento');
                     }
                     
                     // Verificar se o elemento atual tem problemas
                     const currentRect = imageElement.getBoundingClientRect();
                     if (currentRect.width === 0 || currentRect.height === 0) {
-                        console.warn('Ã¢Å¡Â Ã¯Â¸Â Elemento atual tem dimensÃƒÂµes zero, criando novo elemento...');
+                        console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Elemento atual tem dimensÃƒÆ’Ã‚Âµes zero, criando novo elemento...');
                         
                         // Criar novo elemento de imagem
                         const newImageElement = document.createElement('img');
@@ -5793,7 +5806,7 @@ class DeParaUI {
                         newImageElement.className = 'slideshow-image-new';
                         newImageElement.alt = currentImage.name;
                         
-                        // Aplicar estilos diretamente no elemento (compatÃƒÂ­vel com Raspberry Pi)
+                        // Aplicar estilos diretamente no elemento (compatÃƒÆ’Ã‚Â­vel com Raspberry Pi)
                         newImageElement.style.cssText = `
                             display: block !important;
                             visibility: visible !important;
@@ -5817,7 +5830,7 @@ class DeParaUI {
                             pointer-events: none !important;
                         `;
                         
-                        // Aplicar estilos individualmente para mÃƒÂ¡xima compatibilidade
+                        // Aplicar estilos individualmente para mÃƒÆ’Ã‚Â¡xima compatibilidade
                         newImageElement.style.display = 'block';
                         newImageElement.style.visibility = 'visible';
                         newImageElement.style.opacity = '1';
@@ -5842,42 +5855,42 @@ class DeParaUI {
                         const slideshowViewer = document.getElementById('slideshow-viewer');
                         if (slideshowViewer) {
                             slideshowViewer.appendChild(newImageElement);
-                            console.log('Ã¢Å“â€¦ Imagem adicionada DENTRO do slideshow-viewer');
+                            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Imagem adicionada DENTRO do slideshow-viewer');
                             
-                            // Esconder a imagem original para evitar sobreposiÃƒÂ§ÃƒÂ£o
+                            // Esconder a imagem original para evitar sobreposiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
                             const originalImage = document.getElementById('slideshow-image');
                             if (originalImage) {
                                 originalImage.style.display = 'none';
-                                console.log('Ã¢Å“â€¦ Imagem original escondida para evitar sobreposiÃƒÂ§ÃƒÂ£o');
+                                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Imagem original escondida para evitar sobreposiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
                             }
                         } else {
                             document.body.appendChild(newImageElement);
-                            console.log('Ã¢Å¡Â Ã¯Â¸Â slideshow-viewer nÃƒÂ£o encontrado, adicionando ao body');
+                            console.log('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â slideshow-viewer nÃƒÆ’Ã‚Â£o encontrado, adicionando ao body');
                         }
                         targetElement = newImageElement;
                         
-                        // Garantir que a imagem esteja dentro do viewer mas abaixo dos controles estÃƒÂ¡ticos
+                        // Garantir que a imagem esteja dentro do viewer mas abaixo dos controles estÃƒÆ’Ã‚Â¡ticos
                         newImageElement.style.zIndex = '1';
                         newImageElement.style.pointerEvents = 'none';
                         
-                        // Adicionar fundo preto atrÃƒÂ¡s de tudo
+                        // Adicionar fundo preto atrÃƒÆ’Ã‚Â¡s de tudo
                         document.body.style.background = 'black';
                         document.body.style.overflow = 'hidden';
                         document.body.style.cursor = 'default';
                         
-                        // MANTER o slideshow-viewer visÃƒÂ­vel para que os botÃƒÂµes estÃƒÂ¡ticos sejam exibidos
+                        // MANTER o slideshow-viewer visÃƒÆ’Ã‚Â­vel para que os botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos sejam exibidos
                         if (slideshowViewer) {
-                            // NÃƒÆ’O ESCONDER! Os botÃƒÂµes estÃƒÂ¡ticos estÃƒÂ£o dentro dele
-                            console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Slideshow viewer mantido visÃƒÂ­vel para preservar botÃƒÂµes estÃƒÂ¡ticos');
+                            // NÃƒÆ’Ã†â€™O ESCONDER! Os botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos estÃƒÆ’Ã‚Â£o dentro dele
+                            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Slideshow viewer mantido visÃƒÆ’Ã‚Â­vel para preservar botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos');
                         }
                         
-                        // Criar controles de navegaÃƒÂ§ÃƒÂ£o para a imagem dinÃƒÂ¢mica
-                        // Usar controles estÃƒÂ¡ticos
+                        // Criar controles de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para a imagem dinÃƒÆ’Ã‚Â¢mica
+                        // Usar controles estÃƒÆ’Ã‚Â¡ticos
                         this.createDynamicSlideshowControls();
-                        console.log('Ã°Å¸Å½Â® Controles estÃƒÂ¡ticos configurados');
+                        console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â® Controles estÃƒÆ’Ã‚Â¡ticos configurados');
                         
-                        console.log('Ã°Å¸â€ â€¢ Novo elemento criado e adicionado ao body');
-                        console.log('Ã°Å¸â€Â Debug Raspberry Pi - Elemento criado:', {
+                        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Â Ã¢â‚¬Â¢ Novo elemento criado e adicionado ao body');
+                        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Debug Raspberry Pi - Elemento criado:', {
                             id: newImageElement.id,
                             tagName: newImageElement.tagName,
                             parentNode: newImageElement.parentNode.tagName,
@@ -5890,7 +5903,7 @@ class DeParaUI {
                     targetElement.src = imageUrl;
                     targetElement.alt = currentImage.name;
 
-                    // Se for o elemento original, aplicar estilos bÃƒÂ¡sicos
+                    // Se for o elemento original, aplicar estilos bÃƒÆ’Ã‚Â¡sicos
                     if (targetElement === imageElement) {
                         targetElement.style.setProperty('display', 'block', 'important');
                         targetElement.style.setProperty('visibility', 'visible', 'important');
@@ -5901,30 +5914,30 @@ class DeParaUI {
                         targetElement.style.setProperty('border', '3px solid #4CAF50', 'important');
                     }
 
-                    console.log('Ã°Å¸â€“Â¼Ã¯Â¸Â Imagem exibida no elemento:', targetElement.src);
-                    console.log('Ã°Å¸â€“Â¼Ã¯Â¸Â Tipo de elemento:', targetElement.tagName);
-                    console.log('Ã°Å¸â€“Â¼Ã¯Â¸Â ID do elemento:', targetElement.id);
+                    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â Imagem exibida no elemento:', targetElement.src);
+                    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â Tipo de elemento:', targetElement.tagName);
+                    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â ID do elemento:', targetElement.id);
                     
-                    // ForÃƒÂ§ar reflow para garantir que os estilos sejam aplicados
+                    // ForÃƒÆ’Ã‚Â§ar reflow para garantir que os estilos sejam aplicados
                     targetElement.offsetHeight;
                     targetElement.offsetWidth;
 
-                    // ForÃƒÂ§ar reflow mÃƒÂºltiplas vezes
+                    // ForÃƒÆ’Ã‚Â§ar reflow mÃƒÆ’Ã‚Âºltiplas vezes
                     targetElement.offsetHeight;
                     targetElement.offsetWidth;
                     targetElement.getBoundingClientRect();
                     
-                    // VerificaÃƒÂ§ÃƒÂ£o final das dimensÃƒÂµes
+                    // VerificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o final das dimensÃƒÆ’Ã‚Âµes
                     setTimeout(() => {
                         const finalRect = targetElement.getBoundingClientRect();
-                        console.log('Ã°Å¸â€Â VerificaÃƒÂ§ÃƒÂ£o final das dimensÃƒÂµes:', {
+                        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â VerificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o final das dimensÃƒÆ’Ã‚Âµes:', {
                             width: finalRect.width,
                             height: finalRect.height,
                             visible: finalRect.width > 0 && finalRect.height > 0
                         });
                         
-                        // Debug especÃƒÂ­fico para Raspberry Pi
-                        console.log('Ã°Å¸Ââ€œ Debug Raspberry Pi - Estado final:', {
+                        // Debug especÃƒÆ’Ã‚Â­fico para Raspberry Pi
+                        console.log('ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Å“ Debug Raspberry Pi - Estado final:', {
                             userAgent: navigator.userAgent,
                             platform: navigator.platform,
                             elementId: targetElement.id,
@@ -5948,10 +5961,10 @@ class DeParaUI {
                         });
                         
                         if (finalRect.width === 0 || finalRect.height === 0) {
-                            console.error('Ã°Å¸Å¡Â¨ FALHA CRÃƒÂTICA: Imagem ainda com dimensÃƒÂµes zero apÃƒÂ³s todas as correÃƒÂ§ÃƒÂµes!');
-                            console.error('Ã°Å¸Ââ€œ Raspberry Pi - Tentando soluÃƒÂ§ÃƒÂ£o de emergÃƒÂªncia...');
+                            console.error('ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Â¨ FALHA CRÃƒÆ’Ã‚ÂTICA: Imagem ainda com dimensÃƒÆ’Ã‚Âµes zero apÃƒÆ’Ã‚Â³s todas as correÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes!');
+                            console.error('ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Å“ Raspberry Pi - Tentando soluÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de emergÃƒÆ’Ã‚Âªncia...');
                             
-                            // SoluÃƒÂ§ÃƒÂ£o de emergÃƒÂªncia especÃƒÂ­fica para Raspberry Pi
+                            // SoluÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de emergÃƒÆ’Ã‚Âªncia especÃƒÆ’Ã‚Â­fica para Raspberry Pi
                             targetElement.style.cssText = `
                                 display: block !important;
                                 visibility: visible !important;
@@ -5972,25 +5985,25 @@ class DeParaUI {
                                 box-shadow: 0 0 50px rgba(255, 0, 0, 1) !important;
                             `;
                             
-                            // ForÃƒÂ§ar reflow
+                            // ForÃƒÆ’Ã‚Â§ar reflow
                             targetElement.offsetHeight;
                             targetElement.offsetWidth;
                             
-                            console.log('Ã°Å¸Ââ€œ Raspberry Pi - SoluÃƒÂ§ÃƒÂ£o de emergÃƒÂªncia aplicada');
+                            console.log('ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Å“ Raspberry Pi - SoluÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de emergÃƒÆ’Ã‚Âªncia aplicada');
                         } else {
-                            console.log('Ã¢Å“â€¦ Imagem exibida com sucesso!');
-                            console.log('Ã°Å¸Ââ€œ Raspberry Pi - Slideshow funcionando corretamente!');
+                            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Imagem exibida com sucesso!');
+                            console.log('ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Å“ Raspberry Pi - Slideshow funcionando corretamente!');
                         }
                     }, 100);
 
                     // Verificar contexto do documento
-                    console.log('Ã°Å¸â€œâ€ž Contexto do documento:', {
+                    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¾ Contexto do documento:', {
                         readyState: document.readyState,
                         hidden: document.hidden,
                         visibilityState: document.visibilityState
                     });
 
-                    // Verificar se estÃƒÂ¡ no viewport correto
+                    // Verificar se estÃƒÆ’Ã‚Â¡ no viewport correto
                     const rect = targetElement.getBoundingClientRect();
                     const viewport = {
                         width: window.innerWidth,
@@ -5999,7 +6012,7 @@ class DeParaUI {
                         scrollY: window.scrollY
                     };
 
-                    console.log('Ã°Å¸â€“Â¼Ã¯Â¸Â PosiÃƒÂ§ÃƒÂ£o da imagem:', {
+                    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â PosiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da imagem:', {
                         top: rect.top,
                         left: rect.left,
                         width: rect.width,
@@ -6010,15 +6023,15 @@ class DeParaUI {
                                    rect.right <= viewport.width
                     });
 
-                    console.log('Ã°Å¸â€“Â¼Ã¯Â¸Â Viewport:', viewport);
+                    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â Viewport:', viewport);
 
-                    // ForÃƒÂ§ar renderizaÃƒÂ§ÃƒÂ£o adicional se ainda nÃƒÂ£o estiver visÃƒÂ­vel
+                    // ForÃƒÆ’Ã‚Â§ar renderizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o adicional se ainda nÃƒÆ’Ã‚Â£o estiver visÃƒÆ’Ã‚Â­vel
                     if (rect.width === 0 || rect.height === 0) {
-                        console.error('Ã°Å¸Å¡Â¨ CRÃƒÂTICO: Imagem ainda com dimensÃƒÂµes zero apÃƒÂ³s todas as tentativas!');
+                        console.error('ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Â¨ CRÃƒÆ’Ã‚ÂTICO: Imagem ainda com dimensÃƒÆ’Ã‚Âµes zero apÃƒÆ’Ã‚Â³s todas as tentativas!');
 
-                        // ÃƒÅ¡ltimo recurso: forÃƒÂ§ar com setTimeout
+                        // ÃƒÆ’Ã…Â¡ltimo recurso: forÃƒÆ’Ã‚Â§ar com setTimeout
                         setTimeout(() => {
-                            console.log('Ã¢ÂÂ° Tentativa final com setTimeout...');
+                            console.log('ÃƒÂ¢Ã‚ÂÃ‚Â° Tentativa final com setTimeout...');
                             targetElement.style.setProperty('width', '400px', 'important');
                             targetElement.style.setProperty('height', '400px', 'important');
                             targetElement.style.setProperty('position', 'absolute', 'important');
@@ -6027,7 +6040,7 @@ class DeParaUI {
                             targetElement.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
 
                             const finalRect = targetElement.getBoundingClientRect();
-                            console.log('Ã°Å¸â€“Â¼Ã¯Â¸Â PosiÃƒÂ§ÃƒÂ£o FINAL:', {
+                            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â PosiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o FINAL:', {
                                 top: finalRect.top,
                                 left: finalRect.left,
                                 width: finalRect.width,
@@ -6037,17 +6050,17 @@ class DeParaUI {
                         }, 100);
                     }
                 } else {
-                    console.error('Ã¢ÂÅ’ Elemento slideshow-image nÃƒÂ£o encontrado!');
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Elemento slideshow-image nÃƒÆ’Ã‚Â£o encontrado!');
                     // Tentar encontrar o elemento novamente
                     const imageElement = document.getElementById('slideshow-image') || document.querySelector('.slideshow-image');
                     if (imageElement) {
-                        console.log('Ã¢Å“â€¦ Elemento encontrado na segunda tentativa');
+                        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Elemento encontrado na segunda tentativa');
                 imageElement.src = imageUrl;
             imageElement.style.display = 'block';
                         imageElement.style.visibility = 'visible';
                         imageElement.style.opacity = '1';
                     } else {
-                        console.error('Ã¢ÂÅ’ Elemento slideshow-image ainda nÃƒÂ£o encontrado apÃƒÂ³s segunda tentativa');
+                        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Elemento slideshow-image ainda nÃƒÆ’Ã‚Â£o encontrado apÃƒÆ’Ã‚Â³s segunda tentativa');
                     }
                 }
 
@@ -6056,40 +6069,40 @@ class DeParaUI {
                 
                 // Iniciar auto-play apenas na primeira imagem carregada
                 if (this.currentSlideIndex === 0 && this.slideshowPlaying) {
-                    console.log('Ã°Å¸Å½Â¬ Iniciando auto-play apÃƒÂ³s primeira imagem carregada');
+                    console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¬ Iniciando auto-play apÃƒÆ’Ã‚Â³s primeira imagem carregada');
                     this.startAutoPlay();
                 }
                 
-                // PrÃƒÂ©-carregar prÃƒÂ³xima imagem
+                // PrÃƒÆ’Ã‚Â©-carregar prÃƒÆ’Ã‚Â³xima imagem
                 this.preloadNextImage();
             };
             
             img.onerror = (error) => {
                 clearTimeout(loadTimeout);
-                console.error('Ã¢ÂÅ’ Erro ao carregar imagem:', error);
-                console.error('Ã¢ÂÅ’ URL que falhou:', imageUrl);
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar imagem:', error);
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ URL que falhou:', imageUrl);
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (imageElement) imageElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'block';
             };
 
-            console.log('Ã°Å¸â€â€ž Tentando carregar imagem:', imageUrl);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Tentando carregar imagem:', imageUrl);
             img.src = imageUrl;
             
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao carregar imagem:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar imagem:', error);
             if (loadingElement) loadingElement.style.display = 'none';
             if (imageElement) imageElement.style.display = 'none';
             if (errorElement) errorElement.style.display = 'block';
         }
     }
 
-    // PrÃƒÂ³ximo slide
+    // PrÃƒÆ’Ã‚Â³ximo slide
     nextSlide() {
         if (this.slideshowImages.length === 0) return;
 
-        console.log('Ã¢Å¾Â¡Ã¯Â¸Â Navegando para prÃƒÂ³ximo slide...');
-        console.log('Ã°Å¸â€œÅ  Estado atual:', {
+        console.log('ÃƒÂ¢Ã…Â¾Ã‚Â¡ÃƒÂ¯Ã‚Â¸Ã‚Â Navegando para prÃƒÆ’Ã‚Â³ximo slide...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Estado atual:', {
             currentIndex: this.currentSlideIndex,
             totalImages: this.slideshowImages.length,
             nextIndex: (this.currentSlideIndex + 1) % this.slideshowImages.length
@@ -6104,8 +6117,8 @@ class DeParaUI {
     previousSlide() {
         if (this.slideshowImages.length === 0) return;
 
-        console.log('Ã¢Â¬â€¦Ã¯Â¸Â Navegando para slide anterior...');
-        console.log('Ã°Å¸â€œÅ  Estado atual:', {
+        console.log('ÃƒÂ¢Ã‚Â¬Ã¢â‚¬Â¦ÃƒÂ¯Ã‚Â¸Ã‚Â Navegando para slide anterior...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Estado atual:', {
             currentIndex: this.currentSlideIndex,
             totalImages: this.slideshowImages.length,
             prevIndex: this.currentSlideIndex === 0 ? this.slideshowImages.length - 1 : this.currentSlideIndex - 1
@@ -6132,26 +6145,26 @@ class DeParaUI {
         }
     }
 
-    // Iniciar reproduÃƒÂ§ÃƒÂ£o automÃƒÂ¡tica
+    // Iniciar reproduÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o automÃƒÆ’Ã‚Â¡tica
     startAutoPlay() {
         this.stopAutoPlay(); // Parar qualquer intervalo existente
 
         if (this.slideshowPlaying && this.slideshowImages.length > 1) {
             const intervalMs = this.slideshowConfig.interval * 1000;
             this.autoPlayInterval = setInterval(() => {
-                console.log('Ã¢ÂÂ° Auto-play: mudando para prÃƒÂ³ximo slide...');
+                console.log('ÃƒÂ¢Ã‚ÂÃ‚Â° Auto-play: mudando para prÃƒÆ’Ã‚Â³ximo slide...');
                 this.nextSlide();
             }, intervalMs);
-            console.log(`Ã¢ÂÂ° Auto-play iniciado com intervalo de ${this.slideshowConfig.interval}s`);
+            console.log(`ÃƒÂ¢Ã‚ÂÃ‚Â° Auto-play iniciado com intervalo de ${this.slideshowConfig.interval}s`);
         } else {
-            console.log('Ã¢ÂÂ° Auto-play nÃƒÂ£o iniciado:', {
+            console.log('ÃƒÂ¢Ã‚ÂÃ‚Â° Auto-play nÃƒÆ’Ã‚Â£o iniciado:', {
                 slideshowPlaying: this.slideshowPlaying,
                 imageCount: this.slideshowImages.length
             });
         }
     }
 
-    // Parar reproduÃƒÂ§ÃƒÂ£o automÃƒÂ¡tica
+    // Parar reproduÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o automÃƒÆ’Ã‚Â¡tica
     stopAutoPlay() {
         if (this.autoPlayInterval) {
             clearInterval(this.autoPlayInterval);
@@ -6159,26 +6172,26 @@ class DeParaUI {
         }
     }
 
-    // Criar controles de navegaÃƒÂ§ÃƒÂ£o para slideshow dinÃƒÂ¢mico
+    // Criar controles de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para slideshow dinÃƒÆ’Ã‚Â¢mico
     createDynamicSlideshowControls() {
-        console.log('Ã°Å¸â€Â¥ USANDO BOTÃƒâ€¢ES ESTÃƒÂTICOS - SOLUÃƒâ€¡ÃƒÆ’O DEFINITIVA');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥ USANDO BOTÃƒÆ’Ã¢â‚¬Â¢ES ESTÃƒÆ’Ã‚ÂTICOS - SOLUÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O DEFINITIVA');
         
-        // Remover controles dinÃƒÂ¢micos antigos se existirem
+        // Remover controles dinÃƒÆ’Ã‚Â¢micos antigos se existirem
         const oldControls = document.getElementById('dynamic-slideshow-controls');
         if (oldControls) {
             oldControls.remove();
         }
         
-        // Mostrar controles estÃƒÂ¡ticos
+        // Mostrar controles estÃƒÆ’Ã‚Â¡ticos
         const staticControls = document.getElementById('static-slideshow-controls');
         if (staticControls) {
             staticControls.style.display = 'block';
-            console.log('Ã¢Å“â€¦ Controles estÃƒÂ¡ticos exibidos dentro do slideshow-viewer');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Controles estÃƒÆ’Ã‚Â¡ticos exibidos dentro do slideshow-viewer');
         } else {
-            console.error('Ã¢ÂÅ’ Controles estÃƒÂ¡ticos nÃƒÂ£o encontrados');
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Controles estÃƒÆ’Ã‚Â¡ticos nÃƒÆ’Ã‚Â£o encontrados');
         }
         
-        // Configurar event listeners para botÃƒÂµes estÃƒÂ¡ticos
+        // Configurar event listeners para botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos
         this.setupStaticButtons();
         
         this.dynamicControlsCreated = true;
@@ -6188,144 +6201,144 @@ class DeParaUI {
     }
     
     setupStaticButtons() {
-        console.log('Ã°Å¸â€Â§ Configurando botÃƒÂµes estÃƒÂ¡ticos...');
-        console.log('Ã°Å¸â€Â DEBUG - setupStaticButtons chamada');
-        console.log('Ã°Å¸â€Â DEBUG - this context:', this);
-        console.log('Ã°Å¸â€Â DEBUG - window.deParaUI:', window.deParaUI);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ Configurando botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - setupStaticButtons chamada');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - this context:', this);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - window.deParaUI:', window.deParaUI);
         
-        // BotÃƒÂ£o anterior
+        // BotÃƒÆ’Ã‚Â£o anterior
         const prevBtn = document.getElementById('static-prev-btn');
-        console.log('Ã°Å¸â€Â BotÃƒÂ£o anterior encontrado:', !!prevBtn);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â BotÃƒÆ’Ã‚Â£o anterior encontrado:', !!prevBtn);
         if (prevBtn && !prevBtn.hasAttribute('data-listener-added')) {
             prevBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Ã¢Â¬â€¦Ã¯Â¸Â BotÃƒÂ£o anterior clicado (ESTÃƒÂTICO)');
-                console.log('Ã°Å¸â€Â Fullscreen ativo:', !!document.fullscreenElement);
+                console.log('ÃƒÂ¢Ã‚Â¬Ã¢â‚¬Â¦ÃƒÂ¯Ã‚Â¸Ã‚Â BotÃƒÆ’Ã‚Â£o anterior clicado (ESTÃƒÆ’Ã‚ÂTICO)');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Fullscreen ativo:', !!document.fullscreenElement);
                 this.previousSlide();
             });
             prevBtn.setAttribute('data-listener-added', 'true');
-            console.log('Ã¢Å“â€¦ Event listener anterior adicionado');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Event listener anterior adicionado');
         }
         
-        // BotÃƒÂ£o prÃƒÂ³ximo
+        // BotÃƒÆ’Ã‚Â£o prÃƒÆ’Ã‚Â³ximo
         const nextBtn = document.getElementById('static-next-btn');
-        console.log('Ã°Å¸â€Â BotÃƒÂ£o prÃƒÂ³ximo encontrado:', !!nextBtn);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â BotÃƒÆ’Ã‚Â£o prÃƒÆ’Ã‚Â³ximo encontrado:', !!nextBtn);
         if (nextBtn && !nextBtn.hasAttribute('data-listener-added')) {
             nextBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Ã¢Å¾Â¡Ã¯Â¸Â BotÃƒÂ£o prÃƒÂ³ximo clicado (ESTÃƒÂTICO)');
-                console.log('Ã°Å¸â€Â Fullscreen ativo:', !!document.fullscreenElement);
+                console.log('ÃƒÂ¢Ã…Â¾Ã‚Â¡ÃƒÂ¯Ã‚Â¸Ã‚Â BotÃƒÆ’Ã‚Â£o prÃƒÆ’Ã‚Â³ximo clicado (ESTÃƒÆ’Ã‚ÂTICO)');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Fullscreen ativo:', !!document.fullscreenElement);
                 this.nextSlide();
             });
             nextBtn.setAttribute('data-listener-added', 'true');
-            console.log('Ã¢Å“â€¦ Event listener prÃƒÂ³ximo adicionado');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Event listener prÃƒÆ’Ã‚Â³ximo adicionado');
         }
         
-        // BotÃƒÂ£o fechar
+        // BotÃƒÆ’Ã‚Â£o fechar
         const closeBtn = document.getElementById('static-close-btn');
         if (closeBtn && !closeBtn.hasAttribute('data-listener-added')) {
             closeBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Ã¢ÂÅ’ BotÃƒÂ£o fechar clicado (ESTÃƒÂTICO)');
+                console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ BotÃƒÆ’Ã‚Â£o fechar clicado (ESTÃƒÆ’Ã‚ÂTICO)');
                 this.closeSlideshowViewer();
             });
             closeBtn.setAttribute('data-listener-added', 'true');
         }
         
-        // BotÃƒÂ£o apagar
+        // BotÃƒÆ’Ã‚Â£o apagar
         const deleteBtn = document.getElementById('static-delete-btn');
-        console.log('Ã°Å¸â€Â DEBUG - BotÃƒÂ£o delete encontrado:', !!deleteBtn);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - BotÃƒÆ’Ã‚Â£o delete encontrado:', !!deleteBtn);
         if (deleteBtn) {
-            console.log('Ã°Å¸â€Â DEBUG - BotÃƒÂ£o delete jÃƒÂ¡ tem listener:', deleteBtn.hasAttribute('data-listener-added'));
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - BotÃƒÆ’Ã‚Â£o delete jÃƒÆ’Ã‚Â¡ tem listener:', deleteBtn.hasAttribute('data-listener-added'));
         }
         
         if (deleteBtn && !deleteBtn.hasAttribute('data-listener-added')) {
-            console.log('Ã°Å¸â€Â DEBUG - Adicionando listener ao botÃƒÂ£o delete');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Adicionando listener ao botÃƒÆ’Ã‚Â£o delete');
             deleteBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Ã°Å¸â€”â€˜Ã¯Â¸Â BotÃƒÂ£o apagar clicado (ESTÃƒÂTICO)');
-                console.log('Ã°Å¸â€Â DEBUG - window.deParaUI disponÃƒÂ­vel:', !!window.deParaUI);
-                console.log('Ã°Å¸â€Â DEBUG - deleteCurrentImage disponÃƒÂ­vel:', !!(window.deParaUI && typeof window.deParaUI.deleteCurrentImage === 'function'));
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬ËœÃƒÂ¯Ã‚Â¸Ã‚Â BotÃƒÆ’Ã‚Â£o apagar clicado (ESTÃƒÆ’Ã‚ÂTICO)');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - window.deParaUI disponÃƒÆ’Ã‚Â­vel:', !!window.deParaUI);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - deleteCurrentImage disponÃƒÆ’Ã‚Â­vel:', !!(window.deParaUI && typeof window.deParaUI.deleteCurrentImage === 'function'));
                 
                 // Usar window.deParaUI para garantir contexto correto
                 if (window.deParaUI && typeof window.deParaUI.deleteCurrentImage === 'function') {
-                    console.log('Ã°Å¸â€Â DEBUG - Chamando deleteCurrentImage');
+                    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Chamando deleteCurrentImage');
                     window.deParaUI.deleteCurrentImage();
                 } else {
-                    console.error('Ã¢ÂÅ’ DeParaUI nÃƒÂ£o disponÃƒÂ­vel ou mÃƒÂ©todo nÃƒÂ£o encontrado');
-                    console.error('Ã¢ÂÅ’ window.deParaUI:', window.deParaUI);
-                    console.error('Ã¢ÂÅ’ typeof deleteCurrentImage:', typeof window.deParaUI?.deleteCurrentImage);
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ DeParaUI nÃƒÆ’Ã‚Â£o disponÃƒÆ’Ã‚Â­vel ou mÃƒÆ’Ã‚Â©todo nÃƒÆ’Ã‚Â£o encontrado');
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ window.deParaUI:', window.deParaUI);
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ typeof deleteCurrentImage:', typeof window.deParaUI?.deleteCurrentImage);
                 }
             });
             deleteBtn.setAttribute('data-listener-added', 'true');
-            console.log('Ã¢Å“â€¦ Listener do botÃƒÂ£o delete adicionado');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Listener do botÃƒÆ’Ã‚Â£o delete adicionado');
         }
         
-        // BotÃƒÂ£o ocultar
+        // BotÃƒÆ’Ã‚Â£o ocultar
         const hideBtn = document.getElementById('static-hide-btn');
-        console.log('Ã°Å¸â€Â DEBUG - BotÃƒÂ£o hide encontrado:', !!hideBtn);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - BotÃƒÆ’Ã‚Â£o hide encontrado:', !!hideBtn);
         if (hideBtn) {
-            console.log('Ã°Å¸â€Â DEBUG - BotÃƒÂ£o hide jÃƒÂ¡ tem listener:', hideBtn.hasAttribute('data-listener-added'));
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - BotÃƒÆ’Ã‚Â£o hide jÃƒÆ’Ã‚Â¡ tem listener:', hideBtn.hasAttribute('data-listener-added'));
         }
         
         if (hideBtn && !hideBtn.hasAttribute('data-listener-added')) {
-            console.log('Ã°Å¸â€Â DEBUG - Adicionando listener ao botÃƒÂ£o hide');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Adicionando listener ao botÃƒÆ’Ã‚Â£o hide');
             hideBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Ã°Å¸â€˜ÂÃ¯Â¸Â BotÃƒÂ£o ocultar clicado (ESTÃƒÂTICO)');
-                console.log('Ã°Å¸â€Â DEBUG - window.deParaUI disponÃƒÂ­vel:', !!window.deParaUI);
-                console.log('Ã°Å¸â€Â DEBUG - hideCurrentImage disponÃƒÂ­vel:', !!(window.deParaUI && typeof window.deParaUI.hideCurrentImage === 'function'));
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â BotÃƒÆ’Ã‚Â£o ocultar clicado (ESTÃƒÆ’Ã‚ÂTICO)');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - window.deParaUI disponÃƒÆ’Ã‚Â­vel:', !!window.deParaUI);
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - hideCurrentImage disponÃƒÆ’Ã‚Â­vel:', !!(window.deParaUI && typeof window.deParaUI.hideCurrentImage === 'function'));
                 
                 // Usar window.deParaUI para garantir contexto correto
                 if (window.deParaUI && typeof window.deParaUI.hideCurrentImage === 'function') {
-                    console.log('Ã°Å¸â€Â DEBUG - Chamando hideCurrentImage');
+                    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Chamando hideCurrentImage');
                     window.deParaUI.hideCurrentImage();
                 } else {
-                    console.error('Ã¢ÂÅ’ DeParaUI nÃƒÂ£o disponÃƒÂ­vel ou mÃƒÂ©todo nÃƒÂ£o encontrado');
-                    console.error('Ã¢ÂÅ’ window.deParaUI:', window.deParaUI);
-                    console.error('Ã¢ÂÅ’ typeof hideCurrentImage:', typeof window.deParaUI?.hideCurrentImage);
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ DeParaUI nÃƒÆ’Ã‚Â£o disponÃƒÆ’Ã‚Â­vel ou mÃƒÆ’Ã‚Â©todo nÃƒÆ’Ã‚Â£o encontrado');
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ window.deParaUI:', window.deParaUI);
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ typeof hideCurrentImage:', typeof window.deParaUI?.hideCurrentImage);
                 }
             });
             hideBtn.setAttribute('data-listener-added', 'true');
-            console.log('Ã¢Å“â€¦ Listener do botÃƒÂ£o hide adicionado');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Listener do botÃƒÆ’Ã‚Â£o hide adicionado');
         }
         
         
         
-        // BotÃƒÂ£o favoritar
+        // BotÃƒÆ’Ã‚Â£o favoritar
         const favoriteBtn = document.getElementById('static-favorite-btn');
-        console.log('Ã°Å¸â€Â DEBUG - BotÃƒÂ£o favoritar encontrado:', !!favoriteBtn);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - BotÃƒÆ’Ã‚Â£o favoritar encontrado:', !!favoriteBtn);
         if (favoriteBtn && !favoriteBtn.hasAttribute('data-listener-added')) {
             favoriteBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Ã¢Â­Â BotÃƒÂ£o favoritar clicado (ESTÃƒÂTICO)');
+                console.log('ÃƒÂ¢Ã‚Â­Ã‚Â BotÃƒÆ’Ã‚Â£o favoritar clicado (ESTÃƒÆ’Ã‚ÂTICO)');
                 this.favoriteCurrentImage();
             });
             favoriteBtn.setAttribute('data-listener-added', 'true');
-            console.log('Ã¢Å“â€¦ Listener do botÃƒÂ£o favoritar adicionado');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Listener do botÃƒÆ’Ã‚Â£o favoritar adicionado');
         }
 
-        // BotÃƒÂ£o ajustar
+        // BotÃƒÆ’Ã‚Â£o ajustar
         const adjustBtn = document.getElementById('static-adjust-btn');
-        console.log('Ã°Å¸â€Â DEBUG - BotÃƒÂ£o ajustar encontrado:', !!adjustBtn);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - BotÃƒÆ’Ã‚Â£o ajustar encontrado:', !!adjustBtn);
         if (adjustBtn && !adjustBtn.hasAttribute('data-listener-added')) {
             adjustBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Ã°Å¸â€Â§ BotÃƒÂ£o ajustar clicado (ESTÃƒÂTICO)');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ BotÃƒÆ’Ã‚Â£o ajustar clicado (ESTÃƒÆ’Ã‚ÂTICO)');
                 this.adjustCurrentImage();
             });
             adjustBtn.setAttribute('data-listener-added', 'true');
-            console.log('Ã¢Å“â€¦ Listener do botÃƒÂ£o ajustar adicionado');
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Listener do botÃƒÆ’Ã‚Â£o ajustar adicionado');
         }
         
-        console.log('Ã¢Å“â€¦ Event listeners dos botÃƒÂµes estÃƒÂ¡ticos configurados');
+        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Event listeners dos botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos configurados');
     }
     
     updateStaticCounter() {
@@ -6342,12 +6355,12 @@ class DeParaUI {
         }
     }
     
-    // Atualizar contador dinÃƒÂ¢mico
+    // Atualizar contador dinÃƒÆ’Ã‚Â¢mico
     updateDynamicCounter() {
-        // Usar botÃƒÂµes estÃƒÂ¡ticos se disponÃƒÂ­veis
+        // Usar botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos se disponÃƒÆ’Ã‚Â­veis
         this.updateStaticCounter();
         
-        // Fallback para botÃƒÂµes dinÃƒÂ¢micos se existirem
+        // Fallback para botÃƒÆ’Ã‚Âµes dinÃƒÆ’Ã‚Â¢micos se existirem
         const counter = document.getElementById('dynamic-slideshow-counter');
         const filename = document.getElementById('dynamic-slideshow-filename');
         
@@ -6361,41 +6374,41 @@ class DeParaUI {
         }
     }
 
-    // Apagar imagem atual (mover para pasta de excluÃƒÂ­das)
+    // Apagar imagem atual (mover para pasta de excluÃƒÆ’Ã‚Â­das)
     async deleteCurrentImage() {
-        console.log('Ã°Å¸â€Â DEBUG deleteCurrentImage - Iniciando...');
-        console.log('Ã°Å¸â€Â slideshowImages:', this.slideshowImages);
-        console.log('Ã°Å¸â€Â currentSlideIndex:', this.currentSlideIndex);
-        console.log('Ã°Å¸â€Â slideshowConfig:', this.slideshowConfig);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG deleteCurrentImage - Iniciando...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â slideshowImages:', this.slideshowImages);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â currentSlideIndex:', this.currentSlideIndex);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â slideshowConfig:', this.slideshowConfig);
         
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
-            console.log('Ã¢ÂÅ’ Nenhuma imagem para apagar');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Nenhuma imagem para apagar');
             this.showToast('Nenhuma imagem para apagar', 'error');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
         if (!currentImage) {
-            console.log('Ã¢ÂÅ’ Imagem atual nÃƒÂ£o encontrada');
-            this.showToast('Imagem atual nÃƒÂ£o encontrada', 'error');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Imagem atual nÃƒÆ’Ã‚Â£o encontrada');
+            this.showToast('Imagem atual nÃƒÆ’Ã‚Â£o encontrada', 'error');
             return;
         }
 
         if (!this.slideshowConfig.deletedFolder) {
-            console.log('Ã¢ÂÅ’ Pasta de excluÃƒÂ­das nÃƒÂ£o configurada');
-            this.showToast('Configure a pasta de fotos excluÃƒÂ­das nas configuraÃƒÂ§ÃƒÂµes', 'error');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Pasta de excluÃƒÆ’Ã‚Â­das nÃƒÆ’Ã‚Â£o configurada');
+            this.showToast('Configure a pasta de fotos excluÃƒÆ’Ã‚Â­das nas configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 'error');
             return;
         }
 
         try {
-            console.log('Ã°Å¸â€”â€˜Ã¯Â¸Â Apagando imagem:', currentImage.path);
-            console.log('Ã°Å¸â€œÂ Movendo para pasta:', this.slideshowConfig.deletedFolder);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬ËœÃƒÂ¯Ã‚Â¸Ã‚Â Apagando imagem:', currentImage.path);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Movendo para pasta:', this.slideshowConfig.deletedFolder);
 
-            // Verificar se pasta de destino existe, se nÃƒÂ£o, criar
-            console.log('Ã°Å¸â€œÂ Pasta de destino configurada:', this.slideshowConfig.deletedFolder);
+            // Verificar se pasta de destino existe, se nÃƒÆ’Ã‚Â£o, criar
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Pasta de destino configurada:', this.slideshowConfig.deletedFolder);
             
-            // Pasta de destino jÃƒÂ¡ configurada - prosseguir diretamente
-            console.log('Ã¢Å“â€¦ Pasta de destino configurada, prosseguindo com operaÃƒÂ§ÃƒÂ£o');
+            // Pasta de destino jÃƒÆ’Ã‚Â¡ configurada - prosseguir diretamente
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta de destino configurada, prosseguindo com operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
 
             // Debug: Log dos dados sendo enviados
             const fileName = currentImage.name || currentImage.path.split('/').pop();
@@ -6406,16 +6419,16 @@ class DeParaUI {
                 sourcePath: currentImage.path,
                 targetPath: targetPath
             };
-            console.log('Ã°Å¸â€Â DEBUG - Dados sendo enviados para API (DELETE):', requestData);
-            console.log('Ã°Å¸â€Â DEBUG - sourcePath existe:', !!currentImage.path);
-            console.log('Ã°Å¸â€Â DEBUG - targetPath existe:', !!this.slideshowConfig.deletedFolder);
-            console.log('Ã°Å¸â€Â DEBUG - sourcePath tipo:', typeof currentImage.path);
-            console.log('Ã°Å¸â€Â DEBUG - targetPath tipo:', typeof this.slideshowConfig.deletedFolder);
-            console.log('Ã°Å¸â€Â DEBUG - fileName extraÃƒÂ­do:', fileName);
-            console.log('Ã°Å¸â€Â DEBUG - targetPath completo:', targetPath);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Dados sendo enviados para API (DELETE):', requestData);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - sourcePath existe:', !!currentImage.path);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - targetPath existe:', !!this.slideshowConfig.deletedFolder);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - sourcePath tipo:', typeof currentImage.path);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - targetPath tipo:', typeof this.slideshowConfig.deletedFolder);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - fileName extraÃƒÆ’Ã‚Â­do:', fileName);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - targetPath completo:', targetPath);
             
             // Chamar API para mover arquivo
-            console.log('Ã°Å¸â€œÂ¡ Enviando requisiÃƒÂ§ÃƒÂ£o para /api/files/execute...');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Enviando requisiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para /api/files/execute...');
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
@@ -6424,38 +6437,38 @@ class DeParaUI {
                 body: JSON.stringify(requestData)
             });
             
-            console.log('Ã°Å¸â€œÂ¡ Resposta da API:', response.status, response.statusText);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Resposta da API:', response.status, response.statusText);
             
             // Capturar detalhes do erro se houver
             if (!response.ok) {
                 let errorDetails = {};
                 try {
                     errorDetails = await response.json();
-                    console.error('Ã¢ÂÅ’ Detalhes do erro da API:', errorDetails);
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Detalhes do erro da API:', errorDetails);
                 } catch (e) {
-                    console.error('Ã¢ÂÅ’ Erro ao parsear resposta de erro:', e);
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao parsear resposta de erro:', e);
                     try {
                         const errorText = await response.text();
-                        console.error('Ã¢ÂÅ’ Resposta de erro (texto):', errorText);
+                        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Resposta de erro (texto):', errorText);
                     } catch (textError) {
-                        console.error('Ã¢ÂÅ’ Erro ao ler resposta como texto:', textError);
+                        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ler resposta como texto:', textError);
                     }
                 }
             }
             
             if (response.ok) {
                 const result = await response.json();
-                console.log('Ã¢Å“â€¦ Imagem apagada com sucesso:', result);
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Imagem apagada com sucesso:', result);
                 
                 // Remover imagem da lista atual
                 this.slideshowImages.splice(this.currentSlideIndex, 1);
                 
-                // Ajustar ÃƒÂ­ndice se necessÃƒÂ¡rio
+                // Ajustar ÃƒÆ’Ã‚Â­ndice se necessÃƒÆ’Ã‚Â¡rio
                 if (this.currentSlideIndex >= this.slideshowImages.length) {
                     this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
                 }
                 
-                // Atualizar exibiÃƒÂ§ÃƒÂ£o
+                // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
                 if (this.slideshowImages.length > 0) {
                     this.updateSlideDisplay();
                     this.updateDynamicCounter();
@@ -6466,55 +6479,55 @@ class DeParaUI {
                 
                 this.showToast('Imagem apagada com sucesso', 'success');
             } else {
-                console.error('Ã¢ÂÅ’ Erro ao apagar imagem - status:', response.status);
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao apagar imagem - status:', response.status);
                 this.showToast(`Erro ao apagar imagem: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao apagar imagem:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao apagar imagem:', error);
             this.showToast('Erro ao apagar imagem', 'error');
         }
     }
 
     // Ocultar imagem atual (mover para pasta de ocultas)
     async hideCurrentImage() {
-        console.log('Ã°Å¸â€Â DEBUG hideCurrentImage - Iniciando...');
-        console.log('Ã°Å¸â€Â slideshowImages:', this.slideshowImages);
-        console.log('Ã°Å¸â€Â currentSlideIndex:', this.currentSlideIndex);
-        console.log('Ã°Å¸â€Â slideshowConfig:', this.slideshowConfig);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG hideCurrentImage - Iniciando...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â slideshowImages:', this.slideshowImages);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â currentSlideIndex:', this.currentSlideIndex);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â slideshowConfig:', this.slideshowConfig);
         
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
-            console.log('Ã¢ÂÅ’ Nenhuma imagem para ocultar');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Nenhuma imagem para ocultar');
             this.showToast('Nenhuma imagem para ocultar', 'error');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
         if (!currentImage) {
-            console.log('Ã¢ÂÅ’ Imagem atual nÃƒÂ£o encontrada');
-            this.showToast('Imagem atual nÃƒÂ£o encontrada', 'error');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Imagem atual nÃƒÆ’Ã‚Â£o encontrada');
+            this.showToast('Imagem atual nÃƒÆ’Ã‚Â£o encontrada', 'error');
             return;
         }
 
         if (!this.slideshowConfig.hiddenFolder || this.slideshowConfig.hiddenFolder.trim() === '') {
-            console.log('Ã¢ÂÅ’ Pasta de ocultas nÃƒÂ£o configurada');
-            console.log('Ã¢ÂÅ’ slideshowConfig.hiddenFolder:', this.slideshowConfig.hiddenFolder);
-            console.log('Ã¢ÂÅ’ slideshowConfig completo:', this.slideshowConfig);
-            this.showToast('Configure a pasta de fotos ocultas nas configuraÃƒÂ§ÃƒÂµes', 'error');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Pasta de ocultas nÃƒÆ’Ã‚Â£o configurada');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ slideshowConfig.hiddenFolder:', this.slideshowConfig.hiddenFolder);
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ slideshowConfig completo:', this.slideshowConfig);
+            this.showToast('Configure a pasta de fotos ocultas nas configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 'error');
             return;
         }
         
-        console.log('Ã¢Å“â€¦ Pasta de ocultas configurada:', this.slideshowConfig.hiddenFolder);
-        console.log('Ã¢Å“â€¦ ConfiguraÃƒÂ§ÃƒÂ£o completa:', this.slideshowConfig);
+        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta de ocultas configurada:', this.slideshowConfig.hiddenFolder);
+        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o completa:', this.slideshowConfig);
 
         try {
-            console.log('Ã°Å¸â€˜ÂÃ¯Â¸Â Ocultando imagem:', currentImage.path);
-            console.log('Ã°Å¸â€œÂ Movendo para pasta:', this.slideshowConfig.hiddenFolder);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â Ocultando imagem:', currentImage.path);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Movendo para pasta:', this.slideshowConfig.hiddenFolder);
 
-            // Verificar se pasta de destino existe, se nÃƒÂ£o, criar
-            console.log('Ã°Å¸â€œÂ Pasta de destino configurada:', this.slideshowConfig.hiddenFolder);
+            // Verificar se pasta de destino existe, se nÃƒÆ’Ã‚Â£o, criar
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Pasta de destino configurada:', this.slideshowConfig.hiddenFolder);
             
-            // Pasta de destino jÃƒÂ¡ configurada - prosseguir diretamente
-            console.log('Ã¢Å“â€¦ Pasta de destino configurada, prosseguindo com operaÃƒÂ§ÃƒÂ£o');
+            // Pasta de destino jÃƒÆ’Ã‚Â¡ configurada - prosseguir diretamente
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta de destino configurada, prosseguindo com operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
 
             // Debug: Log dos dados sendo enviados
             const fileName = currentImage.name || currentImage.path.split('/').pop();
@@ -6525,16 +6538,16 @@ class DeParaUI {
                 sourcePath: currentImage.path,
                 targetPath: targetPath
             };
-            console.log('Ã°Å¸â€Â DEBUG - Dados sendo enviados para API (HIDE):', requestData);
-            console.log('Ã°Å¸â€Â DEBUG - sourcePath existe:', !!currentImage.path);
-            console.log('Ã°Å¸â€Â DEBUG - targetPath existe:', !!this.slideshowConfig.hiddenFolder);
-            console.log('Ã°Å¸â€Â DEBUG - sourcePath tipo:', typeof currentImage.path);
-            console.log('Ã°Å¸â€Â DEBUG - targetPath tipo:', typeof this.slideshowConfig.hiddenFolder);
-            console.log('Ã°Å¸â€Â DEBUG - fileName extraÃƒÂ­do:', fileName);
-            console.log('Ã°Å¸â€Â DEBUG - targetPath completo:', targetPath);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Dados sendo enviados para API (HIDE):', requestData);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - sourcePath existe:', !!currentImage.path);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - targetPath existe:', !!this.slideshowConfig.hiddenFolder);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - sourcePath tipo:', typeof currentImage.path);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - targetPath tipo:', typeof this.slideshowConfig.hiddenFolder);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - fileName extraÃƒÆ’Ã‚Â­do:', fileName);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - targetPath completo:', targetPath);
             
             // Chamar API para mover arquivo
-            console.log('Ã°Å¸â€œÂ¡ Enviando requisiÃƒÂ§ÃƒÂ£o para /api/files/execute...');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Enviando requisiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para /api/files/execute...');
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
@@ -6543,38 +6556,38 @@ class DeParaUI {
                 body: JSON.stringify(requestData)
             });
             
-            console.log('Ã°Å¸â€œÂ¡ Resposta da API:', response.status, response.statusText);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Resposta da API:', response.status, response.statusText);
             
             // Capturar detalhes do erro se houver
             if (!response.ok) {
                 let errorDetails = {};
                 try {
                     errorDetails = await response.json();
-                    console.error('Ã¢ÂÅ’ Detalhes do erro da API:', errorDetails);
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Detalhes do erro da API:', errorDetails);
                 } catch (e) {
-                    console.error('Ã¢ÂÅ’ Erro ao parsear resposta de erro:', e);
+                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao parsear resposta de erro:', e);
                     try {
                         const errorText = await response.text();
-                        console.error('Ã¢ÂÅ’ Resposta de erro (texto):', errorText);
+                        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Resposta de erro (texto):', errorText);
                     } catch (textError) {
-                        console.error('Ã¢ÂÅ’ Erro ao ler resposta como texto:', textError);
+                        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ler resposta como texto:', textError);
                     }
                 }
             }
             
             if (response.ok) {
                 const result = await response.json();
-                console.log('Ã¢Å“â€¦ Imagem ocultada com sucesso:', result);
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Imagem ocultada com sucesso:', result);
                 
                 // Remover imagem da lista atual
                 this.slideshowImages.splice(this.currentSlideIndex, 1);
                 
-                // Ajustar ÃƒÂ­ndice se necessÃƒÂ¡rio
+                // Ajustar ÃƒÆ’Ã‚Â­ndice se necessÃƒÆ’Ã‚Â¡rio
                 if (this.currentSlideIndex >= this.slideshowImages.length) {
                     this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
                 }
                 
-                // Atualizar exibiÃƒÂ§ÃƒÂ£o
+                // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
                 if (this.slideshowImages.length > 0) {
                     this.updateSlideDisplay();
                     this.updateDynamicCounter();
@@ -6585,51 +6598,51 @@ class DeParaUI {
                 
                 this.showToast('Imagem ocultada com sucesso', 'success');
             } else {
-                console.error('Ã¢ÂÅ’ Erro ao ocultar imagem - status:', response.status);
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ocultar imagem - status:', response.status);
                 this.showToast(`Erro ao ocultar imagem: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao ocultar imagem:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ocultar imagem:', error);
             this.showToast('Erro ao ocultar imagem', 'error');
         }
     }
 
     // Favoritar imagem atual (mover para subpasta dentro da pasta atual)
     async favoriteCurrentImage() {
-        console.log('Ã°Å¸â€Â DEBUG favoriteCurrentImage - Iniciando...');
-        console.log('Ã°Å¸â€Â slideshowImages:', this.slideshowImages);
-        console.log('Ã°Å¸â€Â currentSlideIndex:', this.currentSlideIndex);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG favoriteCurrentImage - Iniciando...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â slideshowImages:', this.slideshowImages);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â currentSlideIndex:', this.currentSlideIndex);
         
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
-            console.log('Ã¢ÂÅ’ Nenhuma imagem para favoritar');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Nenhuma imagem para favoritar');
             this.showToast('Nenhuma imagem para favoritar', 'error');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
         if (!currentImage) {
-            console.log('Ã¢ÂÅ’ Imagem atual nÃƒÂ£o encontrada');
-            this.showToast('Imagem atual nÃƒÂ£o encontrada', 'error');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Imagem atual nÃƒÆ’Ã‚Â£o encontrada');
+            this.showToast('Imagem atual nÃƒÆ’Ã‚Â£o encontrada', 'error');
             return;
         }
 
         try {
-            console.log('Ã¢Â­Â Favoritando imagem:', currentImage.path);
+            console.log('ÃƒÂ¢Ã‚Â­Ã‚Â Favoritando imagem:', currentImage.path);
 
-            // Extrair diretÃƒÂ³rio pai da imagem atual
+            // Extrair diretÃƒÆ’Ã‚Â³rio pai da imagem atual
             const pathParts = currentImage.path.split('/');
             const fileName = pathParts.pop(); // Nome do arquivo
-            const currentDir = pathParts.join('/'); // DiretÃƒÂ³rio atual da imagem
+            const currentDir = pathParts.join('/'); // DiretÃƒÆ’Ã‚Â³rio atual da imagem
             const parentFolderName = pathParts[pathParts.length - 1] || 'Fotos';
             
-            console.log('Ã°Å¸â€œÂ DiretÃƒÂ³rio atual da imagem:', currentDir);
-            console.log('Ã°Å¸â€œÂ Nome da pasta pai:', parentFolderName);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â DiretÃƒÆ’Ã‚Â³rio atual da imagem:', currentDir);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Nome da pasta pai:', parentFolderName);
 
-            // Criar subdiretÃƒÂ³rio "Favoritas + Nome da pasta pai" DENTRO da pasta atual
+            // Criar subdiretÃƒÆ’Ã‚Â³rio "Favoritas + Nome da pasta pai" DENTRO da pasta atual
             const favoritesSubDir = `Favoritas ${parentFolderName}`;
             const targetDir = `${currentDir}/${favoritesSubDir}`;
-            console.log('Ã°Å¸â€œÂ SubdiretÃƒÂ³rio de favoritas:', favoritesSubDir);
-            console.log('Ã°Å¸â€œÂ DiretÃƒÂ³rio completo de destino:', targetDir);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â SubdiretÃƒÆ’Ã‚Â³rio de favoritas:', favoritesSubDir);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â DiretÃƒÆ’Ã‚Â³rio completo de destino:', targetDir);
 
             const targetPath = `${targetDir}/${fileName}`;
             
@@ -6637,13 +6650,13 @@ class DeParaUI {
                 action: 'move',
                 sourcePath: currentImage.path,
                 targetPath: targetPath,
-                createTargetDir: true // Flag para criar diretÃƒÂ³rio se nÃƒÂ£o existir
+                createTargetDir: true // Flag para criar diretÃƒÆ’Ã‚Â³rio se nÃƒÆ’Ã‚Â£o existir
             };
             
-            console.log('Ã°Å¸â€Â DEBUG - Dados sendo enviados para API (FAVORITE):', requestData);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Dados sendo enviados para API (FAVORITE):', requestData);
             
             // Chamar API para mover arquivo
-            console.log('Ã°Å¸â€œÂ¡ Enviando requisiÃƒÂ§ÃƒÂ£o para /api/files/execute...');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Enviando requisiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para /api/files/execute...');
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
@@ -6652,21 +6665,21 @@ class DeParaUI {
                 body: JSON.stringify(requestData)
             });
             
-            console.log('Ã°Å¸â€œÂ¡ Resposta da API:', response.status, response.statusText);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Resposta da API:', response.status, response.statusText);
             
             if (response.ok) {
                 const result = await response.json();
-                console.log('Ã¢Å“â€¦ Imagem favoritada com sucesso:', result);
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Imagem favoritada com sucesso:', result);
                 
                 // Remover imagem da lista atual
                 this.slideshowImages.splice(this.currentSlideIndex, 1);
                 
-                // Ajustar ÃƒÂ­ndice se necessÃƒÂ¡rio
+                // Ajustar ÃƒÆ’Ã‚Â­ndice se necessÃƒÆ’Ã‚Â¡rio
                 if (this.currentSlideIndex >= this.slideshowImages.length) {
                     this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
                 }
                 
-                // Atualizar exibiÃƒÂ§ÃƒÂ£o
+                // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
                 if (this.slideshowImages.length > 0) {
                     this.updateSlideDisplay();
                     this.updateDynamicCounter();
@@ -6677,43 +6690,43 @@ class DeParaUI {
                 
                 this.showToast(`Imagem favoritada! Movida para: ${favoritesSubDir}`, 'success');
             } else {
-                console.error('Ã¢ÂÅ’ Erro ao favoritar imagem - status:', response.status);
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao favoritar imagem - status:', response.status);
                 this.showToast(`Erro ao favoritar imagem: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao favoritar imagem:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao favoritar imagem:', error);
             this.showToast('Erro ao favoritar imagem', 'error');
         }
     }
 
     // Ajustar imagem atual (mover para pasta configurada)
     async adjustCurrentImage() {
-        console.log('Ã°Å¸â€Â DEBUG adjustCurrentImage - Iniciando...');
-        console.log('Ã°Å¸â€Â slideshowImages:', this.slideshowImages);
-        console.log('Ã°Å¸â€Â currentSlideIndex:', this.currentSlideIndex);
-        console.log('Ã°Å¸â€Â adjustableFolder:', this.slideshowConfig.adjustableFolder);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG adjustCurrentImage - Iniciando...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â slideshowImages:', this.slideshowImages);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â currentSlideIndex:', this.currentSlideIndex);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â adjustableFolder:', this.slideshowConfig.adjustableFolder);
         
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
-            console.log('Ã¢ÂÅ’ Nenhuma imagem para ajustar');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Nenhuma imagem para ajustar');
             this.showToast('Nenhuma imagem para ajustar', 'error');
             return;
         }
 
         if (!this.slideshowConfig.adjustableFolder || this.slideshowConfig.adjustableFolder.trim() === '') {
-            console.log('Ã¢ÂÅ’ Pasta de ajustes nÃƒÂ£o configurada');
-            this.showToast('Configure a pasta de fotos para ajustar nas configuraÃƒÂ§ÃƒÂµes do slideshow', 'error');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Pasta de ajustes nÃƒÆ’Ã‚Â£o configurada');
+            this.showToast('Configure a pasta de fotos para ajustar nas configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow', 'error');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
         if (!currentImage) {
-            console.log('Ã¢ÂÅ’ Imagem atual nÃƒÂ£o encontrada');
-            this.showToast('Imagem atual nÃƒÂ£o encontrada', 'error');
+            console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Imagem atual nÃƒÆ’Ã‚Â£o encontrada');
+            this.showToast('Imagem atual nÃƒÆ’Ã‚Â£o encontrada', 'error');
             return;
         }
 
         try {
-            console.log('Ã°Å¸â€Â§ Ajustando imagem:', currentImage.path);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ Ajustando imagem:', currentImage.path);
 
             // Extrair nome do arquivo
             const pathParts = currentImage.path.split('/');
@@ -6726,13 +6739,13 @@ class DeParaUI {
                 action: 'move',
                 sourcePath: currentImage.path,
                 targetPath: targetPath,
-                createTargetDir: true // Flag para criar diretÃƒÂ³rio se nÃƒÂ£o existir
+                createTargetDir: true // Flag para criar diretÃƒÆ’Ã‚Â³rio se nÃƒÆ’Ã‚Â£o existir
             };
             
-            console.log('Ã°Å¸â€Â DEBUG - Dados sendo enviados para API (ADJUST):', requestData);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â DEBUG - Dados sendo enviados para API (ADJUST):', requestData);
             
             // Chamar API para mover arquivo
-            console.log('Ã°Å¸â€œÂ¡ Enviando requisiÃƒÂ§ÃƒÂ£o para /api/files/execute...');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Enviando requisiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para /api/files/execute...');
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
@@ -6741,21 +6754,21 @@ class DeParaUI {
                 body: JSON.stringify(requestData)
             });
             
-            console.log('Ã°Å¸â€œÂ¡ Resposta da API:', response.status, response.statusText);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ Resposta da API:', response.status, response.statusText);
             
             if (response.ok) {
                 const result = await response.json();
-                console.log('Ã¢Å“â€¦ Imagem ajustada com sucesso:', result);
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Imagem ajustada com sucesso:', result);
                 
                 // Remover imagem da lista atual
                 this.slideshowImages.splice(this.currentSlideIndex, 1);
                 
-                // Ajustar ÃƒÂ­ndice se necessÃƒÂ¡rio
+                // Ajustar ÃƒÆ’Ã‚Â­ndice se necessÃƒÆ’Ã‚Â¡rio
                 if (this.currentSlideIndex >= this.slideshowImages.length) {
                     this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
                 }
                 
-                // Atualizar exibiÃƒÂ§ÃƒÂ£o
+                // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
                 if (this.slideshowImages.length > 0) {
                     this.updateSlideDisplay();
                     this.updateDynamicCounter();
@@ -6766,11 +6779,11 @@ class DeParaUI {
                 
                 this.showToast(`Imagem ajustada! Movida para: ${this.slideshowConfig.adjustableFolder}`, 'success');
             } else {
-                console.error('Ã¢ÂÅ’ Erro ao ajustar imagem - status:', response.status);
+                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ajustar imagem - status:', response.status);
                 this.showToast(`Erro ao ajustar imagem: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao ajustar imagem:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ajustar imagem:', error);
             this.showToast('Erro ao ajustar imagem', 'error');
         }
     }
@@ -6780,25 +6793,25 @@ class DeParaUI {
         this.stopAutoPlay();
         
         // Sair do fullscreen antes de fechar o viewer
-        console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Saindo do fullscreen antes de fechar slideshow...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Saindo do fullscreen antes de fechar slideshow...');
         this.exitFullscreen();
         
-        // Aguardar um pouco para garantir que a saÃƒÂ­da do fullscreen seja processada
+        // Aguardar um pouco para garantir que a saÃƒÆ’Ã‚Â­da do fullscreen seja processada
         setTimeout(() => {
-            // Verificar se ainda estÃƒÂ¡ em fullscreen e forÃƒÂ§ar saÃƒÂ­da se necessÃƒÂ¡rio
+            // Verificar se ainda estÃƒÆ’Ã‚Â¡ em fullscreen e forÃƒÆ’Ã‚Â§ar saÃƒÆ’Ã‚Â­da se necessÃƒÆ’Ã‚Â¡rio
             const isStillFullscreen = !!(document.fullscreenElement || 
                                        document.webkitFullscreenElement || 
                                        document.mozFullScreenElement || 
                                        document.msFullscreenElement);
             
             if (isStillFullscreen) {
-                console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Ainda em fullscreen, forÃƒÂ§ando saÃƒÂ­da...');
+                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Ainda em fullscreen, forÃƒÆ’Ã‚Â§ando saÃƒÆ’Ã‚Â­da...');
                 this.exitFullscreen();
             }
         }, 100);
         
-        // Limpeza de proteÃƒÂ§ÃƒÂ£o de ÃƒÂ­cones (sem setInterval)
-        console.log('Ã°Å¸Â§Â¹ ProteÃƒÂ§ÃƒÂ£o de ÃƒÂ­cones limpa');
+        // Limpeza de proteÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de ÃƒÆ’Ã‚Â­cones (sem setInterval)
+        console.log('ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ ProteÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de ÃƒÆ’Ã‚Â­cones limpa');
         
         // Resetar flag de controles criados
         this.dynamicControlsCreated = false;
@@ -6807,24 +6820,24 @@ class DeParaUI {
         const dynamicElement = document.getElementById('slideshow-image-new');
         if (dynamicElement) {
             dynamicElement.remove();
-            console.log('Ã°Å¸Â§Â¹ Elemento dinÃƒÂ¢mico removido');
+            console.log('ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ Elemento dinÃƒÆ’Ã‚Â¢mico removido');
         }
         
-        // Limpar controles dinÃƒÂ¢micos antigos (se existirem)
+        // Limpar controles dinÃƒÆ’Ã‚Â¢micos antigos (se existirem)
         const dynamicControls = document.getElementById('dynamic-slideshow-controls');
         if (dynamicControls) {
             dynamicControls.remove();
-            console.log('Ã°Å¸Â§Â¹ Controles dinÃƒÂ¢micos antigos removidos');
+            console.log('ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ Controles dinÃƒÆ’Ã‚Â¢micos antigos removidos');
         }
         
-        // Esconder controles estÃƒÂ¡ticos
+        // Esconder controles estÃƒÆ’Ã‚Â¡ticos
         const staticControls = document.getElementById('static-slideshow-controls');
         if (staticControls) {
             staticControls.style.display = 'none';
-            console.log('Ã°Å¸Â§Â¹ Controles estÃƒÂ¡ticos escondidos');
+            console.log('ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ Controles estÃƒÆ’Ã‚Â¡ticos escondidos');
         }
 
-        // Remover botÃƒÂµes de organizaÃƒÂ§ÃƒÂ£o dinÃƒÂ¢micos
+        // Remover botÃƒÆ’Ã‚Âµes de organizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o dinÃƒÆ’Ã‚Â¢micos
         const deleteBtn = document.getElementById('dynamic-slideshow-delete');
         if (deleteBtn) {
             deleteBtn.remove();
@@ -6843,7 +6856,7 @@ class DeParaUI {
         const slideshowViewer = document.getElementById('slideshow-viewer');
         if (slideshowViewer) {
             slideshowViewer.style.display = 'none';
-            console.log('Ã°Å¸â€“Â¥Ã¯Â¸Â Modal do slideshow fechado');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Modal do slideshow fechado');
         }
         
         // Limpar dados do slideshow
@@ -6851,7 +6864,7 @@ class DeParaUI {
         this.currentSlideIndex = 0;
         this.slideshowPlaying = false;
         
-        console.log('Ã¢Å“â€¦ Slideshow completamente fechado');
+        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Slideshow completamente fechado');
     }
 
 
@@ -6904,9 +6917,9 @@ class DeParaUI {
         }
     }
 
-    // Salvar pasta (mÃƒÂ©todo auxiliar)
+    // Salvar pasta (mÃƒÆ’Ã‚Â©todo auxiliar)
     async saveFolder(folder) {
-        console.log('Ã°Å¸â€™Â¾ Salvando pasta:', folder);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¾ Salvando pasta:', folder);
 
         try {
             const response = await fetch('/api/files/folders', {
@@ -6922,18 +6935,18 @@ class DeParaUI {
             }
 
             const result = await response.json();
-            console.log('Ã¢Å“â€¦ Pasta salva com sucesso:', result);
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta salva com sucesso:', result);
             return result;
 
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao salvar pasta:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao salvar pasta:', error);
             throw error;
         }
     }
 
-    // Salvar template (mÃƒÂ©todo auxiliar)
+    // Salvar template (mÃƒÆ’Ã‚Â©todo auxiliar)
     async saveTemplate(template) {
-        console.log('Ã°Å¸â€œâ€¹ Salvando template:', template);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Salvando template:', template);
 
         try {
             const response = await fetch('/api/files/templates', {
@@ -6949,11 +6962,11 @@ class DeParaUI {
             }
 
             const result = await response.json();
-            console.log('Ã¢Å“â€¦ Template salvo com sucesso:', result);
+            console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Template salvo com sucesso:', result);
             return result;
 
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao salvar template:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao salvar template:', error);
             throw error;
         }
     }
@@ -7068,7 +7081,7 @@ class DeParaUI {
         const requiredFields = currentStep.querySelectorAll('input[required], select[required]');
         requiredFields.forEach(field => {
             if (!field.value.trim()) {
-                this.showFieldError(field, 'Este campo ÃƒÂ© obrigatÃƒÂ³rio');
+                this.showFieldError(field, 'Este campo ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio');
                 isValid = false;
             } else {
                 this.clearFieldError(field);
@@ -7114,7 +7127,7 @@ class DeParaUI {
         const targetFolder = document.getElementById('target-folder');
 
         if (sourceFolder.value === targetFolder.value && sourceFolder.value !== '') {
-            this.showToast('Pasta de origem e destino nÃƒÂ£o podem ser iguais', 'warning');
+            this.showToast('Pasta de origem e destino nÃƒÆ’Ã‚Â£o podem ser iguais', 'warning');
             isValid = false;
         }
 
@@ -7127,7 +7140,7 @@ class DeParaUI {
         const cronExpression = document.getElementById('cron-expression');
 
         if (frequency.value === 'custom' && !cronExpression.value.trim()) {
-            this.showFieldError(cronExpression, 'ExpressÃƒÂ£o cron ÃƒÂ© obrigatÃƒÂ³ria para frequÃƒÂªncia personalizada');
+            this.showFieldError(cronExpression, 'ExpressÃƒÆ’Ã‚Â£o cron ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³ria para frequÃƒÆ’Ã‚Âªncia personalizada');
             isValid = false;
         }
 
@@ -7142,17 +7155,17 @@ class DeParaUI {
         const minAge = document.getElementById('min-age');
 
         if (filterType === 'extension' && !extensions.value.trim()) {
-            this.showFieldError(extensions, 'Especifique as extensÃƒÂµes permitidas');
+            this.showFieldError(extensions, 'Especifique as extensÃƒÆ’Ã‚Âµes permitidas');
             isValid = false;
         }
 
         if (filterType === 'size' && (!minSize.value || parseFloat(minSize.value) < 0)) {
-            this.showFieldError(minSize, 'Tamanho mÃƒÂ­nimo deve ser um nÃƒÂºmero positivo');
+            this.showFieldError(minSize, 'Tamanho mÃƒÆ’Ã‚Â­nimo deve ser um nÃƒÆ’Ã‚Âºmero positivo');
             isValid = false;
         }
 
         if (filterType === 'age' && (!minAge.value || parseFloat(minAge.value) < 0)) {
-            this.showFieldError(minAge, 'Idade mÃƒÂ­nima deve ser um nÃƒÂºmero positivo');
+            this.showFieldError(minAge, 'Idade mÃƒÆ’Ã‚Â­nima deve ser um nÃƒÆ’Ã‚Âºmero positivo');
             isValid = false;
         }
 
@@ -7160,7 +7173,7 @@ class DeParaUI {
         const lowercase = document.getElementById('transform-lowercase');
 
         if (uppercase.checked && lowercase.checked) {
-            this.showToast('NÃƒÂ£o ÃƒÂ© possÃƒÂ­vel aplicar maiÃƒÂºsculas e minÃƒÂºsculas simultaneamente', 'warning');
+            this.showToast('NÃƒÆ’Ã‚Â£o ÃƒÆ’Ã‚Â© possÃƒÆ’Ã‚Â­vel aplicar maiÃƒÆ’Ã‚Âºsculas e minÃƒÆ’Ã‚Âºsculas simultaneamente', 'warning');
             isValid = false;
         }
 
@@ -7174,7 +7187,7 @@ class DeParaUI {
         const customTrashPath = document.getElementById('custom-trash-path');
 
         if (autoCleanup.checked && customTrash.value === 'custom' && !customTrashPath.value.trim()) {
-            this.showFieldError(customTrashPath, 'Caminho da pasta de lixeira personalizada ÃƒÂ© obrigatÃƒÂ³rio');
+            this.showFieldError(customTrashPath, 'Caminho da pasta de lixeira personalizada ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio');
             isValid = false;
         }
 
@@ -7208,7 +7221,7 @@ class DeParaUI {
         const description = document.getElementById('folder-description').value.trim();
 
         if (!name || !path) {
-            this.showToast('Preencha todos os campos obrigatÃƒÂ³rios', 'warning');
+            this.showToast('Preencha todos os campos obrigatÃƒÆ’Ã‚Â³rios', 'warning');
             return;
         }
 
@@ -7320,20 +7333,20 @@ class DeParaUI {
         const workflowData = this.collectWorkflowData();
         
         summary.innerHTML = `
-            <h5>Ã°Å¸â€œâ€¹ Resumo do Fluxo de Trabalho</h5>
+            <h5>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Resumo do Fluxo de Trabalho</h5>
             <ul>
                 <li><strong>Nome:</strong> ${workflowData.name}</li>
                 <li><strong>Origem:</strong> ${this.getFolderName(workflowData.sourceFolder)}</li>
                 <li><strong>Destino:</strong> ${this.getFolderName(workflowData.targetFolder)}</li>
-                <li><strong>AÃƒÂ§ÃƒÂ£o:</strong> ${this.getActionLabel(workflowData.fileAction)}</li>
-                <li><strong>FrequÃƒÂªncia:</strong> ${this.getFrequencyLabel(workflowData.executionFrequency)}</li>
+                <li><strong>AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:</strong> ${this.getActionLabel(workflowData.fileAction)}</li>
+                <li><strong>FrequÃƒÆ’Ã‚Âªncia:</strong> ${this.getFrequencyLabel(workflowData.executionFrequency)}</li>
                 <li><strong>Filtro:</strong> ${this.getFilterLabel(workflowData.filterType)}</li>
                 ${workflowData.autoCleanup ? `<li><strong>Limpeza:</strong> ${workflowData.cleanupFrequency} (${workflowData.maxFileAge} dias)</li>` : ''}
             </ul>
         `;
     }
 
-    // MÃƒÂ©todos auxiliares
+    // MÃƒÆ’Ã‚Â©todos auxiliares
     getFolderName(folderId) {
         const folder = this.folders.find(f => f.id === folderId);
         return folder ? folder.name : 'N/A';
@@ -7341,44 +7354,44 @@ class DeParaUI {
 
     getActionLabel(action) {
         const labels = {
-            'copy': 'Ã°Å¸â€œâ€¹ Copiar',
-            'move': 'Ã°Å¸â€œÂ¤ Mover',
-            'copy_and_clean': 'Ã°Å¸Â§Â¹ Copiar e Limpar'
+            'copy': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Copiar',
+            'move': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Mover',
+            'copy_and_clean': 'ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ Copiar e Limpar'
         };
         return labels[action] || action;
     }
 
     getFrequencyLabel(frequency) {
         const labels = {
-            'realtime': 'Ã¢Å¡Â¡ Tempo Real',
-            '1min': 'Ã¢ÂÂ±Ã¯Â¸Â A cada 1 minuto',
-            '5min': 'Ã¢ÂÂ±Ã¯Â¸Â A cada 5 minutos',
-            '15min': 'Ã¢ÂÂ±Ã¯Â¸Â A cada 15 minutos',
-            '30min': 'Ã¢ÂÂ±Ã¯Â¸Â A cada 30 minutos',
-            '1hour': 'Ã¢ÂÂ° A cada 1 hora',
-            '6hours': 'Ã¢ÂÂ° A cada 6 horas',
-            '12hours': 'Ã¢ÂÂ° A cada 12 horas',
-            'daily': 'Ã°Å¸â€œâ€¦ DiÃƒÂ¡rio',
-            'weekly': 'Ã°Å¸â€œâ€¦ Semanal',
-            'monthly': 'Ã°Å¸â€œâ€¦ Mensal',
-            'custom': 'Ã¢Å¡â„¢Ã¯Â¸Â Personalizado'
+            'realtime': 'ÃƒÂ¢Ã…Â¡Ã‚Â¡ Tempo Real',
+            '1min': 'ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â A cada 1 minuto',
+            '5min': 'ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â A cada 5 minutos',
+            '15min': 'ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â A cada 15 minutos',
+            '30min': 'ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â A cada 30 minutos',
+            '1hour': 'ÃƒÂ¢Ã‚ÂÃ‚Â° A cada 1 hora',
+            '6hours': 'ÃƒÂ¢Ã‚ÂÃ‚Â° A cada 6 horas',
+            '12hours': 'ÃƒÂ¢Ã‚ÂÃ‚Â° A cada 12 horas',
+            'daily': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ DiÃƒÆ’Ã‚Â¡rio',
+            'weekly': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ Semanal',
+            'monthly': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ Mensal',
+            'custom': 'ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â Personalizado'
         };
         return labels[frequency] || frequency;
     }
 
     getFilterLabel(filterType) {
         const labels = {
-            'all': 'Ã¢Å“â€¦ Todos os Arquivos',
-            'new': 'Ã°Å¸â€ â€¢ Apenas Novos',
-            'modified': 'Ã°Å¸â€œÂ Apenas Modificados',
-            'extension': 'Ã°Å¸â€Â Por ExtensÃƒÂ£o',
-            'size': 'Ã°Å¸â€œÂ Por Tamanho',
-            'age': 'Ã¢ÂÂ° Por Idade'
+            'all': 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Todos os Arquivos',
+            'new': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Â Ã¢â‚¬Â¢ Apenas Novos',
+            'modified': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Apenas Modificados',
+            'extension': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Por ExtensÃƒÆ’Ã‚Â£o',
+            'size': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Por Tamanho',
+            'age': 'ÃƒÂ¢Ã‚ÂÃ‚Â° Por Idade'
         };
         return labels[filterType] || filterType;
     }
 
-    // PopulaÃƒÂ§ÃƒÂ£o de campos
+    // PopulaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de campos
     populateFolderSelects() {
         const sourceSelect = document.getElementById('source-folder');
         const targetSelect = document.getElementById('target-folder');
@@ -7418,7 +7431,7 @@ setupEventListeners() {
         });
     }
 
-            // BotÃƒÂ£o de system tray
+            // BotÃƒÆ’Ã‚Â£o de system tray
         const trayBtn = document.getElementById('tray-btn');
         if (trayBtn) {
             trayBtn.addEventListener('click', () => {
@@ -7426,13 +7439,13 @@ setupEventListeners() {
             });
         }
 
-        // Sistema de atualizaÃƒÂ§ÃƒÂµes
+        // Sistema de atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
         this.setupUpdateEventListeners();
 
         this.setupWorkflowEventListeners();
 }
 
-    // Sistema de AtualizaÃƒÂ§ÃƒÂµes
+    // Sistema de AtualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
     setupUpdateEventListeners() {
         const checkUpdatesBtn = document.getElementById('check-updates-btn');
         if (checkUpdatesBtn) {
@@ -7518,15 +7531,15 @@ setupEventListeners() {
 
             const result = await response.json();
             if (!result.success) {
-                throw new Error(result.error?.message || 'Falha ao salvar configuraÃƒÂ§ÃƒÂ£o');
+                throw new Error(result.error?.message || 'Falha ao salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
             }
         } catch (error) {
             logger.error('Erro ao salvar config de auto update:', error);
-            showToast('Erro ao salvar configuraÃƒÂ§ÃƒÂ£o de atualizaÃƒÂ§ÃƒÂ£o', 'error');
+            showToast('Erro ao salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
         }
     }
 
-    // Verificar atualizaÃƒÂ§ÃƒÂµes disponÃƒÂ­veis
+    // Verificar atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes disponÃƒÆ’Ã‚Â­veis
     async checkForUpdates(forceRemote = false) {
         try {
             logger.info('Verificando status de auto update...');
@@ -7542,7 +7555,7 @@ setupEventListeners() {
             this.updateUpdateStatus(result.data);
             this.loadUpdateHistory();
         } catch (error) {
-            logger.error('Erro ao verificar atualizaÃƒÂ§ÃƒÂµes:', error);
+            logger.error('Erro ao verificar atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes:', error);
             this.updateUpdateStatus({
                 state: {
                     status: 'error',
@@ -7595,20 +7608,20 @@ setupEventListeners() {
             if (state.lastError) {
                 statusText.textContent = `Erro: ${state.lastError}`;
             } else if (scheduler.stale) {
-                statusText.textContent = 'Alerta: scheduler de auto-update está sem ciclos recentes';
+                statusText.textContent = 'Alerta: scheduler de auto-update estÃ¡ sem ciclos recentes';
             } else if (runtime.autoUpdateOperationallyReady === false) {
-                statusText.textContent = 'Alerta: auto-update não está operacionalmente apto neste runtime';
+                statusText.textContent = 'Alerta: auto-update nÃ£o estÃ¡ operacionalmente apto neste runtime';
             } else {
                 statusText.textContent = `Status: ${state.status || 'idle'}`;
             }
         }
 
         if (lastCheckText) {
-            lastCheckText.textContent = `ÃƒÅ¡ltima verificaÃƒÂ§ÃƒÂ£o: ${state.lastCheckAt ? new Date(state.lastCheckAt).toLocaleString('pt-BR') : '-'}`;
+            lastCheckText.textContent = `ÃƒÆ’Ã…Â¡ltima verificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: ${state.lastCheckAt ? new Date(state.lastCheckAt).toLocaleString('pt-BR') : '-'}`;
         }
 
         if (lastResultText) {
-            lastResultText.textContent = `ÃƒÅ¡ltimo resultado: ${state.lastEvent || '-'}`;
+            lastResultText.textContent = `ÃƒÆ’Ã…Â¡ltimo resultado: ${state.lastEvent || '-'}`;
         }
 
         if (versionText) {
@@ -7620,7 +7633,7 @@ setupEventListeners() {
         if (lastResultText) {
             const supervisorLabel = supervisor.supervisor || 'desconhecido';
             const failureStage = runtime.lastFailureStage || state.lastFailureStage || '-';
-            lastResultText.textContent = `Último resultado: ${state.lastEvent || '-'} | supervisor: ${supervisorLabel} | etapa: ${failureStage}`;
+            lastResultText.textContent = `Ãšltimo resultado: ${state.lastEvent || '-'} | supervisor: ${supervisorLabel} | etapa: ${failureStage}`;
         }
 
         if (versionText) {
@@ -7629,7 +7642,7 @@ setupEventListeners() {
             const schedulerLabel = scheduler.lastCycleAt
                 ? new Date(scheduler.lastCycleAt).toLocaleString('pt-BR')
                 : 'sem ciclo registrado';
-            versionText.textContent = `Commit atual: ${current} | alvo: ${target} | último ciclo: ${schedulerLabel}`;
+            versionText.textContent = `Commit atual: ${current} | alvo: ${target} | Ãºltimo ciclo: ${schedulerLabel}`;
         }
 
         if (stateBadge) {
@@ -7657,9 +7670,9 @@ setupEventListeners() {
         if (updateMessage) {
             if (runtime.autoUpdateOperationallyReady === false) {
                 const reasons = Array.isArray(supervisor.reasons) ? supervisor.reasons.join(', ') : 'sem detalhes';
-                updateMessage.textContent = `Runtime não apto para auto-update automático: ${reasons}`;
+                updateMessage.textContent = `Runtime nÃ£o apto para auto-update automÃ¡tico: ${reasons}`;
             } else if (scheduler.stale) {
-                updateMessage.textContent = 'Scheduler sem ciclos recentes. Verifique PM2, restart e persistência do processo.';
+                updateMessage.textContent = 'Scheduler sem ciclos recentes. Verifique PM2, restart e persistÃªncia do processo.';
             } else {
                 updateMessage.textContent = hasUpdates
                     ? 'Ha atualizacao disponivel no origin/main'
@@ -7696,7 +7709,7 @@ setupEventListeners() {
             const response = await fetch('/api/update/auto/history?limit=5');
             const result = await response.json();
             if (!result.success || !Array.isArray(result.data)) {
-                throw new Error(result.error?.message || 'Falha ao carregar histÃƒÂ³rico');
+                throw new Error(result.error?.message || 'Falha ao carregar histÃƒÆ’Ã‚Â³rico');
             }
 
             if (result.data.length === 0) {
@@ -7713,11 +7726,11 @@ setupEventListeners() {
                 })
                 .join('');
         } catch (error) {
-            list.innerHTML = '<small>Erro ao carregar histÃƒÂ³rico</small>';
+            list.innerHTML = '<small>Erro ao carregar histÃƒÆ’Ã‚Â³rico</small>';
         }
     }
 
-    // Aplicar atualizaÃƒÂ§ÃƒÂµes
+    // Aplicar atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
     async applyUpdates() {
         const applyBtn = document.getElementById('apply-updates-btn');
         try {
@@ -7768,25 +7781,25 @@ setupEventListeners() {
         }
     }
 
-    // Reiniciar aplicaÃƒÂ§ÃƒÂ£o
+    // Reiniciar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     async restartApplication() {
         try {
             const restartBtn = document.getElementById('restart-app-btn');
             if (restartBtn) {
                 restartBtn.disabled = true;
-                restartBtn.innerHTML = '<span class="material-icons">info</span> Reinício via PM2';
+                restartBtn.innerHTML = '<span class="material-icons">info</span> ReinÃ­cio via PM2';
             }
 
 
-            showToast('No RP4, reinicie a aplicação com `pm2 restart DePara`.', 'info');
+            showToast('No RP4, reinicie a aplicaÃ§Ã£o com `pm2 restart DePara`.', 'info');
         } catch (error) {
-            logger.error('Erro ao reiniciar aplicaÃƒÂ§ÃƒÂ£o:', error);
-            showToast(error.message || 'Erro ao reiniciar aplicaÃƒÂ§ÃƒÂ£o', 'error');
+            logger.error('Erro ao reiniciar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+            showToast(error.message || 'Erro ao reiniciar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
         } finally {
             const restartBtn = document.getElementById('restart-app-btn');
             if (restartBtn) {
                 restartBtn.disabled = false;
-                restartBtn.innerHTML = '<span class="material-icons">restart_alt</span> Reiniciar AplicaÃƒÂ§ÃƒÂ£o';
+                restartBtn.innerHTML = '<span class="material-icons">restart_alt</span> Reiniciar AplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o';
             }
         }
     }
@@ -7815,7 +7828,7 @@ setupEventListeners() {
         }
     }
 
-    // MÃƒÂ©todos de validaÃƒÂ§ÃƒÂ£o
+    // MÃƒÆ’Ã‚Â©todos de validaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     showFieldError(field, message) {
         const validationDiv = field.parentNode.querySelector('.validation-message');
         if (validationDiv) {
@@ -7834,7 +7847,7 @@ setupEventListeners() {
         field.style.borderColor = 'rgba(102, 126, 234, 0.2)';
     }
 
-    // MÃƒÂ©todos de toggle
+    // MÃƒÆ’Ã‚Â©todos de toggle
     toggleFilterOptions() {
         const filterType = document.getElementById('filter-type').value;
         
@@ -7878,21 +7891,21 @@ setupEventListeners() {
         }
     }
 
-    // MÃƒÂ©todos de carregamento de dados
+    // MÃƒÆ’Ã‚Â©todos de carregamento de dados
     async loadWorkflows() {
         try {
-            console.log('Ã°Å¸â€Â Carregando workflows da API...');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Carregando workflows da API...');
             const response = await fetch('/api/files/workflows');
             if (response.ok) {
                 const result = await response.json();
                 this.workflows = result.data || [];
-                console.log('Ã¢Å“â€¦ Workflows carregados:', this.workflows);
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Workflows carregados:', this.workflows);
                 this.renderWorkflows();
             } else {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao carregar workflows:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar workflows:', error);
             this.workflows = [];
             this.renderWorkflows();
         }
@@ -7902,11 +7915,11 @@ setupEventListeners() {
         const workflowsList = document.getElementById('workflows-list');
 
         if (!workflowsList) {
-            console.warn('Ã¢Å¡Â Ã¯Â¸Â Elemento workflows-list nÃƒÂ£o encontrado');
+            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Elemento workflows-list nÃƒÆ’Ã‚Â£o encontrado');
             return;
         }
 
-        console.log('Ã°Å¸Å½Â¨ Renderizando workflows:', this.workflows);
+        console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¨ Renderizando workflows:', this.workflows);
 
         if (this.workflows.length === 0) {
             workflowsList.innerHTML = `
@@ -7924,7 +7937,7 @@ setupEventListeners() {
                 <div class="workflow-header">
                     <div>
                         <div class="workflow-name">${workflow.name}</div>
-                        <div class="workflow-description">${workflow.description || 'Sem descriÃƒÂ§ÃƒÂ£o'}</div>
+                        <div class="workflow-description">${workflow.description || 'Sem descriÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o'}</div>
                     </div>
                     <span class="workflow-status ${workflow.status}">${workflow.status}</span>
                 </div>
@@ -7965,7 +7978,7 @@ setupEventListeners() {
             </div>
         `).join('');
 
-        // Configurar event listeners para os botÃƒÂµes de workflow
+        // Configurar event listeners para os botÃƒÆ’Ã‚Âµes de workflow
         const editButtons = workflowsList.querySelectorAll('.edit-workflow-btn');
         const toggleButtons = workflowsList.querySelectorAll('.toggle-workflow-btn');
         const deleteButtons = workflowsList.querySelectorAll('.delete-workflow-btn');
@@ -7993,31 +8006,31 @@ setupEventListeners() {
     }
 
     async loadFolders() {
-        // Evitar chamadas simultÃƒÂ¢neas
+        // Evitar chamadas simultÃƒÆ’Ã‚Â¢neas
         if (this.isLoadingFolders) {
-            console.log('Ã¢Å¡Â Ã¯Â¸Â Carregamento de pastas jÃƒÂ¡ em andamento, pulando...');
+            console.log('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Carregamento de pastas jÃƒÆ’Ã‚Â¡ em andamento, pulando...');
             return;
         }
         this.isLoadingFolders = true;
 
         try {
-            console.log('Ã°Å¸â€Â Carregando pastas da API...');
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Carregando pastas da API...');
             const response = await fetch('/api/files/folders');
             if (response.ok) {
                 const result = await response.json();
                 this.folders = result.data || [];
-                console.log('Ã¢Å“â€¦ Pastas carregadas:', this.folders);
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pastas carregadas:', this.folders);
                 this.renderConfiguredFolders();
                 this.renderFileOpsFolderOptions();
             } else {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
-            console.error('Ã¢ÂÅ’ Erro ao carregar pastas:', error);
+            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar pastas:', error);
 
-            // Verificar se ÃƒÂ© erro de conexÃƒÂ£o (API nÃƒÂ£o disponÃƒÂ­vel)
+            // Verificar se ÃƒÆ’Ã‚Â© erro de conexÃƒÆ’Ã‚Â£o (API nÃƒÆ’Ã‚Â£o disponÃƒÆ’Ã‚Â­vel)
             if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
-                console.warn('Ã¢Å¡Â Ã¯Â¸Â API nÃƒÂ£o estÃƒÂ¡ disponÃƒÂ­vel. Mostrando mensagem para o usuÃƒÂ¡rio.');
+                console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â API nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ disponÃƒÆ’Ã‚Â­vel. Mostrando mensagem para o usuÃƒÆ’Ã‚Â¡rio.');
                 this.showApiUnavailableMessage();
             } else {
                 this.folders = [];
@@ -8029,7 +8042,7 @@ setupEventListeners() {
         }
     }
 
-    // Mostrar mensagem quando API nÃƒÂ£o estÃƒÂ¡ disponÃƒÂ­vel
+    // Mostrar mensagem quando API nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ disponÃƒÆ’Ã‚Â­vel
     renderFileOpsFolderOptions() {
         const sourceSelect = document.getElementById('fileops-source-configured');
         const targetSelect = document.getElementById('fileops-target-configured');
@@ -8040,7 +8053,7 @@ setupEventListeners() {
             sourceSelect.innerHTML = '<option value="">Selecionar atalho salvo</option>' +
                 folders
                     .filter((folder) => folder.path)
-                    .map((folder) => `<option value="${folder.path}">${folder.name} · ${folder.path}</option>`)
+                    .map((folder) => `<option value="${folder.path}">${folder.name} Â· ${folder.path}</option>`)
                     .join('');
             sourceSelect.value = selectedValue;
         }
@@ -8050,7 +8063,7 @@ setupEventListeners() {
             targetSelect.innerHTML = '<option value="">Selecionar atalho salvo</option>' +
                 folders
                     .filter((folder) => folder.path)
-                    .map((folder) => `<option value="${folder.path}">${folder.name} · ${folder.path}</option>`)
+                    .map((folder) => `<option value="${folder.path}">${folder.name} Â· ${folder.path}</option>`)
                     .join('');
             targetSelect.value = selectedValue;
         }
@@ -8063,7 +8076,7 @@ setupEventListeners() {
         foldersList.innerHTML = `
             <div class="empty-state api-unavailable">
                 <span class="material-icons" style="color: #ff9800;">warning</span>
-                <p><strong>Servidor nÃƒÂ£o estÃƒÂ¡ executando</strong></p>
+                <p><strong>Servidor nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ executando</strong></p>
                 <small style="color: #666;">
                     O servidor Node.js precisa estar rodando para carregar as pastas.<br>
                     Execute: <code style="background: #f5f5f5; padding: 2px 4px; border-radius: 3px;">node src/main.js</code>
@@ -8075,37 +8088,37 @@ setupEventListeners() {
             </div>
         `;
 
-        console.log('Ã°Å¸â€œÂ¢ Mensagem de API indisponÃƒÂ­vel exibida');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¢ Mensagem de API indisponÃƒÆ’Ã‚Â­vel exibida');
     }
 
     renderConfiguredFolders() {
-        console.log('Ã°Å¸â€â€ž Iniciando renderConfiguredFolders com', this.folders?.length || 0, 'pastas');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Iniciando renderConfiguredFolders com', this.folders?.length || 0, 'pastas');
 
-        // Verificar se jÃƒÂ¡ estÃƒÂ¡ renderizando para evitar loops
+        // Verificar se jÃƒÆ’Ã‚Â¡ estÃƒÆ’Ã‚Â¡ renderizando para evitar loops
         if (this.isRenderingFolders) {
-            console.log('Ã¢Å¡Â Ã¯Â¸Â RenderizaÃƒÂ§ÃƒÂ£o jÃƒÂ¡ em andamento, pulando...');
+            console.log('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â RenderizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o jÃƒÆ’Ã‚Â¡ em andamento, pulando...');
             return;
         }
         this.isRenderingFolders = true;
 
         const foldersList = document.getElementById('folders-list');
-        console.log('Ã°Å¸â€œÂ Elemento folders-list encontrado:', !!foldersList);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Elemento folders-list encontrado:', !!foldersList);
 
         if (!foldersList) {
-            console.warn('Ã¢Å¡Â Ã¯Â¸Â Elemento folders-list nÃƒÂ£o encontrado');
+            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Elemento folders-list nÃƒÆ’Ã‚Â£o encontrado');
             this.isRenderingFolders = false;
             return;
         }
 
-        console.log('Ã°Å¸Å½Â¨ Renderizando pastas:', this.folders);
-        console.log('Ã°Å¸â€œÅ  ConteÃƒÂºdo atual do foldersList:', foldersList.innerHTML.substring(0, 100) + '...');
+        console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¨ Renderizando pastas:', this.folders);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  ConteÃƒÆ’Ã‚Âºdo atual do foldersList:', foldersList.innerHTML.substring(0, 100) + '...');
 
         if (this.folders.length === 0) {
             foldersList.innerHTML = `
                 <div class="empty-state">
                     <span class="material-icons">folder_open</span>
                     <p>Nenhuma pasta configurada</p>
-                    <small>Use a configuraÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida acima ou crie manualmente</small>
+                    <small>Use a configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida acima ou crie manualmente</small>
                 </div>
             `;
             this.isRenderingFolders = false;
@@ -8132,30 +8145,30 @@ setupEventListeners() {
             </div>
         `).join('');
 
-        console.log('Ã¢Å“â€¦ HTML definido para foldersList');
-        console.log('Ã°Å¸â€œÅ  Novo conteÃƒÂºdo do foldersList:', foldersList.innerHTML.substring(0, 200) + '...');
+        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ HTML definido para foldersList');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Novo conteÃƒÆ’Ã‚Âºdo do foldersList:', foldersList.innerHTML.substring(0, 200) + '...');
 
-        // Adicionar event listeners para os botÃƒÂµes (evita CSP violation)
+        // Adicionar event listeners para os botÃƒÆ’Ã‚Âµes (evita CSP violation)
         this.addFolderEventListeners();
 
-        // Liberar flag de renderizaÃƒÂ§ÃƒÂ£o
+        // Liberar flag de renderizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         this.isRenderingFolders = false;
     }
 
     getFolderTypeLabel(type) {
         const labels = {
-            'source': 'Ã°Å¸â€œÂ¥ Origem',
-            'target': 'Ã°Å¸â€œÂ¤ Destino',
-            'temp': 'Ã°Å¸â€”â€šÃ¯Â¸Â TemporÃƒÂ¡ria',
-            'trash': 'Ã°Å¸â€”â€˜Ã¯Â¸Â Lixeira',
-            'any': 'Ã°Å¸â€œÂ Qualquer'
+            'source': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ Origem',
+            'target': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Destino',
+            'temp': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬Å¡ÃƒÂ¯Ã‚Â¸Ã‚Â TemporÃƒÆ’Ã‚Â¡ria',
+            'trash': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬ËœÃƒÂ¯Ã‚Â¸Ã‚Â Lixeira',
+            'any': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Qualquer'
         };
         return labels[type] || type;
     }
 
-    // Adicionar event listeners para botÃƒÂµes de pasta (evita CSP violation)
+    // Adicionar event listeners para botÃƒÆ’Ã‚Âµes de pasta (evita CSP violation)
     addFolderEventListeners() {
-        // BotÃƒÂµes de editar pasta
+        // BotÃƒÆ’Ã‚Âµes de editar pasta
         const editButtons = document.querySelectorAll('.edit-folder-btn');
         editButtons.forEach(button => {
             button.addEventListener('click', (e) => {
@@ -8164,7 +8177,7 @@ setupEventListeners() {
             });
         });
 
-        // BotÃƒÂµes de deletar pasta
+        // BotÃƒÆ’Ã‚Âµes de deletar pasta
         const deleteButtons = document.querySelectorAll('.delete-folder-btn');
         deleteButtons.forEach(button => {
             button.addEventListener('click', (e) => {
@@ -8176,7 +8189,7 @@ setupEventListeners() {
 
     // Adicionar event listeners para onboarding (evita CSP violation)
     addOnboardingEventListeners() {
-        // BotÃƒÂ£o de ajuda/tutorial
+        // BotÃƒÆ’Ã‚Â£o de ajuda/tutorial
         const helpBtn = document.querySelector('.help-tutorial-btn');
         if (helpBtn) {
             helpBtn.addEventListener('click', () => {
@@ -8184,7 +8197,7 @@ setupEventListeners() {
             });
         }
 
-        // BotÃƒÂµes do modal de onboarding
+        // BotÃƒÆ’Ã‚Âµes do modal de onboarding
         const closeBtn = document.querySelector('.onboarding-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
@@ -8206,19 +8219,19 @@ setupEventListeners() {
             });
         }
 
-        // BotÃƒÂµes de aÃƒÂ§ÃƒÂ£o principal (evita CSP violation)
+        // BotÃƒÆ’Ã‚Âµes de aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o principal (evita CSP violation)
         this.addActionButtonListeners();
 
-        // BotÃƒÂµes de slideshow
+        // BotÃƒÆ’Ã‚Âµes de slideshow
         this.addSlideshowEventListeners();
 
-        // Filtros de operaÃƒÂ§ÃƒÂ£o de arquivo
+        // Filtros de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de arquivo
         this.addFileOperationEventListeners();
     }
 
-    // Adicionar event listeners para botÃƒÂµes de aÃƒÂ§ÃƒÂ£o (evita CSP violation)
+    // Adicionar event listeners para botÃƒÆ’Ã‚Âµes de aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o (evita CSP violation)
     addActionButtonListeners() {
-        // BotÃƒÂµes da dashboard principal
+        // BotÃƒÆ’Ã‚Âµes da dashboard principal
         const moveCard = document.querySelector('.action-move-card');
         if (moveCard) {
             moveCard.addEventListener('click', () => {
@@ -8264,10 +8277,10 @@ setupEventListeners() {
             });
         }
 
-        // BotÃƒÂµes de configuraÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida de pastas
+        // BotÃƒÆ’Ã‚Âµes de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida de pastas
         this.addQuickFolderListeners();
 
-        // BotÃƒÂµes de gerenciamento de pastas
+        // BotÃƒÆ’Ã‚Âµes de gerenciamento de pastas
         const folderManagerBtn = document.querySelector('.folder-manager-btn');
         if (folderManagerBtn) {
             folderManagerBtn.addEventListener('click', () => {
@@ -8283,7 +8296,7 @@ setupEventListeners() {
         }
     }
 
-    // Adicionar event listeners para botÃƒÂµes de configuraÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida de pastas
+    // Adicionar event listeners para botÃƒÆ’Ã‚Âµes de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida de pastas
     addQuickFolderListeners() {
         const documentsCard = document.querySelector('.quick-folder-documents');
         if (documentsCard) {
@@ -8314,7 +8327,7 @@ setupEventListeners() {
         }
     }
 
-    // MÃƒÂ©todos de navegaÃƒÂ§ÃƒÂ£o
+    // MÃƒÆ’Ã‚Â©todos de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     switchTab(tabName) {
         document.querySelectorAll('.tab-content').forEach(tab => {
             tab.classList.remove('active');
@@ -8337,7 +8350,7 @@ setupEventListeners() {
                 this.loadWorkflows();
                 break;
             case 'folders':
-                // NÃƒÂ£o recarregar pastas se jÃƒÂ¡ foram carregadas na inicializaÃƒÂ§ÃƒÂ£o
+                // NÃƒÆ’Ã‚Â£o recarregar pastas se jÃƒÆ’Ã‚Â¡ foram carregadas na inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
                 if (!this.folders || this.folders.length === 0) {
                     this.loadFolders();
                 }
@@ -8348,7 +8361,7 @@ setupEventListeners() {
         }
     }
 
-    // MÃƒÂ©todos existentes mantidos
+    // MÃƒÆ’Ã‚Â©todos existentes mantidos
     async updateDashboard() {
         try {
             await this.refreshDashboardData();
@@ -8362,9 +8375,9 @@ setupEventListeners() {
         if (!activityList) return;
 
         const activities = [
-            { icon: 'workflow', text: 'Fluxo configurado: Processamento CSV', time: '2 min atrÃƒÂ¡s' },
-            { icon: 'transform', text: 'Arquivo convertido: dados.csv Ã¢â€ â€™ dados.json', time: '5 min atrÃƒÂ¡s' },
-            { icon: 'folder', text: 'Pasta configurada: Dados_Entrada', time: '10 min atrÃƒÂ¡s' }
+            { icon: 'workflow', text: 'Fluxo configurado: Processamento CSV', time: '2 min atrÃƒÆ’Ã‚Â¡s' },
+            { icon: 'transform', text: 'Arquivo convertido: dados.csv ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ dados.json', time: '5 min atrÃƒÆ’Ã‚Â¡s' },
+            { icon: 'folder', text: 'Pasta configurada: Dados_Entrada', time: '10 min atrÃƒÆ’Ã‚Â¡s' }
         ];
 
         activityList.innerHTML = activities.map(activity => `
@@ -8378,7 +8391,7 @@ setupEventListeners() {
         `).join('');
     }
 
-    // MÃƒÂ©todos de conversÃƒÂ£o e mapeamento mantidos
+    // MÃƒÆ’Ã‚Â©todos de conversÃƒÆ’Ã‚Â£o e mapeamento mantidos
     async convertData() {
         const sourceFormat = document.getElementById('source-format').value;
         const targetFormat = document.getElementById('target-format').value;
@@ -8405,14 +8418,14 @@ setupEventListeners() {
             if (response.ok) {
                 const result = await response.json();
                 this.showConversionResult(result);
-                this.showToast('ConversÃƒÂ£o realizada com sucesso!', 'success');
+                this.showToast('ConversÃƒÆ’Ã‚Â£o realizada com sucesso!', 'success');
             } else {
                 const error = await response.json();
-                this.showToast(`Erro na conversÃƒÂ£o: ${error.message}`, 'error');
+                this.showToast(`Erro na conversÃƒÆ’Ã‚Â£o: ${error.message}`, 'error');
             }
         } catch (error) {
-            console.error('Erro na conversÃƒÂ£o:', error);
-            this.showToast('Erro na conversÃƒÂ£o', 'error');
+            console.error('Erro na conversÃƒÆ’Ã‚Â£o:', error);
+            this.showToast('Erro na conversÃƒÆ’Ã‚Â£o', 'error');
         }
     }
 
@@ -8422,7 +8435,7 @@ setupEventListeners() {
 
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = `
-            <h3>Resultado da ConversÃƒÂ£o</h3>
+            <h3>Resultado da ConversÃƒÆ’Ã‚Â£o</h3>
             <div class="form-group">
                 <label>Dados Convertidos:</label>
                 <textarea readonly style="min-height: 200px; font-family: monospace;">${result.convertedData || result.data}</textarea>
@@ -8487,19 +8500,19 @@ setupEventListeners() {
                 <textarea readonly style="min-height: 200px; font-family: monospace;">${JSON.stringify(result.mapping, null, 2)}</textarea>
             </div>
             <div class="form-group">
-                <label>ConfianÃƒÂ§a:</label>
+                <label>ConfianÃƒÆ’Ã‚Â§a:</label>
                 <input type="text" readonly value="${result.confidence || 'N/A'}%">
             </div>
         `;
     }
 
-    // MÃƒÂ©todos de configuraÃƒÂ§ÃƒÂµes
+    // MÃƒÆ’Ã‚Â©todos de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
     async loadSettings() {
         try {
             this.settings = this.normalizeAppSettings(this.persistedConfig?.appSettings || this.settings || this.getDefaultAppSettings());
             this.populateSettingsForm();
         } catch (error) {
-            console.error('Erro ao carregar configuraÃƒÂ§ÃƒÂµes:', error);
+            console.error('Erro ao carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes:', error);
         }
     }
 
@@ -8528,14 +8541,14 @@ setupEventListeners() {
             await this.saveFunctionalConfig({
                 appSettings: settings
             });
-            this.showToast('ConfiguraÃƒÂ§ÃƒÂµes salvas com sucesso!', 'success');
+            this.showToast('ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes salvas com sucesso!', 'success');
         } catch (error) {
-            console.error('Erro ao salvar configuraÃƒÂ§ÃƒÂµes:', error);
-            this.showToast('Erro ao salvar configuraÃƒÂ§ÃƒÂµes', 'error');
+            console.error('Erro ao salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes:', error);
+            this.showToast('Erro ao salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 'error');
         }
     }
 
-    // MÃƒÂ©todos de arquivo
+    // MÃƒÆ’Ã‚Â©todos de arquivo
     handleFileUpload(file) {
         if (!file) return;
 
@@ -8549,12 +8562,12 @@ setupEventListeners() {
         };
         reader.readAsText(file);
     }
-    // MÃ©todos de monitoramento
+    // MÃƒÂ©todos de monitoramento
     startMonitoring() {
         this.startUnifiedRefreshScheduler();
     }
 
-    // Sistema de notificaÃƒÂ§ÃƒÂµes
+    // Sistema de notificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
     showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -8590,7 +8603,7 @@ setupEventListeners() {
         return icons[type] || 'info';
     }
 
-    // MÃƒÂ©todos de ajuda
+    // MÃƒÆ’Ã‚Â©todos de ajuda
     updateSourceFolderInfo() {
         const sourceFolder = document.getElementById('source-folder');
         const helpText = document.getElementById('source-folder-help');
@@ -8600,7 +8613,7 @@ setupEventListeners() {
             if (selectedFolder) {
                 helpText.textContent = `Pasta: ${selectedFolder.name} (${selectedFolder.path})`;
             } else {
-                helpText.textContent = 'Pasta onde os arquivos estÃƒÂ£o localizados';
+                helpText.textContent = 'Pasta onde os arquivos estÃƒÆ’Ã‚Â£o localizados';
             }
         }
     }
@@ -8614,7 +8627,7 @@ setupEventListeners() {
             if (selectedFolder) {
                 helpText.textContent = `Pasta: ${selectedFolder.name} (${selectedFolder.path})`;
             } else {
-                helpText.textContent = 'Pasta para onde os arquivos serÃƒÂ£o enviados';
+                helpText.textContent = 'Pasta para onde os arquivos serÃƒÆ’Ã‚Â£o enviados';
             }
         }
     }
@@ -8625,9 +8638,9 @@ setupEventListeners() {
         
         if (action && helpText) {
             const helpTexts = {
-                'copy': 'Ã°Å¸â€œâ€¹ Os arquivos originais permanecerÃƒÂ£o na pasta de origem',
-                'move': 'Ã°Å¸â€œÂ¤ Os arquivos originais serÃƒÂ£o removidos da pasta de origem',
-                'copy_and_clean': 'Ã°Å¸Â§Â¹ Os arquivos serÃƒÂ£o copiados e os originais limpos/truncados'
+                'copy': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Os arquivos originais permanecerÃƒÆ’Ã‚Â£o na pasta de origem',
+                'move': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Os arquivos originais serÃƒÆ’Ã‚Â£o removidos da pasta de origem',
+                'copy_and_clean': 'ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ Os arquivos serÃƒÆ’Ã‚Â£o copiados e os originais limpos/truncados'
             };
             helpText.textContent = helpTexts[action.value] || helpTexts['copy'];
         }
@@ -8640,18 +8653,18 @@ setupEventListeners() {
         if (typeSelect && typeHelp) {
             const type = typeSelect.value;
             const helpTexts = {
-                'source': 'Ã°Å¸â€œÂ¥ Pasta onde arquivos chegam para processamento',
-                'target': 'Ã°Å¸â€œÂ¤ Pasta onde arquivos processados sÃƒÂ£o salvos',
-                'temp': 'Ã°Å¸â€”â€šÃ¯Â¸Â Pasta temporÃƒÂ¡ria para arquivos em processamento',
-                'trash': 'Ã°Å¸â€”â€˜Ã¯Â¸Â Pasta para arquivos removidos/antigos',
-                'any': 'Ã°Å¸â€œÂ Pasta que pode ser usada como origem ou destino'
+                'source': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ Pasta onde arquivos chegam para processamento',
+                'target': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Pasta onde arquivos processados sÃƒÆ’Ã‚Â£o salvos',
+                'temp': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬Å¡ÃƒÂ¯Ã‚Â¸Ã‚Â Pasta temporÃƒÆ’Ã‚Â¡ria para arquivos em processamento',
+                'trash': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬ËœÃƒÂ¯Ã‚Â¸Ã‚Â Pasta para arquivos removidos/antigos',
+                'any': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Pasta que pode ser usada como origem ou destino'
             };
             typeHelp.textContent = helpTexts[type] || helpTexts['source'];
         }
     }
 }
 
-// FunÃƒÂ§ÃƒÂµes globais
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes globais
 function openWorkflowConfig() {
     ui.openWorkflowConfig();
 }
@@ -8766,10 +8779,10 @@ function closeFileOperationModal() {
     document.getElementById('file-operation-modal').style.display = 'none';
 }
 
-// FunÃƒÂ§ÃƒÂ£o para minimizar para system tray
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para minimizar para system tray
 async function minimizeToTray() {
     try {
-        logger.info('Ã°Å¸â€œÂ± Minimizando aplicaÃƒÂ§ÃƒÂ£o para system tray...');
+        logger.info('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â± Minimizando aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para system tray...');
         
         const response = await fetch('/api/tray/minimize', {
             method: 'POST',
@@ -8781,18 +8794,18 @@ async function minimizeToTray() {
         const result = await response.json();
 
         if (result.success) {
-            logger.info('Ã¢Å“â€¦ AplicaÃƒÂ§ÃƒÂ£o minimizada para system tray');
+            logger.info('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ AplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o minimizada para system tray');
             const activeUi = window.deParaUI || ui;
             if (activeUi && typeof activeUi.handleAppMinimizedToTray === 'function') {
                 await activeUi.handleAppMinimizedToTray();
             }
-            showToast('AplicaÃƒÂ§ÃƒÂ£o minimizada para system tray', 'success');
+            showToast('AplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o minimizada para system tray', 'success');
         } else {
-            logger.warn('Ã¢Å¡Â Ã¯Â¸Â Erro ao minimizar para system tray:', result.error);
+            logger.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Erro ao minimizar para system tray:', result.error);
             showToast(result.error?.message || 'Erro ao minimizar para system tray', 'error');
         }
     } catch (error) {
-        logger.error('Ã¢ÂÅ’ Erro ao minimizar para system tray:', error);
+        logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao minimizar para system tray:', error);
         showToast('Erro ao minimizar para system tray', 'error');
     }
 }
@@ -8810,12 +8823,12 @@ async function executeFileOperation() {
     const extensions = extensionsInput ? extensionsInput.split(',').map(ext => ext.trim().toLowerCase()) : null;
 
     if (!sourcePath) {
-        showToast('Caminho de origem ÃƒÂ© obrigatÃƒÂ³rio', 'error');
+        showToast('Caminho de origem ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio', 'error');
         return;
     }
 
     if ((action === 'move' || action === 'copy') && !targetPath) {
-        showToast('Caminho de destino ÃƒÂ© obrigatÃƒÂ³rio', 'error');
+        showToast('Caminho de destino ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio', 'error');
         return;
     }
 
@@ -8849,37 +8862,37 @@ async function executeFileOperation() {
 
         if (result.success) {
             const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
-            showToast(`OperaÃƒÂ§ÃƒÂ£o ${action} executada com sucesso!${structureMsg}`, 'success', true);
+            showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${action} executada com sucesso!${structureMsg}`, 'success', true);
             closeFileOperationModal();
             // Refresh relevant sections
-            loadScheduledOperations();
+            forceReloadScheduledOperations();
             loadBackups();
         } else {
-            showToast(result.error?.message || 'Erro na operaÃƒÂ§ÃƒÂ£o', 'error', true);
+            showToast(result.error?.message || 'Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error', true);
         }
 
     } catch (error) {
-        console.error('Erro ao executar operaÃƒÂ§ÃƒÂ£o:', error);
-        showToast('Erro ao executar operaÃƒÂ§ÃƒÂ£o', 'error');
+        console.error('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+        showToast('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
     }
 }
 
 // Schedule Modal
-function showScheduleModal() {
+function legacyShowScheduleModal() {
     const modal = document.getElementById('schedule-modal');
 
-    // Preencher com dados da operaÃƒÂ§ÃƒÂ£o atual se disponÃƒÂ­vel
+    // Preencher com dados da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o atual se disponÃƒÆ’Ã‚Â­vel
     if (window.deParaUI && window.deParaUI.currentConfig) {
         const config = window.deParaUI.currentConfig;
         
         // Preencher campos com valores atuais
-        document.getElementById('schedule-name').value = config.name || `OperaÃƒÂ§ÃƒÂ£o ${config.operation || 'arquivo'}`;
+        document.getElementById('schedule-name').value = config.name || `OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${config.operation || 'arquivo'}`;
         document.getElementById('schedule-action').value = config.operation || '';
-        document.getElementById('schedule-frequency').value = '1d'; // PadrÃƒÂ£o: diariamente
+        document.getElementById('schedule-frequency').value = '1d'; // PadrÃƒÆ’Ã‚Â£o: diariamente
         document.getElementById('schedule-source').value = config.sourcePath || '';
         document.getElementById('schedule-target').value = config.targetPath || '';
         
-        // Carregar filtros de extensÃƒÂµes corretamente
+        // Carregar filtros de extensÃƒÆ’Ã‚Âµes corretamente
         let filtersValue = '';
         if (config.options && config.options.filters && config.options.filters.extensions) {
             filtersValue = config.options.filters.extensions.map(ext => `*.${ext}`).join(', ');
@@ -8889,19 +8902,19 @@ function showScheduleModal() {
         document.getElementById('schedule-batch').checked = true;
         document.getElementById('schedule-backup').checked = false;
         
-        console.log('Ã¢Å“â€¦ Modal preenchido com configuraÃƒÂ§ÃƒÂ£o atual:', config);
+        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Modal preenchido com configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o atual:', config);
     } else {
-        // Reset form se nÃƒÂ£o hÃƒÂ¡ configuraÃƒÂ§ÃƒÂ£o
+        // Reset form se nÃƒÆ’Ã‚Â£o hÃƒÆ’Ã‚Â¡ configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         document.getElementById('schedule-name').value = '';
         document.getElementById('schedule-action').value = '';
-        document.getElementById('schedule-frequency').value = '1d'; // PadrÃƒÂ£o: diariamente
+        document.getElementById('schedule-frequency').value = '1d'; // PadrÃƒÆ’Ã‚Â£o: diariamente
         document.getElementById('schedule-source').value = '';
         document.getElementById('schedule-target').value = '';
         document.getElementById('schedule-filters').value = '';
         document.getElementById('schedule-batch').checked = true;
         document.getElementById('schedule-backup').checked = false;
         
-        console.log('Ã¢Å¡Â Ã¯Â¸Â Nenhuma configuraÃƒÂ§ÃƒÂ£o atual encontrada, modal resetado');
+        console.log('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Nenhuma configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o atual encontrada, modal resetado');
     }
 
     updateScheduleForm();
@@ -8910,7 +8923,7 @@ function showScheduleModal() {
     document.body.classList.add('modal-open');
 }
 
-// FunÃƒÂ§ÃƒÂ£o closeScheduleModal removida - usando window.closeScheduleModal
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o closeScheduleModal removida - usando window.closeScheduleModal
 
 function updateScheduleForm() {
     const action = document.getElementById('schedule-action').value;
@@ -8922,7 +8935,7 @@ function updateScheduleForm() {
         targetGroup.style.display = 'block';
     }
     
-    // Atualizar resumo da operaÃƒÂ§ÃƒÂ£o
+    // Atualizar resumo da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     updateOperationSummary();
 }
 
@@ -8932,20 +8945,20 @@ function updateOperationSummary() {
     const target = document.getElementById('schedule-target').value;
     const summaryDiv = document.getElementById('operation-summary');
     
-    // Mostrar resumo apenas se hÃƒÂ¡ dados suficientes
+    // Mostrar resumo apenas se hÃƒÆ’Ã‚Â¡ dados suficientes
     if (action && source) {
         summaryDiv.style.display = 'block';
         
-        // Atualizar conteÃƒÂºdo do resumo
+        // Atualizar conteÃƒÆ’Ã‚Âºdo do resumo
         document.getElementById('summary-action').textContent = action.toUpperCase();
         document.getElementById('summary-source').textContent = source;
-        document.getElementById('summary-target').textContent = target || (action === 'delete' ? 'N/A' : 'NÃƒÂ£o definido');
+        document.getElementById('summary-target').textContent = target || (action === 'delete' ? 'N/A' : 'NÃƒÆ’Ã‚Â£o definido');
     } else {
         summaryDiv.style.display = 'none';
     }
 }
 
-async function scheduleOperation() {
+async function legacyScheduleOperation() {
     const modal = document.getElementById('schedule-modal');
     const isEditing = modal.dataset.editingOperationId;
     
@@ -8959,15 +8972,15 @@ async function scheduleOperation() {
     const backup = document.getElementById('schedule-backup').checked;
     const preserveStructure = document.getElementById('schedule-preserve-structure').checked;
 
-    console.log('Ã°Å¸â€Â Campos capturados:', { name, action, frequency, sourcePath, targetPath });
+    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Campos capturados:', { name, action, frequency, sourcePath, targetPath });
 
     if (!name || !action || !frequency || !sourcePath) {
-        showToast('Preencha todos os campos obrigatÃƒÂ³rios', 'error');
+        showToast('Preencha todos os campos obrigatÃƒÆ’Ã‚Â³rios', 'error');
         return;
     }
 
     if ((action === 'move' || action === 'copy') && !targetPath) {
-        showToast('Caminho de destino ÃƒÂ© obrigatÃƒÂ³rio', 'error');
+        showToast('Caminho de destino ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio', 'error');
         return;
     }
 
@@ -8975,10 +8988,10 @@ async function scheduleOperation() {
         // Gerar ID correto baseado no contexto
         let operationId;
         if (isEditing) {
-            // EdiÃƒÂ§ÃƒÂ£o: usar ID existente
+            // EdiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: usar ID existente
             operationId = isEditing;
         } else {
-            // CriaÃƒÂ§ÃƒÂ£o nova: gerar novo ID
+            // CriaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nova: gerar novo ID
             operationId = `ui_${Date.now()}`;
         }
         
@@ -9002,20 +9015,20 @@ async function scheduleOperation() {
 
         // Processar filtros - sempre criar objeto filters, mesmo se vazio
         if (filters && filters.trim()) {
-            // Filtro especificado - processar extensÃƒÂµes
+            // Filtro especificado - processar extensÃƒÆ’Ã‚Âµes
             requestData.options.filters = {
                 extensions: filters.split(',').map(ext => ext.trim().replace('*.', ''))
             };
         } else {
-            // Filtro vazio - nÃƒÂ£o aplicar filtros (aceitar todos os arquivos)
+            // Filtro vazio - nÃƒÆ’Ã‚Â£o aplicar filtros (aceitar todos os arquivos)
             requestData.options.filters = {};
         }
 
         const url = isEditing ? `/api/files/schedule/${isEditing}` : '/api/files/schedule';
         const method = isEditing ? 'PUT' : 'POST';
         
-        console.log(`${isEditing ? 'Ã¢Å“ÂÃ¯Â¸Â Editando' : 'Ã¢Å¾â€¢ Criando'} operaÃƒÂ§ÃƒÂ£o:`, requestData);
-        console.log('Ã°Å¸â€Â Contexto:', { isEditing, operationId, modalDataset: modal.dataset });
+        console.log(`${isEditing ? 'ÃƒÂ¢Ã…â€œÃ‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â Editando' : 'ÃƒÂ¢Ã…Â¾Ã¢â‚¬Â¢ Criando'} operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:`, requestData);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Contexto:', { isEditing, operationId, modalDataset: modal.dataset });
 
         const response = await fetch(url, {
             method: method,
@@ -9030,47 +9043,124 @@ async function scheduleOperation() {
         if (result.success) {
             const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
             const actionMsg = isEditing ? 'editada' : 'agendada';
-            showToast(`OperaÃƒÂ§ÃƒÂ£o "${name}" ${actionMsg} com sucesso!${structureMsg}`, 'success', true);
+            showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o "${name}" ${actionMsg} com sucesso!${structureMsg}`, 'success', true);
             window.closeScheduleModal();
-            loadScheduledOperations();
+            forceReloadScheduledOperations();
         } else {
             const actionMsg = isEditing ? 'editar' : 'agendar';
-            showToast(result.error?.message || `Erro ao ${actionMsg} operaÃƒÂ§ÃƒÂ£o`, 'error', true);
+            showToast(result.error?.message || `Erro ao ${actionMsg} operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o`, 'error', true);
         }
 
     } catch (error) {
-        console.error('Erro ao agendar operaÃƒÂ§ÃƒÂ£o:', error);
-        showToast('Erro ao agendar operaÃƒÂ§ÃƒÂ£o', 'error');
+        console.error('Erro ao agendar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+        showToast('Erro ao agendar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
     }
 }
 
-// Controle de carregamento para evitar chamadas simultÃƒÂ¢neas
-function showScheduleModal() {
-    const modal = document.getElementById('schedule-modal');
-    const draft = window.deParaUI?.getOperationDraft?.() || window.deParaUI?.currentConfig || {};
-    const action = draft.operation || '';
-    const filtersValue = draft.options?.filters?.extensions
-        ? draft.options.filters.extensions.map((ext) => `*.${ext}`).join(', ')
+function populateScheduleModal(modal, operation = {}, mode = 'create') {
+    const action = operation.action || operation.operation || '';
+    const filtersValue = operation.options?.filters?.extensions
+        ? operation.options.filters.extensions.map((ext) => `*.${ext}`).join(', ')
         : '';
+    const backupEnabled = Boolean(operation.options?.backupBeforeMove || operation.options?.forceBackup);
 
-    document.getElementById('schedule-name').value = draft.name || (action ? `Operação ${action}` : '');
+    delete modal.dataset.editingOperationId;
+    modal.dataset.scheduleMode = mode;
+    if (mode === 'edit' && operation.id) {
+        modal.dataset.editingOperationId = operation.id;
+    }
+
+    document.getElementById('schedule-name').value = operation.name || (action ? `Operação ${action}` : '');
     document.getElementById('schedule-action').value = action;
-    document.getElementById('schedule-frequency').value = document.getElementById('schedule-frequency').value || '1d';
-    document.getElementById('schedule-source').value = draft.sourcePath || '';
-    document.getElementById('schedule-target').value = draft.targetPath || '';
+    document.getElementById('schedule-frequency').value = operation.frequency || '1d';
+    document.getElementById('schedule-source').value = operation.sourcePath || '';
+    document.getElementById('schedule-target').value = operation.targetPath || '';
     document.getElementById('schedule-filters').value = filtersValue;
-    document.getElementById('schedule-batch').checked = draft.options?.batch ?? true;
-    document.getElementById('schedule-backup').checked = false;
-    document.getElementById('schedule-preserve-structure').checked = draft.options?.preserveStructure ?? true;
+    document.getElementById('schedule-batch').checked = operation.options?.batch ?? operation.batch ?? true;
+    document.getElementById('schedule-backup').checked = backupEnabled;
+    document.getElementById('schedule-preserve-structure').checked = operation.options?.preserveStructure ?? true;
 
-    updateScheduleForm();
-    modal.style.display = 'flex';
-    document.body.classList.add('modal-open');
+    const modalTitle = modal.querySelector('.modal-header h3');
+    const submitBtn = modal.querySelector('.schedule-operation-btn');
+    const closeBtn = modal.querySelector('.close-schedule-btn');
+    const cancelBtn = modal.querySelector('.cancel-schedule-btn');
+    if (modalTitle) {
+        modalTitle.textContent = mode === 'edit'
+            ? 'Editar Operação'
+            : (mode === 'duplicate' ? 'Duplicar Operação' : 'Agendar Operação');
+    }
+    if (submitBtn) {
+        submitBtn.type = 'button';
+        submitBtn.textContent = mode === 'edit'
+            ? 'Salvar Alterações'
+            : (mode === 'duplicate' ? 'Duplicar Operação' : 'Agendar');
+        submitBtn.onclick = async (event) => {
+            event.preventDefault();
+            await performScheduleOperation();
+        };
+    }
+    if (closeBtn) {
+        closeBtn.onclick = (event) => {
+            event.preventDefault();
+            hideScheduleModal();
+        };
+    }
+    if (cancelBtn) {
+        cancelBtn.onclick = (event) => {
+            event.preventDefault();
+            hideScheduleModal();
+        };
+    }
+
+    window.deParaUI?.clearOperationFieldErrors?.();
+    try {
+        updateScheduleForm();
+    } catch (error) {
+        console.error('Erro ao atualizar o formulário de agendamento:', error);
+    }
 }
 
-async function scheduleOperation() {
+// Controle de carregamento para evitar chamadas simultaneas
+function openScheduleModal(options = {}) {
     const modal = document.getElementById('schedule-modal');
-    const isEditing = modal.dataset.editingOperationId;
+    if (!modal) {
+        return;
+    }
+
+    modal.style.display = 'flex';
+    document.body.classList.add('modal-open');
+
+    const operation = options.operation || window.deParaUI?.getOperationDraft?.() || window.deParaUI?.currentConfig || {};
+    const mode = options.mode || 'create';
+    populateScheduleModal(modal, operation, mode);
+}
+
+function hideScheduleModal() {
+    const modal = document.getElementById('schedule-modal');
+    if (!modal) {
+        return;
+    }
+
+    modal.style.display = 'none';
+    document.body.classList.remove('modal-open');
+    delete modal.dataset.editingOperationId;
+    modal.dataset.scheduleMode = 'create';
+
+    const modalTitle = modal.querySelector('.modal-header h3');
+    const submitBtn = modal.querySelector('.schedule-operation-btn');
+    if (modalTitle) {
+        modalTitle.textContent = 'Agendar Operação';
+    }
+    if (submitBtn) {
+        submitBtn.textContent = 'Agendar';
+    }
+
+    window.deParaUI?.clearOperationFieldErrors?.();
+}
+
+async function performScheduleOperation() {
+    const modal = document.getElementById('schedule-modal');
+    const isEditing = modal.dataset.scheduleMode === 'edit' && modal.dataset.editingOperationId;
     const name = document.getElementById('schedule-name').value.trim();
     const action = document.getElementById('schedule-action').value;
     const frequency = document.getElementById('schedule-frequency').value;
@@ -9081,7 +9171,12 @@ async function scheduleOperation() {
     const backup = document.getElementById('schedule-backup').checked;
     const preserveStructure = document.getElementById('schedule-preserve-structure').checked;
 
+    window.deParaUI?.clearOperationFieldErrors?.();
+
     if (!name || !action || !frequency || !sourcePath) {
+        if (!sourcePath) {
+            window.deParaUI?.showFieldError?.(document.getElementById('schedule-source'), 'Origem obrigatória');
+        }
         showToast(!name ? 'Defina um nome para a operação agendada.' : 'Preencha os campos obrigatórios do agendamento.', 'error');
         return;
     }
@@ -9093,7 +9188,6 @@ async function scheduleOperation() {
     }
 
     try {
-        const operationId = isEditing || `ui_${Date.now()}`;
         const requestData = {
             name,
             frequency,
@@ -9105,13 +9199,14 @@ async function scheduleOperation() {
                 forceBackup: action === 'delete' ? backup : false,
                 preserveStructure,
                 filters: filters
-                    ? { extensions: filters.split(',').map((ext) => ext.trim().replace('*.', '')) }
+                    ? { extensions: filters.split(',').map((ext) => ext.trim().replace('*.', '')).filter(Boolean) }
                     : {}
             }
         };
 
         if (!isEditing) {
-            requestData.operationId = operationId;
+            requestData.operationId = `ui_${Date.now()}`;
+            requestData.active = true;
         }
 
         if (action === 'move' || action === 'copy') {
@@ -9129,8 +9224,8 @@ async function scheduleOperation() {
         const result = await response.json();
         if (result.success) {
             showToast(`Operação "${name}" ${isEditing ? 'editada' : 'agendada'} com sucesso!`, 'success', true);
-            window.closeScheduleModal();
-            loadScheduledOperations();
+            hideScheduleModal();
+            forceReloadScheduledOperations();
         } else {
             showToast(result.error?.message || 'Erro ao salvar operação agendada', 'error', true);
         }
@@ -9139,7 +9234,6 @@ async function scheduleOperation() {
         showToast('Erro ao agendar operação', 'error');
     }
 }
-
 let isLoadingTemplates = false;
 let isLoadingScheduledOperations = false;
 let isLoadingBackups = false;
@@ -9163,25 +9257,25 @@ const loadingControl = {
     }
 };
 
-// Controle de operaÃƒÂ§ÃƒÂµes simples
+// Controle de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes simples
 let isExecutingOperation = false;
 
-// FunÃƒÂ§ÃƒÂ£o helper para controle de carregamento com debouncing
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o helper para controle de carregamento com debouncing
 function shouldLoadData(type) {
     const now = Date.now();
     const control = loadingControl[type];
 
     if (!control) return false;
 
-    // Se jÃƒÂ¡ estÃƒÂ¡ carregando, nÃƒÂ£o permitir nova chamada
+    // Se jÃƒÆ’Ã‚Â¡ estÃƒÆ’Ã‚Â¡ carregando, nÃƒÆ’Ã‚Â£o permitir nova chamada
     if (control.isLoading) {
-        console.log(`Ã¢Å¡Â Ã¯Â¸Â ${type} jÃƒÂ¡ estÃƒÂ¡ carregando, pulando...`);
+        console.log(`ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â ${type} jÃƒÆ’Ã‚Â¡ estÃƒÆ’Ã‚Â¡ carregando, pulando...`);
         return false;
     }
 
-    // Se carregou recentemente (debounce), nÃƒÂ£o permitir
+    // Se carregou recentemente (debounce), nÃƒÆ’Ã‚Â£o permitir
     if (now - control.lastLoad < control.debounceMs) {
-        console.log(`Ã¢Å¡Â Ã¯Â¸Â ${type} carregado recentemente, pulando (debounce)...`);
+        console.log(`ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â ${type} carregado recentemente, pulando (debounce)...`);
         return false;
     }
 
@@ -9198,13 +9292,13 @@ function markLoading(type, isLoading) {
     }
 }
 
-// FunÃƒÂ§ÃƒÂ£o helper para carregamento seguro com verificaÃƒÂ§ÃƒÂ£o
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o helper para carregamento seguro com verificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
 function safeLoadData(type, loadFunction) {
     if (shouldLoadData(type)) {
-        console.log(`Ã°Å¸â€â€ž Iniciando carregamento de ${type}...`);
+        console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Iniciando carregamento de ${type}...`);
         loadFunction();
     } else {
-        console.log(`Ã¢ÂÂ­Ã¯Â¸Â Pulando carregamento de ${type} (debounce ou jÃƒÂ¡ carregando)`);
+        console.log(`ÃƒÂ¢Ã‚ÂÃ‚Â­ÃƒÂ¯Ã‚Â¸Ã‚Â Pulando carregamento de ${type} (debounce ou jÃƒÆ’Ã‚Â¡ carregando)`);
     }
 }
 
@@ -9217,23 +9311,23 @@ async function loadTemplates() {
     markLoading('templates', true);
 
     try {
-        console.log('Ã°Å¸â€Â Carregando templates...');
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Carregando templates...');
         const response = await fetch('/api/files/templates');
         const result = await response.json();
 
-        console.log('Ã°Å¸â€œâ€¹ Resposta da API de templates:', result);
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Resposta da API de templates:', result);
 
         if (result.success && result.data) {
-            // Usar categories diretamente se existir, senÃƒÂ£o usar array vazio
+            // Usar categories diretamente se existir, senÃƒÆ’Ã‚Â£o usar array vazio
             const categories = result.data.categories || [];
-            console.log('Ã°Å¸â€œâ€š Categorias recebidas:', categories);
+            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¡ Categorias recebidas:', categories);
             renderTemplates(categories);
         } else {
-            console.warn('Ã¢Å¡Â Ã¯Â¸Â Resposta da API nÃƒÂ£o contÃƒÂ©m dados vÃƒÂ¡lidos');
+            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Resposta da API nÃƒÆ’Ã‚Â£o contÃƒÆ’Ã‚Â©m dados vÃƒÆ’Ã‚Â¡lidos');
             renderTemplates([]);
         }
     } catch (error) {
-        console.error('Ã¢ÂÅ’ Erro ao carregar templates:', error);
+        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar templates:', error);
         renderTemplates([]);
     } finally {
         // Sempre liberar o flag de carregamento
@@ -9245,15 +9339,15 @@ function renderTemplates(categories) {
     const container = document.getElementById('template-categories');
 
     if (!container) {
-        console.warn('Ã¢Å¡Â Ã¯Â¸Â Container de templates nÃƒÂ£o encontrado');
+        console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Container de templates nÃƒÆ’Ã‚Â£o encontrado');
         return;
     }
 
-    console.log('Ã°Å¸Å½Â¨ Renderizando templates:', categories);
+    console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¨ Renderizando templates:', categories);
 
-    // Verificar se categories ÃƒÂ© um array
+    // Verificar se categories ÃƒÆ’Ã‚Â© um array
     if (!Array.isArray(categories)) {
-        console.warn('Ã¢Å¡Â Ã¯Â¸Â Categories nÃƒÂ£o ÃƒÂ© um array:', categories);
+        console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Categories nÃƒÆ’Ã‚Â£o ÃƒÆ’Ã‚Â© um array:', categories);
         categories = [];
     }
 
@@ -9263,7 +9357,7 @@ function renderTemplates(categories) {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'template-category';
 
-        // Verificar se templates existe e ÃƒÂ© um array
+        // Verificar se templates existe e ÃƒÆ’Ã‚Â© um array
         const templates = category.templates || [];
         const templatesHtml = Array.isArray(templates) ? templates.map(template => `
                     <div class="template-card" onclick="applyTemplate('${template.category}', '${template.templateName}')">
@@ -9273,7 +9367,7 @@ function renderTemplates(categories) {
                             <button class="btn btn-sm btn-primary">Aplicar</button>
                         </div>
                     </div>
-                `).join('') : '<p class="no-templates">Nenhum template disponÃƒÂ­vel</p>';
+                `).join('') : '<p class="no-templates">Nenhum template disponÃƒÆ’Ã‚Â­vel</p>';
 
         categoryDiv.innerHTML = `
             <div class="category-header">
@@ -9302,7 +9396,7 @@ async function applyTemplate(category, name) {
 
         if (result.success) {
             showToast(`Template "${result.data.template}" aplicado com sucesso!`, 'success', true);
-            loadScheduledOperations();
+            forceReloadScheduledOperations();
         } else {
             showToast(result.error?.message || 'Erro ao aplicar template', 'error', true);
         }
@@ -9319,7 +9413,7 @@ async function loadProgress() {
         const response = await fetch('/api/files/progress');
         
         if (!response.ok) {
-            // Se a resposta nÃƒÂ£o for OK, nÃƒÂ£o logar erro (pode ser normal)
+            // Se a resposta nÃƒÆ’Ã‚Â£o for OK, nÃƒÆ’Ã‚Â£o logar erro (pode ser normal)
             return;
         }
         
@@ -9329,7 +9423,7 @@ async function loadProgress() {
             renderProgress(result.data);
         }
     } catch (error) {
-        // SÃƒÂ³ logar erro se nÃƒÂ£o for erro de conexÃƒÂ£o (que ÃƒÂ© normal quando nÃƒÂ£o hÃƒÂ¡ operaÃƒÂ§ÃƒÂµes ativas)
+        // SÃƒÆ’Ã‚Â³ logar erro se nÃƒÆ’Ã‚Â£o for erro de conexÃƒÆ’Ã‚Â£o (que ÃƒÆ’Ã‚Â© normal quando nÃƒÆ’Ã‚Â£o hÃƒÆ’Ã‚Â¡ operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas)
         if (!error.message.includes('Failed to fetch') && !error.message.includes('ERR_CONNECTION_REFUSED')) {
             console.error('Erro ao carregar progresso:', error);
         }
@@ -9340,7 +9434,7 @@ function renderProgress(operations) {
     const container = document.getElementById('progress-list');
 
     if (operations.length === 0) {
-        container.innerHTML = '<p class="empty-state">Nenhuma operaÃƒÂ§ÃƒÂ£o em andamento</p>';
+        container.innerHTML = '<p class="empty-state">Nenhuma operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o em andamento</p>';
         return;
     }
 
@@ -9355,7 +9449,7 @@ function renderProgress(operations) {
                 <div class="progress-header">
                     <span class="progress-title">${op.operationId}</span>
                     <span class="progress-percentage">
-                        ${isError ? 'Erro' : isCompleted ? 'ConcluÃƒÂ­do' : `${op.percentage}%`}
+                        ${isError ? 'Erro' : isCompleted ? 'ConcluÃƒÆ’Ã‚Â­do' : `${op.percentage}%`}
                     </span>
                 </div>
                 <div class="progress-bar-container">
@@ -9368,9 +9462,9 @@ function renderProgress(operations) {
 }
 
 // Load Scheduled Operations
-async function loadScheduledOperations() {
-    // Usar novo sistema de controle
-    if (!shouldLoadData('scheduledOperations')) {
+async function loadScheduledOperations(options = {}) {
+    const force = options.force === true;
+    if (!force && !shouldLoadData('scheduledOperations')) {
         return;
     }
     markLoading('scheduledOperations', true);
@@ -9380,12 +9474,10 @@ async function loadScheduledOperations() {
         const result = await response.json();
 
         if (result.success) {
-            console.log('Ã°Å¸â€œâ€¹ OperaÃƒÂ§ÃƒÂµes agendadas recebidas:', result.data);
-            console.log('Ã°Å¸â€œÅ  Total de operaÃƒÂ§ÃƒÂµes:', result.data.length);
             renderScheduledOperations(result.data);
         }
     } catch (error) {
-        console.error('Erro ao carregar operaÃƒÂ§ÃƒÂµes agendadas:', error);
+        console.error('Erro ao carregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas:', error);
     } finally {
         // Sempre liberar o flag de carregamento
         markLoading('scheduledOperations', false);
@@ -9396,12 +9488,11 @@ function renderScheduledOperations(operations) {
     const container = document.getElementById('scheduled-operations-list');
 
     if (operations.length === 0) {
-        container.innerHTML = '<p class="empty-state">Nenhuma operaÃƒÂ§ÃƒÂ£o agendada</p>';
+        container.innerHTML = '<p class="empty-state">Nenhuma operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o agendada</p>';
         return;
     }
 
     container.innerHTML = operations.map(op => {
-        console.log('Ã°Å¸â€Â Renderizando operaÃƒÂ§ÃƒÂ£o:', { id: op.id, name: op.name, action: op.action, frequency: op.frequency });
         return `
         <div class="operation-item ${op.active ? 'active' : 'paused'}">
             <div class="operation-info">
@@ -9412,19 +9503,19 @@ function renderScheduledOperations(operations) {
                 <p><strong>Status:</strong> ${op.active ? 'Ativa' : 'Pausada'}</p>
             </div>
             <div class="operation-actions">
-                <button class="btn btn-sm btn-primary edit-scheduled-operation-btn" data-operation-id="${op.id}" title="Editar operaÃƒÂ§ÃƒÂ£o">
+                <button class="btn btn-sm btn-primary edit-scheduled-operation-btn" data-operation-id="${op.id}" title="Editar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o">
                     <span class="material-icons">edit</span>
                 </button>
-                <button class="btn btn-sm btn-info duplicate-scheduled-operation-btn" data-operation-id="${op.id}" title="Duplicar operaÃƒÂ§ÃƒÂ£o">
+                <button class="btn btn-sm btn-info duplicate-scheduled-operation-btn" data-operation-id="${op.id}" title="Duplicar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o">
                     <span class="material-icons">content_copy</span>
                 </button>
                 <button class="btn btn-sm btn-success execute-scheduled-operation-btn" data-operation-id="${op.id}" title="Executar agora">
                     <span class="material-icons">play_arrow</span>
                 </button>
-                <button class="btn btn-sm btn-warning toggle-scheduled-operation-btn" data-operation-id="${op.id}" data-active="${op.active}" title="${op.active ? 'Pausar' : 'Retomar'} operaÃƒÂ§ÃƒÂ£o">
+                <button class="btn btn-sm btn-warning toggle-scheduled-operation-btn" data-operation-id="${op.id}" data-active="${op.active}" title="${op.active ? 'Pausar' : 'Retomar'} operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o">
                     <span class="material-icons">${op.active ? 'pause' : 'play_arrow'}</span>
                 </button>
-                <button class="btn btn-sm btn-danger cancel-scheduled-operation-btn" data-operation-id="${op.id}" title="Cancelar operaÃƒÂ§ÃƒÂ£o">
+                <button class="btn btn-sm btn-danger cancel-scheduled-operation-btn" data-operation-id="${op.id}" title="Cancelar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o">
                     <span class="material-icons">delete</span>
                 </button>
             </div>
@@ -9442,69 +9533,61 @@ async function cancelScheduledOperation(operationId) {
         const result = await response.json();
 
         if (result.success) {
-            showToast('OperaÃƒÂ§ÃƒÂ£o cancelada com sucesso!', 'success', true);
-            loadScheduledOperations();
+            showToast('OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o cancelada com sucesso!', 'success', true);
+            forceReloadScheduledOperations();
         } else {
-            showToast(result.error?.message || 'Erro ao cancelar operaÃƒÂ§ÃƒÂ£o', 'error', true);
+            showToast(result.error?.message || 'Erro ao cancelar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error', true);
         }
 
     } catch (error) {
-        console.error('Erro ao cancelar operaÃƒÂ§ÃƒÂ£o:', error);
-        showToast('Erro ao cancelar operaÃƒÂ§ÃƒÂ£o', 'error');
+        console.error('Erro ao cancelar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+        showToast('Erro ao cancelar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
     }
 }
 
-// Executar operaÃƒÂ§ÃƒÂ£o agendada imediatamente
+// Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o agendada imediatamente
 async function executeScheduledOperation(operationId) {
     if (!operationId) {
-        console.error('Ã¢ÂÅ’ ID da operaÃƒÂ§ÃƒÂ£o nÃƒÂ£o fornecido');
+        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ ID da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o fornecido');
         return;
     }
-
-    console.log(`Ã°Å¸Å¡â‚¬ Executando operaÃƒÂ§ÃƒÂ£o agendada: ${operationId}`);
 
     try {
         const response = await fetch(`/api/files/schedule/${operationId}/execute`, {
             method: 'POST'
         });
 
-        console.log(`Ã°Å¸â€œÂ¡ Resposta da API: ${response.status} ${response.statusText}`);
-
         if (response.ok) {
             const result = await response.json();
-            console.log('Ã°Å¸â€œâ€¹ Resultado da execuÃƒÂ§ÃƒÂ£o:', result);
             
             if (result.success) {
-                console.log('Ã¢Å“â€¦ OperaÃƒÂ§ÃƒÂ£o executada com sucesso:', result);
-                showToast(`OperaÃƒÂ§ÃƒÂ£o executada com sucesso! ${result.message || ''}`, 'success', true);
+                showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o executada com sucesso! ${result.message || ''}`, 'success', true);
                 
-                // Recarregar operaÃƒÂ§ÃƒÂµes agendadas para mostrar status atualizado
+                // Recarregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas para mostrar status atualizado
                 if (typeof loadScheduledOperations === 'function') {
-                    loadScheduledOperations();
+                    forceReloadScheduledOperations();
                 }
             } else {
-                throw new Error(result.error || 'Erro ao executar operaÃƒÂ§ÃƒÂ£o');
+                throw new Error(result.error || 'Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
             }
         } else {
-            const errorText = await response.text();
-            console.error('Ã¢ÂÅ’ Erro HTTP:', response.status, errorText);
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
     } catch (error) {
-        console.error('Ã¢ÂÅ’ Erro ao executar operaÃƒÂ§ÃƒÂ£o:', error);
-        showToast('Erro ao executar operaÃƒÂ§ÃƒÂ£o: ' + error.message, 'error', true);
+        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+        showToast('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: ' + error.message, 'error', true);
     }
 }
 
-// Pausar/Retomar operaÃƒÂ§ÃƒÂ£o agendada
+// Pausar/Retomar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o agendada
 async function toggleScheduledOperation(operationId) {
     if (!operationId) {
-        console.error('Ã¢ÂÅ’ ID da operaÃƒÂ§ÃƒÂ£o nÃƒÂ£o fornecido');
+        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ ID da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o fornecido');
         return;
     }
 
     try {
-        // Primeiro, obter o status atual da operaÃƒÂ§ÃƒÂ£o
+        // Primeiro, obter o status atual da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
         const response = await fetch(`/api/files/schedule/${operationId}`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -9512,7 +9595,7 @@ async function toggleScheduledOperation(operationId) {
 
         const result = await response.json();
         if (!result.success) {
-            throw new Error(result.error || 'Erro ao obter operaÃƒÂ§ÃƒÂ£o');
+            throw new Error(result.error || 'Erro ao obter operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
         }
 
         const currentStatus = result.data.active;
@@ -9528,184 +9611,78 @@ async function toggleScheduledOperation(operationId) {
         if (updateResponse.ok) {
             const updateResult = await updateResponse.json();
             if (updateResult.success) {
-                console.log(`Ã¢Å“â€¦ OperaÃƒÂ§ÃƒÂ£o ${newStatus ? 'retomada' : 'pausada'} com sucesso`);
-                showToast(`OperaÃƒÂ§ÃƒÂ£o ${newStatus ? 'retomada' : 'pausada'} com sucesso!`, 'success', true);
-                // Recarregar operaÃƒÂ§ÃƒÂµes agendadas
-                loadScheduledOperations();
+                showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${newStatus ? 'retomada' : 'pausada'} com sucesso!`, 'success', true);
+                // Recarregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas
+                forceReloadScheduledOperations();
             } else {
-                throw new Error(updateResult.error || 'Erro ao atualizar operaÃƒÂ§ÃƒÂ£o');
+                throw new Error(updateResult.error || 'Erro ao atualizar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
             }
         } else {
             throw new Error(`HTTP ${updateResponse.status}: ${updateResponse.statusText}`);
         }
     } catch (error) {
-        console.error('Ã¢ÂÅ’ Erro ao alterar status da operaÃƒÂ§ÃƒÂ£o:', error);
-        showToast('Erro ao alterar status da operaÃƒÂ§ÃƒÂ£o: ' + error.message, 'error', true);
+        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao alterar status da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+        showToast('Erro ao alterar status da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: ' + error.message, 'error', true);
     }
 }
 
-// Editar operaÃƒÂ§ÃƒÂ£o agendada
+// Editar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o agendada
+// Editar operação agendada
 async function editScheduledOperation(operationId) {
-    console.log('Ã°Å¸â€Â§ Editando operaÃƒÂ§ÃƒÂ£o:', operationId);
-    
     try {
-        // Obter dados da operaÃƒÂ§ÃƒÂ£o
         const response = await fetch(`/api/files/schedule/${operationId}`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const result = await response.json();
         if (!result.success) {
-            throw new Error(result.error?.message || 'Erro ao obter operaÃƒÂ§ÃƒÂ£o');
+            throw new Error(result.error?.message || 'Erro ao obter operação');
         }
-        
-        const operation = result.data;
-        console.log('Ã°Å¸â€œâ€¹ Dados da operaÃƒÂ§ÃƒÂ£o para ediÃƒÂ§ÃƒÂ£o:', operation);
-        
-        // Abrir modal de ediÃƒÂ§ÃƒÂ£o
-        showEditOperationModal(operation);
-        
+
+        showEditOperationModal(result.data);
     } catch (error) {
-        console.error('Ã¢ÂÅ’ Erro ao obter operaÃƒÂ§ÃƒÂ£o para ediÃƒÂ§ÃƒÂ£o:', error);
-        showToast('Erro ao carregar operaÃƒÂ§ÃƒÂ£o para ediÃƒÂ§ÃƒÂ£o: ' + error.message, 'error', true);
+        console.error('Erro ao obter operação para edição:', error);
+        showToast('Erro ao carregar operação para edição: ' + error.message, 'error', true);
     }
 }
 
-// Mostrar modal de ediÃƒÂ§ÃƒÂ£o de operaÃƒÂ§ÃƒÂ£o
 function showEditOperationModal(operation) {
-    const modal = document.getElementById('schedule-modal');
-    
-    // Preencher campos com dados da operaÃƒÂ§ÃƒÂ£o
-    document.getElementById('schedule-name').value = operation.name || '';
-    document.getElementById('schedule-action').value = operation.action || '';
-    document.getElementById('schedule-frequency').value = operation.frequency || '1d';
-    document.getElementById('schedule-source').value = operation.sourcePath || '';
-    document.getElementById('schedule-target').value = operation.targetPath || '';
-    
-    // Carregar filtros de extensÃƒÂµes corretamente
-    let filtersValue = '';
-    if (operation.options && operation.options.filters && operation.options.filters.extensions) {
-        filtersValue = operation.options.filters.extensions.map(ext => `*.${ext}`).join(', ');
-        console.log('Ã°Å¸â€Â Filtros carregados para ediÃƒÂ§ÃƒÂ£o:', {
-            original: operation.options.filters.extensions,
-            formatted: filtersValue
-        });
-    }
-    document.getElementById('schedule-filters').value = filtersValue;
-    
-    document.getElementById('schedule-batch').checked = operation.batch !== false;
-    document.getElementById('schedule-backup').checked = operation.backup === true;
-    document.getElementById('schedule-preserve-structure').checked = operation.options?.preserveStructure !== false;
-    
-    // Adicionar ID da operaÃƒÂ§ÃƒÂ£o ao modal para identificaÃƒÂ§ÃƒÂ£o
-    modal.dataset.editingOperationId = operation.id;
-    
-    // Alterar tÃƒÂ­tulo do modal
-    const modalTitle = modal.querySelector('.modal-header h3');
-    if (modalTitle) {
-        modalTitle.textContent = 'Editar OperaÃƒÂ§ÃƒÂ£o';
-    }
-    
-    // Alterar texto do botÃƒÂ£o
-    const submitBtn = modal.querySelector('.schedule-operation-btn');
-    if (submitBtn) {
-        submitBtn.textContent = 'Salvar AlteraÃƒÂ§ÃƒÂµes';
-    }
-    
-    updateScheduleForm();
-    updateOperationSummary();
-    
-    modal.style.display = 'flex';
-    document.body.classList.add('modal-open');
-    
-    console.log('Ã¢Å“â€¦ Modal de ediÃƒÂ§ÃƒÂ£o aberto para operaÃƒÂ§ÃƒÂ£o:', operation.id);
+    openScheduleModal({ operation, mode: 'edit' });
 }
 
-// Duplicar operaÃƒÂ§ÃƒÂ£o agendada
+// Duplicar operação agendada
 async function duplicateScheduledOperation(operationId) {
-    console.log('Ã°Å¸â€œâ€¹ Duplicando operaÃƒÂ§ÃƒÂ£o:', operationId);
-    
     try {
-        // Obter dados da operaÃƒÂ§ÃƒÂ£o
         const response = await fetch(`/api/files/schedule/${operationId}`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const result = await response.json();
         if (!result.success) {
-            throw new Error(result.error?.message || 'Erro ao obter operaÃƒÂ§ÃƒÂ£o');
+            throw new Error(result.error?.message || 'Erro ao obter operação');
         }
-        
-        const operation = result.data;
-        console.log('Ã°Å¸â€œâ€¹ Dados da operaÃƒÂ§ÃƒÂ£o para duplicaÃƒÂ§ÃƒÂ£o:', operation);
-        
-        // Modificar nome para indicar que ÃƒÂ© uma cÃƒÂ³pia
+
         const duplicatedOperation = {
-            ...operation,
-            name: `${operation.name} (CÃƒÂ³pia)`,
-            id: `duplicate_${Date.now()}` // Novo ID
+            ...result.data,
+            id: undefined,
+            name: `${result.data.name} (Cópia)`
         };
-        
-        // Abrir modal de duplicaÃƒÂ§ÃƒÂ£o
+
         showDuplicateOperationModal(duplicatedOperation);
-        
     } catch (error) {
-        console.error('Ã¢ÂÅ’ Erro ao obter operaÃƒÂ§ÃƒÂ£o para duplicaÃƒÂ§ÃƒÂ£o:', error);
-        showToast('Erro ao carregar operaÃƒÂ§ÃƒÂ£o para duplicaÃƒÂ§ÃƒÂ£o: ' + error.message, 'error', true);
+        console.error('Erro ao obter operação para duplicação:', error);
+        showToast('Erro ao carregar operação para duplicação: ' + error.message, 'error', true);
     }
 }
 
-// Mostrar modal de duplicaÃƒÂ§ÃƒÂ£o de operaÃƒÂ§ÃƒÂ£o
 function showDuplicateOperationModal(operation) {
-    const modal = document.getElementById('schedule-modal');
-    
-    // Preencher campos com dados da operaÃƒÂ§ÃƒÂ£o
-    document.getElementById('schedule-name').value = operation.name || '';
-    document.getElementById('schedule-action').value = operation.action || '';
-    document.getElementById('schedule-frequency').value = operation.frequency || '1d';
-    document.getElementById('schedule-source').value = operation.sourcePath || '';
-    document.getElementById('schedule-target').value = operation.targetPath || '';
-    
-    // Carregar filtros de extensÃƒÂµes corretamente
-    let filtersValue = '';
-    if (operation.options && operation.options.filters && operation.options.filters.extensions) {
-        filtersValue = operation.options.filters.extensions.map(ext => `*.${ext}`).join(', ');
-    }
-    document.getElementById('schedule-filters').value = filtersValue;
-    
-    document.getElementById('schedule-batch').checked = operation.batch !== false;
-    document.getElementById('schedule-backup').checked = operation.backup === true;
-    document.getElementById('schedule-preserve-structure').checked = operation.options?.preserveStructure !== false;
-    
-    // Adicionar ID da operaÃƒÂ§ÃƒÂ£o ao modal para identificaÃƒÂ§ÃƒÂ£o
-    modal.dataset.editingOperationId = operation.id;
-    
-    // Alterar tÃƒÂ­tulo do modal
-    const modalTitle = modal.querySelector('.modal-header h3');
-    if (modalTitle) {
-        modalTitle.textContent = 'Duplicar OperaÃƒÂ§ÃƒÂ£o';
-    }
-    
-    // Alterar texto do botÃƒÂ£o
-    const submitBtn = modal.querySelector('.schedule-operation-btn');
-    if (submitBtn) {
-        submitBtn.textContent = 'Duplicar OperaÃƒÂ§ÃƒÂ£o';
-    }
-    
-    updateScheduleForm();
-    updateOperationSummary();
-    
-    modal.style.display = 'flex';
-    document.body.classList.add('modal-open');
-    
-    console.log('Ã¢Å“â€¦ Modal de duplicaÃƒÂ§ÃƒÂ£o aberto para operaÃƒÂ§ÃƒÂ£o:', operation.id);
+    openScheduleModal({ operation, mode: 'duplicate' });
 }
 
 // Load Backups
 async function loadBackups() {
-    // Usar novo sistema de controle
     if (!shouldLoadData('backups')) {
         return;
     }
@@ -9721,9 +9698,17 @@ async function loadBackups() {
     } catch (error) {
         console.error('Erro ao carregar backups:', error);
     } finally {
-        // Sempre liberar o flag de carregamento
         markLoading('backups', false);
     }
+}
+
+function forceReloadScheduledOperations() {
+    const control = loadingControl.scheduledOperations;
+    if (control) {
+        control.lastLoad = 0;
+        control.isLoading = false;
+    }
+    return loadScheduledOperations({ force: true });
 }
 
 function renderBackups(backups) {
@@ -9864,7 +9849,7 @@ function showSystemNotification(title, body, icon = '/icon-192x192.png') {
         };
 
     } catch (error) {
-        console.error('Erro ao mostrar notificaÃƒÂ§ÃƒÂ£o:', error);
+        console.error('Erro ao mostrar notificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
     }
 }
 
@@ -9876,14 +9861,14 @@ function showToast(message, type = 'info', showSystemNotification = false) {
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `
         <span class="toast-message">${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">Ãƒâ€”</button>
+        <button class="toast-close" onclick="this.parentElement.remove()">ÃƒÆ’Ã¢â‚¬â€</button>
     `;
 
     container.appendChild(toast);
 
     // Show system notification for important messages
     if (showSystemNotification && (type === 'success' || type === 'error')) {
-        const title = type === 'success' ? 'OperaÃƒÂ§ÃƒÂ£o ConcluÃƒÂ­da' : 'Erro na OperaÃƒÂ§ÃƒÂ£o';
+        const title = type === 'success' ? 'OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ConcluÃƒÆ’Ã‚Â­da' : 'Erro na OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o';
         if (typeof showSystemNotification === 'function') {
             showSystemNotification(title, message);
         }
@@ -9904,7 +9889,7 @@ async function executeFileOperationDirectLegacy(file, operation, destination) {
 
         const requestData = {
             action: operation,
-            sourcePath: file.path || file.name, // Para arquivos do drag & drop, pode nÃƒÂ£o ter path
+            sourcePath: file.path || file.name, // Para arquivos do drag & drop, pode nÃƒÆ’Ã‚Â£o ter path
             options: {
                 preserveStructure,
                 batch: false
@@ -9927,7 +9912,7 @@ async function executeFileOperationDirectLegacy(file, operation, destination) {
 
         if (result.success) {
             const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
-            showToast(`OperaÃƒÂ§ÃƒÂ£o ${operation} executada com sucesso!${structureMsg}`, 'success', true);
+            showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${operation} executada com sucesso!${structureMsg}`, 'success', true);
 
             // Fecha modal se existir
             const modal = document.querySelector('.modal');
@@ -9936,12 +9921,12 @@ async function executeFileOperationDirectLegacy(file, operation, destination) {
             // Limpa preview
             clearFilePreview();
         } else {
-            showToast(result.error?.message || 'Erro na operaÃƒÂ§ÃƒÂ£o', 'error', true);
+            showToast(result.error?.message || 'Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error', true);
         }
 
     } catch (error) {
-        console.error('Erro ao executar operaÃƒÂ§ÃƒÂ£o:', error);
-        showToast('Erro ao executar operaÃƒÂ§ÃƒÂ£o', 'error', true);
+        console.error('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+        showToast('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error', true);
     }
 }
 
@@ -9972,15 +9957,15 @@ async function updateBackupConfig() {
         const result = await response.json();
 
         if (result.success) {
-            showToast('ConfiguraÃƒÂ§ÃƒÂµes de backup atualizadas!', 'success', true);
+            showToast('ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de backup atualizadas!', 'success', true);
             loadBackups();
         } else {
-            showToast(result.error?.message || 'Erro ao atualizar configuraÃƒÂ§ÃƒÂµes', 'error', true);
+            showToast(result.error?.message || 'Erro ao atualizar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 'error', true);
         }
 
     } catch (error) {
-        console.error('Erro ao atualizar configuraÃƒÂ§ÃƒÂµes de backup:', error);
-        showToast('Erro ao atualizar configuraÃƒÂ§ÃƒÂµes de backup', 'error');
+        console.error('Erro ao atualizar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de backup:', error);
+        showToast('Erro ao atualizar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de backup', 'error');
     }
 }
 
@@ -9997,7 +9982,7 @@ async function loadBackupConfig() {
             document.getElementById('backup-enabled').checked = config.enabled !== false;
         }
     } catch (error) {
-        console.error('Erro ao carregar configuraÃƒÂ§ÃƒÂµes de backup:', error);
+        console.error('Erro ao carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de backup:', error);
     }
 }
 
@@ -10041,7 +10026,7 @@ function handleDragLeave(e) {
     e.stopPropagation();
 
     const dropZone = document.getElementById('drag-drop-zone');
-    // SÃƒÂ³ remove a classe se o mouse saiu realmente da zona
+    // SÃƒÆ’Ã‚Â³ remove a classe se o mouse saiu realmente da zona
     const rect = dropZone.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
@@ -10081,7 +10066,7 @@ function showFilePreview(files) {
     const dropContent = dropZone.querySelector('.drop-zone-content');
     const dropPreview = document.getElementById('drop-preview');
 
-    // Esconde conteÃƒÂºdo original
+    // Esconde conteÃƒÆ’Ã‚Âºdo original
     dropContent.style.display = 'none';
 
     // Mostra preview
@@ -10096,7 +10081,7 @@ function showFilePreview(files) {
                     </span>
                     <div class="file-preview-info">
                         <h5>${file.name}</h5>
-                        <p>${formatFileSize(file.size)} Ã¢â‚¬Â¢ ${getFileType(file.type, file.name)}</p>
+                        <p>${formatFileSize(file.size)} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ ${getFileType(file.type, file.name)}</p>
                     </div>
                     <div class="file-preview-actions">
                         <button class="btn btn-sm btn-primary" onclick="selectOperationForFile(${index}, 'move')">
@@ -10115,7 +10100,7 @@ function showFilePreview(files) {
         <div class="preview-actions" style="margin-top: 20px;">
             <button class="btn btn-secondary" onclick="clearFilePreview()">
                 <span class="material-icons">clear</span>
-                Limpar SeleÃƒÂ§ÃƒÂ£o
+                Limpar SeleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
             </button>
         </div>
     `;
@@ -10126,7 +10111,7 @@ function selectOperationForFile(fileIndex, operation) {
     currentOperation = { file, operation };
 
     if (operation === 'delete') {
-        // Para delete, nÃƒÂ£o precisa de destino
+        // Para delete, nÃƒÆ’Ã‚Â£o precisa de destino
         showDeleteConfirmation(file);
     } else {
         // Para move/copy, precisa escolher destino
@@ -10135,7 +10120,7 @@ function selectOperationForFile(fileIndex, operation) {
 }
 
 function showDeleteConfirmation(file) {
-    if (confirm(`Tem certeza que deseja apagar "${file.name}"?\n\nEsta aÃƒÂ§ÃƒÂ£o criarÃƒÂ¡ um backup automÃƒÂ¡tico.`)) {
+    if (confirm(`Tem certeza que deseja apagar "${file.name}"?\n\nEsta aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o criarÃƒÆ’Ã‚Â¡ um backup automÃƒÆ’Ã‚Â¡tico.`)) {
         executeFileOperationDirect(file, 'delete', null);
     }
 }
@@ -10147,7 +10132,7 @@ function showDestinationModal(file, operation) {
         <div class="modal-content">
             <div class="modal-header">
                 <h3>${operation === 'move' ? 'Mover' : 'Copiar'} Arquivo</h3>
-                <button class="modal-close" onclick="this.closest('.modal').remove()">Ãƒâ€”</button>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">ÃƒÆ’Ã¢â‚¬â€</button>
             </div>
             <div class="modal-body">
                 <div class="file-info">
@@ -10160,14 +10145,14 @@ function showDestinationModal(file, operation) {
                 <div class="form-group">
                     <label>Caminho de destino:</label>
                     <input type="text" id="destination-path" placeholder="/caminho/destino" required>
-                    <small class="form-help">Digite o caminho completo onde o arquivo serÃƒÂ¡ ${operation === 'move' ? 'movido' : 'copiado'}</small>
+                    <small class="form-help">Digite o caminho completo onde o arquivo serÃƒÆ’Ã‚Â¡ ${operation === 'move' ? 'movido' : 'copiado'}</small>
                 </div>
                 <div class="form-group">
                     <label>
                         <input type="checkbox" id="preserve-structure-modal" checked>
                         Preservar estrutura de pastas
                     </label>
-                    <small class="form-help">MantÃƒÂ©m a organizaÃƒÂ§ÃƒÂ£o de subpastas no destino</small>
+                    <small class="form-help">MantÃƒÆ’Ã‚Â©m a organizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de subpastas no destino</small>
                 </div>
             </div>
             <div class="modal-footer">
@@ -10189,7 +10174,7 @@ async function executeFileOperationDirect(file, operation, destination) {
 
         const requestData = {
             action: operation,
-            sourcePath: file.path || file.name, // Para arquivos do drag & drop, pode nÃƒÂ£o ter path
+            sourcePath: file.path || file.name, // Para arquivos do drag & drop, pode nÃƒÆ’Ã‚Â£o ter path
             options: {
                 preserveStructure,
                 batch: false
@@ -10211,7 +10196,7 @@ async function executeFileOperationDirect(file, operation, destination) {
         const result = await response.json();
 
         if (result.success) {
-            showToast(`OperaÃƒÂ§ÃƒÂ£o ${operation} executada com sucesso!`, 'success');
+            showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${operation} executada com sucesso!`, 'success');
 
             // Fecha modal se existir
             const modal = document.querySelector('.modal');
@@ -10220,12 +10205,12 @@ async function executeFileOperationDirect(file, operation, destination) {
             // Limpa preview
             clearFilePreview();
         } else {
-            showToast(result.error?.message || 'Erro na operaÃƒÂ§ÃƒÂ£o', 'error');
+            showToast(result.error?.message || 'Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
         }
 
     } catch (error) {
-        console.error('Erro ao executar operaÃƒÂ§ÃƒÂ£o:', error);
-        showToast('Erro ao executar operaÃƒÂ§ÃƒÂ£o', 'error');
+        console.error('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+        showToast('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
     }
 }
 
@@ -10248,7 +10233,7 @@ function getFileIcon(mimeType, fileName) {
     if (mimeType.startsWith('audio/')) return 'audiotrack';
     if (mimeType === 'application/pdf') return 'picture_as_pdf';
 
-    // Por extensÃƒÂ£o
+    // Por extensÃƒÆ’Ã‚Â£o
     const ext = fileName.split('.').pop().toLowerCase();
     switch (ext) {
         case 'txt': return 'description';
@@ -10294,11 +10279,11 @@ async function showIgnoredPatterns() {
         if (result.success) {
             showIgnoredPatternsModal(result.data);
         } else {
-            showToast('Erro ao carregar padrÃƒÂµes ignorados', 'error');
+            showToast('Erro ao carregar padrÃƒÆ’Ã‚Âµes ignorados', 'error');
         }
     } catch (error) {
-        console.error('Erro ao carregar padrÃƒÂµes ignorados:', error);
-        showToast('Erro ao carregar padrÃƒÂµes ignorados', 'error');
+        console.error('Erro ao carregar padrÃƒÆ’Ã‚Âµes ignorados:', error);
+        showToast('Erro ao carregar padrÃƒÆ’Ã‚Âµes ignorados', 'error');
     }
 }
 
@@ -10308,26 +10293,26 @@ function showIgnoredPatternsModal(data) {
     modal.innerHTML = `
         <div class="modal-content large-modal">
             <div class="modal-header">
-                <h3>Ã°Å¸â€ºÂ¡Ã¯Â¸Â Arquivos Automaticamente Ignorados</h3>
-                <button class="modal-close" onclick="this.closest('.modal').remove()">Ãƒâ€”</button>
+                <h3>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â¡ÃƒÂ¯Ã‚Â¸Ã‚Â Arquivos Automaticamente Ignorados</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">ÃƒÆ’Ã¢â‚¬â€</button>
             </div>
             <div class="modal-body">
                 <div class="ignored-description">
                     <p><strong>Por que ignorar arquivos?</strong></p>
-                    <p>Certos arquivos sÃƒÂ£o crÃƒÂ­ticos para o funcionamento do sistema e sincronizaÃƒÂ§ÃƒÂ£o.
-                    Eles sÃƒÂ£o automaticamente ignorados para evitar:</p>
+                    <p>Certos arquivos sÃƒÆ’Ã‚Â£o crÃƒÆ’Ã‚Â­ticos para o funcionamento do sistema e sincronizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o.
+                    Eles sÃƒÆ’Ã‚Â£o automaticamente ignorados para evitar:</p>
                     <ul>
-                        <li>Ã¢ÂÅ’ InterrupÃƒÂ§ÃƒÂ£o da sincronizaÃƒÂ§ÃƒÂ£o do Resilio Sync</li>
-                        <li>Ã¢ÂÅ’ Problemas de compatibilidade entre sistemas</li>
-                        <li>Ã¢ÂÅ’ Processamento desnecessÃƒÂ¡rio de arquivos temporÃƒÂ¡rios</li>
-                        <li>Ã¢ÂÅ’ Conflitos com ferramentas de desenvolvimento</li>
+                        <li>ÃƒÂ¢Ã‚ÂÃ…â€™ InterrupÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da sincronizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do Resilio Sync</li>
+                        <li>ÃƒÂ¢Ã‚ÂÃ…â€™ Problemas de compatibilidade entre sistemas</li>
+                        <li>ÃƒÂ¢Ã‚ÂÃ…â€™ Processamento desnecessÃƒÆ’Ã‚Â¡rio de arquivos temporÃƒÆ’Ã‚Â¡rios</li>
+                        <li>ÃƒÂ¢Ã‚ÂÃ…â€™ Conflitos com ferramentas de desenvolvimento</li>
                     </ul>
                 </div>
 
                 <div class="ignored-categories">
                     ${Object.entries(data.categories).map(([key, description]) => `
                         <div class="ignored-category">
-                            <h4>${key === 'resilioSync' ? 'Ã°Å¸â€â€ž' : key === 'systemFiles' ? 'Ã°Å¸â€™Â»' : 'Ã¢ÂÂ°'} ${description.split(' - ')[0]}</h4>
+                            <h4>${key === 'resilioSync' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾' : key === 'systemFiles' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â»' : 'ÃƒÂ¢Ã‚ÂÃ‚Â°'} ${description.split(' - ')[0]}</h4>
                             <p>${description}</p>
                             <div class="patterns-grid">
                                 ${data.patterns[key].map(pattern => `
@@ -10339,8 +10324,8 @@ function showIgnoredPatternsModal(data) {
                 </div>
 
                 <div class="ignored-test">
-                    <h4>Ã°Å¸â€Â Testar Arquivo</h4>
-                    <p>Verifique se um arquivo especÃƒÂ­fico seria ignorado:</p>
+                    <h4>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Testar Arquivo</h4>
+                    <p>Verifique se um arquivo especÃƒÆ’Ã‚Â­fico seria ignorado:</p>
                     <div class="test-form">
                         <input type="text" id="test-file-path" placeholder="/caminho/arquivo.ext" style="flex: 1;">
                         <button class="btn btn-primary" onclick="testFileIgnore()">
@@ -10390,7 +10375,7 @@ async function testFileIgnore() {
             const isIgnored = result.data.shouldIgnore;
             resultDiv.innerHTML = `
                 <div style="padding: 10px; border-radius: 6px; background: ${isIgnored ? '#ffebee' : '#e8f5e8'}; border-left: 4px solid ${isIgnored ? '#f44336' : '#4caf50'};">
-                    <strong>${isIgnored ? 'Ã°Å¸Å¡Â« IGNORADO' : 'Ã¢Å“â€¦ PROCESSADO'}</strong><br>
+                    <strong>${isIgnored ? 'ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Â« IGNORADO' : 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ PROCESSADO'}</strong><br>
                     <small>${result.data.reason}</small>
                 </div>
             `;
@@ -10451,9 +10436,9 @@ function saveSettings() {
 // ==========================================
 // SLIDESHOW FUNCTIONALITY (LEGACY - REMOVIDO)
 // ==========================================
-// Agora usando implementaÃƒÂ§ÃƒÂ£o da classe DeParaUI
+// Agora usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
 
-// FunÃƒÂ§ÃƒÂµes removidas - agora usando implementaÃƒÂ§ÃƒÂ£o da classe DeParaUI
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes removidas - agora usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
 
 function closeSlideshowConfigModal() {
     const modal = document.getElementById('slideshow-config-modal');
@@ -10464,7 +10449,7 @@ function closeSlideshowConfigModal() {
 }
 
 function resetSlideshowFolderForm() {
-    // NÃƒÂ£o limpar o campo de pasta se houver uma pasta salva
+    // NÃƒÆ’Ã‚Â£o limpar o campo de pasta se houver uma pasta salva
     const savedPath = window.deParaUI?.getSlideshowSelectedPath?.() || '';
     if (!savedPath) {
         document.getElementById('slideshow-folder-path').value = '';
@@ -10472,7 +10457,7 @@ function resetSlideshowFolderForm() {
     
     document.getElementById('slideshow-max-depth').value = '3';
 
-    // Resetar checkboxes de extensÃƒÂµes
+    // Resetar checkboxes de extensÃƒÆ’Ã‚Âµes
     const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]');
     extensionCheckboxes.forEach(checkbox => {
         const isDefaultChecked = ['jpg', 'jpeg', 'png', 'gif'].includes(checkbox.value);
@@ -10481,52 +10466,52 @@ function resetSlideshowFolderForm() {
 }
 
 async function startSlideshow() {
-    // Usar a implementaÃƒÂ§ÃƒÂ£o da classe DeParaUI
+    // Usar a implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
     if (window.deParaUI) {
         window.deParaUI.startSlideshowFromModal();
     } else {
-        console.error('DeParaUI nÃƒÂ£o estÃƒÂ¡ disponÃƒÂ­vel');
-        showToast('Erro: Interface nÃƒÂ£o inicializada', 'error');
+        console.error('DeParaUI nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ disponÃƒÆ’Ã‚Â­vel');
+        showToast('Erro: Interface nÃƒÆ’Ã‚Â£o inicializada', 'error');
     }
 }
 
 
-// FunÃƒÂ§ÃƒÂ£o removida - agora usando implementaÃƒÂ§ÃƒÂ£o da classe DeParaUI
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o removida - agora usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
 
-// FunÃƒÂ§ÃƒÂ£o removida - agora usando implementaÃƒÂ§ÃƒÂ£o da classe DeParaUI
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o removida - agora usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
 
-// FunÃƒÂ§ÃƒÂµes removidas - agora usando implementaÃƒÂ§ÃƒÂ£o da classe DeParaUI
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes removidas - agora usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
 
-// FunÃƒÂ§ÃƒÂµes removidas - agora usando implementaÃƒÂ§ÃƒÂ£o da classe DeParaUI
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes removidas - agora usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
 
-// CÃƒÂ³digo de navegaÃƒÂ§ÃƒÂ£o removido - agora usando implementaÃƒÂ§ÃƒÂ£o da classe DeParaUI
+// CÃƒÆ’Ã‚Â³digo de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o removido - agora usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
 
-// FunÃƒÂ§ÃƒÂµes de hints removidas - agora usando implementaÃƒÂ§ÃƒÂ£o da classe DeParaUI
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de hints removidas - agora usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
 
 // ==========================================
 // END SLIDESHOW FUNCTIONALITY
 // ==========================================
 
-// InicializaÃƒÂ§ÃƒÂ£o
+// InicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
 let ui;
 document.addEventListener('DOMContentLoaded', () => {
     if (window.__deparaMainInitDone) return;
     window.__deparaMainInitDone = true;
     ui = new DeParaUI();
 
-    // ApÃƒÂ³s inicializar, definir funÃƒÂ§ÃƒÂµes globais
+    // ApÃƒÆ’Ã‚Â³s inicializar, definir funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes globais
     setTimeout(() => {
-        // Tornar UI disponÃƒÂ­vel globalmente primeiro
+        // Tornar UI disponÃƒÆ’Ã‚Â­vel globalmente primeiro
         window.deParaUI = ui;
 
-        // FunÃƒÂ§ÃƒÂ£o global para limpar busca
+        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o global para limpar busca
         window.clearSearchGlobal = function() {
             if (window.deParaUI) {
                 window.deParaUI.clearSearch();
             }
         };
 
-        // FunÃƒÂ§ÃƒÂµes globais para onboarding
+        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes globais para onboarding
         window.closeOnboarding = function() {
             if (window.deParaUI) {
                 window.deParaUI.closeOnboarding();
@@ -10539,7 +10524,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // FunÃƒÂ§ÃƒÂµes de configuraÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida de pastas
+        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida de pastas
         window.createQuickFolder = function(type) {
             if (window.deParaUI) {
                 window.deParaUI.createQuickFolder(type);
@@ -10558,7 +10543,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-            // FunÃƒÂ§ÃƒÂµes auxiliares globais
+            // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes auxiliares globais
         window.editFolder = function(folderId) {
             if (window.deParaUI) {
                 window.deParaUI.editFolder(folderId);
@@ -10571,7 +10556,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // FunÃƒÂ§ÃƒÂµes para botÃƒÂµes de dashboard
+        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes para botÃƒÆ’Ã‚Âµes de dashboard
         window.refreshCharts = function() {
             if (window.deParaUI) {
                 window.deParaUI.updateCharts();
@@ -10584,38 +10569,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        window.showScheduleModal = function() {
-            // Chamar diretamente a funÃƒÂ§ÃƒÂ£o global showScheduleModal (sem recursÃƒÂ£o)
-            const modal = document.getElementById('schedule-modal');
-            if (modal) {
-                modal.style.display = 'block';
-                document.body.classList.add('modal-open');
-            } else {
-                console.error('Ã¢ÂÅ’ Modal de agendamento nÃƒÂ£o encontrado');
-                this.showToast('Erro: Modal de agendamento nÃƒÂ£o encontrado', 'error');
-            }
+        window.showScheduleModal = function(options = {}) {
+            return openScheduleModal(options);
         };
 
-        // FunÃƒÂ§ÃƒÂµes para backups (jÃƒÂ¡ existem como globais, nÃƒÂ£o precisamos recriar)
-        // loadBackups() e updateBackupConfig() jÃƒÂ¡ estÃƒÂ£o definidos como funÃƒÂ§ÃƒÂµes globais
-        // Vamos apenas garantir que elas sejam acessÃƒÂ­veis
+        // Funções para backups (já existem como globais, não precisamos recriar)
+        // loadBackups() e updateBackupConfig() já estão definidos como funções globais
+        // Vamos apenas garantir que elas sejam acessíveis
 
-        // FunÃƒÂ§ÃƒÂµes para configuraÃƒÂ§ÃƒÂµes
+        // Funções para configurações
         window.showIgnoredPatterns = function() {
-            // Chamar diretamente a funÃƒÂ§ÃƒÂ£o global showIgnoredPatterns
+            // Chamar diretamente a função global showIgnoredPatterns
             if (typeof showIgnoredPatterns === 'function') {
                 showIgnoredPatterns();
             }
         };
 
         window.saveSettings = function() {
-            // Chamar o mÃƒÂ©todo da classe DeParaUI
+            // Chamar o método da classe DeParaUI
             if (window.deParaUI && typeof window.deParaUI.saveSettings === 'function') {
                 window.deParaUI.saveSettings();
             }
         };
 
-        // FunÃƒÂ§ÃƒÂµes para workflows (todas sÃƒÂ£o funÃƒÂ§ÃƒÂµes globais)
+        // Funções para workflows (todas são funções globais)
         window.closeWorkflowModal = function() {
             if (typeof closeWorkflowModal === 'function') {
                 closeWorkflowModal();
@@ -10640,7 +10617,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // FunÃƒÂ§ÃƒÂµes para gerenciamento de pastas (todas sÃƒÂ£o funÃƒÂ§ÃƒÂµes globais)
+        // Funções para gerenciamento de pastas (todas são funções globais)
         window.closeFolderManagerModal = function() {
             if (typeof closeFolderManagerModal === 'function') {
                 closeFolderManagerModal();
@@ -10653,156 +10630,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // FunÃƒÂ§ÃƒÂµes para operaÃƒÂ§ÃƒÂµes de arquivo (jÃƒÂ¡ existem como globais, nÃƒÂ£o precisamos recriar)
-        // closeFileOperationModal() e executeFileOperation() jÃƒÂ¡ estÃƒÂ£o definidos como funÃƒÂ§ÃƒÂµes globais
+        // Funções para operações de arquivo (já existem como globais, não precisamos recriar)
+        // closeFileOperationModal() e executeFileOperation() já estão definidos como funções globais
 
-        // FunÃƒÂ§ÃƒÂµes para agendamento (todas sÃƒÂ£o funÃƒÂ§ÃƒÂµes globais)
+        // Funções para agendamento (todas são funções globais)
         window.closeScheduleModal = function() {
-            const modal = document.getElementById('schedule-modal');
-            if (modal) {
-                modal.style.display = 'none';
-                document.body.classList.remove('modal-open');
-                
-                // Limpar estado de ediÃƒÂ§ÃƒÂ£o
-                delete modal.dataset.editingOperationId;
-                
-                // Restaurar tÃƒÂ­tulo e botÃƒÂ£o originais
-                const modalTitle = modal.querySelector('.modal-header h3');
-                if (modalTitle) {
-                    modalTitle.textContent = 'Agendar OperaÃƒÂ§ÃƒÂ£o';
-                }
-                
-                const submitBtn = modal.querySelector('.schedule-operation-btn');
-                if (submitBtn) {
-                    submitBtn.textContent = 'Agendar';
-                }
-                
-                console.log('Ã¢Å“â€¦ Modal de agendamento fechado via window.closeScheduleModal');
-            }
+            return hideScheduleModal();
         };
 
         window.scheduleOperation = async function() {
-            // Implementar lÃƒÂ³gica de agendamento diretamente aqui para evitar loop infinito
-            const modal = document.getElementById('schedule-modal');
-            const isEditing = modal.dataset.editingOperationId;
-            
-            const name = document.getElementById('schedule-name').value.trim();
-            const action = document.getElementById('schedule-action').value;
-            const frequency = document.getElementById('schedule-frequency').value;
-            const sourcePath = document.getElementById('schedule-source').value.trim();
-            const targetPath = document.getElementById('schedule-target').value.trim();
-            const filters = document.getElementById('schedule-filters').value.trim();
-            const batch = document.getElementById('schedule-batch').checked;
-            const backup = document.getElementById('schedule-backup').checked;
-            const preserveStructure = document.getElementById('schedule-preserve-structure').checked;
-
-            console.log('Ã°Å¸â€Â Campos capturados:', { name, action, frequency, sourcePath, targetPath, filters });
-
-            if (!name || !action || !frequency || !sourcePath) {
-                showToast('Preencha todos os campos obrigatÃƒÂ³rios', 'error');
-                return;
-            }
-
-            if ((action === 'move' || action === 'copy') && !targetPath) {
-                showToast('Caminho de destino ÃƒÂ© obrigatÃƒÂ³rio', 'error');
-                return;
-            }
-
-            try {
-                // Gerar ID correto baseado no contexto
-                let operationId;
-                if (isEditing) {
-                    // EdiÃƒÂ§ÃƒÂ£o: usar ID existente
-                    operationId = isEditing;
-                } else {
-                    // CriaÃƒÂ§ÃƒÂ£o nova: gerar novo ID
-                    operationId = `ui_${Date.now()}`;
-                }
-                
-                const requestData = {
-                    name,
-                    frequency,
-                    action,
-                    sourcePath,
-                    options: {
-                        batch,
-                        backupBeforeMove: action === 'move' ? backup : false,
-                        forceBackup: action === 'delete' ? backup : false,
-                        preserveStructure
-                    }
-                };
-
-                // Para criaÃƒÂ§ÃƒÂ£o nova, incluir operationId no corpo
-                if (!isEditing) {
-                    requestData.operationId = operationId;
-                }
-
-                if (action === 'move' || action === 'copy') {
-                    requestData.targetPath = targetPath;
-                }
-
-                // Processar filtros - sempre criar objeto filters, mesmo se vazio
-                if (filters && filters.trim()) {
-                    // Filtro especificado - processar extensÃƒÂµes
-                    requestData.options.filters = {
-                        extensions: filters.split(',').map(ext => ext.trim().replace('*.', ''))
-                    };
-                } else {
-                    // Filtro vazio - nÃƒÂ£o aplicar filtros (aceitar todos os arquivos)
-                    requestData.options.filters = {};
-                }
-
-                const url = isEditing ? `/api/files/schedule/${isEditing}` : '/api/files/schedule';
-                const method = isEditing ? 'PUT' : 'POST';
-                
-                console.log(`${isEditing ? 'Ã¢Å“ÂÃ¯Â¸Â Editando' : 'Ã¢Å¾â€¢ Criando'} operaÃƒÂ§ÃƒÂ£o:`, requestData);
-                console.log('Ã°Å¸â€Â Contexto:', { isEditing, operationId, modalDataset: modal.dataset });
-
-                const response = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestData)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
-                    const actionMsg = isEditing ? 'editada' : 'agendada';
-                    showToast(`OperaÃƒÂ§ÃƒÂ£o "${name}" ${actionMsg} com sucesso!${structureMsg}`, 'success', true);
-                    window.closeScheduleModal();
-                    loadScheduledOperations();
-                } else {
-                    const actionMsg = isEditing ? 'editar' : 'agendar';
-                    showToast(result.error?.message || `Erro ao ${actionMsg} operaÃƒÂ§ÃƒÂ£o`, 'error', true);
-                }
-
-            } catch (error) {
-                console.error('Erro ao agendar operaÃƒÂ§ÃƒÂ£o:', error);
-                showToast('Erro ao agendar operaÃƒÂ§ÃƒÂ£o', 'error');
-            }
+            return performScheduleOperation();
         };
 
-        // FunÃƒÂ§ÃƒÂµes para slideshow (todas sÃƒÂ£o funÃƒÂ§ÃƒÂµes globais)
-        window.scheduleOperation = async function() {
-            return scheduleOperation();
-        };
-
+        // Funções para slideshow (todas são funções globais)
         window.closeSlideshowFolderModal = function() {
             const modal = document.getElementById('slideshow-folder-modal');
             if (modal) {
                 modal.style.display = 'none';
                 document.body.classList.remove('modal-open');
-                console.log('Ã¢Å“â€¦ Modal de slideshow fechado via window.closeSlideshowFolderModal');
+                console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Modal de slideshow fechado via window.closeSlideshowFolderModal');
             }
         };
 
-        // FunÃƒÂ§ÃƒÂ£o startSlideshow removida - usando implementaÃƒÂ§ÃƒÂ£o da classe DeParaUI
-        // window.startSlideshow agora ÃƒÂ© apenas um alias para window.deParaUI.startSlideshowFromModal()
+        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o startSlideshow removida - usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
+        // window.startSlideshow agora ÃƒÆ’Ã‚Â© apenas um alias para window.deParaUI.startSlideshowFromModal()
 
-        // FunÃƒÂ§ÃƒÂµes de slideshow (estas sÃƒÂ£o mÃƒÂ©todos da classe DeParaUI)
+        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de slideshow (estas sÃƒÆ’Ã‚Â£o mÃƒÆ’Ã‚Â©todos da classe DeParaUI)
         window.previousImage = function() {
             if (window.deParaUI && typeof window.deParaUI.previousSlide === 'function') {
                 window.deParaUI.previousSlide();
@@ -10821,60 +10674,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Adicionar event listeners para botÃƒÂµes (evita CSP violation)
+        // Adicionar event listeners para botÃƒÆ’Ã‚Âµes (evita CSP violation)
         ui.addOnboardingEventListeners();
         ui.setupAdditionalEventListeners();
     }, 100);
 });
 
-// FunÃƒÂ§ÃƒÂ£o para substituir caminhos dinÃƒÂ¢micos baseados na plataforma
+// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para substituir caminhos dinÃƒÆ’Ã‚Â¢micos baseados na plataforma
 function updateDynamicPaths() {
     const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-    // No navegador, nÃƒÂ£o temos acesso direto ÃƒÂ s variÃƒÂ¡veis de ambiente
-    // Vamos usar valores padrÃƒÂ£o mais inteligentes baseados na plataforma
-    const userName = isWindows ? 'User' : 'user';
-
-    // Mapeamento de caminhos dinÃƒÂ¢micos
-    const pathMappings = {
-        'dynamic-home': isWindows ? `C:\\Users\\${userName}` : `/home/${userName}`,
-        'dynamic-documents': isWindows ? `C:\\Users\\${userName}\\Documents` : `/home/${userName}/Documents`,
-        'dynamic-downloads': isWindows ? `C:\\Users\\${userName}\\Downloads` : `/home/${userName}/Downloads`,
-        'dynamic-pictures': isWindows ? `C:\\Users\\${userName}\\Pictures` : `/home/${userName}/Pictures`,
-        'dynamic-desktop': isWindows ? `C:\\Users\\${userName}\\Desktop` : `/home/${userName}/Desktop`,
-        'dynamic-pictures-placeholder': isWindows ? `C:\\Users\\${userName}\\Pictures` : `/home/${userName}/Pictures`
-    };
-
-    // Substituir data-path dos botÃƒÂµes
-    Object.keys(pathMappings).forEach(key => {
-        const buttons = document.querySelectorAll(`[data-path="${key}"]`);
-        buttons.forEach(button => {
-            button.setAttribute('data-path', pathMappings[key]);
-        });
-    });
-
-    // Substituir placeholder do slideshow
+    const defaultPicturesPath = isWindows ? 'C:\\Users\\User\\Pictures' : '/home/yo/Pictures';
     const slideshowInput = document.getElementById('slideshow-folder-path');
-    if (slideshowInput && pathMappings['dynamic-pictures-placeholder']) {
-        slideshowInput.placeholder = pathMappings['dynamic-pictures-placeholder'];
-        const savedPath = window.deParaUI?.getSlideshowSelectedPath?.() || localStorage.getItem('slideshowSelectedPath');
-        if (savedPath && savedPath.trim()) {
-            slideshowInput.value = savedPath.trim();
-        } else if (!slideshowInput.value || !slideshowInput.value.trim()) {
-            slideshowInput.value = pathMappings['dynamic-pictures-placeholder'];
-        }
+
+    if (!slideshowInput) {
+        return;
+    }
+
+    slideshowInput.placeholder = defaultPicturesPath;
+    const savedPath = window.deParaUI?.getSlideshowSelectedPath?.() || localStorage.getItem('slideshowSelectedPath');
+    if (savedPath && savedPath.trim()) {
+        slideshowInput.value = savedPath.trim();
+    } else if (!slideshowInput.value || !slideshowInput.value.trim()) {
+        slideshowInput.value = defaultPicturesPath;
     }
 }
 
-// Executar quando o DOM estiver carregado (jÃƒÂ¡ feito em updateSimplePaths)
+// Executar quando o DOM estiver carregado (jÃƒÆ’Ã‚Â¡ feito em updateSimplePaths)
 
 // ===========================================
-// FUNÃƒâ€¡Ãƒâ€¢ES DE OPERAÃƒâ€¡Ãƒâ€¢ES SIMPLES DE ARQUIVOS
+// FUNÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã¢â‚¬Â¢ES DE OPERAÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã¢â‚¬Â¢ES SIMPLES DE ARQUIVOS
 // ===========================================
 
-// Executar operaÃƒÂ§ÃƒÂ£o simples
+// Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o simples
 async function executeSimpleOperation(action) {
     if (isExecutingOperation) {
-        showToast('OperaÃƒÂ§ÃƒÂ£o jÃƒÂ¡ em andamento. Aguarde...', 'warning');
+        showToast('OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o jÃƒÆ’Ã‚Â¡ em andamento. Aguarde...', 'warning');
         return;
     }
 
@@ -10883,7 +10717,7 @@ async function executeSimpleOperation(action) {
     const recursive = document.getElementById('recursive-option').checked;
     const backup = document.getElementById('backup-option').checked;
 
-    // ValidaÃƒÂ§ÃƒÂ£o bÃƒÂ¡sica
+    // ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o bÃƒÆ’Ã‚Â¡sica
     if (!sourcePath) {
         showToast('Digite o caminho de origem', 'error');
         return;
@@ -10894,16 +10728,16 @@ async function executeSimpleOperation(action) {
         return;
     }
 
-    // Mostrar resultado da operaÃƒÂ§ÃƒÂ£o
+    // Mostrar resultado da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     const resultDiv = document.getElementById('operation-result');
     const resultIcon = document.getElementById('result-icon');
     const resultText = document.getElementById('result-text');
 
     resultDiv.style.display = 'block';
     resultIcon.textContent = 'hourglass_empty';
-    resultText.textContent = 'Executando operaÃƒÂ§ÃƒÂ£o...';
+    resultText.textContent = 'Executando operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o...';
 
-    // Desabilitar botÃƒÂµes durante execuÃƒÂ§ÃƒÂ£o
+    // Desabilitar botÃƒÆ’Ã‚Âµes durante execuÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
     setOperationButtonsDisabled(true);
     isExecutingOperation = true;
 
@@ -10914,7 +10748,7 @@ async function executeSimpleOperation(action) {
             preserveStructure: true
         };
 
-        console.log(`Ã°Å¸â€â€ž Executando operaÃƒÂ§ÃƒÂ£o: ${action}`, { sourcePath, destPath, options });
+        console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Executando operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: ${action}`, { sourcePath, destPath, options });
 
         let response;
         if (action === 'delete') {
@@ -10944,8 +10778,8 @@ async function executeSimpleOperation(action) {
 
         if (response.ok && result.success) {
             resultIcon.textContent = 'check_circle';
-            resultText.textContent = `Ã¢Å“â€¦ OperaÃƒÂ§ÃƒÂ£o ${action} executada com sucesso!`;
-            showToast(`OperaÃƒÂ§ÃƒÂ£o ${action} concluÃƒÂ­da!`, 'success');
+            resultText.textContent = `ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${action} executada com sucesso!`;
+            showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${action} concluÃƒÆ’Ã‚Â­da!`, 'success');
 
             // Atualizar atividades recentes
             if (typeof loadRecentActivities === 'function') {
@@ -10953,23 +10787,23 @@ async function executeSimpleOperation(action) {
             }
         } else {
             resultIcon.textContent = 'error';
-            resultText.textContent = `Ã¢ÂÅ’ Erro: ${result.error?.message || 'Erro desconhecido'}`;
-            showToast(result.error?.message || 'Erro na operaÃƒÂ§ÃƒÂ£o', 'error');
+            resultText.textContent = `ÃƒÂ¢Ã‚ÂÃ…â€™ Erro: ${result.error?.message || 'Erro desconhecido'}`;
+            showToast(result.error?.message || 'Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
         }
 
     } catch (error) {
-        console.error('Erro na operaÃƒÂ§ÃƒÂ£o:', error);
+        console.error('Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
         resultIcon.textContent = 'error';
-        resultText.textContent = `Ã¢ÂÅ’ Erro de conexÃƒÂ£o: ${error.message}`;
-        showToast('Erro de conexÃƒÂ£o com o servidor', 'error');
+        resultText.textContent = `ÃƒÂ¢Ã‚ÂÃ…â€™ Erro de conexÃƒÆ’Ã‚Â£o: ${error.message}`;
+        showToast('Erro de conexÃƒÆ’Ã‚Â£o com o servidor', 'error');
     } finally {
-        // Reabilitar botÃƒÂµes
+        // Reabilitar botÃƒÆ’Ã‚Âµes
         setOperationButtonsDisabled(false);
         isExecutingOperation = false;
     }
 }
 
-// Desabilitar/Habilitar botÃƒÂµes de operaÃƒÂ§ÃƒÂ£o
+// Desabilitar/Habilitar botÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
 function setOperationButtonsDisabled(disabled) {
     const buttons = ['move-btn', 'copy-btn', 'delete-btn'];
     buttons.forEach(btnId => {
@@ -10986,7 +10820,7 @@ function browseSourcePath() {
     if (window.deParaUI && typeof window.deParaUI.showFolderBrowser === 'function') {
         window.deParaUI.showFolderBrowser('source');
     } else {
-        console.warn('FunÃƒÂ§ÃƒÂ£o showFolderBrowser nÃƒÂ£o encontrada');
+        console.warn('FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o showFolderBrowser nÃƒÆ’Ã‚Â£o encontrada');
         // Fallback: apenas focar no input
         const input = document.getElementById('source-path');
         if (input) {
@@ -11001,7 +10835,7 @@ function browseDestPath() {
     if (window.deParaUI && typeof window.deParaUI.showFolderBrowser === 'function') {
         window.deParaUI.showFolderBrowser('target');
     } else {
-        console.warn('FunÃƒÂ§ÃƒÂ£o showFolderBrowser nÃƒÂ£o encontrada');
+        console.warn('FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o showFolderBrowser nÃƒÆ’Ã‚Â£o encontrada');
         // Fallback: apenas focar no input
         const input = document.getElementById('dest-path');
         if (input) {
@@ -11011,10 +10845,10 @@ function browseDestPath() {
     }
 }
 
-// Atualizar caminhos baseados na plataforma (versÃƒÂ£o simplificada)
+// Atualizar caminhos baseados na plataforma (versÃƒÆ’Ã‚Â£o simplificada)
 function updateSimplePaths() {
     const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-    const userName = 'user'; // Valor padrÃƒÂ£o simples
+    const userName = 'user'; // Valor padrÃƒÆ’Ã‚Â£o simples
 
     const sourceInput = document.getElementById('source-path');
     const destInput = document.getElementById('dest-path');
@@ -11032,14 +10866,14 @@ function updateSimplePaths() {
     }
 }
 
-// Inicializar caminhos quando a pÃƒÂ¡gina carregar
+// Inicializar caminhos quando a pÃƒÆ’Ã‚Â¡gina carregar
 document.addEventListener('DOMContentLoaded', function() {
     if (window.__deparaSimplePathsInitDone) return;
     window.__deparaSimplePathsInitDone = true;
     updateSimplePaths();
 });
 
-// Adicionar animaÃƒÂ§ÃƒÂ£o CSS
+// Adicionar animaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o CSS
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideOutRight {
@@ -11047,7 +10881,7 @@ style.textContent = `
         to { transform: translateX(100%); opacity: 0; }
     }
 
-    /* Estilos para operaÃƒÂ§ÃƒÂµes simples */
+    /* Estilos para operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes simples */
     .file-operations-form {
         display: flex;
         flex-direction: column;

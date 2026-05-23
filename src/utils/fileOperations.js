@@ -499,33 +499,10 @@ class FileOperationsManager {
             // Restaurar operações
             for (const operation of savedOperations) {
                 const { id, config } = operation;
-                
-                // Restaurar configuração
-                this.operations.set(id, config);
-                
-                // Reagendar se não for manual
-                const intervalMs = this.parseFrequency(config.frequency);
-                if (intervalMs > 0) {
-                    const intervalId = setInterval(async () => {
-                        try {
-                            await this.executeScheduledOperation(id, config.action, config.sourcePath, config.targetPath, config.options || {});
-                        } catch (error) {
-                            logger.error(`Erro na operação agendada ${id}:`, error);
-                        }
-                    }, intervalMs);
-                    
-                    this.schedules.set(id, intervalId);
-                    logger.info(`Operação reagendada: ${id} - ${config.frequency}`);
-                } else if (intervalMs === 0) {
-                    // Executar imediatamente para 'on-startup'
-                    logger.info(`Executando operação de inicialização: ${id}`);
-                    this.executeScheduledOperation(id, config.action, config.sourcePath, config.targetPath, config.options || {}).catch(error => {
-                        logger.error(`Erro na operação de inicialização ${id}:`, error);
-                    });
-                } else {
-                    // Frequência manual - apenas salvar
-                    logger.info(`Operação manual restaurada: ${id}`);
-                }
+                const normalizedConfig = this.normalizeScheduledOperationConfig(config);
+
+                this.operations.set(id, normalizedConfig);
+                this.armScheduledOperation(id, normalizedConfig);
             }
             
             logger.info(`✅ ${savedOperations.length} operações agendadas carregadas e reagendadas`);
@@ -558,6 +535,92 @@ class FileOperationsManager {
         } catch (error) {
             logger.error('Erro ao salvar operações agendadas:', error);
         }
+    }
+
+    normalizeScheduledOperationConfig(config = {}) {
+        return {
+            ...config,
+            options: config.options || {},
+            active: config.active !== false
+        };
+    }
+
+    validateScheduledOperationConfig(config) {
+        const normalizedConfig = this.normalizeScheduledOperationConfig(config);
+        const { name, frequency, action, sourcePath, targetPath } = normalizedConfig;
+
+        if (!name || !frequency || !action || !sourcePath) {
+            throw new Error('Parâmetros obrigatórios ausentes: name, frequency, action, sourcePath');
+        }
+
+        const normalizedAction = action.toLowerCase();
+        const supportedActions = ['move', 'copy', 'delete'];
+        if (!supportedActions.includes(normalizedAction)) {
+            throw new Error(`Ação não suportada: ${action}. Use: ${supportedActions.join(', ')}`);
+        }
+
+        if ((normalizedAction === 'move' || normalizedAction === 'copy') && !targetPath) {
+            throw new Error(`targetPath é obrigatório para ação '${normalizedAction}'`);
+        }
+
+        return {
+            ...normalizedConfig,
+            action: normalizedAction
+        };
+    }
+
+    unscheduleOperation(operationId) {
+        if (this.schedules.has(operationId)) {
+            clearInterval(this.schedules.get(operationId));
+            this.schedules.delete(operationId);
+        }
+    }
+
+    armScheduledOperation(operationId, config) {
+        this.unscheduleOperation(operationId);
+
+        if (config.active === false) {
+            logger.info(`Operação desativada mantida sem timer: ${operationId}`);
+            return;
+        }
+
+        const intervalMs = this.parseFrequency(config.frequency);
+
+        if (intervalMs > 0) {
+            const intervalId = setInterval(async () => {
+                try {
+                    await this.executeScheduledOperation(
+                        operationId,
+                        config.action,
+                        config.sourcePath,
+                        config.targetPath,
+                        config.options || {}
+                    );
+                } catch (error) {
+                    logger.error(`Erro na operação agendada ${operationId}:`, error);
+                }
+            }, intervalMs);
+
+            this.schedules.set(operationId, intervalId);
+            logger.info(`Operação reagendada: ${operationId} - ${config.frequency}`);
+            return;
+        }
+
+        if (intervalMs === 0) {
+            logger.info(`Executando operação de inicialização: ${operationId}`);
+            this.executeScheduledOperation(
+                operationId,
+                config.action,
+                config.sourcePath,
+                config.targetPath,
+                config.options || {}
+            ).catch(error => {
+                logger.error(`Erro na operação de inicialização ${operationId}:`, error);
+            });
+            return;
+        }
+
+        logger.info(`Operação manual restaurada: ${operationId}`);
     }
 
     /**
@@ -1044,60 +1107,13 @@ class FileOperationsManager {
      * Agenda operação periódica
      */
     scheduleOperation(operationId, config) {
-        const { name, frequency, action, sourcePath, targetPath, options = {} } = config;
+        const normalizedConfig = this.validateScheduledOperationConfig(config);
+        const { name, frequency, action, sourcePath, targetPath } = normalizedConfig;
         
         logger.info(`Agendando operação: ${operationId}`, { name, frequency, action, sourcePath, targetPath });
 
-        // Cancelar agendamento existente se houver
-        if (this.schedules.has(operationId)) {
-            clearInterval(this.schedules.get(operationId));
-        }
-
-        const intervalMs = this.parseFrequency(frequency);
-
-        // Salvar a operação independentemente do tipo de frequência
-        logger.info(`💾 Salvando operação: ${operationId}`, { 
-            config: config, 
-            configKeys: Object.keys(config),
-            name: config.name,
-            nameType: typeof config.name 
-        });
-        this.operations.set(operationId, config);
-        
-        // Verificar se foi salva corretamente
-        const savedConfig = this.operations.get(operationId);
-        logger.info(`✅ Operação salva: ${operationId}`, { 
-            savedConfig: savedConfig, 
-            savedKeys: Object.keys(savedConfig),
-            savedName: savedConfig.name,
-            savedNameType: typeof savedConfig.name 
-        });
-
-        // Agendar apenas se não for manual
-        if (intervalMs >= 0) {
-            if (intervalMs === 0) {
-                // Executar imediatamente para 'on-startup'
-                logger.info(`Operação agendada para execução imediata: ${operationId} - ${frequency}`);
-                this.executeScheduledOperation(operationId, action, sourcePath, targetPath, options).catch(error => {
-                    logger.error(`Erro na operação imediata ${operationId}:`, error);
-                });
-            } else {
-                // Agendar com intervalo
-                const intervalId = setInterval(async () => {
-                    try {
-                        await this.executeScheduledOperation(operationId, action, sourcePath, targetPath, options);
-                    } catch (error) {
-                        logger.error(`Erro na operação agendada ${operationId}:`, error);
-                    }
-                }, intervalMs);
-
-                this.schedules.set(operationId, intervalId);
-                logger.info(`Operação agendada: ${operationId} - ${frequency} (${intervalMs}ms)`);
-            }
-        } else {
-            // Frequência manual - apenas salvar, não agendar
-            logger.info(`Operação salva para execução manual: ${operationId} - ${frequency}`);
-        }
+        this.operations.set(operationId, normalizedConfig);
+        this.armScheduledOperation(operationId, normalizedConfig);
         
         // Salvar operações agendadas no arquivo de persistência
         this.saveScheduledOperations().catch(error => {
@@ -1109,59 +1125,33 @@ class FileOperationsManager {
      * Cancela agendamento de operação
      */
     cancelScheduledOperation(operationId) {
-        if (this.schedules.has(operationId)) {
-            clearInterval(this.schedules.get(operationId));
-            this.schedules.delete(operationId);
-            this.operations.delete(operationId);
-            logger.info(`Agendamento cancelado: ${operationId}`);
-            
-            // Salvar operações agendadas no arquivo de persistência
-            this.saveScheduledOperations().catch(error => {
-                logger.error('Erro ao salvar operações agendadas após cancelamento:', error);
-            });
-        }
+        this.unscheduleOperation(operationId);
+        this.operations.delete(operationId);
+        logger.info(`Agendamento cancelado: ${operationId}`);
+        
+        this.saveScheduledOperations().catch(error => {
+            logger.error('Erro ao salvar operações agendadas após cancelamento:', error);
+        });
     }
 
     /**
      * Edita operação agendada existente
      */
     editScheduledOperation(operationId, newConfig) {
-        // Verificar se a operação existe
         if (!this.operations.has(operationId)) {
             throw new Error(`Operação agendada não encontrada: ${operationId}`);
         }
 
-        // Obter configuração atual
         const currentConfig = this.operations.get(operationId);
+        const mergedConfig = this.validateScheduledOperationConfig({ ...currentConfig, ...newConfig });
 
-        // Mesclar configurações (novas sobrescrevem antigas)
-        const mergedConfig = { ...currentConfig, ...newConfig };
+        this.operations.set(operationId, mergedConfig);
+        this.armScheduledOperation(operationId, mergedConfig);
+        this.saveScheduledOperations().catch(error => {
+            logger.error('Erro ao salvar operações agendadas após edição:', error);
+        });
 
-        // Validar nova configuração
-        const { frequency, action, sourcePath, targetPath, options = {} } = mergedConfig;
-
-        if (!frequency || !action || !sourcePath) {
-            throw new Error('Parâmetros obrigatórios ausentes: frequency, action, sourcePath');
-        }
-
-        // Validar ação suportada
-        const supportedActions = ['move', 'copy', 'delete'];
-        if (!supportedActions.includes(action.toLowerCase())) {
-            throw new Error(`Ação não suportada: ${action}. Use: ${supportedActions.join(', ')}`);
-        }
-
-        // Validar targetPath quando necessário
-        if ((action === 'move' || action === 'copy') && !targetPath) {
-            throw new Error(`targetPath é obrigatório para ação '${action}'`);
-        }
-
-        // Cancelar agendamento atual
-        this.cancelScheduledOperation(operationId);
-
-        // Agendar com nova configuração
-        this.scheduleOperation(operationId, mergedConfig);
-
-        logger.info(`Operação editada: ${operationId} - ${frequency}`);
+        logger.info(`Operação editada: ${operationId} - ${mergedConfig.frequency}`);
 
         return {
             operationId,
@@ -1655,51 +1645,10 @@ class FileOperationsManager {
      * Lista todas as operações agendadas
      */
     getScheduledOperations() {
-        const operations = [];
-        logger.info(`📋 Total de operações armazenadas: ${this.operations.size}`);
-        
-        for (const [id, config] of this.operations) {
-            logger.info(`🔍 Processando operação: ${id}`, { 
-                config: config, 
-                configKeys: Object.keys(config),
-                name: config.name,
-                nameType: typeof config.name 
-            });
-            
-            // Migração: corrigir operações antigas sem nome
-            if (!config.name || config.name === undefined) {
-                logger.info(`🔧 Migrando operação antiga sem nome: ${id}`);
-                const migratedConfig = {
-                    ...config,
-                    name: `${config.action.toUpperCase()} - ${config.frequency}`
-                };
-                
-                // Salvar configuração migrada
-                this.operations.set(id, migratedConfig);
-                logger.info(`✅ Operação migrada: ${id}`, { 
-                    oldName: config.name, 
-                    newName: migratedConfig.name 
-                });
-                
-                // Usar configuração migrada
-                config.name = migratedConfig.name;
-            }
-            
-            const operation = {
-                id,
-                ...config,
-                active: this.schedules.has(id)
-            };
-            
-            logger.info(`📤 Retornando operação: ${id}`, { 
-                name: operation.name, 
-                action: operation.action, 
-                frequency: operation.frequency,
-                operationKeys: Object.keys(operation)
-            });
-            operations.push(operation);
-        }
-        return operations;
+        return Array.from(this.operations.entries()).map(([id, config]) => ({
+            id,
+            ...this.normalizeScheduledOperationConfig(config)
+        }));
     }
 
     /**
@@ -1713,8 +1662,7 @@ class FileOperationsManager {
         
         return {
             id: operationId,
-            ...config,
-            active: this.schedules.has(operationId)
+            ...this.normalizeScheduledOperationConfig(config)
         };
     }
 

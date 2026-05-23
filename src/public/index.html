@@ -566,7 +566,7 @@
                                     <span class="material-icons">play_arrow</span>
                                     Executar Agora
                                 </button>
-                                <button class="btn btn-primary schedule-btn" disabled>
+                                <button class="btn btn-primary schedule-btn" type="button" disabled>
                                     <span class="material-icons">schedule</span>
                                     Agendar com Esta Configuração
                                 </button>
@@ -1183,7 +1183,7 @@
         <div class="modal-content large-modal">
             <div class="modal-header">
                 <h3>Agendar Operação</h3>
-                <button class="modal-close close-schedule-btn">
+                <button class="modal-close close-schedule-btn" type="button">
                     <span class="material-icons">close</span>
                 </button>
             </div>
@@ -1315,8 +1315,8 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-secondary cancel-schedule-btn">Cancelar</button>
-                <button class="btn btn-primary schedule-operation-btn">Agendar</button>
+                <button class="btn btn-secondary cancel-schedule-btn" type="button">Cancelar</button>
+                <button class="btn btn-primary schedule-operation-btn" type="button" onclick="return window.scheduleOperation ? window.scheduleOperation() : false;">Agendar</button>
             </div>
         </div>
     </div>
@@ -1498,9 +1498,9 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-secondary slideshow-close-btn">Cancelar</button>
-                <button class="btn btn-primary slideshow-save-btn">Salvar Alteracoes</button>
-                <button class="btn btn-primary slideshow-start-btn">Iniciar Slideshow</button>
+                <button class="btn btn-secondary slideshow-close-btn" type="button">Cancelar</button>
+                <button class="btn btn-primary slideshow-save-btn" type="button">Salvar Alteracoes</button>
+                <button class="btn btn-primary slideshow-start-btn" type="button" onclick="return window.startSlideshow ? window.startSlideshow() : false;">Iniciar Slideshow</button>
             </div>
         </div>
     </div>

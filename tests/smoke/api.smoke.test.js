@@ -156,4 +156,71 @@ describe('API smoke', () => {
     expect(missingFolders.body.success).toBe(true);
     expect(missingFolders.body.data.folders).toEqual([]);
   });
+
+  it('cria, edita, pausa e executa operacao agendada pelo contrato canonico', async () => {
+    const sourceDir = path.join(runtimeRoot, 'schedule-source');
+    const targetDir = path.join(runtimeRoot, 'schedule-target');
+    const nestedDir = path.join(sourceDir, 'nested');
+    const copiedFile = path.join(targetDir, 'fixture.txt');
+    await fsp.mkdir(nestedDir, { recursive: true });
+    await fsp.mkdir(targetDir, { recursive: true });
+    await fsp.writeFile(path.join(sourceDir, 'fixture.txt'), 'scheduled-copy', 'utf8');
+
+    const createResponse = await request(app)
+      .post('/api/files/schedule')
+      .send({
+        operationId: 'smoke_schedule_copy',
+        name: 'Smoke Schedule',
+        frequency: 'manual',
+        action: 'copy',
+        sourcePath: path.join(sourceDir, 'fixture.txt'),
+        targetPath: copiedFile,
+        options: { overwrite: true }
+      })
+      .expect(201);
+
+    expect(createResponse.body.success).toBe(true);
+    expect(createResponse.body.data.config.active).toBe(true);
+
+    const invalidCreate = await request(app)
+      .post('/api/files/schedule')
+      .send({
+        name: 'Missing Target',
+        frequency: 'manual',
+        action: 'copy',
+        sourcePath: path.join(sourceDir, 'fixture.txt')
+      })
+      .expect(400);
+
+    expect(invalidCreate.body.error.field).toBe('targetPath');
+
+    const listAfterCreate = await request(app).get('/api/files/scheduled').expect(200);
+    const createdOperation = listAfterCreate.body.data.find((operation) => operation.id === 'smoke_schedule_copy');
+    expect(createdOperation).toBeTruthy();
+    expect(createdOperation.active).toBe(true);
+
+    const pauseResponse = await request(app)
+      .put('/api/files/schedule/smoke_schedule_copy')
+      .send({ active: false })
+      .expect(200);
+
+    expect(pauseResponse.body.success).toBe(true);
+    expect(pauseResponse.body.data.config.active).toBe(false);
+
+    const editResponse = await request(app)
+      .put('/api/files/schedule/smoke_schedule_copy')
+      .send({ name: 'Smoke Schedule Edited', active: true, frequency: '30s' })
+      .expect(200);
+
+    expect(editResponse.body.data.config.name).toBe('Smoke Schedule Edited');
+    expect(editResponse.body.data.config.targetPath).toBe(copiedFile);
+    expect(editResponse.body.data.config.active).toBe(true);
+
+    await request(app)
+      .post('/api/files/schedule/smoke_schedule_copy/execute')
+      .send({})
+      .expect(200);
+
+    expect(fs.existsSync(copiedFile)).toBe(true);
+  });
 });
