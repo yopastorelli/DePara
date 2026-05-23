@@ -38,14 +38,16 @@
 
 ## Fonte de verdade por domínio
 - Versão, scripts e engines: `package.json`
-- Config da aplicação: `data/depara-config.json`
-- Config do auto-update: `data/update-config.json`
-- Estado do auto-update: `data/update-state.json`
-- Histórico de update: `data/update-history.log`
+- Config da aplicação: `~/.depara/data/depara-config.json`
+- Operações agendadas: `~/.depara/data/scheduled-operations.json`
+- Config do auto-update: `~/.depara/data/update-config.json`
+- Estado do auto-update: `~/.depara/data/update-state.json`
+- Histórico de update: `~/.depara/data/update-history.log`
 
 ## Contratos operacionais
 - A UI principal em `/ui` concentra slideshow, operações manuais, operações agendadas e leitura de status.
 - O backend cria diretórios de runtime a partir de `DEPARA_RUNTIME_ROOT` e derivados de log, backup, temp e uploads.
+- Na primeira inicialização do runtime, `depara-config.json` e `scheduled-operations.json` podem ser recuperados de `data/` ou `src/data/` do checkout legado.
 - O scheduler de update é inicializado pelo backend, mas a prontidão operacional depende do diagnóstico de supervisor do orchestrator.
 - No RP4, o launcher do menu depende de um backend já saudável em PM2.
 

@@ -9,14 +9,17 @@ function createTempDir(prefix) {
 
 describe('FileOperationsManager scheduling', () => {
   let runtimeRoot;
+  let sourceRoot;
 
   beforeEach(() => {
     jest.resetModules();
     runtimeRoot = createTempDir('depara-schedule-');
+    sourceRoot = path.join(runtimeRoot, 'source-root');
     process.env.NODE_ENV = 'test';
     process.env.DEPARA_RUNTIME_ROOT = runtimeRoot;
     process.env.DEPARA_DATA_DIR = path.join(runtimeRoot, 'data');
     process.env.DEPARA_BACKUP_DIR = path.join(runtimeRoot, 'backups');
+    process.env.DEPARA_UPDATE_SOURCE_ROOT = sourceRoot;
   });
 
   afterEach(async () => {
@@ -25,6 +28,7 @@ describe('FileOperationsManager scheduling', () => {
     delete process.env.DEPARA_RUNTIME_ROOT;
     delete process.env.DEPARA_DATA_DIR;
     delete process.env.DEPARA_BACKUP_DIR;
+    delete process.env.DEPARA_UPDATE_SOURCE_ROOT;
     await fsp.rm(runtimeRoot, { recursive: true, force: true });
   });
 
@@ -100,5 +104,36 @@ describe('FileOperationsManager scheduling', () => {
     expect(operation).not.toBeNull();
     expect(operation.active).toBe(false);
     expect(manager.schedules.has(operationId)).toBe(false);
+  });
+
+  it('migra scheduled-operations legado para o runtime e reidrata timers', async () => {
+    const legacyDataDir = path.join(sourceRoot, 'data');
+    await fsp.mkdir(legacyDataDir, { recursive: true });
+    await fsp.writeFile(path.join(legacyDataDir, 'scheduled-operations.json'), JSON.stringify([
+      {
+        id: 'legacy_schedule',
+        config: {
+          name: 'Legado',
+          frequency: '30s',
+          action: 'copy',
+          sourcePath: '/tmp/source',
+          targetPath: '/tmp/target',
+          active: true,
+          options: {}
+        }
+      }
+    ], null, 2), 'utf8');
+
+    const manager = require('../src/utils/fileOperations');
+    await manager.init();
+
+    const operation = manager.getScheduledOperation('legacy_schedule');
+    const persistence = await manager.getPersistenceStatus();
+
+    expect(operation).not.toBeNull();
+    expect(operation.name).toBe('Legado');
+    expect(manager.schedules.has('legacy_schedule')).toBe(true);
+    expect(persistence.migrated).toBe(true);
+    expect(persistence.source).toContain(path.join('data', 'scheduled-operations.json'));
   });
 });

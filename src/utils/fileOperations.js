@@ -14,7 +14,11 @@ const util = require('util');
 const execAsync = util.promisify(exec);
 
 const logger = require('./logger');
-const { getRuntimeBackupsDir, getRuntimeDataDir } = require('./runtimePaths');
+const { getRuntimeBackupsDir, getRuntimeDataDir, getSourceRepoRoot } = require('./runtimePaths');
+const {
+    recordMigrationStatus,
+    getMigrationStatus
+} = require('./persistenceMigration');
 const {
     fixFilePermissions,
     ensureWritableTarget,
@@ -427,6 +431,11 @@ class FileOperationsManager {
         // Persistência de operações agendadas
         this.dataDir = getRuntimeDataDir();
         this.persistenceFile = path.join(this.dataDir, 'scheduled-operations.json');
+        const sourceRepoRoot = getSourceRepoRoot();
+        this.legacyPersistenceFiles = [
+            path.join(sourceRepoRoot, 'data', 'scheduled-operations.json'),
+            path.join(sourceRepoRoot, 'src', 'data', 'scheduled-operations.json')
+        ];
 
         // Configurações otimizadas para Raspberry Pi
         this.maxConcurrentOperations = process.env.MAX_CONCURRENT_OPERATIONS || 2; // Reduzido para RPi
@@ -483,11 +492,22 @@ class FileOperationsManager {
             // Verificar se o arquivo de persistência existe
             try {
                 await fs.access(this.persistenceFile);
+                const marker = await getMigrationStatus();
+                if (!marker.scheduledOperations || marker.scheduledOperations.outcome === 'unknown') {
+                    await recordMigrationStatus('scheduledOperations', {
+                        migrated: false,
+                        source: 'runtime',
+                        outcome: 'runtime_present'
+                    });
+                }
             } catch (error) {
-                // Arquivo não existe - criar arquivo vazio
-                await this.saveScheduledOperations();
-                logger.info('Arquivo de persistência de operações agendadas criado');
-                return;
+                const migrated = await this.tryMigrateLegacyScheduledOperations();
+                if (!migrated) {
+                    // Arquivo não existe - criar arquivo vazio
+                    await this.saveScheduledOperations();
+                    logger.info('Arquivo de persistência de operações agendadas criado');
+                    return;
+                }
             }
             
             // Ler arquivo de persistência
@@ -510,6 +530,37 @@ class FileOperationsManager {
         } catch (error) {
             logger.error('Erro ao carregar operações agendadas:', error);
         }
+    }
+
+    async tryMigrateLegacyScheduledOperations() {
+        for (const legacyPath of this.legacyPersistenceFiles) {
+            if (path.resolve(legacyPath) === path.resolve(this.persistenceFile)) {
+                continue;
+            }
+
+            if (!fsSync.existsSync(legacyPath)) {
+                continue;
+            }
+
+            await fs.copyFile(legacyPath, this.persistenceFile);
+            await recordMigrationStatus('scheduledOperations', {
+                migrated: true,
+                source: legacyPath,
+                outcome: 'migrated'
+            });
+            logger.info('Operações agendadas migradas para o runtime', {
+                source: legacyPath,
+                target: this.persistenceFile
+            });
+            return true;
+        }
+
+        await recordMigrationStatus('scheduledOperations', {
+            migrated: false,
+            source: null,
+            outcome: 'legacy_not_found'
+        });
+        return false;
     }
 
     /**
@@ -535,6 +586,16 @@ class FileOperationsManager {
         } catch (error) {
             logger.error('Erro ao salvar operações agendadas:', error);
         }
+    }
+
+    async getPersistenceStatus() {
+        const marker = await getMigrationStatus();
+        return marker.scheduledOperations || {
+            migrated: false,
+            source: null,
+            outcome: 'unknown',
+            attemptedAt: null
+        };
     }
 
     normalizeScheduledOperationConfig(config = {}) {

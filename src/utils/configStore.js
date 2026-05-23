@@ -1,7 +1,12 @@
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
+const logger = require('./logger');
 const { getRuntimeDataDir, getSourceRepoRoot } = require('./runtimePaths');
+const {
+  recordMigrationStatus,
+  getMigrationStatus
+} = require('./persistenceMigration');
 
 const DEFAULT_CONFIG_VERSION = 1;
 const DEFAULT_SLIDESHOW_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
@@ -141,6 +146,14 @@ async function writeConfigAtomic(config) {
 async function migrateLegacyConfigIfNeeded() {
   const targetPath = getConfigPath();
   if (fsSync.existsSync(targetPath)) {
+    const marker = await getMigrationStatus();
+    if (!marker.config || marker.config.outcome === 'unknown') {
+      await recordMigrationStatus('config', {
+        migrated: false,
+        source: 'runtime',
+        outcome: 'runtime_present'
+      });
+    }
     return;
   }
 
@@ -151,8 +164,23 @@ async function migrateLegacyConfigIfNeeded() {
 
     await ensureDirectory();
     await fs.copyFile(legacyPath, targetPath);
+    await recordMigrationStatus('config', {
+      migrated: true,
+      source: legacyPath,
+      outcome: 'migrated'
+    });
+    logger.info('Configuração da aplicação migrada para o runtime', {
+      source: legacyPath,
+      target: targetPath
+    });
     return;
   }
+
+  await recordMigrationStatus('config', {
+    migrated: false,
+    source: null,
+    outcome: 'legacy_not_found'
+  });
 }
 
 async function readRawConfig() {
@@ -162,8 +190,15 @@ async function readRawConfig() {
     return JSON.parse(data);
   } catch (error) {
     if (error.code === 'ENOENT') {
+      logger.warn('Configuração da aplicação ausente; usando defaults', {
+        path: getConfigPath()
+      });
       return getDefaultConfig();
     }
+    logger.warn('Configuração da aplicação inválida; usando defaults', {
+      path: getConfigPath(),
+      error: error.message
+    });
     return getDefaultConfig();
   }
 }
@@ -224,6 +259,16 @@ async function ensureConfigFile() {
   return config;
 }
 
+async function getPersistenceStatus() {
+  const marker = await getMigrationStatus();
+  return marker.config || {
+    migrated: false,
+    source: null,
+    outcome: 'unknown',
+    attemptedAt: null
+  };
+}
+
 module.exports = {
   DEFAULT_CONFIG_VERSION,
   getConfigPath,
@@ -234,5 +279,6 @@ module.exports = {
   getConfig,
   saveConfig,
   updateConfig,
-  setConfigValue
+  setConfigValue,
+  getPersistenceStatus
 };

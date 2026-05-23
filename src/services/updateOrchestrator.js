@@ -4,6 +4,8 @@ const path = require('path');
 const http = require('http');
 const { exec } = require('child_process');
 const logger = require('../utils/logger');
+const configStore = require('../utils/configStore');
+const fileOperationsManager = require('../utils/fileOperations');
 const {
   getRuntimeRoot,
   getRuntimeDataDir,
@@ -531,12 +533,28 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
     const supervisor = await this.detectSupervisorStatus();
     const worktree = await this.getTrackedWorktreeStatus();
     const activeRelease = await this.readCurrentReleaseMeta();
+    const [configPersistence, scheduledOperationsPersistence] = await Promise.all([
+      configStore.getPersistenceStatus(),
+      fileOperationsManager.getPersistenceStatus()
+    ]);
     return {
       platformTarget: 'rp4',
       supervisor,
       scheduler: this.getSchedulerRuntimeStatus(),
       lock: this.readLockDetails(),
       worktree,
+      persistence: {
+        configMigrated: Boolean(configPersistence.migrated),
+        scheduledOperationsMigrated: Boolean(scheduledOperationsPersistence.migrated),
+        sources: {
+          config: configPersistence.source || null,
+          scheduledOperations: scheduledOperationsPersistence.source || null
+        },
+        details: {
+          config: configPersistence,
+          scheduledOperations: scheduledOperationsPersistence
+        }
+      },
       release: {
         current: activeRelease.activeRelease || this.state.currentRelease || null,
         target: this.state.targetRelease || null,

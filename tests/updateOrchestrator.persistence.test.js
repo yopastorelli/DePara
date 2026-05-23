@@ -171,5 +171,9 @@ describe('UpdateOrchestrator persistence layout', () => {
     expect(fs.existsSync(path.join(currentDir, 'release.json'))).toBe(true);
     expect(runtime.release.current).toBe('abc1234');
     expect(runtime.release.activationState).toBeDefined();
+    expect(runtime.persistence).toBeDefined();
+    expect(runtime.persistence).toHaveProperty('configMigrated');
+    expect(runtime.persistence).toHaveProperty('scheduledOperationsMigrated');
+    expect(runtime.persistence).toHaveProperty('sources');
   });
 });
