@@ -1,7 +1,8 @@
-/**
- * Configuração PM2 para DePara
- * Otimizado para execução em segundo plano no Raspberry Pi
- */
+const os = require('os');
+const path = require('path');
+
+const runtimeRoot = process.env.DEPARA_RUNTIME_ROOT || path.join(os.homedir(), '.depara');
+const logsDir = path.join(runtimeRoot, 'logs');
 
 module.exports = {
   apps: [
@@ -9,63 +10,53 @@ module.exports = {
       name: 'DePara',
       script: 'src/main.js',
       instances: 1,
-      autorestart: true,
+      exec_mode: 'fork',
       watch: false,
-      max_memory_restart: '1G',
+      autorestart: true,
+      restart_delay: 5000,
+      max_memory_restart: '350M',
+      node_args: '--max-old-space-size=256',
+      log_file: path.join(logsDir, 'pm2-depara.log'),
+      out_file: path.join(logsDir, 'pm2-depara-out.log'),
+      error_file: path.join(logsDir, 'pm2-depara-error.log'),
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      time: true,
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        LOG_LEVEL: 'info'
+        LOG_LEVEL: 'warn',
+        LOG_TO_CONSOLE: 'false',
+        DEPARA_RUNTIME_ROOT: runtimeRoot,
+        PM2_APP_NAME: 'DePara',
+        DEPARA_ALLOW_SYSTEMD_FALLBACK: 'false'
       },
       env_production: {
         NODE_ENV: 'production',
         PORT: 3000,
-        LOG_LEVEL: 'info'
+        LOG_LEVEL: 'warn',
+        LOG_TO_CONSOLE: 'false',
+        DEPARA_RUNTIME_ROOT: runtimeRoot,
+        PM2_APP_NAME: 'DePara',
+        DEPARA_ALLOW_SYSTEMD_FALLBACK: 'false'
       },
       env_development: {
         NODE_ENV: 'development',
         PORT: 3000,
-        LOG_LEVEL: 'debug'
+        LOG_LEVEL: 'debug',
+        LOG_TO_CONSOLE: 'true'
       },
-      // Configurações específicas para Raspberry Pi
-      node_args: '--max-old-space-size=512',
-      // Reiniciar automaticamente se travar
-      restart_delay: 5000,
-      // Arquivos de log
-      log_file: 'logs/pm2-depara.log',
-      out_file: 'logs/pm2-depara-out.log',
-      error_file: 'logs/pm2-depara-error.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      // Configurações de monitoramento
-      merge_logs: true,
-      time: true,
-      // Reiniciar quando o sistema volta
-      autorestart: true,
-      // Configurações de cluster (útil para múltiplos cores)
-      exec_mode: 'fork',
-      // Variáveis de ambiente adicionais para Raspberry Pi
       env_raspberry: {
         NODE_ENV: 'production',
         PORT: 3000,
-        LOG_LEVEL: 'info',
-        // Otimizações para Raspberry Pi
+        LOG_LEVEL: 'warn',
+        LOG_TO_CONSOLE: 'false',
+        DEPARA_RUNTIME_ROOT: runtimeRoot,
+        PM2_APP_NAME: 'DePara',
+        DEPARA_ALLOW_SYSTEMD_FALLBACK: 'false',
         UV_THREADPOOL_SIZE: 4,
         NODE_OPTIONS: '--max-old-space-size=256'
       }
     }
-  ],
-  // Configurações de deploy (opcional)
-  deploy: {
-    production: {
-      user: 'pi',
-      host: 'raspberrypi.local',
-      ref: 'origin/main',
-      repo: 'git@github.com:username/DePara.git',
-      path: '/home/pi/DePara',
-      'pre-deploy-local': '',
-      'post-deploy': 'npm install && pm2 reload ecosystem.config.js --env raspberry',
-      'pre-setup': ''
-    }
-  }
+  ]
 };
-

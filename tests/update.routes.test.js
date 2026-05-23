@@ -133,6 +133,24 @@ describe('Update Routes', () => {
     expect(res.body.error.reason).toBe('running');
   });
 
+  it('POST /api/update/auto/trigger should return 412 when runtime is not operationally ready', async () => {
+    orchestratorMock.startUpdateCycle.mockResolvedValue({
+      started: false,
+      reason: 'not_operational',
+      diagnostics: {
+        supervisor: {
+          supervisor: 'unmanaged',
+          reasons: ['pm2_process_not_registered']
+        }
+      }
+    });
+
+    const res = await request(app).post('/api/update/auto/trigger').expect(412);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error.reason).toBe('not_operational');
+    expect(res.body.error.diagnostics.supervisor.supervisor).toBe('unmanaged');
+  });
+
   it('GET /api/update/auto/history should return historical entries', async () => {
     orchestratorMock.getHistory.mockResolvedValue([
       { event: 'cycle_started', runId: 'run_1' },
@@ -156,5 +174,12 @@ describe('Update Routes', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.state.status).toBe('idle');
     expect(orchestratorMock.getDiagnostics).toHaveBeenCalledTimes(1);
+  });
+
+  it('legacy update routes should be explicitly disabled', async () => {
+    await request(app).get('/api/update/check').expect(410);
+    await request(app).post('/api/update/apply').expect(410);
+    await request(app).post('/api/update/restart').expect(410);
+    await request(app).get('/api/update/status').expect(410);
   });
 });

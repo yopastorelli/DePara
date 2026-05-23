@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const LOG_LEVELS = {
@@ -19,13 +20,22 @@ const COLORS = {
 
 class Logger {
   constructor() {
-    this.logFile = process.env.LOG_FILE || 'logs/app.log';
+    const runtimeRoot = process.env.DEPARA_RUNTIME_ROOT || path.join(os.homedir(), '.depara');
+    const defaultLogDir = process.env.DEPARA_LOG_DIR || path.join(runtimeRoot, 'logs');
+    const nodeEnv = process.env.NODE_ENV || 'development';
+    const defaultConsoleLogging = nodeEnv !== 'production' && nodeEnv !== 'test';
+    this.logFile = process.env.LOG_FILE || path.join(defaultLogDir, 'app.log');
     this.currentLevel = LOG_LEVELS[process.env.LOG_LEVEL || 'info'] || LOG_LEVELS.info;
     this.logBuffer = [];
     this.bufferSize = Number(process.env.LOG_BUFFER_SIZE || 10);
     this.flushInterval = Number(process.env.LOG_FLUSH_INTERVAL || 5000);
+    this.logToConsole = process.env.LOG_TO_CONSOLE
+      ? process.env.LOG_TO_CONSOLE !== 'false'
+      : defaultConsoleLogging;
+    this.stream = null;
 
     this.ensureLogDirectory();
+    this.openStream();
     this.startBufferFlush();
   }
 
@@ -42,6 +52,17 @@ class Logger {
       level: level.toUpperCase(),
       message,
       ...meta
+    });
+  }
+
+  openStream() {
+    if (this.stream) {
+      return;
+    }
+
+    this.stream = fs.createWriteStream(this.logFile, { flags: 'a' });
+    this.stream.on('error', (error) => {
+      console.error('Erro ao escrever no stream de log:', error);
     });
   }
 
@@ -62,6 +83,11 @@ class Logger {
     }
 
     this.flushBuffer();
+
+    if (this.stream) {
+      this.stream.end();
+      this.stream = null;
+    }
   }
 
   addToBuffer(logEntry) {
@@ -79,7 +105,8 @@ class Logger {
 
     try {
       this.ensureLogDirectory();
-      fs.appendFileSync(this.logFile, `${this.logBuffer.join('\n')}\n`);
+      this.openStream();
+      this.stream.write(`${this.logBuffer.join('\n')}\n`);
     } catch (error) {
       console.error('Erro ao escrever buffer no arquivo de log:', error);
     } finally {
@@ -88,6 +115,10 @@ class Logger {
   }
 
   writeToConsole(level, message, meta = {}) {
+    if (!this.logToConsole) {
+      return;
+    }
+
     const timestamp = new Date().toLocaleString('pt-BR');
     const metaStr = Object.keys(meta).length > 0
       ? ` ${COLORS.blue}${JSON.stringify(meta)}${COLORS.reset}`

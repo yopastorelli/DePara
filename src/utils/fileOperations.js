@@ -7,12 +7,19 @@
  */
 
 const fs = require('fs').promises;
+const os = require('os');
 const path = require('path');
 const { exec } = require('child_process');
 const util = require('util');
 const execAsync = util.promisify(exec);
 
 const logger = require('./logger');
+const {
+    fixFilePermissions,
+    ensureWritableTarget,
+    copyOrMoveWithOptionalShellFallback
+} = require('./fileOps/permissions');
+const { scanImagesRecursive } = require('./fileOps/imageScanner');
 
 /**
  * Função utilitária para corrigir permissões de arquivos/diretórios
@@ -20,7 +27,7 @@ const logger = require('./logger');
  * @param {string} filePath - Caminho do arquivo/diretório
  * @param {string} permissions - Permissões (padrão: 755)
  */
-async function fixFilePermissions(filePath, permissions = '755') {
+async function legacyFixFilePermissions(filePath, permissions = '755') {
     try {
         // Executar chmod para corrigir permissões
         await execAsync(`chmod ${permissions} "${filePath}"`);
@@ -54,7 +61,7 @@ async function fixFilePermissions(filePath, permissions = '755') {
  * @param {string} targetPath - Caminho de destino
  * @param {string} operation - Tipo de operação
  */
-async function checkRaspberryPiPermissions(sourcePath, targetPath, operation) {
+async function legacyCheckRaspberryPiPermissions(sourcePath, targetPath, operation) {
     try {
         // Detectar se está rodando no Raspberry Pi
         const isRaspberryPi = process.platform === 'linux' && 
@@ -86,7 +93,7 @@ async function checkRaspberryPiPermissions(sourcePath, targetPath, operation) {
         } catch (error) {
             logger.warn(`⚠️ Sem permissão de leitura: ${sourcePath} - ${error.message}`);
             // Tentar corrigir permissões
-            await fixFilePermissions(sourcePath, '644');
+            await legacyFixFilePermissions(sourcePath, '644');
         }
 
         // Verificar/criar diretório de destino
@@ -98,7 +105,7 @@ async function checkRaspberryPiPermissions(sourcePath, targetPath, operation) {
             logger.warn(`⚠️ Sem permissão de escrita: ${targetDir}`);
             // Criar diretório com permissões corretas
             await fs.mkdir(targetDir, { recursive: true });
-            await fixFilePermissions(targetDir, '755');
+            await legacyFixFilePermissions(targetDir, '755');
         }
 
         // Verificar se o usuário tem permissão sudo
@@ -120,7 +127,7 @@ async function checkRaspberryPiPermissions(sourcePath, targetPath, operation) {
  * @param {string} targetPath - Caminho de destino
  * @param {string} operation - Tipo de operação (copy, move)
  */
-async function executeFileOperationWithSudo(sourcePath, targetPath, operation) {
+async function legacyExecuteFileOperationWithSudo(sourcePath, targetPath, operation) {
     try {
         if (operation === 'copy') {
             // Tentar cópia normal primeiro
@@ -133,7 +140,7 @@ async function executeFileOperationWithSudo(sourcePath, targetPath, operation) {
         }
         
         // Corrigir permissões após operação bem-sucedida
-        await fixFilePermissions(targetPath);
+        await legacyFixFilePermissions(targetPath);
         
     } catch (error) {
         if (error.code === 'EPERM') {
@@ -151,7 +158,7 @@ async function executeFileOperationWithSudo(sourcePath, targetPath, operation) {
                 }
                 
                 // Corrigir permissões após operação com sudo
-                await fixFilePermissions(targetPath);
+                await legacyFixFilePermissions(targetPath);
                 
             } catch (sudoError) {
                 logger.error(`❌ Erro mesmo com sudo: ${sudoError.message}`);
@@ -415,10 +422,11 @@ class FileOperationsManager {
     constructor() {
         this.operations = new Map();
         this.schedules = new Map();
-        
+        const runtimeRoot = process.env.DEPARA_RUNTIME_ROOT || path.join(os.homedir(), '.depara');
+
         // Persistência de operações agendadas
-        this.persistenceFile = path.join(__dirname, '..', 'data', 'scheduled-operations.json');
-        this.dataDir = path.join(__dirname, '..', 'data');
+        this.dataDir = process.env.DEPARA_DATA_DIR || path.join(__dirname, '..', 'data');
+        this.persistenceFile = path.join(this.dataDir, 'scheduled-operations.json');
 
         // Configurações otimizadas para Raspberry Pi
         this.maxConcurrentOperations = process.env.MAX_CONCURRENT_OPERATIONS || 2; // Reduzido para RPi
@@ -426,7 +434,7 @@ class FileOperationsManager {
         this.streamHighWaterMark = process.env.STREAM_HIGH_WATER_MARK || 64 * 1024; // 64KB para RPi
         this.backupConfig = {
             enabled: true,
-            backupDir: path.join(process.cwd(), 'backups'),
+            backupDir: process.env.DEPARA_BACKUP_DIR || path.join(runtimeRoot, 'backups'),
             retentionDays: 30,
             compressBackups: true
         };
@@ -436,7 +444,6 @@ class FileOperationsManager {
     async init() {
         try {
             // Garantir que o diretório de logs existe
-            await this.ensureLogsDirectory();
 
             // Inicializar diretório de backup
             await this.ensureBackupDirectory();
@@ -446,21 +453,13 @@ class FileOperationsManager {
 
             logger.info('Gerenciador de operações de arquivos inicializado com sucesso');
         } catch (error) {
-            console.error('Erro ao inicializar gerenciador de operações:', error.message);
-            console.error('Stack trace:', error.stack);
+            logger.error('Erro ao inicializar gerenciador de operações', {
+                error: error.message,
+                stack: error.stack
+            });
 
             // Tentar continuar mesmo com erro de inicialização
-            console.warn('Continuando inicialização apesar do erro no gerenciador de operações');
-        }
-    }
-
-    async ensureLogsDirectory() {
-        try {
-            const logsDir = path.dirname(this.backupConfig.backupDir.replace('backups', 'logs'));
-            await fs.access(logsDir);
-        } catch {
-            await fs.mkdir(path.dirname(this.backupConfig.backupDir.replace('backups', 'logs')), { recursive: true });
-            console.log(`Diretório de logs criado: ${path.dirname(this.backupConfig.backupDir.replace('backups', 'logs'))}`);
+            logger.warn('Continuando inicialização apesar do erro no gerenciador de operações');
         }
     }
 
@@ -567,7 +566,7 @@ class FileOperationsManager {
     async moveFileCrossDevice(sourcePath, targetPath) {
         try {
             // Tentar rename primeiro (mais rápido para mesmo dispositivo)
-            await executeFileOperationWithSudo(sourcePath, targetPath, 'move');
+            await copyOrMoveWithOptionalShellFallback(sourcePath, targetPath, 'move');
             
             // Validar que o arquivo chegou ao destino
             const targetStats = await fs.stat(targetPath);
@@ -584,7 +583,7 @@ class FileOperationsManager {
                 await fs.mkdir(targetDir, { recursive: true });
                 
                 // Copiar arquivo com suporte a sudo
-                await executeFileOperationWithSudo(sourcePath, targetPath, 'copy');
+                await copyOrMoveWithOptionalShellFallback(sourcePath, targetPath, 'copy');
                 
                 // Verificar se a cópia foi bem-sucedida
                 const sourceStats = await fs.stat(sourcePath);
@@ -797,8 +796,8 @@ class FileOperationsManager {
                 // Corrigir permissões do diretório criado
                 await fixFilePermissions(targetDir);
 
-                // Copiar o arquivo com suporte a sudo
-                await executeFileOperationWithSudo(safeSourcePath, safeTargetPath, 'copy');
+                await copyOrMoveWithOptionalShellFallback(safeSourcePath, safeTargetPath, 'copy');
+                await fixFilePermissions(safeTargetPath);
             }
 
             // Verificar se copiou corretamente
@@ -869,8 +868,8 @@ class FileOperationsManager {
                     }
                 }
 
-                // Copiar arquivo com suporte a sudo
-                await executeFileOperationWithSudo(sourcePath, targetPath, 'copy');
+                await copyOrMoveWithOptionalShellFallback(sourcePath, targetPath, 'copy');
+                await fixFilePermissions(targetPath);
                 
                 logger.info(`Arquivo copiado: ${sourcePath} -> ${targetPath}`);
             }
@@ -1253,7 +1252,6 @@ class FileOperationsManager {
 
                         // Aplicar filtros se configurados
                         logger.debug(`🔍 Aplicando filtros para: ${fileName}`, { 
-                            filters: options.filters, 
                             hasFilters: !!options.filters,
                             filterKeys: options.filters ? Object.keys(options.filters) : []
                         });
@@ -1288,7 +1286,7 @@ class FileOperationsManager {
                         return { status: 'processed' };
 
                     } catch (error) {
-                        logger.error(`Erro ao processar arquivo ${filePath}:`, error);
+                        logger.error(`Erro ao processar arquivo ${filePath}:`, { error: error.message });
                         return { status: 'error', error: error.message };
                     }
                 });
@@ -1340,8 +1338,7 @@ class FileOperationsManager {
             this.progressStore = new Map();
         }
         this.progressStore.set(operationId, progressData);
-
-        logger.info(`Progresso ${operationId}: ${percentage}% - ${message}`);
+        logger.debug(`Progresso ${operationId}: ${percentage}% - ${message}`);
     }
 
     /**
@@ -1426,7 +1423,7 @@ class FileOperationsManager {
      * @param {string} operation - Tipo de operação
      */
     async checkRaspberryPiPermissions(sourcePath, targetPath, operation) {
-        return await checkRaspberryPiPermissions(sourcePath, targetPath, operation);
+        return await ensureWritableTarget(sourcePath, targetPath, operation);
     }
 
     /**

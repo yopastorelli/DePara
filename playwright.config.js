@@ -21,6 +21,8 @@ fs.mkdirSync(imagesDir, { recursive: true });
 fs.mkdirSync(foldersDir, { recursive: true });
 fs.mkdirSync(path.join(foldersDir, 'entrada'), { recursive: true });
 fs.mkdirSync(path.join(foldersDir, 'saida'), { recursive: true });
+fs.mkdirSync(path.join(foldersDir, 'source'), { recursive: true });
+fs.mkdirSync(path.join(foldersDir, 'target'), { recursive: true });
 
 const pngBuffer = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9sMVMX8AAAAASUVORK5CYII=',
@@ -30,10 +32,12 @@ const pngBuffer = Buffer.from(
 fs.writeFileSync(path.join(imagesDir, 'fixture-1.png'), pngBuffer);
 fs.writeFileSync(path.join(imagesDir, 'fixture-2.png'), pngBuffer);
 fs.writeFileSync(path.join(foldersDir, 'entrada', 'sample.txt'), 'fixture-file', 'utf8');
+fs.writeFileSync(path.join(foldersDir, 'source', 'sample.txt'), 'fixture-file', 'utf8');
 
 process.env.DEPARA_E2E_ROOT = runtimeRoot;
 process.env.DEPARA_E2E_IMAGES_DIR = imagesDir;
 process.env.DEPARA_E2E_FOLDERS_DIR = foldersDir;
+process.env.DEPARA_E2E_FILEOPS_ROOT = foldersDir;
 
 module.exports = defineConfig({
   testDir: './tests/e2e',

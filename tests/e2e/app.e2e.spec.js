@@ -22,6 +22,58 @@ async function waitForInteractiveUI(page) {
 }
 
 test.describe('DePara UI E2E', () => {
+  test('configura e executa operacao canonica de copy em fileops pelo browser interno', async ({ page }) => {
+    const fixtureRoot = process.env.DEPARA_E2E_FILEOPS_ROOT;
+    const sourceDir = `${fixtureRoot}/source`;
+    const targetDir = `${fixtureRoot}/target`;
+
+    await page.request.post('/api/files/folders', {
+      data: { name: 'Source Fixture', path: sourceDir, type: 'source' }
+    });
+    await page.request.post('/api/files/folders', {
+      data: { name: 'Target Fixture', path: targetDir, type: 'target' }
+    });
+
+    await page.goto('/ui');
+    await waitForInteractiveUI(page);
+
+    await page.locator('.nav-btn[data-tab="fileops"]').click();
+
+    await page.locator('.select-folder-btn').click();
+    await expect(page.locator('.folder-browser-modal h3')).toContainText('Origem');
+    await expect(page.locator('.folder-browser-select-btn')).toContainText('origem');
+    await page.locator('#browser-path').fill(sourceDir);
+    await page.locator('.folder-browser-select-btn').click();
+
+    await expect(page.locator('#source-folder-path')).toHaveValue(sourceDir);
+    await page.locator('.copy-btn').click();
+
+    await page.locator('.select-target-btn').click();
+    await expect(page.locator('.folder-browser-modal h3')).toContainText('Destino');
+    await expect(page.locator('.folder-browser-select-btn')).toContainText('destino');
+    await page.locator('#browser-path').fill(targetDir);
+    await page.locator('.folder-browser-select-btn').click();
+
+    await expect(page.locator('#target-folder-path')).toHaveValue(targetDir);
+
+    await expect(page.locator('#fileops-summary-source')).toContainText(sourceDir);
+    await expect(page.locator('#fileops-summary-action')).toContainText('COPY');
+    await expect(page.locator('#fileops-summary-target')).toContainText(targetDir);
+    await expect(page.locator('.execute-now-btn')).toBeEnabled();
+    await expect(page.locator('.schedule-btn')).toBeEnabled();
+
+    const executeResponsePromise = page.waitForResponse((response) =>
+      response.url().includes('/api/files/execute') && response.request().method() === 'POST'
+    );
+
+    await page.locator('.execute-now-btn').click();
+
+    const executeResponse = await executeResponsePromise;
+    const executePayload = await executeResponse.json();
+    expect(executeResponse.ok(), JSON.stringify(executePayload)).toBeTruthy();
+    expect(executePayload.success).toBeTruthy();
+  });
+
   test('carrega a UI sem erro de parser e exibe a navegacao principal', async ({ page }) => {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));

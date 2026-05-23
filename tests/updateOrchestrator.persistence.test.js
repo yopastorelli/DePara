@@ -56,6 +56,7 @@ describe('UpdateOrchestrator persistence layout', () => {
       clearInterval(orchestrator.timer);
     }
     jest.restoreAllMocks();
+    delete process.env.DEPARA_ALLOW_SYSTEMD_FALLBACK;
     delete process.env.DEPARA_DATA_DIR;
     await cleanupDir(repoRoot);
   });
@@ -84,17 +85,27 @@ describe('UpdateOrchestrator persistence layout', () => {
     expect(migratedConfig.checkIntervalMinutes).toBe(15);
   });
 
-  it('falls back to systemd when pm2 exists but the process name is not registered', async () => {
+  it('fails fast when pm2 exists but the canonical process is not registered', async () => {
     jest.spyOn(orchestrator, 'isPm2Available').mockResolvedValue(true);
     jest.spyOn(orchestrator, 'isPm2ProcessRegistered').mockResolvedValue(false);
     jest.spyOn(orchestrator, 'isSystemctlAvailable').mockResolvedValue(true);
     const restartViaSystemdSpy = jest.spyOn(orchestrator, 'restartViaSystemd').mockResolvedValue(true);
-    const exitSpy = jest.spyOn(orchestrator, 'scheduleProcessExit').mockImplementation(() => {});
+
+    await expect(orchestrator.requestRestart()).rejects.toThrow('Processo PM2 canônico não está registrado');
+
+    expect(orchestrator.isPm2ProcessRegistered).toHaveBeenCalledWith('DePara');
+    expect(restartViaSystemdSpy).not.toHaveBeenCalled();
+  });
+
+  it('allows explicit legacy fallback to systemd when configured', async () => {
+    process.env.DEPARA_ALLOW_SYSTEMD_FALLBACK = 'true';
+    jest.spyOn(orchestrator, 'isPm2Available').mockResolvedValue(true);
+    jest.spyOn(orchestrator, 'isPm2ProcessRegistered').mockResolvedValue(false);
+    jest.spyOn(orchestrator, 'isSystemctlAvailable').mockResolvedValue(true);
+    const restartViaSystemdSpy = jest.spyOn(orchestrator, 'restartViaSystemd').mockResolvedValue(true);
 
     await orchestrator.requestRestart();
 
-    expect(orchestrator.isPm2ProcessRegistered).toHaveBeenCalledWith('DePara');
     expect(restartViaSystemdSpy).toHaveBeenCalledWith('depara.service');
-    expect(exitSpy).not.toHaveBeenCalled();
   });
 });

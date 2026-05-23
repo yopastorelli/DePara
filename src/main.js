@@ -1,6 +1,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const os = require('os');
 const path = require('path');
 require('dotenv').config();
 
@@ -9,6 +10,7 @@ const { getAppMetadata } = require('./utils/appMetadata');
 const routes = require('./routes');
 const updateOrchestrator = require('./services/updateOrchestrator');
 const configStore = require('./utils/configStore');
+const folderManager = require('./config/folders');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter } = require('./middleware/rateLimiter');
 
@@ -25,14 +27,18 @@ function getRepoRoot() {
   return path.resolve(__dirname, '..');
 }
 
+function getRuntimeRoot() {
+  return process.env.DEPARA_RUNTIME_ROOT || path.join(os.homedir(), '.depara');
+}
+
 function getRuntimeDirectories() {
-  const repoRoot = getRepoRoot();
-  const runtimePublicDir = process.env.DEPARA_RUNTIME_PUBLIC_DIR || path.join(repoRoot, 'public');
+  const runtimeRoot = getRuntimeRoot();
+  const runtimePublicDir = process.env.DEPARA_RUNTIME_PUBLIC_DIR || path.join(runtimeRoot, 'public');
 
   return [
-    process.env.DEPARA_LOG_DIR || path.join(repoRoot, 'logs'),
-    process.env.DEPARA_BACKUP_DIR || path.join(repoRoot, 'backups'),
-    process.env.DEPARA_TEMP_DIR || path.join(repoRoot, 'temp'),
+    process.env.DEPARA_LOG_DIR || path.join(runtimeRoot, 'logs'),
+    process.env.DEPARA_BACKUP_DIR || path.join(runtimeRoot, 'backups'),
+    process.env.DEPARA_TEMP_DIR || path.join(runtimeRoot, 'temp'),
     path.join(runtimePublicDir, 'uploads'),
     path.join(runtimePublicDir, 'downloads'),
     configStore.getDataDir()
@@ -196,6 +202,7 @@ async function startServer(options = {}) {
 
   await initializeDirectories();
   await configStore.ensureConfigFile();
+  await folderManager.init();
   await updateOrchestrator.init();
 
   server = await new Promise((resolve, reject) => {
@@ -216,6 +223,10 @@ async function stopServer() {
 
   if (typeof updateOrchestrator.shutdown === 'function') {
     await updateOrchestrator.shutdown();
+  }
+
+  if (folderManager && typeof folderManager.cleanup === 'function') {
+    folderManager.cleanup();
   }
 
   if (activeServer) {

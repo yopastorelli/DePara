@@ -977,6 +977,12 @@ body {
     margin-bottom: 20px;
 }
 
+.subsection-label {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #4a90e2;
+}
+
 .config-form label {
     display: block;
     margin-bottom: 8px;
@@ -994,6 +1000,19 @@ body {
     padding: 12px;
     border: 1px solid #ddd;
     border-radius: 6px;
+    font-size: 14px;
+}
+
+.folder-source-block {
+    margin-top: 12px;
+}
+
+.folder-source-block select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
     font-size: 14px;
 }
 
@@ -1085,6 +1104,65 @@ body {
     box-shadow: 0 2px 6px rgba(74, 144, 226, 0.2);
 }
 
+.operation-draft-summary {
+    margin-top: 20px;
+    padding: 16px;
+    border: 1px solid rgba(74, 144, 226, 0.18);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(74, 144, 226, 0.08), rgba(74, 144, 226, 0.03));
+}
+
+.draft-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: #1f4f82;
+}
+
+.draft-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.draft-summary-grid div {
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 8px;
+    border: 1px solid rgba(74, 144, 226, 0.12);
+}
+
+.draft-summary-grid span {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #5c7188;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.draft-summary-grid strong {
+    display: block;
+    color: #21364d;
+    word-break: break-word;
+}
+
+#fileops-summary-note {
+    display: block;
+    color: #4f6479;
+}
+
+.form-actions .btn:disabled,
+.execute-now-btn:disabled,
+.schedule-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* Folder Browser Styles */
 .folder-browser-modal {
     max-height: 80vh;
@@ -1094,6 +1172,15 @@ body {
     display: flex;
     flex-direction: column;
     gap: 15px;
+}
+
+.folder-browser-context {
+    padding: 10px 12px;
+    border: 1px solid #d8e7fb;
+    border-radius: 8px;
+    background: #f4f8ff;
+    color: #2f5f9f;
+    font-size: 14px;
 }
 
 .current-path {

@@ -483,10 +483,18 @@
                                         Selecionar Pasta
                                     </button>
                                 </div>
+                                <div class="validation-message" id="source-folder-validation"></div>
+
+                                <div class="folder-source-block">
+                                    <label for="fileops-source-configured" class="subsection-label">Pastas configuradas</label>
+                                    <select id="fileops-source-configured">
+                                        <option value="">Selecionar atalho salvo</option>
+                                    </select>
+                                </div>
 
                                 <!-- Lista de pastas sugeridas -->
                                 <div class="folder-suggestions">
-                                    <label>Pastas comuns:</label>
+                                    <label>Sugestões rápidas:</label>
                                     <div class="suggestion-buttons">
                                         <button class="btn btn-sm suggestion-btn" data-path="dynamic-home">~</button>
                                         <button class="btn btn-sm suggestion-btn" data-path="dynamic-documents">Documents</button>
@@ -520,7 +528,7 @@
                             <div class="form-group">
                                 <label for="target-folder-path">Destino:</label>
                                 <div class="input-group">
-                                    <input type="text" id="target-folder-path" placeholder="/home/user/Backup" required>
+                                    <input type="text" id="target-folder-path" placeholder="/home/user/Backup" required readonly>
                                     <button class="btn btn-outline select-target-btn">
                                         <span class="material-icons">folder_open</span>
                                         Selecionar
@@ -529,16 +537,38 @@
                                 <small class="form-help" id="target-help">
                                     Selecione a pasta de destino (obrigatório para mover/copiar)
                                 </small>
+                                <div class="validation-message" id="target-folder-validation"></div>
+
+                                <div class="folder-source-block">
+                                    <label for="fileops-target-configured" class="subsection-label">Pastas configuradas</label>
+                                    <select id="fileops-target-configured">
+                                        <option value="">Selecionar atalho salvo</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="operation-draft-summary" id="fileops-summary">
+                                <div class="draft-summary-header">
+                                    <span class="material-icons">checklist</span>
+                                    <strong>Resumo da operação</strong>
+                                </div>
+                                <div class="draft-summary-grid">
+                                    <div><span>Origem</span><strong id="fileops-summary-source">Não definida</strong></div>
+                                    <div><span>Ação</span><strong id="fileops-summary-action">Não definida</strong></div>
+                                    <div><span>Destino</span><strong id="fileops-summary-target">Não aplicável</strong></div>
+                                    <div><span>Modo</span><strong id="fileops-summary-mode">Escolha executar ou agendar</strong></div>
+                                </div>
+                                <small id="fileops-summary-note">Selecione origem, ação e destino quando aplicável.</small>
                             </div>
 
                             <div class="form-actions">
-                                <button class="btn btn-secondary execute-now-btn">
+                                <button class="btn btn-secondary execute-now-btn" disabled>
                                     <span class="material-icons">play_arrow</span>
                                     Executar Agora
                                 </button>
-                                <button class="btn btn-primary schedule-btn">
+                                <button class="btn btn-primary schedule-btn" disabled>
                                     <span class="material-icons">schedule</span>
-                                    Agendar Operação
+                                    Agendar com Esta Configuração
                                 </button>
                             </div>
                         </div>
@@ -1216,23 +1246,25 @@
                 <div class="form-group">
                     <label>Caminho de Origem</label>
                     <div class="path-input-group">
-                        <input type="text" id="schedule-source" placeholder="/origem" required>
+                        <input type="text" id="schedule-source" placeholder="/origem" required readonly>
                         <button type="button" class="btn btn-secondary btn-sm" id="browse-source-btn">
                             <span class="material-icons">folder_open</span>
                         </button>
                     </div>
                     <small class="form-help">Pasta ou arquivo de origem</small>
+                    <div class="validation-message" id="schedule-source-validation"></div>
                 </div>
 
                 <div class="form-group" id="schedule-target-group">
                     <label>Caminho de Destino</label>
                     <div class="path-input-group">
-                        <input type="text" id="schedule-target" placeholder="/destino">
+                        <input type="text" id="schedule-target" placeholder="/destino" readonly>
                         <button type="button" class="btn btn-secondary btn-sm" id="browse-target-btn">
                             <span class="material-icons">folder_open</span>
                         </button>
                     </div>
                     <small class="form-help">Pasta ou arquivo de destino</small>
+                    <div class="validation-message" id="schedule-target-validation"></div>
                 </div>
 
                 <div class="form-group">
@@ -1530,6 +1562,8 @@
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
+    <script src="modules/runtime-status.js"></script>
+    <script src="modules/update-runtime-ui.js"></script>
     <script src="app.js"></script>
     
     <!-- Script para detectar carregamento de fontes Material Icons -->

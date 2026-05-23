@@ -16,6 +16,7 @@ const fileTemplates = require('../utils/fileTemplates');
 const logger = require('../utils/logger');
 const { normalRateLimiter, strictRateLimiter, slideshowRateLimiter } = require('../middleware/rateLimiter');
 const { sanitizeString, sanitizeFilePath, sanitizeIdentifier, ValidationError } = require('../utils/inputSanitizer');
+const { scanImagesRecursive } = require('../utils/fileOps/imageScanner');
 
 /**
  * Gerenciamento de Pastas
@@ -1801,94 +1802,29 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
             recursive
         });
 
-        logger.info(`🔍 POST /list-images - Caminho recebido: ${folderPath}`);
-        logger.info(`🔧 Extensões: ${extensions.join(', ')}`);
-        logger.info(`🔄 Recursivo: ${recursive}`);
+        logger.debug('List Images request', {
+            folderPath,
+            extensions,
+            recursive
+        });
 
         // Validar caminho (mais permissivo para slideshow)
         let safePath;
         try {
             safePath = await fileOperationsManager.validateSafePath(folderPath, 'read');
-            logger.info(`✅ Caminho validado: ${safePath}`);
+            logger.debug('List Images path validated', { safePath });
         } catch (error) {
             // Se a validação falhar, tentar usar o caminho diretamente para slideshow
             logger.warn(`Validação de caminho falhou para slideshow, usando caminho direto: ${folderPath}`);
             safePath = folderPath;
         }
 
-        // DEBUG: Verificar se o caminho existe
-        logger.info(`🔍 Verificando caminho: ${safePath}`);
-        try {
-            const stats = await fs.stat(safePath);
-            logger.info(`📊 Estatísticas do caminho: ${JSON.stringify({
-                isDirectory: stats.isDirectory(),
-                isFile: stats.isFile(),
-                size: stats.size
-            })}`);
-        } catch (pathError) {
-            logger.error(`❌ Caminho não encontrado: ${safePath}`, pathError.message);
-        }
-
-        // Função auxiliar para listar imagens recursivamente
-        async function listImagesRecursively(dirPath, imageList = []) {
-            logger.info(`🔍 Escaneando diretório: ${dirPath}`);
-            try {
-                const entries = await fs.readdir(dirPath, { withFileTypes: true });
-                logger.info(`📋 Itens encontrados em ${dirPath}: ${entries.length}`);
-
-                for (const entry of entries) {
-                    const fullPath = path.join(dirPath, entry.name);
-
-                    if (entry.isDirectory() && recursive) {
-                        // Recursão para subdiretórios
-                        await listImagesRecursively(fullPath, imageList);
-                    } else if (entry.isFile()) {
-                        // Verificar se arquivo deve ser ignorado
-                        const shouldIgnore = fileOperationsManager.shouldIgnoreFile(entry.name);
-                        if (shouldIgnore) {
-                            continue; // Pular arquivos ignorados
-                        }
-
-                        // Verificar se é uma imagem
-                        const ext = path.extname(entry.name).toLowerCase();
-                        logger.info(`📄 Arquivo encontrado: ${entry.name} (ext: ${ext})`);
-
-                        if (extensions.includes(ext)) {
-                            logger.info(`✅ Extensão válida: ${ext}`);
-                            // Obter informações do arquivo
-                            const stats = await fs.stat(fullPath);
-                            imageList.push({
-                                path: fullPath,
-                                name: entry.name,
-                                size: stats.size,
-                                modified: stats.mtime,
-                                extension: ext
-                            });
-                            logger.info(`✅ Imagem adicionada: ${entry.name}`);
-                        } else {
-                            logger.info(`❌ Extensão inválida: ${ext} (esperado: ${extensions.join(', ')})`);
-                        }
-                    }
-                }
-            } catch (error) {
-                logger.warn(`Erro ao acessar diretório ${dirPath}:`, error.message);
-            }
-
-            return imageList;
-        }
-
-        const images = await listImagesRecursively(safePath);
-
-        // Ordenar por nome do arquivo
-        images.sort((a, b) => a.name.localeCompare(b.name));
-
-        // Usar todas as imagens encontradas (remover limitação)
-        logger.info(`📸 Encontradas ${images.length} imagens para slideshow`);
-        if (images.length > 0) {
-            logger.info(`📸 Primeiras imagens: ${images.slice(0, 5).map(img => img.name).join(', ')}`);
-        } else {
-            logger.warn(`⚠️ Nenhuma imagem encontrada no caminho: ${safePath}`);
-        }
+        const images = await scanImagesRecursive(safePath, {
+            recursive,
+            extensions,
+            shouldIgnore: (entryName) => fileOperationsManager.shouldIgnoreFile(entryName),
+            sortBy: 'name'
+        });
 
         const duration = Date.now() - startTime;
         logger.endOperation('List Images', duration, {
@@ -1896,10 +1832,10 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
             folderPath: safePath
         });
 
-        res.json({
+        return res.json({
             success: true,
             data: {
-                images: images,
+                images,
                 totalCount: images.length,
                 originalCount: images.length,
                 folderPath: safePath,

@@ -72,6 +72,10 @@ class UpdateOrchestrator {
       lastError: null,
       lastRunId: null,
       lastEvent: null,
+      lastFailureStage: null,
+      lastSchedulerTriggerAt: null,
+      lastHealthCheckAt: null,
+      lastSupervisor: null,
       rollbackPerformed: false,
       consecutiveFailures: 0,
       restartRequestedAt: null
@@ -302,33 +306,183 @@ class UpdateOrchestrator {
     }
   }
 
+  readLockDetails() {
+    if (!fsSync.existsSync(this.lockPath)) {
+      return null;
+    }
+
+    try {
+      const lock = JSON.parse(fsSync.readFileSync(this.lockPath, 'utf8'));
+      const startedAtMs = new Date(lock.startedAt || 0).getTime();
+      const staleByAge = !startedAtMs || (Date.now() - startedAtMs) > this.lockStaleMs;
+      return {
+        ...lock,
+        stale: staleByAge || !this.isProcessAlive(lock.pid)
+      };
+    } catch {
+      return { invalid: true, stale: true };
+    }
+  }
+
+  getExpectedPm2AppName() {
+    return process.env.PM2_APP_NAME || 'DePara';
+  }
+
+  getLegacySystemdServiceName() {
+    return process.env.SYSTEMD_SERVICE_NAME || 'depara.service';
+  }
+
+  isSystemdFallbackAllowed() {
+    return process.env.DEPARA_ALLOW_SYSTEMD_FALLBACK === 'true';
+  }
+
+  createStageError(stage, message, extra = {}) {
+    const error = new Error(message);
+    error.stage = stage;
+    Object.assign(error, extra);
+    return error;
+  }
+
+  async runCommandForStage(command, options, stage, prefixMessage = null) {
+    try {
+      return await execCommand(command, options);
+    } catch (error) {
+      error.stage = error.stage || stage;
+      if (prefixMessage) {
+        error.message = `${prefixMessage}: ${error.message}`;
+      }
+      throw error;
+    }
+  }
+
+  getLastSchedulerTimestamp() {
+    return this.state.lastSchedulerTriggerAt || this.state.lastRunAt || this.state.lastCheckAt || null;
+  }
+
+  getSchedulerRuntimeStatus() {
+    const intervalMinutes = Math.max(1, Number(this.config?.checkIntervalMinutes) || 60);
+    const intervalMs = intervalMinutes * 60 * 1000;
+    const lastCycleAt = this.getLastSchedulerTimestamp();
+    const ageMs = lastCycleAt ? (Date.now() - new Date(lastCycleAt).getTime()) : null;
+    const staleThresholdMs = Math.max(intervalMs * 2, 5 * 60 * 1000);
+
+    return {
+      enabled: Boolean(this.config?.enabled),
+      intervalMinutes,
+      lastCycleAt,
+      ageMs,
+      staleThresholdMs,
+      stale: Boolean(this.config?.enabled) && (!lastCycleAt || ageMs > staleThresholdMs)
+    };
+  }
+
+  async detectSupervisorStatus() {
+    const expectedAppName = this.getExpectedPm2AppName();
+    const legacyServiceName = this.getLegacySystemdServiceName();
+    const fallbackAllowed = this.isSystemdFallbackAllowed();
+    const pm2Available = await this.isPm2Available();
+    const pm2Registered = pm2Available
+      ? await this.isPm2ProcessRegistered(expectedAppName)
+      : false;
+    const systemdAvailable = !pm2Registered
+      ? await this.isSystemctlAvailable()
+      : false;
+
+    const reasons = [];
+    if (!pm2Available) {
+      reasons.push('pm2_unavailable');
+    } else if (!pm2Registered) {
+      reasons.push('pm2_process_not_registered');
+    }
+
+    if (!pm2Registered && fallbackAllowed && !systemdAvailable) {
+      reasons.push('systemd_fallback_unavailable');
+    }
+
+    return {
+      supervisor: pm2Registered
+        ? 'pm2'
+        : (fallbackAllowed && systemdAvailable ? 'systemd-fallback' : 'unmanaged'),
+      pm2: {
+        expectedAppName,
+        available: pm2Available,
+        registered: pm2Registered
+      },
+      systemd: {
+        legacyServiceName,
+        available: systemdAvailable,
+        fallbackAllowed
+      },
+      operationallyReady: pm2Registered || (fallbackAllowed && systemdAvailable),
+      reasons
+    };
+  }
+
+  async getRuntimeStatus() {
+    const supervisor = await this.detectSupervisorStatus();
+    return {
+      platformTarget: 'rp4',
+      supervisor,
+      scheduler: this.getSchedulerRuntimeStatus(),
+      lock: this.readLockDetails(),
+      autoUpdateOperationallyReady: supervisor.operationallyReady,
+      lastFailureStage: this.state.lastFailureStage || null
+    };
+  }
+
+  async ensureRuntimeOperationalForAutoUpdate() {
+    const runtime = await this.getRuntimeStatus();
+    if (runtime.autoUpdateOperationallyReady) {
+      return runtime;
+    }
+
+    const reasons = runtime.supervisor.reasons.join(', ') || 'unknown';
+    throw this.createStageError(
+      'supervisor_readiness',
+      `Auto-update exige processo canônico no PM2. Estado atual: ${reasons}`,
+      { runtime }
+    );
+  }
+
+  async ensureCleanTrackedWorktree(options) {
+    const { stdout } = await this.runCommandForStage(
+      'git status --porcelain --untracked-files=no',
+      options,
+      'worktree_check',
+      'Falha ao verificar worktree antes do update'
+    );
+
+    if ((stdout || '').trim()) {
+      throw this.createStageError(
+        'worktree_dirty',
+        'Worktree local possui alterações rastreadas; auto-update abortado para evitar merge inseguro',
+        { worktree: stdout.trim() }
+      );
+    }
+  }
+
   async getStatus() {
     await this.init();
+    const runtime = await this.getRuntimeStatus();
     return {
       config: this.config,
-      state: this.state
+      state: this.state,
+      runtime
     };
   }
 
   async getDiagnostics() {
     await this.init();
-    let lock = null;
-    if (fsSync.existsSync(this.lockPath)) {
-      try {
-        lock = JSON.parse(fsSync.readFileSync(this.lockPath, 'utf8'));
-      } catch {
-        lock = { invalid: true };
-      }
-    }
-
     const recentHistory = await this.getHistory(10);
+    const runtime = await this.getRuntimeStatus();
     return {
       now: new Date().toISOString(),
       repoRoot: this.repoRoot,
       lockPath: this.lockPath,
-      lock,
+      lock: this.readLockDetails(),
       config: this.config,
       state: this.state,
+      runtime,
       recentHistory
     };
   }
@@ -399,10 +553,10 @@ class UpdateOrchestrator {
   async checkForUpdatesInternal(params = {}) {
     const { passive = false, clearDisabledOnClean = false } = params;
     const execOptions = { cwd: this.repoRoot };
-    await execCommand('git fetch origin main --prune', execOptions);
-    const { stdout: currentCommit } = await execCommand('git rev-parse HEAD', execOptions);
-    const { stdout: targetCommit } = await execCommand('git rev-parse origin/main', execOptions);
-    const { stdout: countRaw } = await execCommand('git rev-list HEAD..origin/main --count', execOptions);
+    await this.runCommandForStage('git fetch origin main --prune', execOptions, 'git_fetch', 'Falha ao buscar origin/main');
+    const { stdout: currentCommit } = await this.runCommandForStage('git rev-parse HEAD', execOptions, 'git_rev_parse_head');
+    const { stdout: targetCommit } = await this.runCommandForStage('git rev-parse origin/main', execOptions, 'git_rev_parse_target');
+    const { stdout: countRaw } = await this.runCommandForStage('git rev-list HEAD..origin/main --count', execOptions, 'git_rev_list_count');
     const commitsAhead = parseInt(countRaw || '0', 10) || 0;
     const hasUpdates = commitsAhead > 0;
 
@@ -445,14 +599,40 @@ class UpdateOrchestrator {
 
   async startUpdateCycle({ reason = 'manual' } = {}) {
     await this.init();
+    const requestedAt = new Date().toISOString();
 
     if (!this.config.enabled && reason === 'scheduler') {
       return { started: false, reason: 'disabled' };
     }
 
+    if (reason === 'scheduler') {
+      await this.setState(this.state.status, {
+        lastSchedulerTriggerAt: requestedAt
+      }, 'scheduler_tick');
+    }
+
     await this.cleanupStaleLock();
     if (this.isRunning || fsSync.existsSync(this.lockPath)) {
       return { started: false, reason: 'running' };
+    }
+
+    try {
+      const runtime = await this.ensureRuntimeOperationalForAutoUpdate();
+      await this.setState(this.state.status, {
+        lastSupervisor: runtime.supervisor.supervisor
+      }, 'supervisor_checked');
+    } catch (error) {
+      await this.appendHistory({
+        event: 'supervisor_not_ready',
+        reason,
+        error: error.message,
+        supervisor: error.runtime?.supervisor?.supervisor || 'unmanaged'
+      });
+      return {
+        started: false,
+        reason: 'not_operational',
+        diagnostics: error.runtime || null
+      };
     }
 
     this.isRunning = true;
@@ -476,12 +656,20 @@ class UpdateOrchestrator {
 
   async runCycle({ runId, reason }) {
     try {
+      const runtime = await this.ensureRuntimeOperationalForAutoUpdate();
       await this.setState('checking', {
         lastRunAt: new Date().toISOString(),
         lastRunId: runId,
-        lastError: null
+        lastError: null,
+        lastFailureStage: null,
+        lastSupervisor: runtime.supervisor.supervisor
       }, 'cycle_started');
-      await this.appendHistory({ runId, reason, event: 'cycle_started' });
+      await this.appendHistory({
+        runId,
+        reason,
+        event: 'cycle_started',
+        supervisor: runtime.supervisor.supervisor
+      });
 
       const check = await this.checkForUpdatesInternal();
       await this.appendHistory({ runId, reason, event: 'check_result', ...check });
@@ -514,8 +702,11 @@ class UpdateOrchestrator {
   async applyUpdate(runId, check) {
     const options = { cwd: this.repoRoot };
     if (!/^[0-9a-f]{7,40}$/i.test(check.targetCommit)) {
-      throw new Error('Commit alvo inválido');
+      throw this.createStageError('target_commit_validation', 'Commit alvo inválido');
     }
+
+    await this.ensureCleanTrackedWorktree(options);
+    await this.appendHistory({ runId, event: 'worktree_clean' });
 
     await this.setState('downloading', {
       previousCommit: check.currentCommit,
@@ -523,19 +714,40 @@ class UpdateOrchestrator {
       rollbackPerformed: false
     }, 'downloading');
 
-    await execCommand(`git merge --ff-only ${check.targetCommit}`, options);
+    await this.runCommandForStage(
+      `git merge --ff-only ${check.targetCommit}`,
+      options,
+      'git_merge_ff_only',
+      'Falha ao aplicar merge fast-forward do update'
+    );
     await this.appendHistory({ runId, event: 'merged_target', targetCommit: check.targetCommit });
 
     await this.setState('installing', {}, 'installing');
     try {
-      await execCommand(this.installCommand, options);
+      await this.runCommandForStage(
+        this.installCommand,
+        options,
+        'npm_ci',
+        'Falha ao instalar dependências com npm ci'
+      );
     } catch (installError) {
-      await this.appendHistory({ runId, event: 'install_fallback', error: installError.message });
-      await execCommand(this.fallbackInstallCommand, options);
+      await this.appendHistory({
+        runId,
+        event: 'install_fallback',
+        stage: installError.stage || 'npm_ci',
+        error: installError.message
+      });
+      await this.runCommandForStage(
+        this.fallbackInstallCommand,
+        options,
+        'npm_install_fallback',
+        'Falha ao instalar dependências com fallback'
+      );
     }
 
     await this.setState('restarting', {
-      restartRequestedAt: new Date().toISOString()
+      restartRequestedAt: new Date().toISOString(),
+      lastSupervisor: 'pm2'
     }, 'restart_requested');
     await this.appendHistory({ runId, event: 'restart_requested', rollback: false });
     await this.requestRestart();
@@ -546,6 +758,9 @@ class UpdateOrchestrator {
     await this.setState('validating', {}, 'validating');
 
     const health = await this.runHealthCheck();
+    await this.setState('validating', {
+      lastHealthCheckAt: new Date().toISOString()
+    }, 'health_checked');
     await this.appendHistory({
       event: 'health_check',
       ok: health.ok,
@@ -559,6 +774,7 @@ class UpdateOrchestrator {
         currentCommit: await this.getCurrentCommitSafe(),
         lastSuccessAt: new Date().toISOString(),
         lastError: null,
+        lastFailureStage: null,
         rollbackPerformed: false,
         consecutiveFailures: 0
       }, 'validation_success');
@@ -599,11 +815,26 @@ class UpdateOrchestrator {
     });
 
     try {
-      await execCommand(`git reset --hard ${this.state.previousCommit}`, options);
+      await this.runCommandForStage(
+        `git reset --hard ${this.state.previousCommit}`,
+        options,
+        'git_rollback_reset',
+        'Falha ao executar rollback do commit anterior'
+      );
       try {
-        await execCommand(this.installCommand, options);
+        await this.runCommandForStage(
+          this.installCommand,
+          options,
+          'npm_ci_rollback',
+          'Falha ao reinstalar dependências no rollback'
+        );
       } catch {
-        await execCommand(this.fallbackInstallCommand, options);
+        await this.runCommandForStage(
+          this.fallbackInstallCommand,
+          options,
+          'npm_install_rollback_fallback',
+          'Falha no fallback de dependências durante rollback'
+        );
       }
 
       await this.setState('restarting', {
@@ -623,6 +854,7 @@ class UpdateOrchestrator {
     const nextConsecutiveFailures = (this.state.consecutiveFailures || 0) + 1;
     let status = critical ? 'critical' : 'idle';
     let message = error.message;
+    const failureStage = error.stage || 'unknown';
 
     if (nextConsecutiveFailures >= this.config.maxConsecutiveFailures) {
       this.config.enabled = false;
@@ -634,12 +866,14 @@ class UpdateOrchestrator {
 
     await this.setState(status, {
       lastError: message,
+      lastFailureStage: failureStage,
       consecutiveFailures: nextConsecutiveFailures
     }, 'cycle_failed');
 
     await this.appendHistory({
       runId,
       event: 'cycle_failed',
+      stage: failureStage,
       critical: Boolean(critical),
       error: message,
       consecutiveFailures: nextConsecutiveFailures
@@ -652,27 +886,50 @@ class UpdateOrchestrator {
       return;
     }
 
-    const pm2Available = await this.isPm2Available();
-    const appName = process.env.PM2_APP_NAME || 'DePara';
-    const systemdServiceName = process.env.SYSTEMD_SERVICE_NAME || 'depara.service';
+    const runtime = await this.detectSupervisorStatus();
+    const appName = this.getExpectedPm2AppName();
+    const systemdServiceName = this.getLegacySystemdServiceName();
+    const runId = this.state?.lastRunId || 'restart';
+    const canRecordHistory = Boolean(this.historyPath) && fsSync.existsSync(path.dirname(this.historyPath));
 
-    if (pm2Available && await this.isPm2ProcessRegistered(appName)) {
-      await execCommand(`pm2 restart ${appName}`);
+    if (runtime.pm2.available && runtime.pm2.registered) {
+      await this.runCommandForStage(
+        `pm2 restart ${appName}`,
+        {},
+        'pm2_restart',
+        'Falha ao reiniciar processo PM2'
+      );
+      if (canRecordHistory) {
+        await this.appendHistory({
+          runId,
+          event: 'restart_dispatched',
+          supervisor: 'pm2',
+          appName
+        });
+      }
       return;
     }
 
-    if (pm2Available) {
-      logger.warn('PM2 disponivel, mas processo nao encontrado. Tentando fallback.', { appName });
-    }
-
-    if (await this.isSystemctlAvailable()) {
+    if (runtime.systemd.fallbackAllowed && runtime.systemd.available) {
       const restarted = await this.restartViaSystemd(systemdServiceName);
       if (restarted) {
+        if (canRecordHistory) {
+          await this.appendHistory({
+            runId,
+            event: 'restart_dispatched',
+            supervisor: 'systemd-fallback',
+            service: systemdServiceName
+          });
+        }
         return;
       }
     }
 
-    this.scheduleProcessExit();
+    throw this.createStageError(
+      'restart_supervisor',
+      `Processo PM2 canônico não está registrado como ${appName}; reinício automático abortado`,
+      { runtime }
+    );
   }
 
   async isPm2Available() {

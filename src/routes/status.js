@@ -2,13 +2,82 @@ const express = require('express');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { execSync } = require('child_process');
+const { exec } = require('child_process');
 
 const logger = require('../utils/logger');
 const { getAppMetadata } = require('../utils/appMetadata');
 
 const router = express.Router();
 const appMetadata = getAppMetadata();
+const statusCache = new Map();
+const STATUS_CACHE_TTL_MS = 15000;
+
+function execCommand(command) {
+  return new Promise((resolve, reject) => {
+    exec(command, { timeout: 5000 }, (error, stdout, stderr) => {
+      if (error) {
+        reject(new Error(stderr || error.message));
+        return;
+      }
+      resolve(stdout);
+    });
+  });
+}
+
+async function getCachedValue(cacheKey, loader) {
+  const cached = statusCache.get(cacheKey);
+  const now = Date.now();
+  if (cached && (now - cached.loadedAt) < STATUS_CACHE_TTL_MS) {
+    return cached.value;
+  }
+
+  const value = await loader();
+  statusCache.set(cacheKey, {
+    loadedAt: now,
+    value
+  });
+  return value;
+}
+
+function getApplicationPayload() {
+  return {
+    name: appMetadata.displayName,
+    version: appMetadata.version,
+    description: appMetadata.description,
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    pid: process.pid,
+    nodeVersion: process.version,
+    platform: process.platform,
+    arch: process.arch
+  };
+}
+
+function getSystemPayload() {
+  return {
+    hostname: os.hostname(),
+    platform: os.platform(),
+    type: os.type(),
+    release: os.release(),
+    arch: os.arch(),
+    cpuCount: os.cpus().length,
+    loadAverage: os.loadavg(),
+    totalMemory: os.totalmem(),
+    freeMemory: os.freemem(),
+    uptime: os.uptime(),
+    userHome: os.homedir()
+  };
+}
+
+function getProcessMemoryPayload() {
+  return {
+    heapUsed: process.memoryUsage().heapUsed,
+    heapTotal: process.memoryUsage().heapTotal,
+    external: process.memoryUsage().external,
+    rss: process.memoryUsage().rss,
+    arrayBuffers: process.memoryUsage().arrayBuffers
+  };
+}
 
 router.get('/', (req, res) => {
   const startTime = Date.now();
@@ -17,38 +86,10 @@ router.get('/', (req, res) => {
     res.status(200).json({
       status: 'OPERATIONAL',
       timestamp: new Date().toISOString(),
-      application: {
-        name: appMetadata.displayName,
-        version: appMetadata.version,
-        description: appMetadata.description,
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development',
-        pid: process.pid,
-        nodeVersion: process.version,
-        platform: process.platform,
-        arch: process.arch
-      },
-      system: {
-        hostname: os.hostname(),
-        platform: os.platform(),
-        type: os.type(),
-        release: os.release(),
-        arch: os.arch(),
-        cpuCount: os.cpus().length,
-        loadAverage: os.loadavg(),
-        totalMemory: os.totalmem(),
-        freeMemory: os.freemem(),
-        uptime: os.uptime(),
-        userHome: os.homedir()
-      },
+      application: getApplicationPayload(),
+      system: getSystemPayload(),
       performance: {
-        memory: {
-          heapUsed: process.memoryUsage().heapUsed,
-          heapTotal: process.memoryUsage().heapTotal,
-          external: process.memoryUsage().external,
-          rss: process.memoryUsage().rss,
-          arrayBuffers: process.memoryUsage().arrayBuffers
-        },
+        memory: getProcessMemoryPayload(),
         cpu: {
           usage: process.cpuUsage(),
           uptime: process.uptime()
@@ -73,10 +114,12 @@ router.get('/system', (req, res) => {
   router.handle(req, res);
 });
 
-router.get('/resources', (req, res) => {
+router.get('/resources', async (req, res) => {
   const startTime = Date.now();
 
   try {
+    const diskInfo = await getCachedValue('disk-info', getDiskInfo);
+
     res.status(200).json({
       timestamp: new Date().toISOString(),
       memory: {
@@ -84,12 +127,7 @@ router.get('/resources', (req, res) => {
         free: os.freemem(),
         used: os.totalmem() - os.freemem(),
         percentage: Math.round(((os.totalmem() - os.freemem()) / os.totalmem()) * 100),
-        process: {
-          heapUsed: process.memoryUsage().heapUsed,
-          heapTotal: process.memoryUsage().heapTotal,
-          external: process.memoryUsage().external,
-          rss: process.memoryUsage().rss
-        }
+        process: getProcessMemoryPayload()
       },
       cpu: {
         count: os.cpus().length,
@@ -100,10 +138,13 @@ router.get('/resources', (req, res) => {
       },
       disk: {
         platform: os.platform(),
-        drives: getDiskInfo()
+        drives: diskInfo
       },
       network: {
         interfaces: os.networkInterfaces()
+      },
+      collection: {
+        cachedDiskInfoTtlMs: STATUS_CACHE_TTL_MS
       }
     });
 
@@ -176,12 +217,9 @@ router.get('/performance', (req, res) => {
       metrics: {
         responseTime: {
           current: Date.now() - startTime,
-          average: 'Calculado em tempo real'
+          average: null
         },
-        throughput: {
-          requestsPerSecond: 'Monitorado em tempo real',
-          activeConnections: 'Implementar contador de conexoes'
-        },
+        throughput: null,
         resourceUtilization: {
           cpu: {
             current: process.cpuUsage(),
@@ -281,7 +319,7 @@ function getRecentLogs() {
       return {
         lastModified: null,
         size: 0,
-        lines: 0
+        lines: null
       };
     }
 
@@ -289,13 +327,13 @@ function getRecentLogs() {
     return {
       lastModified: stats.mtime,
       size: stats.size,
-      lines: 'Implementar contagem de linhas'
+      lines: null
     };
   } catch (error) {
     return {
       lastModified: null,
       size: 0,
-      lines: 0,
+      lines: null,
       error: error.message
     };
   }
@@ -334,7 +372,7 @@ function generatePerformanceRecommendations() {
   }
 
   if (loadAvg[0] > 2) {
-    recommendations.push('Carga do sistema alta - considerar balanceamento');
+    recommendations.push('Carga do sistema alta - considerar reduzir polling, I/O e shell calls');
   }
 
   if (recommendations.length === 0) {
@@ -344,13 +382,13 @@ function generatePerformanceRecommendations() {
   return recommendations;
 }
 
-function getDiskInfo() {
+async function getDiskInfo() {
   try {
     if (os.platform() === 'win32') {
-      return getWindowsDiskInfo();
+      return await getWindowsDiskInfo();
     }
 
-    return getUnixDiskInfo();
+    return await getUnixDiskInfo();
   } catch (error) {
     logger.error('Erro geral ao obter informacoes de disco:', { error: error.message });
     return [{
@@ -364,9 +402,9 @@ function getDiskInfo() {
   }
 }
 
-function getWindowsDiskInfo() {
+async function getWindowsDiskInfo() {
   try {
-    const output = execSync('wmic logicaldisk get size,freespace,caption', { encoding: 'utf8' });
+    const output = await execCommand('wmic logicaldisk get size,freespace,caption');
     const lines = output.split('\n').filter((line) => line.trim() && !line.includes('Caption'));
     const drives = [];
 
@@ -405,9 +443,9 @@ function getWindowsDiskInfo() {
   }
 }
 
-function getUnixDiskInfo() {
+async function getUnixDiskInfo() {
   try {
-    const output = execSync('df -h', { encoding: 'utf8' });
+    const output = await execCommand('df -h');
     const lines = output.split('\n').slice(1);
     const drives = [];
     const virtualFilesystems = [

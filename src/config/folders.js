@@ -7,6 +7,7 @@
  */
 
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
 
@@ -15,17 +16,21 @@ class FolderManager {
         this.configFile = path.join(__dirname, '..', '..', 'data', 'folders.json');
         this.folders = [];
         this.watchers = new Map();
-        this.init();
+        this.initialized = false;
     }
 
     async init() {
+        if (this.initialized) {
+            return;
+        }
         try {
             await this.ensureDataDirectory();
             await this.loadFolders();
             this.startWatching();
+            this.initialized = true;
             logger.info('Gerenciador de pastas inicializado com sucesso');
         } catch (error) {
-            logger.error('Erro ao inicializar gerenciador de pastas:', error);
+            logger.error('Erro ao inicializar gerenciador de pastas:', { error: error.message });
         }
     }
 
@@ -323,7 +328,7 @@ class FolderManager {
         }
 
         try {
-            const watcher = fs.watch(folder.path, { recursive: true }, (eventType, filename) => {
+            const watcher = fsSync.watch(folder.path, { persistent: false }, (eventType, filename) => {
                 if (filename) {
                     this.handleFolderEvent(folder, eventType, filename);
                 }
@@ -332,7 +337,7 @@ class FolderManager {
             this.watchers.set(folder.id, watcher);
             logger.info(`Monitoramento iniciado para: ${folder.name} (${folder.path})`);
         } catch (error) {
-            logger.error(`Erro ao iniciar monitoramento para ${folder.name}:`, error);
+            logger.error(`Erro ao iniciar monitoramento para ${folder.name}:`, { error: error.message });
         }
     }
 
@@ -407,14 +412,5 @@ class FolderManager {
 
 // Instância singleton
 const folderManager = new FolderManager();
-
-// Cleanup ao encerrar a aplicação
-process.on('SIGTERM', () => {
-    folderManager.cleanup();
-});
-
-process.on('SIGINT', () => {
-    folderManager.cleanup();
-});
 
 module.exports = folderManager;

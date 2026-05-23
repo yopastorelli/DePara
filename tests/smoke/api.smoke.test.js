@@ -27,6 +27,7 @@ describe('API smoke', () => {
     process.env.DEPARA_DATA_DIR = path.join(runtimeRoot, 'data');
     process.env.DEPARA_CONFIG_FILE = path.join(runtimeRoot, 'data', 'depara-config.json');
     process.env.LOG_FILE = path.join(runtimeRoot, 'logs', 'app.log');
+    process.env.DEPARA_BACKUP_DIR = path.join(runtimeRoot, 'backups');
     process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS = 'true';
     process.env.DEPARA_DISABLE_UPDATE_SCHEDULER = 'true';
     app = require('../../src/main');
@@ -39,6 +40,7 @@ describe('API smoke', () => {
     delete process.env.DEPARA_DATA_DIR;
     delete process.env.DEPARA_CONFIG_FILE;
     delete process.env.LOG_FILE;
+    delete process.env.DEPARA_BACKUP_DIR;
     delete process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS;
     delete process.env.DEPARA_DISABLE_UPDATE_SCHEDULER;
     await fsp.rm(runtimeRoot, { recursive: true, force: true });
@@ -134,5 +136,24 @@ describe('API smoke', () => {
 
     const updateResponse = await request(app).get('/api/update/auto/status').expect(200);
     expect(updateResponse.body.success).toBe(true);
+  });
+
+  it('retorna erros acionaveis para execute e trata list-folders inexistente sem quebrar', async () => {
+    const invalidExecute = await request(app)
+      .post('/api/files/execute')
+      .send({ action: 'copy', sourcePath: path.join(runtimeRoot, 'source', 'missing.txt') })
+      .expect(400);
+
+    expect(
+      `${invalidExecute.body.error.message} ${invalidExecute.body.error.details || ''}`
+    ).toMatch(/targetPath|destino/i);
+
+    const missingFolders = await request(app)
+      .post('/api/files/list-folders')
+      .send({ path: path.join(runtimeRoot, 'folder-that-does-not-exist') })
+      .expect(200);
+
+    expect(missingFolders.body.success).toBe(true);
+    expect(missingFolders.body.data.folders).toEqual([]);
   });
 });

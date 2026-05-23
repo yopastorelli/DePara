@@ -264,6 +264,7 @@ class DeParaUI {
 
             // Garantir que o campo de origem esteja sempre visÃƒÂ­vel
             this.ensureSourceFieldVisible();
+            this.refreshFileOpsState();
             
             // Carregar pasta salva do slideshow
             this.loadSlideshowSavedPath();
@@ -437,11 +438,10 @@ class DeParaUI {
     // Atualizar status do sistema
     async updateSystemStatus() {
         try {
-            const response = await fetch('/api/status/resources');
-            if (response.ok) {
-                const data = await response.json();
-                this.updateSystemStatusDisplay(data);
-            }
+            const data = window.DeParaRuntimeStatus
+                ? await window.DeParaRuntimeStatus.fetchSystemResources()
+                : await (await fetch('/api/status/resources')).json();
+            this.updateSystemStatusDisplay(data);
         } catch (error) {
             console.warn('Erro ao atualizar status do sistema:', error);
         }
@@ -450,11 +450,10 @@ class DeParaUI {
     // Atualizar atividades recentes
     async loadRecentActivities() {
         try {
-            const response = await fetch('/api/files/stats');
-            if (response.ok) {
-                const data = await response.json();
-                this.updateActivitiesDisplay(data);
-            }
+            const data = window.DeParaRuntimeStatus
+                ? await window.DeParaRuntimeStatus.fetchRecentActivities()
+                : await (await fetch('/api/files/stats')).json();
+            this.updateActivitiesDisplay(data);
         } catch (error) {
             console.warn('Erro ao carregar atividades:', error);
         }
@@ -463,11 +462,10 @@ class DeParaUI {
     // Carregar operaÃƒÂ§ÃƒÂµes agendadas para o dashboard
     async loadDashboardScheduledOperations() {
         try {
-            const response = await fetch('/api/files/scheduled');
-            if (response.ok) {
-                const data = await response.json();
-                this.updateDashboardScheduledOperations(data.data || []);
-            }
+            const data = window.DeParaRuntimeStatus
+                ? await window.DeParaRuntimeStatus.fetchScheduledOperations()
+                : await (await fetch('/api/files/scheduled')).json();
+            this.updateDashboardScheduledOperations(data.data || []);
         } catch (error) {
             console.warn('Erro ao carregar operaÃƒÂ§ÃƒÂµes agendadas para dashboard:', error);
         }
@@ -3156,12 +3154,12 @@ class DeParaUI {
 
         // BotÃƒÂ£o seletor de pasta
         this.addButtonListener('.select-folder-btn', () => {
-            this.selectSourceFolder();
+            this.showFolderBrowser('source');
         });
 
         // BotÃƒÂ£o seletor de pasta de destino
         this.addButtonListener('.select-target-btn', () => {
-            this.selectTargetFolder();
+            this.showFolderBrowser('target');
         });
 
         // BotÃƒÂµes de operaÃƒÂ§ÃƒÂ£o
@@ -3220,22 +3218,280 @@ class DeParaUI {
         sourcePath: '',
         operation: '',
         targetPath: '',
-        extensions: [],
-        recursive: true
+        mode: '',
+        options: {
+            batch: true,
+            preserveStructure: true,
+            filters: {}
+        }
     };
+
+    getOperationDraft() {
+        return this.currentConfig;
+    }
+
+    updateOperationDraft(patch = {}) {
+        const current = this.getOperationDraft();
+        this.currentConfig = {
+            ...current,
+            ...patch,
+            options: {
+                ...(current.options || {}),
+                ...(patch.options || {})
+            }
+        };
+
+        this.refreshFileOpsState();
+        return this.currentConfig;
+    }
+
+    syncDraftFromFileOps() {
+        const sourcePath = document.getElementById('source-folder-path')?.value.trim() || '';
+        const targetPath = document.getElementById('target-folder-path')?.value.trim() || '';
+        const operation = this.getOperationDraft().operation || '';
+
+        return this.updateOperationDraft({
+            sourcePath,
+            targetPath,
+            operation
+        });
+    }
+
+    clearOperationFieldErrors() {
+        ['source-folder-path', 'target-folder-path', 'schedule-source', 'schedule-target'].forEach((fieldId) => {
+            const field = document.getElementById(fieldId);
+            if (field && typeof this.clearFieldError === 'function') {
+                this.clearFieldError(field);
+            }
+        });
+    }
+
+    validateOperationDraft(mode = 'execute') {
+        const draft = this.syncDraftFromFileOps();
+        const errors = [];
+        const sourceField = document.getElementById(mode === 'schedule' ? 'schedule-source' : 'source-folder-path');
+        const targetField = document.getElementById(mode === 'schedule' ? 'schedule-target' : 'target-folder-path');
+        const needsTarget = draft.operation === 'move' || draft.operation === 'copy';
+
+        this.clearOperationFieldErrors();
+
+        if (!draft.sourcePath) {
+            errors.push('Selecione a pasta de origem.');
+            if (sourceField) this.showFieldError(sourceField, 'Origem obrigatória');
+        }
+
+        if (!draft.operation) {
+            errors.push('Selecione a ação.');
+        }
+
+        if (needsTarget && !draft.targetPath) {
+            errors.push('Selecione a pasta de destino.');
+            if (targetField) this.showFieldError(targetField, 'Destino obrigatório');
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors,
+            draft
+        };
+    }
+
+    renderFileOpsSummary(draft = this.getOperationDraft()) {
+        const summarySource = document.getElementById('fileops-summary-source');
+        const summaryAction = document.getElementById('fileops-summary-action');
+        const summaryTarget = document.getElementById('fileops-summary-target');
+        const summaryMode = document.getElementById('fileops-summary-mode');
+        const summaryNote = document.getElementById('fileops-summary-note');
+
+        if (!summarySource || !summaryAction || !summaryTarget || !summaryMode || !summaryNote) {
+            return;
+        }
+
+        summarySource.textContent = draft.sourcePath || 'Não definida';
+        summaryAction.textContent = draft.operation ? draft.operation.toUpperCase() : 'Não definida';
+        summaryTarget.textContent = draft.operation === 'delete'
+            ? 'Não aplicável'
+            : (draft.targetPath || 'Não definido');
+        summaryMode.textContent = draft.mode
+            ? (draft.mode === 'schedule' ? 'Agendamento' : 'Execução imediata')
+            : 'Escolha executar ou agendar';
+
+        if (!draft.sourcePath) {
+            summaryNote.textContent = 'Selecione a pasta de origem para começar.';
+        } else if (!draft.operation) {
+            summaryNote.textContent = 'Escolha a ação que deseja executar.';
+        } else if ((draft.operation === 'move' || draft.operation === 'copy') && !draft.targetPath) {
+            summaryNote.textContent = 'A ação selecionada exige uma pasta de destino.';
+        } else {
+            summaryNote.textContent = 'A operação está pronta para executar ou abrir o agendamento.';
+        }
+    }
+
+    refreshFileOpsState() {
+        const draft = this.getOperationDraft();
+        const sourceInput = document.getElementById('source-folder-path');
+        const targetInput = document.getElementById('target-folder-path');
+        const targetGroup = targetInput?.closest('.form-group');
+        const targetHelp = document.getElementById('target-help');
+        const executeBtn = document.querySelector('.execute-now-btn');
+        const scheduleBtn = document.querySelector('.schedule-btn');
+        const needsTarget = draft.operation === 'move' || draft.operation === 'copy';
+        const canSubmit = Boolean(draft.sourcePath) && Boolean(draft.operation) && (!needsTarget || Boolean(draft.targetPath));
+
+        if (sourceInput && sourceInput.value !== draft.sourcePath) {
+            sourceInput.value = draft.sourcePath || '';
+        }
+
+        if (targetInput && targetInput.value !== draft.targetPath) {
+            targetInput.value = draft.targetPath || '';
+        }
+
+        if (targetGroup) {
+            targetGroup.style.display = draft.operation === 'delete' ? 'none' : 'block';
+        }
+
+        if (targetInput) {
+            targetInput.required = needsTarget;
+            if (!needsTarget) {
+                targetInput.value = '';
+            }
+        }
+
+        if (targetHelp) {
+            if (draft.operation === 'delete') {
+                targetHelp.textContent = 'Excluir cria backup quando configurado e não precisa de destino.';
+            } else if (draft.operation === 'move') {
+                targetHelp.textContent = 'Selecione a pasta de destino obrigatória para mover.';
+            } else if (draft.operation === 'copy') {
+                targetHelp.textContent = 'Selecione a pasta de destino obrigatória para copiar.';
+            } else {
+                targetHelp.textContent = 'Selecione a pasta de destino quando a ação exigir.';
+            }
+        }
+
+        if (executeBtn) {
+            executeBtn.disabled = !canSubmit || this.isExecutingOperation;
+        }
+
+        if (scheduleBtn) {
+            scheduleBtn.disabled = !canSubmit || this.isExecutingOperation;
+        }
+
+        this.renderFileOpsSummary(draft);
+    }
+
+    getFolderBrowserStartPath(selectionContext, explicitStartPath = '') {
+        if (explicitStartPath && explicitStartPath.trim()) {
+            return explicitStartPath.trim();
+        }
+
+        const draft = this.getOperationDraft();
+        const contextMap = {
+            source: draft.sourcePath,
+            target: draft.targetPath,
+            'schedule-source': document.getElementById('schedule-source')?.value.trim(),
+            'schedule-target': document.getElementById('schedule-target')?.value.trim(),
+            slideshow: document.getElementById('slideshow-folder-path')?.value.trim(),
+            'slideshow-deleted': document.getElementById('slideshow-deleted-folder')?.value.trim(),
+            'slideshow-hidden': document.getElementById('slideshow-hidden-folder')?.value.trim(),
+            'slideshow-adjustable': document.getElementById('slideshow-adjustable-folder')?.value.trim()
+        };
+
+        return contextMap[selectionContext] || '';
+    }
+
+    getDefaultBrowserPath() {
+        const isWindows = navigator.userAgent.indexOf('Windows') > -1;
+        return isWindows ? 'C:\\Users\\User' : '/home/yo';
+    }
+
+    getSelectionContextMeta(selectionContext) {
+        const contextMap = {
+            source: {
+                title: 'Selecionar Pasta de Origem',
+                actionLabel: 'Usar esta pasta como origem'
+            },
+            target: {
+                title: 'Selecionar Pasta de Destino',
+                actionLabel: 'Usar esta pasta como destino'
+            },
+            'schedule-source': {
+                title: 'Selecionar Origem do Agendamento',
+                actionLabel: 'Usar esta pasta no agendamento'
+            },
+            'schedule-target': {
+                title: 'Selecionar Destino do Agendamento',
+                actionLabel: 'Usar esta pasta no agendamento'
+            },
+            slideshow: {
+                title: 'Selecionar Pasta do Slideshow',
+                actionLabel: 'Usar esta pasta no slideshow'
+            }
+        };
+
+        return contextMap[selectionContext] || {
+            title: 'Selecionar Pasta',
+            actionLabel: 'Usar esta pasta'
+        };
+    }
+
+    applyFolderSelection(selectionContext, selectedPath) {
+        const normalizedPath = (selectedPath || '').trim();
+        if (!normalizedPath) {
+            return;
+        }
+
+        switch (selectionContext) {
+            case 'source':
+                this.updateOperationDraft({ sourcePath: normalizedPath });
+                this.showToast(`Pasta de origem selecionada: ${normalizedPath}`, 'success');
+                break;
+            case 'target':
+                this.updateOperationDraft({ targetPath: normalizedPath });
+                this.showToast(`Pasta de destino selecionada: ${normalizedPath}`, 'success');
+                break;
+            case 'schedule-source':
+                document.getElementById('schedule-source').value = normalizedPath;
+                if (typeof updateOperationSummary === 'function') updateOperationSummary();
+                this.showToast(`Origem do agendamento atualizada: ${normalizedPath}`, 'success');
+                break;
+            case 'schedule-target':
+                document.getElementById('schedule-target').value = normalizedPath;
+                if (typeof updateOperationSummary === 'function') updateOperationSummary();
+                this.showToast(`Destino do agendamento atualizado: ${normalizedPath}`, 'success');
+                break;
+            case 'slideshow':
+                document.getElementById('slideshow-folder-path').value = normalizedPath;
+                break;
+            case 'slideshow-deleted':
+                document.getElementById('slideshow-deleted-folder').value = normalizedPath;
+                break;
+            case 'slideshow-hidden':
+                document.getElementById('slideshow-hidden-folder').value = normalizedPath;
+                break;
+            case 'slideshow-adjustable':
+                document.getElementById('slideshow-adjustable-folder').value = normalizedPath;
+                break;
+            default:
+                console.warn('Contexto de seleção de pasta não suportado:', selectionContext);
+                break;
+        }
+    }
 
     // Selecionar pasta de origem
     selectSourceFolder() {
-        this.showNativeFolderDialog('source');
+        this.showFolderBrowser('source');
     }
 
     // Selecionar pasta de destino
     selectTargetFolder() {
-        this.showNativeFolderDialog('target');
+        this.showFolderBrowser('target');
     }
 
     // Mostrar diÃƒÂ¡logo nativo de seleÃƒÂ§ÃƒÂ£o de pasta
     showNativeFolderDialog(targetType) {
+        this.showFolderBrowser(targetType);
+        return;
         // Criar input file oculto para seleÃƒÂ§ÃƒÂ£o de pasta
         const input = document.createElement('input');
         input.type = 'file';
@@ -3248,18 +3504,11 @@ class DeParaUI {
             const files = event.target.files;
             if (files && files.length > 0) {
                 // Pegar o caminho da primeira pasta selecionada
-                const selectedPath = files[0].webkitRelativePath.split('/')[0];
                 const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
                 
                 console.log('Ã°Å¸â€œÂ Pasta selecionada:', fullPath);
                 
-                if (targetType === 'source') {
-                    document.getElementById('source-folder-path').value = fullPath;
-                    this.showToast(`Pasta de origem selecionada: ${fullPath}`, 'success');
-                } else {
-                    document.getElementById('target-folder-path').value = fullPath;
-                    this.showToast(`Pasta de destino selecionada: ${fullPath}`, 'success');
-                }
+                this.applyFolderSelection(targetType, fullPath);
             }
             
             // Remover o input apÃƒÂ³s uso
@@ -3272,7 +3521,9 @@ class DeParaUI {
     }
 
     // Mostrar navegador de pastas
-    async showFolderBrowser(targetType, callback = null) {
+    async showFolderBrowser(selectionContext, callback = null, startPath = '') {
+        const browserContext = selectionContext || 'source';
+        const initialPath = this.getFolderBrowserStartPath(browserContext, startPath) || this.getDefaultBrowserPath();
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.style.display = 'flex';
@@ -3287,7 +3538,7 @@ class DeParaUI {
                 <div class="modal-body">
                     <div class="folder-browser">
                         <div class="current-path">
-                            <input type="text" id="browser-path" value="${navigator.userAgent.indexOf('Windows') > -1 ? 'C:\\\\Users\\\\User' : '/home/yo'}" placeholder="Digite o caminho da pasta ou navegue">
+                            <input type="text" id="browser-path" value="${initialPath}" placeholder="Digite o caminho da pasta ou navegue">
                             <button class="btn btn-sm folder-browser-up-btn" title="Navegar para pasta pai">
                                 <span class="material-icons">arrow_upward</span>
                             </button>
@@ -3306,7 +3557,7 @@ class DeParaUI {
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary folder-browser-cancel-btn">Cancelar</button>
-                    <button class="btn btn-primary folder-browser-select-btn" data-target-type="${targetType}">Selecionar Esta Pasta</button>
+                    <button class="btn btn-primary folder-browser-select-btn" data-selection-context="${browserContext}">Selecionar Esta Pasta</button>
                 </div>
             </div>
         `;
@@ -3314,17 +3565,25 @@ class DeParaUI {
         document.body.appendChild(modal);
 
         // Configurar event listeners apÃƒÂ³s criar o modal
-        this.setupFolderBrowserEventListeners(modal, targetType, callback);
+        this.setupFolderBrowserEventListeners(modal, browserContext, callback);
 
         // Obter diretÃƒÂ³rio home do usuÃƒÂ¡rio automaticamente
-        this.setDefaultPath(modal);
+        this.setDefaultPath(modal, initialPath);
 
         // NÃƒÂ£o carregar pastas automaticamente - permitir entrada manual
         console.log('Ã°Å¸â€œÂ Modal de seleÃƒÂ§ÃƒÂ£o de pasta criado - entrada manual habilitada');
     }
 
     // Definir caminho padrÃƒÂ£o baseado no sistema operacional
-    async setDefaultPath(modal) {
+    async setDefaultPath(modal, preferredPath = '') {
+        if (preferredPath) {
+            const pathInput = modal.querySelector('#browser-path');
+            if (pathInput) {
+                pathInput.value = preferredPath;
+            }
+            return;
+        }
+
         try {
             // Tentar obter o diretÃƒÂ³rio home via API
             const response = await fetch('/api/status/system');
@@ -3346,8 +3605,7 @@ class DeParaUI {
         // Fallback: usar caminho padrÃƒÂ£o baseado no sistema
         const pathInput = modal.querySelector('#browser-path');
         if (pathInput) {
-            const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-            const defaultPath = isWindows ? 'C:\\Users\\User' : '/home/yo';
+            const defaultPath = this.getDefaultBrowserPath();
             pathInput.value = defaultPath;
             console.log('Ã°Å¸ÂÂ  Usando caminho padrÃƒÂ£o:', defaultPath);
         }
@@ -3375,7 +3633,7 @@ class DeParaUI {
 
             if (result.success) {
                 console.log('Ã¢Å“â€¦ Pastas carregadas:', result.data.folders.length);
-                this.renderFolders(result.data.folders, path);
+                this.renderFolders(result.data.folders, result.data.currentPath || path);
             } else {
                 console.error('Ã¢ÂÅ’ Erro na resposta da API:', result.error);
                 this.showToast('Erro ao carregar pastas: ' + (result.error?.message || 'Erro desconhecido'), 'error');
@@ -3387,7 +3645,7 @@ class DeParaUI {
     }
 
     // Configurar event listeners para o navegador de pastas
-    setupFolderBrowserEventListeners(modal, targetType, callback = null) {
+    setupFolderBrowserEventListeners(modal, selectionContext, callback = null) {
         // BotÃƒÂ£o fechar
         const closeBtn = modal.querySelector('.folder-browser-close-btn');
         if (closeBtn) {
@@ -3397,14 +3655,14 @@ class DeParaUI {
         // BotÃƒÂ£o voltar
         const upBtn = modal.querySelector('.folder-browser-up-btn');
         if (upBtn) {
-            upBtn.addEventListener('click', () => this.goUp());
+            upBtn.addEventListener('click', () => this.goUp(modal));
         }
 
         // BotÃƒÂ£o atualizar/refresh
         const refreshBtn = modal.querySelector('.folder-browser-refresh-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
-                const currentPath = document.getElementById('browser-path').value;
+                const currentPath = modal.querySelector('#browser-path').value;
                 if (currentPath) {
                     this.loadFoldersForBrowser(currentPath);
                 }
@@ -3434,8 +3692,8 @@ class DeParaUI {
         const selectBtn = modal.querySelector('.folder-browser-select-btn');
         if (selectBtn) {
             selectBtn.addEventListener('click', () => {
-                const targetTypeFromBtn = selectBtn.getAttribute('data-target-type');
-                this.selectCurrentFolder(targetTypeFromBtn, callback);
+                const context = selectBtn.getAttribute('data-selection-context') || selectionContext;
+                this.selectCurrentFolder(context, callback, modal);
             });
         }
     }
@@ -3516,10 +3774,42 @@ class DeParaUI {
         this.loadFoldersForBrowser(path);
     }
 
+    getParentPath(currentPath) {
+        if (!currentPath) {
+            return this.getDefaultBrowserPath();
+        }
+
+        const normalized = currentPath.replace(/[\\/]+$/, '');
+        if (/^[a-zA-Z]:$/.test(normalized)) {
+            return normalized;
+        }
+
+        const separator = normalized.includes('\\') ? '\\' : '/';
+        const parts = normalized.split(separator).filter(Boolean);
+
+        if (separator === '\\') {
+            const driveMatch = normalized.match(/^[a-zA-Z]:/);
+            const drive = driveMatch ? driveMatch[0] : '';
+            if (parts.length <= 1) {
+                return drive || normalized;
+            }
+
+            const relative = parts.slice(1, -1).join(separator);
+            return relative ? `${drive}${separator}${relative}` : `${drive}${separator}`;
+        }
+
+        if (parts.length <= 1) {
+            return '/';
+        }
+
+        return `/${parts.slice(0, -1).join('/')}`;
+    }
+
     // Voltar um nÃƒÂ­vel
-    goUp() {
-        const currentPath = document.getElementById('browser-path').value;
-        const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
+    goUp(modal = null) {
+        const pathInput = modal?.querySelector('#browser-path') || document.getElementById('browser-path');
+        const currentPath = pathInput?.value || '';
+        const parentPath = this.getParentPath(currentPath);
         this.loadFoldersForBrowser(parentPath);
     }
 
@@ -3684,6 +3974,196 @@ class DeParaUI {
         document.querySelector('.folder-browser-modal').closest('.modal').remove();
     }
 
+    // Overrides canônicos para fileops e browser de pastas
+    async showFolderBrowser(selectionContext, callback = null, startPath = '') {
+        const browserContext = selectionContext || 'source';
+        const initialPath = this.getFolderBrowserStartPath(browserContext, startPath) || this.getDefaultBrowserPath();
+        const contextMeta = this.getSelectionContextMeta(browserContext);
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content folder-browser-modal" style="max-width: 700px; width: 90%;">
+                <div class="modal-header">
+                    <h3>${contextMeta.title}</h3>
+                    <button class="modal-close folder-browser-close-btn">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="folder-browser">
+                        <div class="folder-browser-context">
+                            <strong>Contexto:</strong> ${contextMeta.title}
+                        </div>
+                        <div class="current-path">
+                            <input type="text" id="browser-path" value="${initialPath}" placeholder="Digite o caminho da pasta ou navegue">
+                            <button class="btn btn-sm folder-browser-up-btn" title="Navegar para pasta pai">
+                                <span class="material-icons">arrow_upward</span>
+                            </button>
+                            <button class="btn btn-sm folder-browser-refresh-btn" title="Atualizar lista de pastas">
+                                <span class="material-icons">refresh</span>
+                            </button>
+                        </div>
+                        <div class="folder-list" id="folder-list">
+                            <div class="empty-state">
+                                <span class="material-icons">folder_open</span>
+                                <p>Digite o caminho da pasta ou clique em "Atualizar" para navegar</p>
+                                <small>Você pode inserir o caminho manualmente ou navegar pelas pastas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary folder-browser-cancel-btn">Cancelar</button>
+                    <button class="btn btn-primary folder-browser-select-btn" data-selection-context="${browserContext}">${contextMeta.actionLabel}</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        this.setupFolderBrowserEventListeners(modal, browserContext, callback);
+        await this.setDefaultPath(modal, initialPath);
+    }
+
+    async setDefaultPath(modal, preferredPath = '') {
+        if (preferredPath) {
+            const pathInput = modal.querySelector('#browser-path');
+            if (pathInput) {
+                pathInput.value = preferredPath;
+            }
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/status/system');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data.userHome) {
+                    const pathInput = modal.querySelector('#browser-path');
+                    if (pathInput) {
+                        pathInput.value = data.data.userHome;
+                        return;
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('Falha ao detectar diretório home via API, usando padrão');
+        }
+
+        const pathInput = modal.querySelector('#browser-path');
+        if (pathInput) {
+            pathInput.value = this.getDefaultBrowserPath();
+        }
+    }
+
+    async loadFoldersForBrowser(requestedPath) {
+        try {
+            const response = await fetch('/api/files/list-folders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: requestedPath })
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error?.message || `HTTP ${response.status}`);
+            }
+
+            this.renderFolders(result.data.folders, result.data.currentPath || requestedPath);
+        } catch (error) {
+            this.showToast(`Erro ao carregar pastas: ${error.message}`, 'error');
+        }
+    }
+
+    setupFolderBrowserEventListeners(modal, selectionContext, callback = null) {
+        modal.querySelector('.folder-browser-close-btn')?.addEventListener('click', () => modal.remove());
+        modal.querySelector('.folder-browser-cancel-btn')?.addEventListener('click', () => modal.remove());
+        modal.querySelector('.folder-browser-up-btn')?.addEventListener('click', () => this.goUp(modal));
+        modal.querySelector('.folder-browser-refresh-btn')?.addEventListener('click', () => {
+            const currentPath = modal.querySelector('#browser-path')?.value.trim();
+            if (currentPath) {
+                this.loadFoldersForBrowser(currentPath);
+            }
+        });
+
+        const pathInput = modal.querySelector('#browser-path');
+        if (pathInput) {
+            pathInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    const nextPath = pathInput.value.trim();
+                    if (nextPath) {
+                        this.loadFoldersForBrowser(nextPath);
+                    }
+                }
+            });
+        }
+
+        modal.querySelector('.folder-browser-select-btn')?.addEventListener('click', () => {
+            const context = modal.querySelector('.folder-browser-select-btn').getAttribute('data-selection-context') || selectionContext;
+            this.selectCurrentFolder(context, callback, modal);
+        });
+    }
+
+    getParentPath(currentPath) {
+        if (!currentPath) {
+            return this.getDefaultBrowserPath();
+        }
+
+        const normalized = currentPath.replace(/[\\/]+$/, '');
+        if (/^[a-zA-Z]:$/.test(normalized)) {
+            return normalized;
+        }
+
+        const separator = normalized.includes('\\') ? '\\' : '/';
+        const parts = normalized.split(separator).filter(Boolean);
+
+        if (separator === '\\') {
+            const driveMatch = normalized.match(/^[a-zA-Z]:/);
+            const drive = driveMatch ? driveMatch[0] : '';
+            if (parts.length <= 1) {
+                return drive || normalized;
+            }
+
+            const relative = parts.slice(1, -1).join(separator);
+            return relative ? `${drive}${separator}${relative}` : `${drive}${separator}`;
+        }
+
+        if (parts.length <= 1) {
+            return '/';
+        }
+
+        return `/${parts.slice(0, -1).join('/')}`;
+    }
+
+    goUp(modal = null) {
+        const pathInput = modal?.querySelector('#browser-path') || document.getElementById('browser-path');
+        const parentPath = this.getParentPath(pathInput?.value || '');
+        this.loadFoldersForBrowser(parentPath);
+    }
+
+    browsePathForSchedule(type) {
+        const selectionContext = type === 'source' ? 'schedule-source' : 'schedule-target';
+        const currentPath = type === 'source'
+            ? (document.getElementById('schedule-source').value || this.getOperationDraft().sourcePath)
+            : (document.getElementById('schedule-target').value || this.getOperationDraft().targetPath);
+
+        this.showFolderBrowser(selectionContext, null, currentPath || this.getDefaultBrowserPath());
+    }
+
+    selectCurrentFolder(selectionContext, callback = null, modal = null) {
+        const pathInput = modal?.querySelector('#browser-path') || document.getElementById('browser-path');
+        const selectedPath = pathInput?.value || '';
+
+        if (callback && typeof callback === 'function') {
+            callback(selectedPath);
+            modal?.remove();
+            return;
+        }
+
+        this.applyFolderSelection(selectionContext, selectedPath);
+        modal?.remove();
+    }
+
     // Configurar event listeners seguros para CSP (substituir onclick/onchange inline)
     setupCSPSafeEventListeners() {
         // Barra de busca de operaÃƒÂ§ÃƒÂµes agendadas
@@ -3779,6 +4259,34 @@ class DeParaUI {
         }
         if (scheduleTargetInput) {
             scheduleTargetInput.addEventListener('input', updateOperationSummary);
+        }
+
+        const sourceConfiguredSelect = document.getElementById('fileops-source-configured');
+        if (sourceConfiguredSelect) {
+            sourceConfiguredSelect.addEventListener('change', (event) => {
+                if (event.target.value) {
+                    this.applyFolderSelection('source', event.target.value);
+                }
+            });
+        }
+
+        const targetConfiguredSelect = document.getElementById('fileops-target-configured');
+        if (targetConfiguredSelect) {
+            targetConfiguredSelect.addEventListener('change', (event) => {
+                if (event.target.value) {
+                    this.applyFolderSelection('target', event.target.value);
+                }
+            });
+        }
+
+        const sourceFolderPath = document.getElementById('source-folder-path');
+        if (sourceFolderPath) {
+            sourceFolderPath.addEventListener('change', () => this.syncDraftFromFileOps());
+        }
+
+        const targetFolderPath = document.getElementById('target-folder-path');
+        if (targetFolderPath) {
+            targetFolderPath.addEventListener('change', () => this.syncDraftFromFileOps());
         }
 
         // Input de validaÃƒÂ§ÃƒÂ£o de nome
@@ -3978,6 +4486,95 @@ class DeParaUI {
         this.showToast(`OperaÃƒÂ§ÃƒÂ£o configurada: ${operation} de ${sourcePath}`, 'success');
 
         // Abre o modal de agendamento
+        if (typeof showScheduleModal === 'function') {
+            showScheduleModal();
+        }
+    }
+
+    // Overrides canônicos do fluxo fileops
+    selectSuggestedFolder(event) {
+        const button = event.target;
+        const selectedPath = button.getAttribute('data-path');
+
+        if (selectedPath) {
+            this.applyFolderSelection('source', selectedPath);
+        }
+    }
+
+    selectOperation(operation) {
+        document.querySelectorAll('.operation-btn').forEach((button) => {
+            button.classList.remove('active');
+        });
+
+        const selectedButton = document.querySelector(`.${operation}-btn`);
+        if (selectedButton) {
+            selectedButton.classList.add('active');
+        }
+
+        this.updateOperationDraft({
+            operation,
+            ...(operation === 'delete' ? { targetPath: '' } : {})
+        });
+
+        this.showToast(`Operação selecionada: ${operation}`, 'info');
+    }
+
+    async executeNow() {
+        const validation = this.validateOperationDraft('execute');
+        if (!validation.isValid) {
+            this.showToast(validation.errors[0], 'error');
+            return;
+        }
+
+        try {
+            this.isExecutingOperation = true;
+            this.updateOperationDraft({ mode: 'execute' });
+
+            const { sourcePath, operation, targetPath, options } = validation.draft;
+            const response = await fetch('/api/files/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: operation,
+                    sourcePath,
+                    ...(targetPath ? { targetPath } : {}),
+                    options: {
+                        ...(options || {}),
+                        batch: true,
+                        preserveStructure: true
+                    }
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                this.showToast(`Operação ${operation} executada com sucesso!`, 'success', true);
+            } else {
+                this.showToast(result.error?.message || 'Erro ao executar operação', 'error');
+            }
+        } catch (error) {
+            console.error('Erro ao executar operação:', error);
+            this.showToast('Erro ao executar operação', 'error');
+        } finally {
+            this.isExecutingOperation = false;
+            this.refreshFileOpsState();
+        }
+    }
+
+    configureOperation() {
+        const validation = this.validateOperationDraft('execute');
+        if (!validation.isValid) {
+            this.showToast(validation.errors[0], 'error');
+            return;
+        }
+
+        this.updateOperationDraft({
+            ...validation.draft,
+            mode: 'schedule'
+        });
+
         if (typeof showScheduleModal === 'function') {
             showScheduleModal();
         }
@@ -6637,6 +7234,7 @@ class DeParaUI {
                 const result = await response.json();
                 this.folders.push(result.data);
                 this.renderConfiguredFolders();
+                this.renderFileOpsFolderOptions();
                 this.closeFolderManagerModal();
                 this.showToast('Pasta configurada com sucesso!', 'success');
             } else {
@@ -6962,6 +7560,14 @@ setupEventListeners() {
 
     // Atualizar interface de status
     updateUpdateStatus(data) {
+        if (window.DeParaUpdateRuntimeUI) {
+            window.DeParaUpdateRuntimeUI.render(data, {
+                getUpdateStateBadgeClass: this.getUpdateStateBadgeClass.bind(this),
+                getUpdateFrequencyLabel: this.getUpdateFrequencyLabel.bind(this)
+            });
+            return;
+        }
+
         const statusText = document.getElementById('update-status-text');
         const versionText = document.getElementById('update-version-text');
         const lastCheckText = document.getElementById('update-last-check-text');
@@ -6976,6 +7582,9 @@ setupEventListeners() {
 
         const state = data.state || {};
         const config = data.config || {};
+        const runtime = data.runtime || {};
+        const supervisor = runtime.supervisor || {};
+        const scheduler = runtime.scheduler || {};
         const hasUpdates = Boolean(
             state.targetCommit &&
             state.currentCommit &&
@@ -6983,9 +7592,15 @@ setupEventListeners() {
         );
 
         if (statusText) {
-            statusText.textContent = state.lastError
-                ? `Erro: ${state.lastError}`
-                : `Status: ${state.status || 'idle'}`;
+            if (state.lastError) {
+                statusText.textContent = `Erro: ${state.lastError}`;
+            } else if (scheduler.stale) {
+                statusText.textContent = 'Alerta: scheduler de auto-update está sem ciclos recentes';
+            } else if (runtime.autoUpdateOperationallyReady === false) {
+                statusText.textContent = 'Alerta: auto-update não está operacionalmente apto neste runtime';
+            } else {
+                statusText.textContent = `Status: ${state.status || 'idle'}`;
+            }
         }
 
         if (lastCheckText) {
@@ -7000,6 +7615,21 @@ setupEventListeners() {
             const current = state.currentCommit ? state.currentCommit.slice(0, 8) : 'desconhecida';
             const target = state.targetCommit ? state.targetCommit.slice(0, 8) : current;
             versionText.textContent = `Commit atual: ${current} | alvo: ${target}`;
+        }
+
+        if (lastResultText) {
+            const supervisorLabel = supervisor.supervisor || 'desconhecido';
+            const failureStage = runtime.lastFailureStage || state.lastFailureStage || '-';
+            lastResultText.textContent = `Último resultado: ${state.lastEvent || '-'} | supervisor: ${supervisorLabel} | etapa: ${failureStage}`;
+        }
+
+        if (versionText) {
+            const current = state.currentCommit ? state.currentCommit.slice(0, 8) : 'desconhecida';
+            const target = state.targetCommit ? state.targetCommit.slice(0, 8) : current;
+            const schedulerLabel = scheduler.lastCycleAt
+                ? new Date(scheduler.lastCycleAt).toLocaleString('pt-BR')
+                : 'sem ciclo registrado';
+            versionText.textContent = `Commit atual: ${current} | alvo: ${target} | último ciclo: ${schedulerLabel}`;
         }
 
         if (stateBadge) {
@@ -7025,9 +7655,16 @@ setupEventListeners() {
         }
 
         if (updateMessage) {
-            updateMessage.textContent = hasUpdates
-                ? 'Ha atualizacao disponivel no origin/main'
-                : 'Aplicacao atualizada. Voce ainda pode executar ciclo manual para diagnostico.';
+            if (runtime.autoUpdateOperationallyReady === false) {
+                const reasons = Array.isArray(supervisor.reasons) ? supervisor.reasons.join(', ') : 'sem detalhes';
+                updateMessage.textContent = `Runtime não apto para auto-update automático: ${reasons}`;
+            } else if (scheduler.stale) {
+                updateMessage.textContent = 'Scheduler sem ciclos recentes. Verifique PM2, restart e persistência do processo.';
+            } else {
+                updateMessage.textContent = hasUpdates
+                    ? 'Ha atualizacao disponivel no origin/main'
+                    : 'Aplicacao atualizada. Voce ainda pode executar ciclo manual para diagnostico.';
+            }
         }
 
         if (updateCommits) {
@@ -7137,22 +7774,11 @@ setupEventListeners() {
             const restartBtn = document.getElementById('restart-app-btn');
             if (restartBtn) {
                 restartBtn.disabled = true;
-                restartBtn.innerHTML = '<span class="material-icons">hourglass_empty</span> Reiniciando...';
+                restartBtn.innerHTML = '<span class="material-icons">info</span> Reinício via PM2';
             }
 
-            const response = await fetch('/api/update/restart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            const result = await response.json();
-            if (!result.success) {
-                throw new Error(result.error?.message || 'Falha ao reiniciar');
-            }
 
-            showToast('ReinÃƒÂ­cio solicitado com sucesso.', 'success');
-            setTimeout(() => window.location.reload(), 3000);
+            showToast('No RP4, reinicie a aplicação com `pm2 restart DePara`.', 'info');
         } catch (error) {
             logger.error('Erro ao reiniciar aplicaÃƒÂ§ÃƒÂ£o:', error);
             showToast(error.message || 'Erro ao reiniciar aplicaÃƒÂ§ÃƒÂ£o', 'error');
@@ -7382,6 +8008,7 @@ setupEventListeners() {
                 this.folders = result.data || [];
                 console.log('Ã¢Å“â€¦ Pastas carregadas:', this.folders);
                 this.renderConfiguredFolders();
+                this.renderFileOpsFolderOptions();
             } else {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
@@ -7403,6 +8030,32 @@ setupEventListeners() {
     }
 
     // Mostrar mensagem quando API nÃƒÂ£o estÃƒÂ¡ disponÃƒÂ­vel
+    renderFileOpsFolderOptions() {
+        const sourceSelect = document.getElementById('fileops-source-configured');
+        const targetSelect = document.getElementById('fileops-target-configured');
+        const folders = Array.isArray(this.folders) ? this.folders : [];
+
+        if (sourceSelect) {
+            const selectedValue = sourceSelect.value;
+            sourceSelect.innerHTML = '<option value="">Selecionar atalho salvo</option>' +
+                folders
+                    .filter((folder) => folder.path)
+                    .map((folder) => `<option value="${folder.path}">${folder.name} · ${folder.path}</option>`)
+                    .join('');
+            sourceSelect.value = selectedValue;
+        }
+
+        if (targetSelect) {
+            const selectedValue = targetSelect.value;
+            targetSelect.innerHTML = '<option value="">Selecionar atalho salvo</option>' +
+                folders
+                    .filter((folder) => folder.path)
+                    .map((folder) => `<option value="${folder.path}">${folder.name} · ${folder.path}</option>`)
+                    .join('');
+            targetSelect.value = selectedValue;
+        }
+    }
+
     showApiUnavailableMessage() {
         const foldersList = document.getElementById('folders-list');
         if (!foldersList) return;
@@ -8392,6 +9045,101 @@ async function scheduleOperation() {
 }
 
 // Controle de carregamento para evitar chamadas simultÃƒÂ¢neas
+function showScheduleModal() {
+    const modal = document.getElementById('schedule-modal');
+    const draft = window.deParaUI?.getOperationDraft?.() || window.deParaUI?.currentConfig || {};
+    const action = draft.operation || '';
+    const filtersValue = draft.options?.filters?.extensions
+        ? draft.options.filters.extensions.map((ext) => `*.${ext}`).join(', ')
+        : '';
+
+    document.getElementById('schedule-name').value = draft.name || (action ? `Operação ${action}` : '');
+    document.getElementById('schedule-action').value = action;
+    document.getElementById('schedule-frequency').value = document.getElementById('schedule-frequency').value || '1d';
+    document.getElementById('schedule-source').value = draft.sourcePath || '';
+    document.getElementById('schedule-target').value = draft.targetPath || '';
+    document.getElementById('schedule-filters').value = filtersValue;
+    document.getElementById('schedule-batch').checked = draft.options?.batch ?? true;
+    document.getElementById('schedule-backup').checked = false;
+    document.getElementById('schedule-preserve-structure').checked = draft.options?.preserveStructure ?? true;
+
+    updateScheduleForm();
+    modal.style.display = 'flex';
+    document.body.classList.add('modal-open');
+}
+
+async function scheduleOperation() {
+    const modal = document.getElementById('schedule-modal');
+    const isEditing = modal.dataset.editingOperationId;
+    const name = document.getElementById('schedule-name').value.trim();
+    const action = document.getElementById('schedule-action').value;
+    const frequency = document.getElementById('schedule-frequency').value;
+    const sourcePath = document.getElementById('schedule-source').value.trim();
+    const targetPath = document.getElementById('schedule-target').value.trim();
+    const filters = document.getElementById('schedule-filters').value.trim();
+    const batch = document.getElementById('schedule-batch').checked;
+    const backup = document.getElementById('schedule-backup').checked;
+    const preserveStructure = document.getElementById('schedule-preserve-structure').checked;
+
+    if (!name || !action || !frequency || !sourcePath) {
+        showToast(!name ? 'Defina um nome para a operação agendada.' : 'Preencha os campos obrigatórios do agendamento.', 'error');
+        return;
+    }
+
+    if ((action === 'move' || action === 'copy') && !targetPath) {
+        window.deParaUI?.showFieldError?.(document.getElementById('schedule-target'), 'Destino obrigatório');
+        showToast('Selecione a pasta de destino para concluir o agendamento.', 'error');
+        return;
+    }
+
+    try {
+        const operationId = isEditing || `ui_${Date.now()}`;
+        const requestData = {
+            name,
+            frequency,
+            action,
+            sourcePath,
+            options: {
+                batch,
+                backupBeforeMove: action === 'move' ? backup : false,
+                forceBackup: action === 'delete' ? backup : false,
+                preserveStructure,
+                filters: filters
+                    ? { extensions: filters.split(',').map((ext) => ext.trim().replace('*.', '')) }
+                    : {}
+            }
+        };
+
+        if (!isEditing) {
+            requestData.operationId = operationId;
+        }
+
+        if (action === 'move' || action === 'copy') {
+            requestData.targetPath = targetPath;
+        }
+
+        const response = await fetch(isEditing ? `/api/files/schedule/${isEditing}` : '/api/files/schedule', {
+            method: isEditing ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            showToast(`Operação "${name}" ${isEditing ? 'editada' : 'agendada'} com sucesso!`, 'success', true);
+            window.closeScheduleModal();
+            loadScheduledOperations();
+        } else {
+            showToast(result.error?.message || 'Erro ao salvar operação agendada', 'error', true);
+        }
+    } catch (error) {
+        console.error('Erro ao agendar operação:', error);
+        showToast('Erro ao agendar operação', 'error');
+    }
+}
+
 let isLoadingTemplates = false;
 let isLoadingScheduledOperations = false;
 let isLoadingBackups = false;
@@ -10038,6 +10786,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // FunÃƒÂ§ÃƒÂµes para slideshow (todas sÃƒÂ£o funÃƒÂ§ÃƒÂµes globais)
+        window.scheduleOperation = async function() {
+            return scheduleOperation();
+        };
+
         window.closeSlideshowFolderModal = function() {
             const modal = document.getElementById('slideshow-folder-modal');
             if (modal) {
