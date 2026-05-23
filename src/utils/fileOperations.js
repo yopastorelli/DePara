@@ -588,6 +588,15 @@ class FileOperationsManager {
         }
     }
 
+    async exportScheduledOperations() {
+        await fs.mkdir(this.dataDir, { recursive: true });
+        return Array.from(this.operations.entries()).map(([id, config]) => ({
+            id,
+            config: this.normalizeScheduledOperationConfig(config),
+            timestamp: new Date().toISOString()
+        }));
+    }
+
     async getPersistenceStatus() {
         const marker = await getMigrationStatus();
         return marker.scheduledOperations || {
@@ -1742,6 +1751,37 @@ class FileOperationsManager {
     /**
      * Obtém estatísticas das operações
      */
+    async replaceScheduledOperations(operations = []) {
+        const normalizedOperations = Array.isArray(operations) ? operations : [];
+
+        for (const intervalId of this.schedules.values()) {
+            clearInterval(intervalId);
+        }
+        this.schedules.clear();
+        this.operations.clear();
+
+        for (const operation of normalizedOperations) {
+            if (!operation || typeof operation !== 'object') {
+                throw new Error('Operacao agendada invalida no backup');
+            }
+
+            const operationId = typeof operation.id === 'string' && operation.id.trim()
+                ? operation.id.trim()
+                : this.generateOperationId();
+            const normalizedConfig = this.validateScheduledOperationConfig(operation.config || operation);
+
+            this.operations.set(operationId, normalizedConfig);
+            this.armScheduledOperation(operationId, normalizedConfig);
+        }
+
+        await this.saveScheduledOperations();
+        logger.info('Operacoes agendadas importadas para o runtime', {
+            total: this.operations.size
+        });
+
+        return this.getScheduledOperations();
+    }
+
     getStats() {
         // Obter atividades recentes (últimas 20 operações)
         const recentActivities = Array.from(this.operations.values())

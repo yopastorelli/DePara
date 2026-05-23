@@ -448,6 +448,28 @@
                     </div>
                 </div>
 
+                <div class="backup-config">
+                    <h3>Backup de Configuração</h3>
+                    <p>Exporte ou restaure slideshow, screensaver, operações agendadas e pastas configuradas.</p>
+                    <div class="config-form">
+                        <div class="form-group">
+                            <button class="btn btn-primary export-operational-config-btn">
+                                <span class="material-icons">download</span>
+                                Exportar Backup Operacional
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label>Importar Backup Operacional:</label>
+                            <input type="file" id="operational-config-file" accept="application/json,.json">
+                            <small class="form-help">A importação substitui toda a configuração operacional atual.</small>
+                        </div>
+                        <button class="btn btn-secondary import-operational-config-btn">
+                            <span class="material-icons">upload</span>
+                            Importar Backup Operacional
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Backup List -->
                 <div class="backups-list" id="backups-list">
                     <!-- Backups serão carregados dinamicamente -->

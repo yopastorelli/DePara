@@ -27,6 +27,19 @@
 ## Config
 - `GET /api/config`
 - `POST /api/config`
+- `GET /api/config/export`
+- `POST /api/config/import`
+
+### Backup operacional
+- `GET /api/config/export` retorna um JSON versionado com:
+  - `version`
+  - `exportedAt`
+  - `sourceRuntime`
+  - `config`
+  - `scheduledOperations`
+  - `folders`
+- `POST /api/config/import` substitui integralmente o estado operacional coberto pelo backup.
+- O import valida a versao e o shape minimo antes de regravar os arquivos canonicos em `~/.depara/data`.
 
 ## Arquivos
 
@@ -132,9 +145,14 @@ Os payloads de `status` e `diagnostics` do auto-update devem expor, no mínimo:
 - `runtime.release.previous`
 - `runtime.release.staging`
 - `runtime.release.activationState`
+- `runtime.persistence.configMigrated`
+- `runtime.persistence.scheduledOperationsMigrated`
+- `runtime.persistence.foldersMigrated`
+- `runtime.persistence.sources`
 
 ## Política operacional
 - Produção RP4 assume PM2 como único supervisor suportado.
 - O estado preservado entre releases fica em `~/.depara/data`.
+- O backup operacional versionado cobre `depara-config.json`, `scheduled-operations.json` e `folders.json`.
 - `runtime.worktree` pode continuar aparecendo em diagnósticos, mas não é mais gate primário do auto-update no RP4.
 - Logging em `console` não faz parte do contrato operacional padrão em `production` ou `test`.

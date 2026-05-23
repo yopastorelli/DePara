@@ -3052,6 +3052,12 @@ class DeParaUI {
         this.addButtonListener('.update-backup-btn', () => {
             if (typeof updateBackupConfig === 'function') updateBackupConfig();
         });
+        this.addButtonListener('.export-operational-config-btn', () => {
+            if (typeof exportOperationalConfig === 'function') exportOperationalConfig();
+        });
+        this.addButtonListener('.import-operational-config-btn', () => {
+            if (typeof importOperationalConfig === 'function') importOperationalConfig();
+        });
 
         // BotÃƒÆ’Ã‚Âµes de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
         this.addButtonListener('.show-ignored-btn', () => window.showIgnoredPatterns());
@@ -9217,6 +9223,85 @@ async function loadBackups() {
         console.error('Erro ao carregar backups:', error);
     } finally {
         markLoading('backups', false);
+    }
+}
+
+async function exportOperationalConfig() {
+    try {
+        const response = await fetch('/api/config/export');
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Falha ao exportar backup operacional');
+        }
+
+        const backup = result.data;
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        link.href = downloadUrl;
+        link.download = `depara-operational-backup-${timestamp}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(downloadUrl);
+
+        showToast('Backup operacional exportado com sucesso!', 'success', true);
+    } catch (error) {
+        console.error('Erro ao exportar backup operacional:', error);
+        showToast(error.message || 'Erro ao exportar backup operacional', 'error', true);
+    }
+}
+
+async function importOperationalConfig() {
+    const fileInput = document.getElementById('operational-config-file');
+    const file = fileInput?.files?.[0];
+
+    if (!file) {
+        showToast('Selecione um arquivo JSON para importar.', 'warning', true);
+        return;
+    }
+
+    const confirmed = window.confirm('A importacao substituira slideshow, screensaver, operacoes agendadas e pastas configuradas. Deseja continuar?');
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const rawContent = await file.text();
+        const payload = JSON.parse(rawContent);
+
+        const response = await fetch('/api/config/import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Falha ao importar backup operacional');
+        }
+
+        if (window.deParaUI?.loadServerConfig) {
+            await window.deParaUI.loadServerConfig();
+        }
+        if (window.deParaUI?.loadFolders) {
+            await window.deParaUI.loadFolders();
+        }
+        await forceReloadScheduledOperations();
+        await loadBackups();
+
+        if (fileInput) {
+            fileInput.value = '';
+        }
+
+        showToast('Backup operacional importado com sucesso!', 'success', true);
+    } catch (error) {
+        console.error('Erro ao importar backup operacional:', error);
+        showToast(error.message || 'Erro ao importar backup operacional', 'error', true);
     }
 }
 

@@ -217,6 +217,10 @@ async function saveConfig(nextConfig) {
   return normalized;
 }
 
+async function replaceConfig(nextConfig = {}) {
+  return saveConfig(nextConfig);
+}
+
 async function updateConfig(partialConfig = {}) {
   const current = await getConfig();
   const merged = {
@@ -278,6 +282,7 @@ module.exports = {
   ensureConfigFile,
   getConfig,
   saveConfig,
+  replaceConfig,
   updateConfig,
   setConfigValue,
   getPersistenceStatus

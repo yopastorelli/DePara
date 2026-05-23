@@ -49,7 +49,9 @@ router.get('/docs', (req, res) => {
       },
       config: {
         GET: '/api/config',
-        POST: '/api/config'
+        POST: '/api/config',
+        EXPORT: '/api/config/export',
+        IMPORT: '/api/config/import'
       },
       files: {
         POST: '/api/files/execute',

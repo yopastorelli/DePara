@@ -225,4 +225,70 @@ describe('API smoke', () => {
 
     expect(fs.existsSync(copiedFile)).toBe(true);
   });
+
+  it('exporta e importa backup operacional preservando config, agendamentos e pastas', async () => {
+    const folderPath = path.join(runtimeRoot, 'backup-folder');
+    await fsp.mkdir(folderPath, { recursive: true });
+
+    await request(app)
+      .post('/api/config')
+      .send({
+        config: {
+          slideshowSelectedPath: '/backup/slideshow',
+          slideshowConfig: { interval: 7 },
+          screensaverConfig: { idleMinutes: 15 }
+        }
+      })
+      .expect(200);
+
+    await request(app)
+      .post('/api/files/folders')
+      .send({
+        name: 'Backup Folder',
+        path: folderPath,
+        type: 'input',
+        autoProcess: false
+      })
+      .expect(201);
+
+    await request(app)
+      .post('/api/files/schedule')
+      .send({
+        operationId: 'backup_schedule',
+        name: 'Backup Schedule',
+        frequency: 'manual',
+        action: 'copy',
+        sourcePath: '/tmp/source',
+        targetPath: '/tmp/target',
+        options: {}
+      })
+      .expect(201);
+
+    const exported = await request(app).get('/api/config/export').expect(200);
+    expect(exported.body.success).toBe(true);
+
+    await request(app)
+      .post('/api/config')
+      .send({
+        config: {
+          slideshowSelectedPath: '/mutated/slideshow',
+          slideshowConfig: { interval: 2 }
+        }
+      })
+      .expect(200);
+
+    await request(app)
+      .post('/api/config/import')
+      .send(exported.body.data)
+      .expect(200);
+
+    const configResponse = await request(app).get('/api/config').expect(200);
+    const schedulesResponse = await request(app).get('/api/files/scheduled').expect(200);
+    const foldersResponse = await request(app).get('/api/files/folders').expect(200);
+
+    expect(configResponse.body.config.slideshowSelectedPath).toBe('/backup/slideshow');
+    expect(configResponse.body.config.slideshowConfig.interval).toBe(7);
+    expect(schedulesResponse.body.data.some((operation) => operation.id === 'backup_schedule')).toBe(true);
+    expect(foldersResponse.body.data.some((folder) => folder.name === 'Backup Folder')).toBe(true);
+  });
 });

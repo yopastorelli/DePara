@@ -136,4 +136,32 @@ describe('FileOperationsManager scheduling', () => {
     expect(persistence.migrated).toBe(true);
     expect(persistence.source).toContain(path.join('data', 'scheduled-operations.json'));
   });
+
+  it('substitui operacoes agendadas por backup importado e persiste no runtime', async () => {
+    const manager = require('../src/utils/fileOperations');
+    await manager.init();
+
+    await manager.replaceScheduledOperations([
+      {
+        id: 'import_schedule',
+        config: {
+          name: 'Importada',
+          frequency: 'manual',
+          action: 'copy',
+          sourcePath: '/tmp/source',
+          targetPath: '/tmp/target',
+          active: true,
+          options: {}
+        }
+      }
+    ]);
+
+    const exported = await manager.exportScheduledOperations();
+    expect(exported).toHaveLength(1);
+    expect(exported[0].id).toBe('import_schedule');
+
+    const persisted = JSON.parse(await fsp.readFile(path.join(runtimeRoot, 'data', 'scheduled-operations.json'), 'utf8'));
+    expect(persisted).toHaveLength(1);
+    expect(persisted[0].id).toBe('import_schedule');
+  });
 });

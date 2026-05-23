@@ -20,6 +20,12 @@ function getDefaultMarker() {
       source: null,
       outcome: 'unknown',
       attemptedAt: null
+    },
+    folders: {
+      migrated: false,
+      source: null,
+      outcome: 'unknown',
+      attemptedAt: null
     }
   };
 }

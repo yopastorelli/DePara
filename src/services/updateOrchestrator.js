@@ -6,6 +6,7 @@ const { exec } = require('child_process');
 const logger = require('../utils/logger');
 const configStore = require('../utils/configStore');
 const fileOperationsManager = require('../utils/fileOperations');
+const folderManager = require('../config/folders');
 const {
   getRuntimeRoot,
   getRuntimeDataDir,
@@ -533,9 +534,10 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
     const supervisor = await this.detectSupervisorStatus();
     const worktree = await this.getTrackedWorktreeStatus();
     const activeRelease = await this.readCurrentReleaseMeta();
-    const [configPersistence, scheduledOperationsPersistence] = await Promise.all([
+    const [configPersistence, scheduledOperationsPersistence, foldersPersistence] = await Promise.all([
       configStore.getPersistenceStatus(),
-      fileOperationsManager.getPersistenceStatus()
+      fileOperationsManager.getPersistenceStatus(),
+      folderManager.getPersistenceStatus()
     ]);
     return {
       platformTarget: 'rp4',
@@ -546,13 +548,16 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
       persistence: {
         configMigrated: Boolean(configPersistence.migrated),
         scheduledOperationsMigrated: Boolean(scheduledOperationsPersistence.migrated),
+        foldersMigrated: Boolean(foldersPersistence.migrated),
         sources: {
           config: configPersistence.source || null,
-          scheduledOperations: scheduledOperationsPersistence.source || null
+          scheduledOperations: scheduledOperationsPersistence.source || null,
+          folders: foldersPersistence.source || null
         },
         details: {
           config: configPersistence,
-          scheduledOperations: scheduledOperationsPersistence
+          scheduledOperations: scheduledOperationsPersistence,
+          folders: foldersPersistence
         }
       },
       release: {

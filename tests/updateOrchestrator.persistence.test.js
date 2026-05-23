@@ -174,6 +174,8 @@ describe('UpdateOrchestrator persistence layout', () => {
     expect(runtime.persistence).toBeDefined();
     expect(runtime.persistence).toHaveProperty('configMigrated');
     expect(runtime.persistence).toHaveProperty('scheduledOperationsMigrated');
+    expect(runtime.persistence).toHaveProperty('foldersMigrated');
     expect(runtime.persistence).toHaveProperty('sources');
+    expect(runtime.persistence.sources).toHaveProperty('folders');
   });
 });
