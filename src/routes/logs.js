@@ -1,5 +1,5 @@
 /**
- * Rotas para ingestão leve de logs do frontend
+ * Rotas para ingestao leve de logs do frontend.
  */
 
 const express = require('express');
@@ -18,7 +18,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: {
-          message: 'Mensagem de log é obrigatória'
+          message: 'Mensagem de log e obrigatoria'
         }
       });
     }
@@ -27,7 +27,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: {
-          message: 'Nível de log inválido'
+          message: 'Nivel de log invalido'
         }
       });
     }

@@ -1,6 +1,6 @@
-# Docs Canônicas DePara
+# Documentação Canônica DePara
 
-Ordem de leitura para IA desenvolvedora:
+Ordem de leitura recomendada:
 
 1. [ARCHITECTURE.md](ARCHITECTURE.md)
 2. [INSTALLATION.md](INSTALLATION.md)
@@ -10,6 +10,7 @@ Ordem de leitura para IA desenvolvedora:
 6. [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
 ## Regras
-- Não duplique instruções fora desta pasta e do `README.md`.
-- Se um fluxo mudar, atualize código, testes e docs na mesma alteração.
-- Considere qualquer documento removido da raiz como não canônico.
+- Atualize código, testes e docs na mesma alteração quando um fluxo público mudar.
+- `README.md` e `docs/` são a documentação de referência; não replique instruções operacionais em arquivos soltos na raiz.
+- Quando uma rota continuar pública mas não for recomendada para novos fluxos, documente isso explicitamente em vez de omitir.
+- Strings user-facing em docs e respostas de API devem permanecer em `UTF-8`.

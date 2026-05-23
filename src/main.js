@@ -65,9 +65,9 @@ function configureApp() {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         scriptSrc: ["'self'", "'unsafe-inline'"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'blob:'],
         connectSrc: ["'self'"],
         objectSrc: ["'none'"]
@@ -141,7 +141,7 @@ function configureApp() {
 
   app.use('*', (req, res) => {
     res.status(404).json({
-      error: 'Rota não encontrada',
+      error: 'Rota nao encontrada',
       path: req.originalUrl,
       method: req.method
     });
@@ -165,12 +165,12 @@ function registerProcessHandlers() {
   };
 
   process.on('uncaughtException', (error) => {
-    logger.error('Erro não capturado:', { error: error.message, stack: error.stack });
+    logger.error('Erro nao capturado:', { error: error.message, stack: error.stack });
     shutdownAndExit(1);
   });
 
   process.on('unhandledRejection', (reason) => {
-    logger.error('Promise rejeitada não tratada:', { reason });
+    logger.error('Promise rejeitada nao tratada:', { reason });
     shutdownAndExit(1);
   });
 
@@ -211,8 +211,8 @@ async function startServer(options = {}) {
   });
 
   logger.info(`Servidor ${appMetadata.displayName} iniciado na porta ${port}`);
-  logger.info(`API disponível em: http://127.0.0.1:${port}`);
-  logger.info(`Interface web disponível em: http://127.0.0.1:${port}/ui`);
+  logger.info(`API disponivel em: http://127.0.0.1:${port}`);
+  logger.info(`Interface web disponivel em: http://127.0.0.1:${port}/ui`);
 
   return server;
 }
@@ -266,10 +266,12 @@ app.close = (callback) => {
     });
 };
 app.initializeDirectories = initializeDirectories;
+app.getRepoRoot = getRepoRoot;
+app.getRuntimeRoot = getRuntimeRoot;
 
 if (require.main === module) {
   startServer({ registerHandlers: true }).catch((error) => {
-    console.error('Erro crítico durante inicialização:', error);
+    console.error('Erro critico durante inicializacao:', error);
     process.exit(1);
   });
 }

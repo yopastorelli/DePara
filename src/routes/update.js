@@ -1,5 +1,5 @@
 /**
- * Rotas canônicas para atualização automática do DePara.
+ * Rotas canonicas para atualizacao automatica do DePara.
  */
 
 const express = require('express');
@@ -27,7 +27,7 @@ router.use(async (req, res, next) => {
     res.status(500).json({
       success: false,
       error: {
-        message: 'Falha ao inicializar sistema de atualização',
+        message: 'Falha ao inicializar sistema de atualizacao',
         details: error.message
       }
     });
@@ -56,7 +56,7 @@ router.get('/auto/status', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: {
-        message: 'Erro ao obter status automático',
+        message: 'Erro ao obter status automatico',
         details: error.message
       }
     });
@@ -93,7 +93,7 @@ router.put('/auto/config', async (req, res) => {
     return res.status(200).json({
       success: true,
       data: config,
-      message: 'Configuração de atualização automática salva',
+      message: 'Configuracao de atualizacao automatica salva',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -101,7 +101,7 @@ router.put('/auto/config', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: {
-        message: 'Erro ao salvar configuração automática',
+        message: 'Erro ao salvar configuracao automatica',
         details: error.message
       }
     });
@@ -117,8 +117,8 @@ router.post('/auto/trigger', async (req, res) => {
         success: false,
         error: {
           message: trigger.reason === 'not_operational'
-            ? 'Runtime não está operacionalmente apto para auto-update'
-            : 'Ciclo já está em execução',
+            ? 'Runtime nao esta operacionalmente apto para auto-update'
+            : 'Ciclo ja esta em execucao',
           reason: trigger.reason,
           diagnostics: trigger.diagnostics || null
         }
@@ -128,7 +128,7 @@ router.post('/auto/trigger', async (req, res) => {
     return res.status(202).json({
       success: true,
       data: trigger,
-      message: 'Ciclo automático iniciado',
+      message: 'Ciclo automatico iniciado',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -136,7 +136,7 @@ router.post('/auto/trigger', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: {
-        message: 'Erro ao disparar ciclo automático',
+        message: 'Erro ao disparar ciclo automatico',
         details: error.message
       }
     });
@@ -158,7 +158,7 @@ router.get('/auto/history', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: {
-        message: 'Erro ao carregar histórico de atualização',
+        message: 'Erro ao carregar historico de atualizacao',
         details: error.message
       }
     });
@@ -178,7 +178,7 @@ router.get('/auto/diagnostics', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: {
-        message: 'Erro ao coletar diagnóstico do auto-update',
+        message: 'Erro ao coletar diagnostico do auto-update',
         details: error.message
       }
     });

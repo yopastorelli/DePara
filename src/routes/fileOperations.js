@@ -914,7 +914,7 @@ router.post('/schedule/:operationId/execute', strictRateLimiter, async (req, res
         if ((operation.action === 'move' || operation.action === 'copy')) {
             try {
                 const targetStats = await fs.stat(operation.targetPath);
-                logger.info(`Destino existe para execu??o agendada: ${operation.targetPath}`, {
+                logger.info(`Destino existe para execução agendada: ${operation.targetPath}`, {
                     isDirectory: targetStats.isDirectory(),
                     isFile: targetStats.isFile()
                 });
@@ -923,14 +923,14 @@ router.post('/schedule/:operationId/execute', strictRateLimiter, async (req, res
 
                 try {
                     const parentStats = await fs.stat(parentDir);
-                    logger.info(`Destino ser? criado dentro de: ${parentDir}`, {
+                    logger.info(`Destino será criado dentro de: ${parentDir}`, {
                         isDirectory: parentStats.isDirectory()
                     });
                 } catch (parentError) {
-                    logger.error(`Destino inv?lido: ${operation.targetPath}`, { error: parentError.message });
+                    logger.error(`Destino inválido: ${operation.targetPath}`, { error: parentError.message });
                     return res.status(400).json({
                         success: false,
-                        error: `Destino inv?lido: ${operation.targetPath}`
+                        error: `Destino inválido: ${operation.targetPath}`
                     });
                 }
             }

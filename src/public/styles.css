@@ -823,7 +823,6 @@ body {
     gap: 10px;
 }
 
-/* CSS antigo removido - usando botÃƒÂµes estÃƒÂ¡ticos */
 
 .slideshow-content {
     flex: 1;
@@ -886,7 +885,7 @@ body {
     border-radius: 20px;
 }
 
-/* RodapÃƒÂ© do slideshow com caminho da imagem */
+/* Rodape do slideshow com caminho da imagem */
 .slideshow-footer {
     position: absolute;
     bottom: 0;
@@ -1250,7 +1249,7 @@ body {
     color: #999;
 }
 
-/* Remover duplicaÃƒÂ§ÃƒÂ£o - jÃƒÂ¡ definido acima */
+/* Reaproveita a definicao acima */
 
 .folder-item:last-child {
     border-bottom: none;
@@ -3151,10 +3150,8 @@ body {
    SLIDESHOW STYLES
    ========================================== */
 
-/* Controles dinÃƒÂ¢micos do slideshow */
-/* CSS duplicado removido - agora estÃƒÂ¡ apenas no index.html */
+/* Controles dinamicos do slideshow */
 
-/* CSS removido - conflitava com controles dinÃƒÂ¢micos */
 
 /* Slideshow Modal */
 .slideshow-modal {
@@ -3265,18 +3262,15 @@ body {
     opacity: 1;
 }
 
-/* CSS removido - conflitava com controles dinÃƒÂ¢micos */
 
-/* CSS removido - conflitava com controles dinÃƒÂ¢micos */
 
-/* BotÃƒÂµes de OrganizaÃƒÂ§ÃƒÂ£o (discretos) */
+/* Botoes de organizacao */
 .slideshow-organization-controls {
     display: flex;
     gap: 5px;
     margin-left: 10px;
 }
 
-/* CSS antigo removido - usando botÃƒÂµes estÃƒÂ¡ticos */
 
 .slideshow-organization-controls .slideshow-hide-btn {
     background: rgba(255, 165, 0, 0.1);
@@ -3568,7 +3562,7 @@ body {
         bottom: 20px;
     }
 
-    /* CSS antigo removido - usando botÃƒÂµes estÃƒÂ¡ticos */
+
 
     .slideshow-info {
         min-width: 100px;
@@ -3605,7 +3599,7 @@ body {
         gap: 16px;
     }
 
-    /* CSS antigo removido - usando botÃƒÂµes estÃƒÂ¡ticos */
+
 
     .slideshow-info {
         min-width: 80px;
@@ -3679,7 +3673,7 @@ body {
     }
 }
 
-/* Estilos de ValidaÃƒÂ§ÃƒÂ£o e Feedback Visual */
+/* Estados de validacao e feedback visual */
 .validation-message {
     font-size: 12px;
     margin-top: 4px;
@@ -3714,7 +3708,7 @@ body {
     box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
-/* Estados dos botÃƒÂµes de operaÃƒÂ§ÃƒÂ£o */
+/* Estados dos botoes de operacao */
 .simple-operation-btn.disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -3728,7 +3722,7 @@ body {
     transform: none !important;
 }
 
-/* Feedback visual para campos obrigatÃƒÂ³rios */
+/* Feedback visual para campos obrigatorios */
 .form-group label::after {
     content: '';
     margin-left: 4px;
@@ -3739,7 +3733,7 @@ body {
     color: #e74c3c;
 }
 
-/* AnimaÃƒÂ§ÃƒÂµes de feedback */
+/* Animacoes de feedback */
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
@@ -3750,7 +3744,7 @@ body {
     animation: shake 0.3s ease-in-out;
 }
 
-/* Sistema de AtualizaÃƒÂ§ÃƒÂµes */
+/* Sistema de atualizacoes */
 .update-settings {
     margin-top: 30px;
     padding: 20px;
@@ -3865,7 +3859,7 @@ body {
     font-size: 14px;
 }
 
-/* Melhorias na responsividade para validaÃƒÂ§ÃƒÂ£o */
+/* Ajustes responsivos para validacao */
 @media (max-width: 768px) {
     .validation-message {
         font-size: 11px;

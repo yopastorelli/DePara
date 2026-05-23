@@ -3,8 +3,8 @@
 ## Referência de produção
 - Plataforma principal: Raspberry Pi 4
 - Supervisor canônico: PM2
-- Runtime operacional: `DEPARA_RUNTIME_ROOT=/home/yo/.depara`
-- `systemd` não é supervisor alternativo da app; ele só pode existir como bootstrap do estado salvo do PM2
+- Runtime operacional padrão: `DEPARA_RUNTIME_ROOT=/home/yo/.depara`
+- `systemd` só pode existir como bootstrap do PM2 salvo
 - O atalho do menu chama apenas `start-depara.sh open`
 
 ## Checklist de go live
@@ -31,27 +31,27 @@ curl -s http://127.0.0.1:3000/api/update/auto/diagnostics
 ## Fluxo canônico de update
 1. `POST /api/update/auto/check-now`
 2. `POST /api/update/auto/trigger`
-3. O ciclo executa `git fetch` -> `merge --ff-only` -> `npm ci` -> `pm2 restart`
-4. O health check em `/health` fecha o ciclo
-5. Se falhar, o rollback deve devolver o commit anterior e registrar a etapa
+3. O ciclo aplica `git fetch`, sincronização do worktree, `npm ci` e restart controlado do processo
+4. `/health` fecha a validação do ciclo
+5. Em falha, o orchestrator registra a etapa e o diagnóstico resultante
 
 ## Boot e menu
 - Backend: `pm2 start ecosystem.config.js --env production`
 - Persistência de reboot: `pm2 save` + `pm2 startup`
 - Janela: menu desktop executa `start-depara.sh open`
-- O launcher do menu não sobe servidor, não executa `npm install` e não faz `nohup`
+- O launcher do menu não sobe servidor, não executa `npm install` e não substitui o PM2
 
 ## Bloqueios de publicação
 - worktree com artefato não deliberado
 - scheduler stale
 - processo fora do PM2
-- endpoint legado de update ainda em uso por UI/automação
+- UI ou automação ainda usando endpoints legados de update
 - logs massivos habilitados por padrão em produção
 
 ## Política de logs
-- `LOG_TO_CONSOLE=false` é o padrão de produção no RP4.
-- `LOG_LEVEL=warn` é o baseline operacional.
-- `debug` só pode ser habilitado de forma temporária e deliberada.
+- `LOG_TO_CONSOLE=false` é o padrão operacional em produção
+- `LOG_LEVEL=warn` é o baseline esperado
+- `debug` só deve ser habilitado de forma temporária
 
 ## Não comitar
 - `.claude/`

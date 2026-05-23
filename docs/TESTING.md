@@ -8,29 +8,35 @@ npm run test:smoke
 npm run test:e2e
 ```
 
-## Cobertura esperada
-- `lint`: parser e regressão estrutural rápida
-- `test:unit`: backend, config, update e status isolados
-- `test:smoke`: fluxos reais de API, operações de arquivo e side effects controlados
-- `test:e2e`: UI real em navegador com runtime isolado
+## Scripts de teste atuais
+- `npm test`: alias de `test:unit`
+- `npm run test:unit`: Jest para backend e contratos isolados
+- `npm run test:smoke`: Jest para fluxos reais de API e operações controladas
+- `npm run test:e2e`: Playwright para UI real
+- `npm run test:coverage`: cobertura Jest
 
 ## Regras de isolamento
-- Sempre usar diretórios temporários para `data`, `logs`, `backups` e `temp`
-- Sempre usar `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true` quando o teste tocar update
-- Nenhum teste pode depender do repositório local estar limpo ou populado
-- Nenhum teste pode escrever em `backups/` do repositório
+- Use diretórios temporários para `data`, `logs`, `backups` e `temp`
+- Use `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true` quando o teste tocar update
+- Nenhum teste deve depender do repositório local estar limpo ou populado
+- Nenhum teste deve escrever em `backups/` do repositório
 - Em `test`, `LOG_TO_CONSOLE` deve permanecer desligado por padrão
 
 ## Cenários mínimos de release
 - UI carrega sem erro de parser
-- status/resources responde sem degradação óbvia em chamadas repetidas
-- config persiste e reidrata
-- copy/move/delete funcionam em diretórios temporários
-- slideshow lista imagens e navega com fixtures válidas
-- fileops usa o draft canônico para executar e agendar
-- update diagnostics expõe readiness operacional coerente
+- `/api/docs` reflete a superfície pública atual
+- `/api/status/resources` responde de forma estável
+- Config persiste e reidrata
+- `copy`, `move` e `delete` funcionam em diretórios temporários
+- Slideshow lista imagens e navega com fixtures válidas
+- File ops usa o draft canônico para executar e agendar
+- Update diagnostics expõe readiness operacional coerente
 
-## Cobertura especifica de agendamento
-- agendamento cobre create, edit, duplicate, pause/resume e execute-now com persistencia e reidratacao
-- `test:unit` e `test:smoke` fecham o contrato do scheduler em qualquer ambiente
-- o viewer fullscreen do slideshow deve ser tratado como verificacao RP4/Linux quando o runner local for Windows headless
+## Cobertura de agendamento
+- create, edit, duplicate, pause, resume e execute-now
+- persistência de `active`
+- reidratação após reinício
+
+## Verificação textual
+- Strings user-facing da UI e da API não podem conter sequências típicas de mojibake
+- Título da página, toasts e mensagens de update devem aparecer em português legível

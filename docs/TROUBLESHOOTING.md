@@ -5,7 +5,8 @@
 npm run lint
 npm run test:e2e
 ```
-- Suspeita principal: regressão em `src/public/app.js` ou módulos carregados por `index.html`
+- Suspeita principal: regressão em `src/public/app.js`, `index.html` ou módulos carregados pela UI
+- Verifique também se textos user-facing ficaram com mojibake após a última alteração
 
 ## Config não persiste
 ```bash
@@ -21,7 +22,7 @@ npm run test:smoke
 ```
 - Valide `sourcePath`, `targetPath` e permissões do diretório real
 - Verifique `DEPARA_BACKUP_DIR` e `DEPARA_TEMP_DIR`
-- Confirme que a operação não está usando caminho fora da política de segurança
+- Confirme que a operação não está saindo da política de segurança esperada
 
 ## Update em estado estranho
 ```bash
@@ -43,17 +44,16 @@ cat ~/.local/share/applications/depara.desktop
 ```
 - O backend precisa estar saudável antes do menu abrir a UI
 - O `Exec=` do `.desktop` deve apontar para `start-depara.sh open`
-- Se o launcher falhar, corrija primeiro o PM2; o menu não deve iniciar servidor por fora
+- Se o launcher falhar, corrija primeiro o PM2
 
-## Worktree sujo bloqueando auto-update
+## Texto com acentos quebrados
 ```bash
-git status --short
-git diff --summary
+rg -n "Ã|â€™|â€œ|â€|�" README.md docs src/public src/routes
 ```
-- O runtime normal não deve alterar permissões de `start-depara.sh`
-- Se o bloqueio vier só de modo de arquivo, normalize e valide qual script ainda está fazendo `chmod` em arquivo rastreado
+- Se o problema aparecer só no terminal, confirme o conteúdo real do arquivo em UTF-8
+- Se o problema aparecer na UI ou no JSON, trate como mojibake real do arquivo fonte
 
-## Legado interno que não deve voltar para fluxos novos
+## Legado que não deve voltar para fluxos novos
 - Endpoints legados de update
 - Restart direto pela UI fora do PM2
-- Escrita de backup/logs no repositório por default
+- Escrita de backup/logs no repositório por padrão
