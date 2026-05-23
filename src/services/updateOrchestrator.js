@@ -420,14 +420,41 @@ class UpdateOrchestrator {
 
   async getRuntimeStatus() {
     const supervisor = await this.detectSupervisorStatus();
+    const worktree = await this.getTrackedWorktreeStatus();
     return {
       platformTarget: 'rp4',
       supervisor,
       scheduler: this.getSchedulerRuntimeStatus(),
       lock: this.readLockDetails(),
+      worktree,
       autoUpdateOperationallyReady: supervisor.operationallyReady,
       lastFailureStage: this.state.lastFailureStage || null
     };
+  }
+
+  async getTrackedWorktreeStatus() {
+    try {
+      const { stdout } = await execCommand(
+        'git status --porcelain --untracked-files=no',
+        { cwd: this.repoRoot }
+      );
+      const entries = (stdout || '')
+        .split(/\r?\n/)
+        .map((line) => line.trimEnd())
+        .filter(Boolean);
+      return {
+        clean: entries.length === 0,
+        entries,
+        summary: entries.slice(0, 5).join(', ')
+      };
+    } catch (error) {
+      return {
+        clean: null,
+        entries: [],
+        summary: '',
+        error: error.message
+      };
+    }
   }
 
   async ensureRuntimeOperationalForAutoUpdate() {
@@ -444,19 +471,28 @@ class UpdateOrchestrator {
     );
   }
 
-  async ensureCleanTrackedWorktree(options) {
-    const { stdout } = await this.runCommandForStage(
-      'git status --porcelain --untracked-files=no',
-      options,
-      'worktree_check',
-      'Falha ao verificar worktree antes do update'
-    );
+  async ensureCleanTrackedWorktree() {
+    const worktree = await this.getTrackedWorktreeStatus();
+    if (worktree.error) {
+      throw this.createStageError(
+        'worktree_check',
+        `Falha ao verificar worktree antes do update: ${worktree.error}`,
+        { worktreeError: worktree.error }
+      );
+    }
 
-    if ((stdout || '').trim()) {
+    if (!worktree.clean) {
+      const worktreeSummary = worktree.summary
+        ? ` Arquivos: ${worktree.summary}`
+        : '';
       throw this.createStageError(
         'worktree_dirty',
-        'Worktree local possui alterações rastreadas; auto-update abortado para evitar merge inseguro',
-        { worktree: stdout.trim() }
+        `Worktree local possui alteracoes rastreadas; auto-update abortado para evitar merge inseguro.${worktreeSummary}`,
+        {
+          worktree: worktree.entries.join('\n'),
+          worktreeEntries: worktree.entries,
+          worktreeSummary: worktree.summary
+        }
       );
     }
   }
@@ -876,6 +912,7 @@ class UpdateOrchestrator {
       stage: failureStage,
       critical: Boolean(critical),
       error: message,
+      worktreeSummary: error.worktreeSummary || null,
       consecutiveFailures: nextConsecutiveFailures
     });
   }

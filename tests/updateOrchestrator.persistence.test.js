@@ -108,4 +108,25 @@ describe('UpdateOrchestrator persistence layout', () => {
 
     expect(restartViaSystemdSpy).toHaveBeenCalledWith('depara.service');
   });
+
+  it('exposes tracked worktree diagnostics in runtime status', async () => {
+    orchestrator.config = orchestrator.getDefaultConfig();
+    orchestrator.state = orchestrator.getDefaultState();
+    jest.spyOn(orchestrator, 'detectSupervisorStatus').mockResolvedValue({
+      supervisor: 'pm2',
+      operationallyReady: true,
+      reasons: []
+    });
+    jest.spyOn(orchestrator, 'getTrackedWorktreeStatus').mockResolvedValue({
+      clean: false,
+      entries: ['M README.md', 'M src/public/app.js'],
+      summary: 'M README.md, M src/public/app.js'
+    });
+
+    const runtime = await orchestrator.getRuntimeStatus();
+
+    expect(runtime.worktree.clean).toBe(false);
+    expect(runtime.worktree.entries).toEqual(['M README.md', 'M src/public/app.js']);
+    expect(runtime.worktree.summary).toContain('README.md');
+  });
 });

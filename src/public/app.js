@@ -7132,6 +7132,7 @@ setupEventListeners() {
         const runtime = data.runtime || {};
         const supervisor = runtime.supervisor || {};
         const scheduler = runtime.scheduler || {};
+        const worktree = runtime.worktree || {};
         const hasUpdates = Boolean(
             state.targetCommit &&
             state.currentCommit &&
@@ -7255,7 +7256,7 @@ setupEventListeners() {
                 .map((item) => {
                     const when = item.timestamp ? new Date(item.timestamp).toLocaleString('pt-BR') : '-';
                     const event = item.event || 'evento';
-                    const detail = item.error || item.reason || item.status || '';
+                    const detail = item.worktreeSummary || item.error || item.reason || item.status || '';
                     return `<div><small><strong>${event}</strong> - ${when}${detail ? ` - ${detail}` : ''}</small></div>`;
                 })
                 .join('');

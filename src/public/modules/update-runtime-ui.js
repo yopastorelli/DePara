@@ -22,6 +22,7 @@
     const runtime = data.runtime || {};
     const supervisor = runtime.supervisor || {};
     const scheduler = runtime.scheduler || {};
+    const worktree = runtime.worktree || {};
     const hasUpdates = Boolean(
       state.targetCommit &&
       state.currentCommit &&
