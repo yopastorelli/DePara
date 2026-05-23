@@ -26,11 +26,13 @@ Health:
 
 ## Invariantes de go live
 - PM2 é o supervisor obrigatório da aplicação no RP4.
-- `systemd` existe só para bootstrap do runtime PM2.
+- `systemd` existe só para bootstrap do runtime PM2 salvo, nunca como segundo supervisor da app Node.
 - Novos fluxos devem usar apenas `/api/update/auto/*`.
 - Testes não podem depender de side effects em `backups/`, `logs/` ou `test-results/` do repositório.
 - Não incluir em commit: `.claude/`, `backups/`, `test-results/`.
 - Logging em `console` fica desligado por padrão em `production` e `test`; debug só por flag explícita.
+- O atalho do menu RP4 só abre a UI; ele não inicia, reinicia nem para o backend.
+- `start-depara.sh` é launcher/diagnóstico leve e não substitui `pm2`.
 - `fileops` continua sendo a superfície canônica para `move`, `copy`, `delete` e agendamento derivado do mesmo draft.
 - `Operacoes Agendadas` existe para gerir operacoes persistidas; nao e uma segunda superficie de modelagem.
 - `pause` e `resume` de operacoes agendadas usam `PUT /api/files/schedule/:id` com `active: boolean`.

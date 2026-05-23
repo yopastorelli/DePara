@@ -1,11 +1,11 @@
 [Unit]
-Description=DePara bootstrap for PM2 runtime
+Description=DePara bootstrap for PM2 process list
 Documentation=https://github.com/seu-usuario/DePara
 After=network.target
 Wants=network.target
 
 [Service]
-Type=simple
+Type=oneshot
 User=yo
 Group=yo
 WorkingDirectory=/home/yo/DePara
@@ -16,12 +16,12 @@ Environment=LOG_LEVEL=warn
 Environment=LOG_TO_CONSOLE=false
 Environment=DEPARA_RUNTIME_ROOT=/home/yo/.depara
 Environment=DEPARA_ALLOW_SYSTEMD_FALLBACK=false
-ExecStart=/usr/bin/env pm2-runtime start ecosystem.config.js --env production
-Restart=always
-RestartSec=10
+ExecStart=/usr/bin/env pm2 resurrect
+ExecStop=/usr/bin/env pm2 save
+RemainAfterExit=yes
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=depara
+SyslogIdentifier=depara-bootstrap
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict

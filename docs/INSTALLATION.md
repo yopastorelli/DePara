@@ -30,11 +30,22 @@ npm run start
 git fetch origin
 git checkout main
 git pull --ff-only origin main
+npm install -g pm2
 npm ci --omit=dev
 pm2 start ecosystem.config.js --env production
 pm2 save
 pm2 startup
 ```
+
+## Atalho do menu RP4
+```bash
+cp depara.desktop ~/.local/share/applications/depara.desktop
+sed -i "s|__DEPARA_DIR__|$HOME/DePara|g" ~/.local/share/applications/depara.desktop
+update-desktop-database ~/.local/share/applications || true
+```
+- O atalho do menu chama apenas `start-depara.sh open`.
+- O launcher valida `/health` antes de abrir a janela.
+- O launcher não deve iniciar o backend fora do PM2.
 
 ## Validação mínima pós-start
 ```bash

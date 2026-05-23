@@ -4,7 +4,8 @@
 - Plataforma principal: Raspberry Pi 4
 - Supervisor canônico: PM2
 - Runtime operacional: `DEPARA_RUNTIME_ROOT=/home/yo/.depara`
-- `systemd` não é supervisor alternativo da app; ele apenas sobe o `pm2-runtime`
+- `systemd` não é supervisor alternativo da app; ele só pode existir como bootstrap do estado salvo do PM2
+- O atalho do menu chama apenas `start-depara.sh open`
 
 ## Checklist de go live
 ```bash
@@ -15,6 +16,7 @@ npm run test:e2e
 git status --short
 pm2 start ecosystem.config.js --env production
 pm2 save
+pm2 startup
 pm2 status
 curl -s http://127.0.0.1:3000/health
 curl -s http://127.0.0.1:3000/api/update/auto/diagnostics
@@ -32,6 +34,12 @@ curl -s http://127.0.0.1:3000/api/update/auto/diagnostics
 3. O ciclo executa `git fetch` -> `merge --ff-only` -> `npm ci` -> `pm2 restart`
 4. O health check em `/health` fecha o ciclo
 5. Se falhar, o rollback deve devolver o commit anterior e registrar a etapa
+
+## Boot e menu
+- Backend: `pm2 start ecosystem.config.js --env production`
+- Persistência de reboot: `pm2 save` + `pm2 startup`
+- Janela: menu desktop executa `start-depara.sh open`
+- O launcher do menu não sobe servidor, não executa `npm install` e não faz `nohup`
 
 ## Bloqueios de publicação
 - worktree com artefato não deliberado

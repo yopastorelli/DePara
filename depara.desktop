@@ -7,6 +7,6 @@ Exec=__DEPARA_DIR__/start-depara.sh open
 Icon=depara
 Terminal=false
 StartupNotify=true
-Categories=Utility;FileManager;
+Categories=Utility;FileManager;System;
 Keywords=files;manager;sync;backup;
 StartupWMClass=DePara
