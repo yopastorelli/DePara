@@ -1,10 +1,10 @@
-# Instalação e Execução
+# Instalacao e Execucao
 
 ## Requisitos
 - Node.js `>=18`
 - npm `>=9`
 - Git
-- PM2 para produção RP4
+- PM2 para producao RP4
 
 ## Setup local
 ```bash
@@ -25,23 +25,42 @@ npm run start
 - `npm run status`: mostra estado no PM2
 - `npm run logs`: mostra logs do PM2
 
-## Variáveis operacionais
+## Configuracao operacional
+- Arquivo persistente suportado em producao: `~/.depara/config.env`
+- Precedencia: `process.env` > `~/.depara/config.env` > defaults de codigo
+- Variaveis minimas suportadas:
+  - `PORT`
+  - `NODE_ENV`
+  - `LOG_LEVEL`
+  - `LOG_TO_CONSOLE`
+  - `DEPARA_RUNTIME_ROOT`
+
+Exemplo inicial:
+```env
+PORT=3000
+NODE_ENV=production
+LOG_LEVEL=warn
+LOG_TO_CONSOLE=false
+DEPARA_RUNTIME_ROOT=/home/<user>/.depara
+```
+
+## Variaveis operacionais
 - `PORT`: porta HTTP, default `3000`
 - `DEPARA_RUNTIME_ROOT`: raiz operacional do runtime, default `~/.depara`
-- `DEPARA_DATA_DIR`: diretório de dados persistidos
-- `DEPARA_RELEASES_DIR`: diretório de releases imutáveis
-- `DEPARA_CURRENT_DIR`: wrapper estável apontando para o release ativo
-- `DEPARA_CONFIG_FILE`: arquivo principal de config
+- `DEPARA_CONFIG_ENV_PATH`: override opcional para o caminho de `config.env`
+- `DEPARA_DATA_DIR`: diretorio de dados persistidos
+- `DEPARA_RELEASES_DIR`: diretorio de releases imutaveis
+- `DEPARA_CURRENT_DIR`: wrapper estavel apontando para o release ativo
+- `DEPARA_CONFIG_FILE`: arquivo principal de config funcional
 - `DEPARA_LOG_DIR` e `LOG_FILE`: logs
 - `DEPARA_BACKUP_DIR`: backups operacionais
-- `DEPARA_TEMP_DIR`: temporários de runtime
+- `DEPARA_TEMP_DIR`: temporarios de runtime
 - `DEPARA_RUNTIME_PUBLIC_DIR`: base de uploads/downloads de runtime
 - `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true`: bloqueia update destrutivo
-- `DEPARA_DISABLE_UPDATE_SCHEDULER=true`: bloqueia scheduler automático
-- `PM2_APP_NAME`: nome esperado do processo no diagnóstico operacional
-- `DEPARA_ALLOW_SYSTEMD_FALLBACK=false`: mantém PM2 como baseline operacional
+- `DEPARA_DISABLE_UPDATE_SCHEDULER=true`: bloqueia scheduler automatico
+- `PM2_APP_NAME`: nome esperado do processo no diagnostico operacional
 
-## Produção RP4 com PM2
+## Producao RP4 com PM2
 ```bash
 git fetch origin
 git checkout main
@@ -54,8 +73,10 @@ pm2 save
 pm2 startup
 ```
 
-- O bootstrap publica o release inicial em `~/.depara/releases/<commit>` e grava o wrapper canônico em `~/.depara/current`.
-- Depois da instalação, o runtime ativo não roda mais em cima do checkout Git.
+- O bootstrap publica o release inicial em `~/.depara/releases/<commit>`, grava o wrapper canonico em `~/.depara/current` e cria `~/.depara/config.env` se ele nao existir.
+- O wrapper carrega `config.env` e chama `startServer()` explicitamente.
+- Depois da instalacao, o runtime ativo nao roda mais em cima do checkout Git.
+- `depara.service` e legado e nao faz parte do fluxo principal suportado.
 
 ## Launcher e menu RP4
 ```bash
@@ -63,15 +84,18 @@ cp depara.desktop ~/.local/share/applications/depara.desktop
 sed -i "s|__DEPARA_DIR__|$HOME/DePara|g" ~/.local/share/applications/depara.desktop
 update-desktop-database ~/.local/share/applications || true
 ```
-- O atalho do menu chama `start-depara.sh open`.
-- O launcher valida `/health` antes de abrir a UI.
-- O launcher não sobe, reinicia nem substitui o backend do PM2.
 
-## Validação pós-start
+- O atalho do menu chama `start-depara.sh open`.
+- O launcher le a porta de `~/.depara/config.env`, valida `/health` e abre a UI.
+- O launcher nao sobe, reinicia nem substitui o backend do PM2.
+
+## Validacao pos-start
 ```bash
+PORT="$(grep -E '^PORT=' "$HOME/.depara/config.env" | tail -n 1 | cut -d '=' -f 2-)"
+PORT="${PORT:-3000}"
 pm2 status
-curl -s http://127.0.0.1:3000/health
-curl -s http://127.0.0.1:3000/api/status
-curl -s http://127.0.0.1:3000/api/update/auto/status
-curl -s http://127.0.0.1:3000/api/update/auto/diagnostics
+curl -s "http://127.0.0.1:${PORT}/health"
+curl -s "http://127.0.0.1:${PORT}/api/status"
+curl -s "http://127.0.0.1:${PORT}/api/update/auto/status"
+curl -s "http://127.0.0.1:${PORT}/api/update/auto/diagnostics"
 ```

@@ -7,6 +7,10 @@ const fsp = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
 const {
+  getRuntimeConfigPath,
+  getDefaultRuntimeConfig
+} = require('./src/utils/runtimeConfig');
+const {
   getRuntimeRoot,
   getRuntimeDataDir,
   getRuntimeLogsDir,
@@ -28,11 +32,31 @@ function execCommand(command, options = {}) {
   });
 }
 
+function getRuntimeConfigEnvContent(runtimeRoot) {
+  const defaults = getDefaultRuntimeConfig({ DEPARA_RUNTIME_ROOT: runtimeRoot });
+  return `${Object.entries(defaults)
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n')}\n`;
+}
+
+async function ensureRuntimeConfigFile(runtimeRoot) {
+  const configPath = getRuntimeConfigPath();
+
+  if (fs.existsSync(configPath)) {
+    return configPath;
+  }
+
+  await fsp.mkdir(path.dirname(configPath), { recursive: true });
+  await fsp.writeFile(configPath, getRuntimeConfigEnvContent(runtimeRoot), 'utf8');
+  return configPath;
+}
+
 function getCurrentWrapperContent() {
   return `'use strict';
 
 const fs = require('fs');
 const path = require('path');
+const dotenv = require('dotenv');
 
 const metaPath = path.join(__dirname, '..', 'release.json');
 const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
@@ -42,7 +66,25 @@ if (!meta.activePath) {
 }
 
 process.env.DEPARA_APP_ROOT = meta.activePath;
-module.exports = require(path.join(meta.activePath, 'src', 'main.js'));
+const configPath = process.env.DEPARA_CONFIG_ENV_PATH
+  || path.join(process.env.DEPARA_RUNTIME_ROOT || path.join(require('os').homedir(), '.depara'), 'config.env');
+
+if (fs.existsSync(configPath)) {
+  dotenv.config({ path: configPath, override: false });
+}
+
+const app = require(path.join(meta.activePath, 'src', 'main.js'));
+
+if (!app || typeof app.startServer !== 'function') {
+  throw new Error('Active release entry must export startServer()');
+}
+
+app.startServer({ registerHandlers: true }).catch((error) => {
+  console.error('Erro critico durante inicializacao do runtime:', error);
+  process.exit(1);
+});
+
+module.exports = app;
 `;
 }
 
@@ -55,6 +97,7 @@ async function main() {
   const tempDir = getRuntimeTempDir();
   const releasesDir = getRuntimeReleasesDir();
   const currentDir = getRuntimeCurrentDir();
+  const configEnvPath = getRuntimeConfigPath();
   const currentEntryPath = path.join(currentDir, 'src', 'main.js');
   const currentMetaPath = path.join(currentDir, 'release.json');
 
@@ -64,8 +107,11 @@ async function main() {
     fsp.mkdir(backupsDir, { recursive: true }),
     fsp.mkdir(tempDir, { recursive: true }),
     fsp.mkdir(releasesDir, { recursive: true }),
-    fsp.mkdir(path.dirname(currentEntryPath), { recursive: true })
+    fsp.mkdir(path.dirname(currentEntryPath), { recursive: true }),
+    fsp.mkdir(path.dirname(configEnvPath), { recursive: true })
   ]);
+
+  await ensureRuntimeConfigFile(runtimeRoot);
 
   const { stdout: commit } = await execCommand('git rev-parse HEAD', { cwd: repoRoot });
   const releaseId = String(commit).trim();
@@ -102,7 +148,17 @@ async function main() {
   console.log(`Release ativo: ${releaseId}`);
 }
 
-main().catch((error) => {
-  console.error(error.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  execCommand,
+  getRuntimeConfigEnvContent,
+  ensureRuntimeConfigFile,
+  getCurrentWrapperContent,
+  main
+};

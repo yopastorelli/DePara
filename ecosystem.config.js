@@ -1,10 +1,24 @@
-const os = require('os');
 const path = require('path');
+const {
+  loadOperationalConfig,
+  getRuntimeRoot
+} = require('./src/utils/runtimeConfig');
 
-const runtimeRoot = process.env.DEPARA_RUNTIME_ROOT || path.join(os.homedir(), '.depara');
+loadOperationalConfig();
+
+const runtimeRoot = getRuntimeRoot();
 const logsDir = path.join(runtimeRoot, 'logs');
 const currentRoot = path.join(runtimeRoot, 'current');
 const currentEntry = path.join(currentRoot, 'src', 'main.js');
+const operationalPort = process.env.PORT || 3000;
+
+function buildBaseEnv(overrides = {}) {
+  return {
+    PORT: operationalPort,
+    DEPARA_RUNTIME_ROOT: runtimeRoot,
+    ...overrides
+  };
+}
 
 module.exports = {
   apps: [
@@ -25,45 +39,38 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       time: true,
-      env: {
+      env: buildBaseEnv({
         NODE_ENV: 'production',
-        PORT: 3000,
         LOG_LEVEL: 'warn',
         LOG_TO_CONSOLE: 'false',
-        DEPARA_RUNTIME_ROOT: runtimeRoot,
         DEPARA_UPDATE_SOURCE_ROOT: __dirname,
         PM2_APP_NAME: 'DePara',
         DEPARA_ALLOW_SYSTEMD_FALLBACK: 'false'
-      },
-      env_production: {
+      }),
+      env_production: buildBaseEnv({
         NODE_ENV: 'production',
-        PORT: 3000,
         LOG_LEVEL: 'warn',
         LOG_TO_CONSOLE: 'false',
-        DEPARA_RUNTIME_ROOT: runtimeRoot,
         DEPARA_UPDATE_SOURCE_ROOT: __dirname,
         PM2_APP_NAME: 'DePara',
         DEPARA_ALLOW_SYSTEMD_FALLBACK: 'false'
-      },
-      env_development: {
+      }),
+      env_development: buildBaseEnv({
         NODE_ENV: 'development',
-        PORT: 3000,
         LOG_LEVEL: 'debug',
         LOG_TO_CONSOLE: 'true',
         DEPARA_UPDATE_SOURCE_ROOT: __dirname
-      },
-      env_raspberry: {
+      }),
+      env_raspberry: buildBaseEnv({
         NODE_ENV: 'production',
-        PORT: 3000,
         LOG_LEVEL: 'warn',
         LOG_TO_CONSOLE: 'false',
-        DEPARA_RUNTIME_ROOT: runtimeRoot,
         DEPARA_UPDATE_SOURCE_ROOT: __dirname,
         PM2_APP_NAME: 'DePara',
         DEPARA_ALLOW_SYSTEMD_FALLBACK: 'false',
         UV_THREADPOOL_SIZE: 4,
         NODE_OPTIONS: '--max-old-space-size=256'
-      }
+      })
     }
   ]
 };

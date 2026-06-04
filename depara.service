@@ -1,5 +1,5 @@
 [Unit]
-Description=DePara bootstrap for PM2 process list
+Description=DEPRECATED: DePara legacy PM2 bootstrap
 Documentation=https://github.com/seu-usuario/DePara
 After=network.target
 Wants=network.target

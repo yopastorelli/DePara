@@ -38,6 +38,12 @@ describe('API smoke', () => {
     if (app && typeof app.close === 'function') {
       await app.close();
     }
+    try {
+      const folderManager = require('../../src/config/folders');
+      folderManager.cleanup();
+    } catch {
+      // O modulo pode nao estar carregado dependendo do ponto de falha do teste.
+    }
     delete process.env.DEPARA_RUNTIME_ROOT;
     delete process.env.DEPARA_DATA_DIR;
     delete process.env.DEPARA_CONFIG_FILE;
@@ -45,7 +51,7 @@ describe('API smoke', () => {
     delete process.env.DEPARA_BACKUP_DIR;
     delete process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS;
     delete process.env.DEPARA_DISABLE_UPDATE_SCHEDULER;
-    await fsp.rm(runtimeRoot, { recursive: true, force: true });
+    await fsp.rm(runtimeRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
 
   it('health e status respondem com versao e status operacional', async () => {

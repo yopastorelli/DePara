@@ -29,7 +29,8 @@ class FolderManager {
     try {
       await this.ensureDataDirectory();
       await this.loadFolders();
-      this.startWatching();
+      await this.ensureWatchableFolders();
+      await this.startWatching();
       this.initialized = true;
       logger.info('Gerenciador de pastas inicializado com sucesso');
     } catch (error) {
@@ -269,7 +270,8 @@ class FolderManager {
     this.cleanup();
     this.folders = normalizedFolders;
     await this.saveFolders();
-    this.startWatching();
+    await this.ensureWatchableFolders();
+    await this.startWatching();
     this.initialized = true;
 
     logger.info('Pastas configuradas importadas para o runtime', {
@@ -307,7 +309,7 @@ class FolderManager {
 
     this.folders.push(folder);
     await this.saveFolders();
-    this.startWatchingFolder(folder);
+    await this.startWatchingFolder(folder);
 
     logger.info(`Pasta adicionada: ${folder.name} (${folder.path})`);
     return folder;
@@ -339,7 +341,7 @@ class FolderManager {
     await this.saveFolders();
 
     if (updatedFolder.enabled) {
-      this.startWatchingFolder(updatedFolder);
+      await this.startWatchingFolder(updatedFolder);
     } else {
       this.stopWatchingFolder(updatedFolder);
     }
@@ -377,15 +379,38 @@ class FolderManager {
     }
   }
 
-  startWatching() {
+  async ensureFolderReady(folder) {
+    if (!folder?.path) {
+      return false;
+    }
+
+    const ready = await this.validateFolderPath(folder.path);
+    if (!ready) {
+      logger.error(`Nao foi possivel preparar a pasta para monitoramento: ${folder.name}`, {
+        path: folder.path
+      });
+    }
+
+    return ready;
+  }
+
+  async ensureWatchableFolders() {
     for (const folder of this.folders) {
       if (folder.enabled) {
-        this.startWatchingFolder(folder);
+        await this.ensureFolderReady(folder);
       }
     }
   }
 
-  startWatchingFolder(folder) {
+  async startWatching() {
+    for (const folder of this.folders) {
+      if (folder.enabled) {
+        await this.startWatchingFolder(folder);
+      }
+    }
+  }
+
+  async startWatchingFolder(folder) {
     if (!folder?.enabled || !folder.path) {
       return;
     }
@@ -395,6 +420,11 @@ class FolderManager {
     }
 
     try {
+      const ready = await this.ensureFolderReady(folder);
+      if (!ready) {
+        return;
+      }
+
       const watcher = fsSync.watch(folder.path, { persistent: false }, (eventType, filename) => {
         if (filename) {
           this.handleFolderEvent(folder, eventType, filename);

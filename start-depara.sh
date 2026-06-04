@@ -8,9 +8,10 @@ DEPARA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUNTIME_ROOT="${DEPARA_RUNTIME_ROOT:-$USER_HOME/.depara}"
 LOG_DIR="$RUNTIME_ROOT/logs"
 LOG_FILE="$LOG_DIR/depara-launcher.log"
-PORT_VALUE="${PORT:-3000}"
-APP_URL="${DEPARA_APP_URL:-http://127.0.0.1:$PORT_VALUE}"
-HEALTH_URL="${APP_URL}/health"
+CONFIG_ENV_PATH="${DEPARA_CONFIG_ENV_PATH:-$RUNTIME_ROOT/config.env}"
+PORT_VALUE="${PORT:-}"
+APP_URL=""
+HEALTH_URL=""
 PM2_APP_NAME="${PM2_APP_NAME:-DePara}"
 BROWSER_PROFILE_DIR="$RUNTIME_ROOT/browser-profile"
 
@@ -19,6 +20,25 @@ mkdir -p "$LOG_DIR" "$BROWSER_PROFILE_DIR"
 log() {
     printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" | tee -a "$LOG_FILE"
 }
+
+load_runtime_config() {
+    if [ -f "$CONFIG_ENV_PATH" ]; then
+        local configured_port
+        configured_port="$(grep -E '^PORT=' "$CONFIG_ENV_PATH" | tail -n 1 | cut -d '=' -f 2- || true)"
+        if [ -n "$configured_port" ] && [ -z "${PORT_VALUE:-}" ]; then
+            PORT_VALUE="$configured_port"
+        fi
+    fi
+
+    if [ -z "${PORT_VALUE:-}" ]; then
+        PORT_VALUE="3000"
+    fi
+
+    APP_URL="${DEPARA_APP_URL:-http://127.0.0.1:$PORT_VALUE}"
+    HEALTH_URL="${APP_URL}/health"
+}
+
+load_runtime_config
 
 health_check() {
     if command -v curl >/dev/null 2>&1; then

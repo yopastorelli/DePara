@@ -13,7 +13,6 @@ USER_HOME="${HOME:-/home/$CURRENT_USER}"
 DEPARA_DIR="$USER_HOME/DePara"
 APPLICATIONS_DIR="$USER_HOME/.local/share/applications"
 SYSTEMD_DIR="/etc/systemd/system"
-PM2_STARTUP_CONFIGURED="false"
 
 log() {
     echo -e "${BLUE}[$(date '+%H:%M:%S')]${NC} $1"
@@ -84,6 +83,21 @@ install_dependencies() {
     success "Dependencias de producao instaladas."
 }
 
+read_runtime_port() {
+    local config_path="$USER_HOME/.depara/config.env"
+
+    if [ -f "$config_path" ]; then
+        local configured_port
+        configured_port="$(grep -E '^PORT=' "$config_path" | tail -n 1 | cut -d '=' -f 2- || true)"
+        if [ -n "$configured_port" ]; then
+            echo "$configured_port"
+            return
+        fi
+    fi
+
+    echo "3000"
+}
+
 configure_pm2_runtime() {
     log "Registrando o runtime canonico no PM2..."
     cd "$DEPARA_DIR"
@@ -95,30 +109,8 @@ configure_pm2_runtime() {
     fi
 
     pm2 save
-
-    if sudo env "PATH=$PATH" pm2 startup systemd -u "$CURRENT_USER" --hp "$USER_HOME"; then
-        PM2_STARTUP_CONFIGURED="true"
-        success "PM2 configurado para restaurar o runtime no boot."
-    else
-        warning "Falha ao executar 'pm2 startup'. Mantendo bootstrap legacy por systemd como contingencia."
-    fi
-}
-
-setup_bootstrap_service() {
-    if [ "$PM2_STARTUP_CONFIGURED" = "true" ]; then
-        log "PM2 startup ja configurado; bootstrap legacy por systemd nao sera habilitado."
-        return
-    fi
-
-    log "Publicando bootstrap legacy do PM2 em systemd..."
-    sudo cp "$DEPARA_DIR/depara.service" "$SYSTEMD_DIR/"
-    sudo sed -i "s|User=yo|User=$CURRENT_USER|g" "$SYSTEMD_DIR/depara.service"
-    sudo sed -i "s|Group=yo|Group=$CURRENT_USER|g" "$SYSTEMD_DIR/depara.service"
-    sudo sed -i "s|/home/yo/DePara|$DEPARA_DIR|g" "$SYSTEMD_DIR/depara.service"
-    sudo sed -i "s|/home/yo/.depara|$USER_HOME/.depara|g" "$SYSTEMD_DIR/depara.service"
-    sudo systemctl daemon-reload
-    sudo systemctl enable depara.service
-    success "Bootstrap systemd do PM2 atualizado."
+    sudo env "PATH=$PATH" pm2 startup systemd -u "$CURRENT_USER" --hp "$USER_HOME"
+    success "PM2 configurado para restaurar o runtime no boot."
 }
 
 setup_desktop_file() {
@@ -133,8 +125,10 @@ setup_desktop_file() {
 
 validate_installation() {
     log "Validando runtime e atalho..."
+    local runtime_port
+    runtime_port="$(read_runtime_port)"
     pm2 status DePara
-    curl -fsS http://127.0.0.1:3000/health >/dev/null
+    curl -fsS "http://127.0.0.1:${runtime_port}/health" >/dev/null
     "$DEPARA_DIR/start-depara.sh" status >/dev/null
     success "Validacao minima concluida."
 }
@@ -146,7 +140,6 @@ main() {
     prepare_launcher
     install_dependencies
     configure_pm2_runtime
-    setup_bootstrap_service
     setup_desktop_file
     validate_installation
 

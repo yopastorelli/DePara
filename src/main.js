@@ -3,16 +3,18 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const os = require('os');
 const path = require('path');
-require('dotenv').config();
 
 const logger = require('./utils/logger');
 const { getAppMetadata } = require('./utils/appMetadata');
+const { loadOperationalConfig } = require('./utils/runtimeConfig');
 const routes = require('./routes');
 const updateOrchestrator = require('./services/updateOrchestrator');
 const configStore = require('./utils/configStore');
 const folderManager = require('./config/folders');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter } = require('./middleware/rateLimiter');
+
+loadOperationalConfig();
 
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';

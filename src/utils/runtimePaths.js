@@ -33,6 +33,10 @@ function getRuntimeCurrentDir() {
   return process.env.DEPARA_CURRENT_DIR || path.join(getRuntimeRoot(), 'current');
 }
 
+function getRuntimeConfigPath() {
+  return process.env.DEPARA_CONFIG_ENV_PATH || path.join(getRuntimeRoot(), 'config.env');
+}
+
 function getRuntimeCurrentReleaseMetaPath() {
   return path.join(getRuntimeCurrentDir(), 'release.json');
 }
@@ -50,6 +54,7 @@ module.exports = {
   getRuntimeTempDir,
   getRuntimeReleasesDir,
   getRuntimeCurrentDir,
+  getRuntimeConfigPath,
   getRuntimeCurrentReleaseMetaPath,
   getRuntimeCurrentEntryPath
 };

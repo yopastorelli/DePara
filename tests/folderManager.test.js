@@ -26,6 +26,12 @@ describe('FolderManager', () => {
   });
 
   afterEach(async () => {
+    try {
+      const folderManager = require('../src/config/folders');
+      folderManager.cleanup();
+    } catch {
+      // O modulo pode nao ter sido carregado em todos os cenarios.
+    }
     delete process.env.DEPARA_RUNTIME_ROOT;
     delete process.env.DEPARA_DATA_DIR;
     delete process.env.DEPARA_UPDATE_SOURCE_ROOT;
@@ -99,5 +105,23 @@ describe('FolderManager', () => {
     const persistence = await folderManager.getPersistenceStatus();
     expect(persistence.migrated).toBe(true);
     expect(persistence.source).toContain(path.join('data', 'folders.json'));
+  });
+
+  it('creates missing default directories before registering watchers', async () => {
+    const folderManager = require('../src/config/folders');
+    const watchMock = jest.spyOn(require('fs'), 'watch').mockImplementation(() => ({
+      close: jest.fn()
+    }));
+
+    await folderManager.init();
+
+    const folders = folderManager.getFolders();
+    for (const folder of folders) {
+      expect(fs.existsSync(folder.path)).toBe(true);
+    }
+    expect(watchMock).toHaveBeenCalledTimes(folders.length);
+
+    folderManager.cleanup();
+    watchMock.mockRestore();
   });
 });
