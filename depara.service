@@ -10,7 +10,7 @@ User=yo
 Group=yo
 WorkingDirectory=/home/yo/DePara
 Environment=NODE_ENV=production
-Environment=PORT=3000
+Environment=PORT=3001
 Environment=PM2_APP_NAME=DePara
 Environment=LOG_LEVEL=warn
 Environment=LOG_TO_CONSOLE=false

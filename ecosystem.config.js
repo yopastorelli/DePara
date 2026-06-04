@@ -41,6 +41,7 @@ module.exports = {
       time: true,
       env: buildBaseEnv({
         NODE_ENV: 'production',
+        PORT: 3001,
         LOG_LEVEL: 'warn',
         LOG_TO_CONSOLE: 'false',
         DEPARA_UPDATE_SOURCE_ROOT: __dirname,
@@ -49,6 +50,7 @@ module.exports = {
       }),
       env_production: buildBaseEnv({
         NODE_ENV: 'production',
+        PORT: 3001,
         LOG_LEVEL: 'warn',
         LOG_TO_CONSOLE: 'false',
         DEPARA_UPDATE_SOURCE_ROOT: __dirname,
@@ -57,12 +59,14 @@ module.exports = {
       }),
       env_development: buildBaseEnv({
         NODE_ENV: 'development',
+        PORT: 3001,
         LOG_LEVEL: 'debug',
         LOG_TO_CONSOLE: 'true',
         DEPARA_UPDATE_SOURCE_ROOT: __dirname
       }),
       env_raspberry: buildBaseEnv({
         NODE_ENV: 'production',
+        PORT: 3001,
         LOG_LEVEL: 'warn',
         LOG_TO_CONSOLE: 'false',
         DEPARA_UPDATE_SOURCE_ROOT: __dirname,
