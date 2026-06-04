@@ -41,7 +41,8 @@ jest.mock('../src/config/folders', () => ({
 
 // Mock do dotenv
 jest.mock('dotenv', () => ({
-  config: jest.fn()
+  config: jest.fn(),
+  parse: jest.fn(() => ({}))
 }));
 
 let app;

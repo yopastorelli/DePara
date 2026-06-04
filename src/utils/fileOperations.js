@@ -447,29 +447,42 @@ class FileOperationsManager {
             retentionDays: 30,
             compressBackups: true
         };
+        this.initialized = false;
+        this.initializingPromise = null;
         this.init();
     }
 
     async init() {
-        try {
-            // Garantir que o diretório de logs existe
-
-            // Inicializar diretório de backup
-            await this.ensureBackupDirectory();
-
-            // Carregar operações agendadas salvas
-            await this.loadScheduledOperations();
-
-            logger.info('Gerenciador de operações de arquivos inicializado com sucesso');
-        } catch (error) {
-            logger.error('Erro ao inicializar gerenciador de operações', {
-                error: error.message,
-                stack: error.stack
-            });
-
-            // Tentar continuar mesmo com erro de inicialização
-            logger.warn('Continuando inicialização apesar do erro no gerenciador de operações');
+        if (this.initialized) {
+            return this;
         }
+
+        if (this.initializingPromise) {
+            return this.initializingPromise;
+        }
+
+        this.initializingPromise = (async () => {
+            try {
+                // Garantir que o diretório de logs existe
+
+                // Inicializar diretório de backup
+                await this.ensureBackupDirectory();
+
+                // Carregar operações agendadas salvas
+                await this.loadScheduledOperations();
+
+                this.initialized = true;
+                logger.info('Gerenciador de operações de arquivos inicializado com sucesso');
+                return this;
+            } catch (error) {
+                logger.error('Erro ao inicializar gerenciador de operações de arquivos:', error);
+                throw error;
+            } finally {
+                this.initializingPromise = null;
+            }
+        })();
+
+        return this.initializingPromise;
     }
 
     async ensureBackupDirectory() {

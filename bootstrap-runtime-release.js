@@ -56,7 +56,6 @@ function getCurrentWrapperContent() {
 
 const fs = require('fs');
 const path = require('path');
-const dotenv = require('dotenv');
 
 const metaPath = path.join(__dirname, '..', 'release.json');
 const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
@@ -64,6 +63,9 @@ const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
 if (!meta.activePath) {
   throw new Error('Active release path missing in ' + metaPath);
 }
+
+const dotenvPath = path.join(meta.activePath, 'node_modules', 'dotenv');
+const dotenv = require(dotenvPath);
 
 process.env.DEPARA_APP_ROOT = meta.activePath;
 const configPath = process.env.DEPARA_CONFIG_ENV_PATH

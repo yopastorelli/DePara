@@ -23,9 +23,11 @@ describe('bootstrap runtime release', () => {
     await fsp.rm(runtimeRoot, { recursive: true, force: true });
   });
 
-  it('generates a wrapper that loads config.env and starts the server explicitly', () => {
+  it('generates a wrapper that loads config.env from the active release and starts the server explicitly', () => {
     const wrapper = bootstrapModule.getCurrentWrapperContent();
 
+    expect(wrapper).toContain("const dotenvPath = path.join(meta.activePath, 'node_modules', 'dotenv');");
+    expect(wrapper).toContain('const dotenv = require(dotenvPath);');
     expect(wrapper).toContain('dotenv.config({ path: configPath, override: false });');
     expect(wrapper).toContain("typeof app.startServer !== 'function'");
     expect(wrapper).toContain('app.startServer({ registerHandlers: true })');
