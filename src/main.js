@@ -17,6 +17,7 @@ const { readRateLimiter } = require('./middleware/rateLimiter');
 loadOperationalConfig();
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '127.0.0.1';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const appMetadata = getAppMetadata();
 
@@ -141,7 +142,7 @@ function configureApp() {
 
   app.use(errorHandler);
 
-  app.use('*', (req, res) => {
+  app.use((req, res) => {
     res.status(404).json({
       error: 'Rota nao encontrada',
       path: req.originalUrl,
@@ -208,13 +209,13 @@ async function startServer(options = {}) {
   await updateOrchestrator.init();
 
   server = await new Promise((resolve, reject) => {
-    const createdServer = app.listen(port, () => resolve(createdServer));
+    const createdServer = app.listen(port, HOST, () => resolve(createdServer));
     createdServer.on('error', reject);
   });
 
   logger.info(`Servidor ${appMetadata.displayName} iniciado na porta ${port}`);
-  logger.info(`API disponivel em: http://127.0.0.1:${port}`);
-  logger.info(`Interface web disponivel em: http://127.0.0.1:${port}/ui`);
+  logger.info(`API disponivel em: http://${HOST}:${port}`);
+  logger.info(`Interface web disponivel em: http://${HOST}:${port}/ui`);
 
   return server;
 }

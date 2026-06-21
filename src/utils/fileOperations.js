@@ -9,9 +9,6 @@
 const fs = require('fs').promises;
 const os = require('os');
 const path = require('path');
-const { exec } = require('child_process');
-const util = require('util');
-const execAsync = util.promisify(exec);
 
 const logger = require('./logger');
 const { getRuntimeBackupsDir, getRuntimeDataDir, getSourceRepoRoot } = require('./runtimePaths');
@@ -306,104 +303,100 @@ function filterIgnoredFiles(files) {
  * Valida se um caminho é seguro para operações de arquivo
  * Previne acesso a diretórios não autorizados e ataques de path traversal
  */
+function getAllowedBasePaths() {
+  const configuredPaths = (process.env.DEPARA_ALLOWED_PATHS || '')
+    .split(path.delimiter)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (configuredPaths.length > 0) {
+    return configuredPaths.map((item) => path.resolve(item));
+  }
+
+  if (process.platform === 'win32') {
+    return [os.homedir(), 'C:\\', 'D:\\', 'E:\\'].map((item) => path.resolve(item));
+  }
+
+  return [os.homedir(), os.tmpdir(), '/media', '/mnt'].map((item) => path.resolve(item));
+}
+
+function isPathWithinBase(candidatePath, basePath) {
+  const relativePath = path.relative(basePath, candidatePath);
+  return relativePath === '' || (!relativePath.startsWith(`..${path.sep}`) && relativePath !== '..' && !path.isAbsolute(relativePath));
+}
+
+function assertAllowedPath(candidatePath) {
+  if (!getAllowedBasePaths().some((basePath) => isPathWithinBase(candidatePath, basePath))) {
+    throw new Error(`Acesso negado ao caminho: ${candidatePath}`);
+  }
+}
+
+async function findExistingParent(candidatePath) {
+  let currentPath = candidatePath;
+
+  while (true) {
+    try {
+      await fs.access(currentPath);
+      return currentPath;
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
+
+      const parentPath = path.dirname(currentPath);
+      if (parentPath === currentPath) {
+        throw new Error(`Nenhum diretório pai acessível para: ${candidatePath}`);
+      }
+      currentPath = parentPath;
+    }
+  }
+}
+
 async function validateSafePath(filePath, operation = 'read') {
-  if (!filePath || typeof filePath !== 'string') {
+  if (!filePath || typeof filePath !== 'string' || filePath.includes('\0')) {
     throw new Error('Caminho inválido ou vazio');
   }
 
-  // Resolver caminho absoluto
-  const resolvedPath = path.resolve(filePath);
-
-  // Verificar se contém sequências de navegação perigosa (apenas sequências específicas)
   if (filePath.includes('../') || filePath.includes('..\\') || filePath.startsWith('~/')) {
     logger.warn(`Tentativa de acesso com sequências suspeitas: ${filePath}`);
     throw new Error('Caminho contém sequências não permitidas');
   }
 
-  // Para aplicações locais, permitir acesso apenas a diretórios seguros
-  const allowedBasePaths = [
-    '/', // Diretório raiz
-    '/home',
-    '/usr/local',
-    '/opt',
-    '/var',
-    '/tmp',
-    '/media',
-    '/mnt',
-    // Adicionar caminho do projeto
-    path.resolve(__dirname, '../..'),
-    // Adicionar drives do Windows se estiver em desenvolvimento
-    ...(process.platform === 'win32' ? ['C:', 'D:', 'E:'] : [])
-  ];
+  const resolvedPath = path.resolve(filePath);
+  assertAllowedPath(resolvedPath);
 
-  const isAllowed = allowedBasePaths.some(basePath => {
-    return resolvedPath.startsWith(path.resolve(basePath));
-  });
-
-  if (!isAllowed) {
-    logger.warn(`Tentativa de acesso a caminho não autorizado: ${resolvedPath}`);
-    throw new Error(`Acesso negado ao caminho: ${resolvedPath}`);
-  }
-
-  // Verificar se o caminho existe e é acessível
   try {
-    const stats = await fs.stat(resolvedPath);
+    const realPath = await fs.realpath(resolvedPath);
+    assertAllowedPath(realPath);
+    const stats = await fs.stat(realPath);
 
-    // Verificar se é um arquivo/pasta válida
     if (!stats.isFile() && !stats.isDirectory()) {
-      throw new Error(`Caminho não é um arquivo ou diretório válido: ${resolvedPath}`);
+      throw new Error(`Caminho não é um arquivo ou diretório válido: ${realPath}`);
     }
 
-    return resolvedPath;
+    return realPath;
   } catch (error) {
-    // Para operações de escrita, permitir que o caminho não exista ainda
-    if (operation === 'write' && error.code === 'ENOENT') {
-      logger.info(`Caminho de destino não existe ainda (permitido para ${operation}): ${resolvedPath}`);
-      return resolvedPath;
-    }
-    if (error.code === 'ENOENT') {
-      // Caminho não existe - verificar se podemos criar
-      if (operation === 'write' || operation === 'create') {
-        const parentDir = path.dirname(resolvedPath);
-        try {
-          await fs.access(parentDir);
-          return resolvedPath;
-        } catch (parentError) {
-          logger.warn(`Diretório pai não existe: ${parentDir}, criando automaticamente...`);
-          try {
-            await fs.mkdir(parentDir, { recursive: true });
-            logger.info(`✅ Diretório criado com sucesso: ${parentDir}`);
-            return resolvedPath;
-          } catch (createError) {
-            logger.error(`Erro ao criar diretório pai: ${parentDir}`, createError);
-            throw new Error(`Não foi possível criar diretório pai: ${parentDir}`);
-          }
-        }
+    if (error.code !== 'ENOENT') {
+      if (error.code === 'EACCES') {
+        throw new Error(`Acesso negado ao caminho: ${resolvedPath}`);
       }
-      
-      // Para operações de leitura, permitir caminhos que não existem
-      // mas que são válidos para navegação (ex: /home/yo/Documents)
-      if (operation === 'read') {
-        logger.info(`Caminho não existe, mas permitindo para navegação: ${resolvedPath}`);
-        return resolvedPath;
-      }
-      
-      throw new Error(`Caminho não existe: ${resolvedPath}`);
+      throw error;
     }
-
-    // Outros erros de sistema de arquivos
-    if (error.code === 'EACCES') {
-      throw new Error(`Acesso negado ao caminho: ${resolvedPath}`);
-    } else if (error.code === 'ENOTDIR') {
-      throw new Error(`Parte do caminho não é um diretório: ${resolvedPath}`);
-    } else if (error.code === 'ENAMETOOLONG') {
-      throw new Error(`Nome do arquivo muito longo: ${resolvedPath}`);
-    }
-
-    // Erro genérico
-    logger.error(`Erro ao validar caminho: ${resolvedPath}`, error);
-    throw new Error(`Erro ao acessar caminho: ${error.message}`);
   }
+
+  const existingParent = await findExistingParent(path.dirname(resolvedPath));
+  const realParent = await fs.realpath(existingParent);
+  assertAllowedPath(realParent);
+
+  if (operation === 'write' || operation === 'create') {
+    return resolvedPath;
+  }
+
+  if (operation === 'read') {
+    return resolvedPath;
+  }
+
+  throw new Error(`Caminho não existe: ${resolvedPath}`);
 }
 
 /**
@@ -1036,7 +1029,7 @@ class FileOperationsManager {
 
         try {
             // Validar caminho antes de qualquer operação
-            safeFilePath = await validateSafePath(filePath, 'write');
+            safeFilePath = await validateSafePath(filePath, 'read');
 
             logger.startOperation('File Delete', {
                 operationId,
@@ -1829,13 +1822,14 @@ class FileOperationsManager {
     async listImagesRecursive(folderPath, options = {}) {
         const { maxDepth = 10, extensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'] } = options;
         const images = [];
+        const safeFolderPath = await validateSafePath(folderPath, 'read');
 
-        logger.info(`🖼️ Iniciando listImagesRecursive: ${folderPath}`);
+        logger.info(`🖼️ Iniciando listImagesRecursive: ${safeFolderPath}`);
         logger.info(`🔧 Opções: ${JSON.stringify(options)}`);
 
         try {
-            const stats = await fs.stat(folderPath);
-            logger.info(`📁 Pasta encontrada: ${folderPath}, isDirectory: ${stats.isDirectory()}`);
+            const stats = await fs.stat(safeFolderPath);
+            logger.info(`📁 Pasta encontrada: ${safeFolderPath}, isDirectory: ${stats.isDirectory()}`);
 
             if (!stats.isDirectory()) {
                 throw new Error('Caminho especificado não é uma pasta');
@@ -1844,15 +1838,15 @@ class FileOperationsManager {
             async function scanDirectory(currentPath, currentDepth = 0) {
                 if (currentDepth > maxDepth) return;
 
-                logger.info(`🔍 Escaneando pasta: ${currentPath} (profundidade: ${currentDepth})`);
+                    logger.info(`🔍 Escaneando pasta: ${currentPath} (profundidade: ${currentDepth})`);
 
-                try {
-                    const items = await fs.readdir(currentPath);
-                    logger.info(`📋 Itens encontrados em ${currentPath}: ${items.length} (${items.slice(0, 10).join(', ')}${items.length > 10 ? '...' : ''})`);
+                    try {
+                        const items = await fs.readdir(currentPath);
+                        logger.info(`📋 Itens encontrados em ${currentPath}: ${items.length} (${items.slice(0, 10).join(', ')}${items.length > 10 ? '...' : ''})`);
 
-                    for (const item of items) {
-                        const itemPath = path.join(currentPath, item);
-                        const itemStats = await fs.stat(itemPath);
+                        for (const item of items) {
+                            const itemPath = await validateSafePath(path.join(currentPath, item), 'read');
+                            const itemStats = await fs.stat(itemPath);
 
                         if (itemStats.isDirectory()) {
                             // Recursivamente escanear subpastas
@@ -1872,7 +1866,7 @@ class FileOperationsManager {
                                         size: itemStats.size,
                                         modified: itemStats.mtime,
                                         extension: ext,
-                                        relativePath: path.relative(folderPath, itemPath)
+                                        relativePath: path.relative(safeFolderPath, itemPath)
                                     });
                                 } else {
                                     logger.warn(`🚫 Arquivo ignorado: ${item}`);
@@ -1887,7 +1881,7 @@ class FileOperationsManager {
                 }
             }
 
-            await scanDirectory.call(this, folderPath);
+            await scanDirectory.call(this, safeFolderPath);
 
             // Ordenar imagens por data de modificação (mais recentes primeiro)
             images.sort((a, b) => b.modified.getTime() - a.modified.getTime());
@@ -1900,7 +1894,7 @@ class FileOperationsManager {
             return images;
 
         } catch (error) {
-            logger.error(`Erro ao listar imagens da pasta ${folderPath}:`, error);
+            logger.error(`Erro ao listar imagens da pasta ${safeFolderPath}:`, error);
             throw error;
         }
     }

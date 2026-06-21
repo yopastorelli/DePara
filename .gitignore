@@ -41,6 +41,8 @@ Thumbs.db
 # Arquivos de teste
 coverage/
 .nyc_output/
+test-results/
+playwright-report/
 
 # Arquivos de lock (opcional)
 # package-lock.json
@@ -49,3 +51,5 @@ coverage/
 # Dados de persistência
 data/
 src/data/
+backups/
+temp/

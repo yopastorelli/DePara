@@ -12,83 +12,9 @@ if (!DEPARA_DEBUG_ENABLED) {
     console.debug = () => {};
 }
 
-const DEPARA_MOJIBAKE_REPLACEMENTS = [
-    ['ÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£', 'cao'],
-    ['ÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµ', 'co'],
-    ['ÃƒÆ’Ã‚Â£', 'a'],
-    ['ÃƒÆ’Ã‚Â¡', 'a'],
-    ['ÃƒÆ’Ã‚Âµ', 'o'],
-    ['ÃƒÆ’Ã‚Â­', 'i'],
-    ['ÃƒÆ’Ã‚Â©', 'e'],
-    ['ÃƒÆ’Ã‚Â³', 'o'],
-    ['ÃƒÆ’Ã‚Â§', 'c'],
-    ['ÃƒÆ’Ã‚Â¢', 'a'],
-    ['ÃƒÆ’Ã‚Âª', 'e'],
-    ['ÃƒÆ’Ã‚Âº', 'u'],
-    ['ÃƒÆ’Ã…Â¡', 'U'],
-    ['ÃƒÂ¢Ã‚ÂÃ…â€™', '[x]'],
-    ['ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â', '[!]'],
-    ['ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦', '[ok]'],
-    ['ÃƒÂ¢Ã‚ÂÃ‚Â°', '[timer]'],
-    ['ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â', '[dbg]'],
-    ['ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤', '[send]'],
-    ['ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â ', '[dbg]'],
-    ['ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹', '[load]'],
-    ['ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â', '[path]'],
-    ['ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦', '[ok]'],
-    ['ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â', '[timer]']
-];
-
-function sanitizeVisibleText(value) {
-    if (typeof value !== 'string' || value.length === 0) {
-        return value;
-    }
-
-    let sanitized = value;
-    for (const [from, to] of DEPARA_MOJIBAKE_REPLACEMENTS) {
-        sanitized = sanitized.split(from).join(to);
-    }
-
-    return sanitized;
+function normalizeLogMessage(value) {
+    return typeof value === 'string' ? value : String(value);
 }
-
-function installDomTextSanitizer() {
-    if (window.__deparaDomTextSanitizerInstalled) {
-        return;
-    }
-
-    const innerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
-    if (innerHTMLDescriptor?.set && innerHTMLDescriptor?.get) {
-        Object.defineProperty(Element.prototype, 'innerHTML', {
-            configurable: true,
-            enumerable: innerHTMLDescriptor.enumerable,
-            get() {
-                return innerHTMLDescriptor.get.call(this);
-            },
-            set(value) {
-                innerHTMLDescriptor.set.call(this, sanitizeVisibleText(value));
-            }
-        });
-    }
-
-    const textContentDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
-    if (textContentDescriptor?.set && textContentDescriptor?.get) {
-        Object.defineProperty(Node.prototype, 'textContent', {
-            configurable: true,
-            enumerable: textContentDescriptor.enumerable,
-            get() {
-                return textContentDescriptor.get.call(this);
-            },
-            set(value) {
-                textContentDescriptor.set.call(this, sanitizeVisibleText(value));
-            }
-        });
-    }
-
-    window.__deparaDomTextSanitizerInstalled = true;
-}
-
-installDomTextSanitizer();
 
 class Logger {
     constructor() {
@@ -99,7 +25,7 @@ class Logger {
     }
 
     log(level, message, meta = {}) {
-        const normalizedMessage = sanitizeVisibleText(message);
+        const normalizedMessage = normalizeLogMessage(message);
         const logEntry = {
             timestamp: new Date().toISOString(),
             level,
@@ -109,7 +35,7 @@ class Logger {
             url: window.location.href
         };
 
-        // Adicionar ao histÃƒÆ’Ã‚Â³rico
+        // Adicionar ao histórico
         this.logs.push(logEntry);
         if (this.logs.length > this.maxLogs) {
             this.logs.shift();
@@ -126,7 +52,7 @@ class Logger {
             console.warn(consoleLine);
         } else if (this.enableDebug) {        }
 
-        // Enviar logs crÃƒÆ’Ã‚Â­ticos para o servidor
+        // Enviar logs críticos para o servidor
         if (level === 'error' || level === 'warn') {
             this.sendLogToServer(logEntry);
         }
@@ -192,7 +118,7 @@ class Logger {
                 body: JSON.stringify(logEntry)
             });
         } catch (error) {
-            // Silenciar erro para nÃƒÆ’Ã‚Â£o criar loop
+            // Silenciar erro para não criar loop
             console.warn('Falha ao enviar log para servidor:', error);
         }
     }
@@ -216,7 +142,7 @@ class Logger {
     }
 }
 
-// InstÃƒÆ’Ã‚Â¢ncia global do logger
+// Instância global do logger
 const logger = new Logger();
 
 class DeParaUI {
@@ -251,9 +177,9 @@ class DeParaUI {
     }
 
     async init() {
-        // Carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do servidor primeiro (persiste entre reinicializacões)
-        await this.loadServerConfig();        
-        logger.info('Ò°�&¸�&¡â�a¬ Inicializando DePara UI...', {
+        // Carregar configurações do servidor primeiro (persiste entre reinicializações)
+        await this.loadServerConfig();
+        logger.info('[init] Inicializando DePara UI...', {
             version: '2.0.0',
             userAgent: navigator.userAgent,
             timestamp: new Date().toISOString()
@@ -273,9 +199,9 @@ class DeParaUI {
             this.initializeCache();
             logger.success('Cache inicializado');
 
-            // Carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+            // Carregar configurações
             await this.loadSettings();
-            logger.success('ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes carregadas');
+            logger.success('Configurações carregadas');
 
             // Carregar pastas
             await this.loadFolders();
@@ -289,13 +215,13 @@ class DeParaUI {
             this.startUnifiedRefreshScheduler();
             logger.success('Scheduler unificado iniciado');
 
-            // Testar conexÃƒÆ’Ã‚Â£o com API
+            // Testar conexão com API
             const apiOnline = await this.testApiConnection();
             if (apiOnline) {
                 this.showToast('DePara iniciado com sucesso!', 'success');
                 logger.success('API conectada', { apiStatus: 'online' });
             } else {
-                this.showToast('API nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ respondendo. Verifique se o servidor estÃƒÆ’Ã‚Â¡ rodando.', 'warning');
+                this.showToast('API não está respondendo. Verifique se o servidor está rodando.', 'warning');
                 logger.warn('API offline', { apiStatus: 'offline' });
             }
 
@@ -303,9 +229,9 @@ class DeParaUI {
             this.updateApiStatus();
             logger.success('Status da API sincronizado');
 
-            // Inicializar grÃƒÆ’Ã‚Â¡ficos
+            // Inicializar gráficos
             this.initializeCharts();
-            logger.success('GrÃƒÆ’Ã‚Â¡ficos inicializados');
+            logger.success('Gráficos inicializados');
 
             // Configurar atalhos de teclado
             this.setupKeyboardShortcuts();
@@ -322,25 +248,25 @@ class DeParaUI {
             this.setupDashboardFullscreenControls();
             logger.success('Controles de fullscreen do dashboard configurados');
 
-            // ForÃƒÆ’Ã‚Â§ar atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o inicial da dashboard
+            // Forçar atualização inicial da dashboard
             await this.updateDashboard();
             logger.success('Dashboard atualizada');
 
-            // Mostrar onboarding se necessÃƒÆ’Ã‚Â¡rio
+            // Mostrar onboarding se necessário
             if (!this.isDedicatedScreensaverWindow && !localStorage.getItem('depara-onboarding-completed')) {
                 setTimeout(() => this.showOnboarding(), 1000);
             }
 
-            // Configurar event listeners para substituir violaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de CSP
+            // Configurar event listeners para substituir violações de CSP
             this.setupCSPSafeEventListeners();
 
-            // Configurar validaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+            // Configurar validação de operações
             this.setupOperationValidation();
 
-            // Garantir que o campo de origem esteja sempre visÃƒÆ’Ã‚Â­vel
+            // Garantir que o campo de origem esteja sempre visível
             this.ensureSourceFieldVisible();
             this.refreshFileOpsState();
-            
+
             // Carregar pasta salva do slideshow
             this.loadSlideshowSavedPath();
             if (this.isDedicatedScreensaverWindow) {
@@ -348,7 +274,7 @@ class DeParaUI {
             }
 
             const initDuration = Date.now() - startTime;
-            logger.success('ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â° InicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o completa!', {
+            logger.success('🎉 Inicialização completa!', {
                 duration: `${initDuration}ms`,
                 components: [
                     'eventListeners',
@@ -366,15 +292,15 @@ class DeParaUI {
             });
 
         } catch (error) {
-            logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro durante inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', {
+            logger.error('❌ Erro durante inicialização', {
                 error: error.message,
                 stack: error.stack,
                 userAgent: navigator.userAgent,
                 timestamp: new Date().toISOString()
             });
-            this.showToast('Erro na inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o. Verifique o console.', 'error');
+            this.showToast('Erro na inicialização. Verifique o console.', 'error');
         } finally {
-            // Esconder splash screen apÃƒÆ’Ã‚Â³s inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+            // Esconder splash screen após inicialização
             setTimeout(() => this.hideSplashScreen(), 2000);
         }
     }
@@ -399,7 +325,7 @@ class DeParaUI {
         }
     }
 
-    // Testa conexÃƒÆ’Ã‚Â£o com a API
+    // Testa conexão com a API
     async testApiConnection() {
         try {
             const response = await fetch('/api/health', {
@@ -410,7 +336,7 @@ class DeParaUI {
             });
             return response.ok;
         } catch (error) {
-            console.warn('Erro ao testar conexÃƒÆ’Ã‚Â£o com API:', error);
+            console.warn('Erro ao testar conexão com API:', error);
             return false;
         }
     }
@@ -421,7 +347,7 @@ class DeParaUI {
         const apiStatusIconElement = document.getElementById('api-status-icon');
 
         if (!apiStatusElement || !apiStatusIconElement) {
-            console.warn('Elementos de status da API nÃƒÆ’Ã‚Â£o encontrados');
+            console.warn('Elementos de status da API não encontrados');
             return;
         }
 
@@ -437,7 +363,7 @@ class DeParaUI {
                 apiStatusIconElement.className = 'material-icons offline';
             }
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao verificar status da API:', error);
+            console.error('❌ Erro ao verificar status da API:', error);
             apiStatusElement.textContent = 'Erro';
             apiStatusElement.className = 'value offline';
             apiStatusIconElement.textContent = 'error';
@@ -484,7 +410,7 @@ class DeParaUI {
             // Atualizar status do sistema
             await this.updateSystemStatus();
 
-            // Atualizar atividades recentes se estiver visÃƒÆ’Ã‚Â­vel
+            // Atualizar atividades recentes se estiver visível
             await this.loadRecentActivities();
 
             // Atualizar contadores
@@ -528,7 +454,7 @@ class DeParaUI {
         }
     }
 
-    // Carregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas para o dashboard
+    // Carregar operações agendadas para o dashboard
     async loadDashboardScheduledOperations() {
         try {
             const data = window.DeParaRuntimeStatus
@@ -536,24 +462,24 @@ class DeParaUI {
                 : await (await fetch('/api/files/scheduled')).json();
             this.updateDashboardScheduledOperations(data.data || []);
         } catch (error) {
-            console.warn('Erro ao carregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas para dashboard:', error);
+            console.warn('Erro ao carregar operações agendadas para dashboard:', error);
         }
     }
 
-    // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas no dashboard
+    // Atualizar exibição de operações agendadas no dashboard
     updateDashboardScheduledOperations(operations) {
         const container = document.querySelector('#dashboard .scheduled-operations .operations-list');
         if (!container) return;
 
         if (operations.length === 0) {
-            container.innerHTML = '<p class="empty-state">Nenhuma operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o agendada</p>';
+            container.innerHTML = '<p class="empty-state">Nenhuma operação agendada</p>';
             return;
         }
 
         container.innerHTML = operations.slice(0, 5).map(op => `
             <div class="operation-item ${op.active ? 'active' : 'paused'}">
                 <div class="operation-info">
-                    <h4>${op.name || 'OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o sem nome'}</h4>
+                    <h4>${op.name || 'Operação sem nome'}</h4>
                     <p>${op.action} - ${op.frequency}</p>
                 </div>
                 <div class="operation-status">
@@ -565,25 +491,25 @@ class DeParaUI {
         `).join('');
 
         if (operations.length > 5) {
-            container.innerHTML += `<p class="more-operations">+${operations.length - 5} operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes adicionais</p>`;
+            container.innerHTML += `<p class="more-operations">+${operations.length - 5} operações adicionais</p>`;
         }
     }
 
     // Atualizar display do status do sistema
     updateSystemStatusDisplay(data) {
         try {
-            logger.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Atualizando display de status do sistema', {
+            logger.debug('📊 Atualizando display de status do sistema', {
                 memory: data.memory,
                 disk: data.disk,
                 activeOperations: data.activeOperations
             });
 
-            // Atualizar uso de memÃƒÆ’Ã‚Â³ria
+            // Atualizar uso de memória
             const memoryElement = document.getElementById('memory-usage');
             if (memoryElement && data.memory) {
                 const memoryUsage = data.memory.percentage || 0;
                 memoryElement.textContent = `${memoryUsage}%`;
-                logger.debug('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ MemÃƒÆ’Ã‚Â³ria atualizada', { memoryUsage });
+                logger.debug('✅ Memória atualizada', { memoryUsage });
             }
 
             // Atualizar uso de disco
@@ -591,9 +517,9 @@ class DeParaUI {
             if (diskElement && data.disk && data.disk.drives) {
                 const drives = data.disk.drives;
                 if (drives.length > 0) {
-                    // Filtrar apenas discos vÃƒÆ’Ã‚Â¡lidos (com tamanho > 0)
+                    // Filtrar apenas discos válidos (com tamanho > 0)
                     const validDrives = drives.filter(drive => drive.total > 0);
-                    
+
                     if (validDrives.length > 0) {
                         if (validDrives.length === 1) {
                             // Mostrar apenas um disco
@@ -605,27 +531,27 @@ class DeParaUI {
                             // Mostrar todos os discos em uma lista
                             let diskText = '';
                             let tooltipText = `Discos detectados (${validDrives.length}):\n\n`;
-                            
+
                             validDrives.forEach((drive, index) => {
                                 const driveUsedGB = Math.round(drive.used / (1024 * 1024 * 1024));
                                 const driveTotalGB = Math.round(drive.total / (1024 * 1024 * 1024));
                                 const driveMountpoint = drive.mountpoint || drive.drive;
-                                
+
                                 // Adicionar ao tooltip
                                 tooltipText += `${index + 1}. ${driveMountpoint}: ${driveUsedGB} GB / ${driveTotalGB} GB (${drive.percentage}%)\n`;
-                                
-                                // Adicionar ao texto principal (mÃƒÆ’Ã‚Â¡ximo 3 discos visÃƒÆ’Ã‚Â­veis)
+
+                                // Adicionar ao texto principal (máximo 3 discos visíveis)
                                 if (index < 3) {
                                     if (index > 0) diskText += ' | ';
                                     diskText += `${driveUsedGB} GB / ${driveTotalGB} GB (${driveMountpoint})`;
                                 }
                             });
-                            
-                            // Se hÃƒÆ’Ã‚Â¡ mais de 3 discos, adicionar contador
+
+                            // Se há mais de 3 discos, adicionar contador
                             if (validDrives.length > 3) {
                                 diskText += ` +${validDrives.length - 3}`;
                             }
-                            
+
                             diskElement.textContent = diskText;
                             diskElement.title = tooltipText;
                             diskElement.style.cursor = 'help';
@@ -636,17 +562,17 @@ class DeParaUI {
                 } else {
                     diskElement.textContent = 'N/A';
                 }
-                logger.debug('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Disco atualizado', { drives, validDrives: drives.filter(d => d.total > 0) });
+                logger.debug('✅ Disco atualizado', { drives, validDrives: drives.filter(d => d.total > 0) });
             }
 
-            // Atualizar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas - buscar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas
+            // Atualizar operações ativas - buscar operações agendadas
             const activeOpsElement = document.getElementById('active-ops');
             if (activeOpsElement) {
                 this.updateActiveOperationsCount();
             }
 
         } catch (error) {
-            logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao atualizar display de status', {
+            logger.error('❌ Erro ao atualizar display de status', {
                 error: error.message,
                 stack: error.stack,
                 data: data
@@ -657,18 +583,18 @@ class DeParaUI {
     // Atualizar display de atividades recentes
     updateActivitiesDisplay(data) {
         try {
-            logger.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Atualizando display de atividades', {
+            logger.debug('📋 Atualizando display de atividades', {
                 activitiesCount: data?.activities?.length || 0,
                 hasData: !!data
             });
 
             const activityList = document.getElementById('recent-activity');
             if (!activityList) {
-                logger.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Elemento recent-activity nÃƒÆ’Ã‚Â£o encontrado');
+                logger.warn('⚠️ Elemento recent-activity não encontrado');
                 return;
             }
 
-            // Se nÃƒÆ’Ã‚Â£o hÃƒÆ’Ã‚Â¡ dados ou atividades
+            // Se não há dados ou atividades
             if (!data || !data.activities || data.activities.length === 0) {
                 activityList.innerHTML = `
                     <div class="activity-item">
@@ -676,7 +602,7 @@ class DeParaUI {
                         <span>Nenhuma atividade recente</span>
                     </div>
                 `;
-                logger.info('ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â Nenhuma atividade para exibir');
+                logger.info('ℹ️ Nenhuma atividade para exibir');
                 return;
             }
 
@@ -696,13 +622,13 @@ class DeParaUI {
             }).join('');
 
             activityList.innerHTML = activitiesHtml;
-            logger.success('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Atividades renderizadas', {
+            logger.success('✅ Atividades renderizadas', {
                 activitiesCount: data.activities.length,
                 displayedCount: Math.min(data.activities.length, 10)
             });
 
         } catch (error) {
-            logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao atualizar display de atividades', {
+            logger.error('❌ Erro ao atualizar display de atividades', {
                 error: error.message,
                 stack: error.stack,
                 data: data
@@ -710,7 +636,7 @@ class DeParaUI {
         }
     }
 
-    // Obter ÃƒÆ’Ã‚Â­cone apropriado para o tipo de atividade
+    // Obter ícone apropriado para o tipo de atividade
     getActivityIcon(type) {
         const iconMap = {
             'move': 'drive_file_move',
@@ -736,9 +662,9 @@ class DeParaUI {
         const diffDays = Math.floor(diffMs / 86400000);
 
         if (diffMins < 1) return 'agora';
-        if (diffMins < 60) return `${diffMins}min atrÃƒÆ’Ã‚Â¡s`;
-        if (diffHours < 24) return `${diffHours}h atrÃƒÆ’Ã‚Â¡s`;
-        return `${diffDays}d atrÃƒÆ’Ã‚Â¡s`;
+        if (diffMins < 60) return `${diffMins}min atrás`;
+        if (diffHours < 24) return `${diffHours}h atrás`;
+        return `${diffDays}d atrás`;
     }
 
     // Navegar para caminho de origem
@@ -746,7 +672,7 @@ class DeParaUI {
         if (typeof this.showFolderBrowser === 'function') {
             this.showFolderBrowser('source');
         } else {
-            console.warn('FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o showFolderBrowser nÃƒÆ’Ã‚Â£o encontrada');
+            console.warn('Função showFolderBrowser não encontrada');
             // Fallback: apenas focar no input
             const input = document.getElementById('source-path');
             if (input) {
@@ -761,7 +687,7 @@ class DeParaUI {
         if (typeof this.showFolderBrowser === 'function') {
             this.showFolderBrowser('target');
         } else {
-            console.warn('FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o showFolderBrowser nÃƒÆ’Ã‚Â£o encontrada');
+            console.warn('Função showFolderBrowser não encontrada');
             // Fallback: apenas focar no input
             const input = document.getElementById('dest-path');
             if (input) {
@@ -771,10 +697,10 @@ class DeParaUI {
         }
     }
 
-    // Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o simples
+    // Executar operação simples
     async executeSimpleOperation(action) {
         if (this.isExecutingOperation) {
-            this.showToast('OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o jÃƒÆ’Ã‚Â¡ em andamento. Aguarde...', 'warning');
+            this.showToast('Operação já em andamento. Aguarde...', 'warning');
             return;
         }
 
@@ -783,7 +709,7 @@ class DeParaUI {
         const recursive = document.getElementById('recursive-option').checked;
         const backup = document.getElementById('backup-option').checked;
 
-        // ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o bÃƒÆ’Ã‚Â¡sica
+        // Validação básica
         if (!sourcePath) {
             this.showToast('Digite o caminho de origem', 'error');
             return;
@@ -798,7 +724,7 @@ class DeParaUI {
         this.isExecutingOperation = true;
 
         try {
-            // Mostrar resultado da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+            // Mostrar resultado da operação
             const resultDiv = document.getElementById('operation-result');
             const resultIcon = document.getElementById('result-icon');
             const resultText = document.getElementById('result-text');
@@ -806,10 +732,10 @@ class DeParaUI {
             if (resultDiv && resultIcon && resultText) {
                 resultDiv.style.display = 'block';
                 resultIcon.textContent = 'hourglass_empty';
-                resultText.textContent = 'Executando operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o...';
+                resultText.textContent = 'Executando operação...';
             }
 
-            // Preparar dados da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+            // Preparar dados da operação
             const operationData = {
                 action: action,
                 sourcePath: sourcePath,
@@ -818,7 +744,7 @@ class DeParaUI {
                 createBackup: backup
             };
 
-            logger.info('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Executando operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', {
+            logger.info('🔄 Executando operação', {
                 operation: operationData.action,
                 sourcePath: operationData.sourcePath,
                 targetPath: operationData.targetPath,
@@ -841,12 +767,12 @@ class DeParaUI {
                 // Sucesso
                 if (resultDiv && resultIcon && resultText) {
                     resultIcon.textContent = 'check_circle';
-                    resultText.textContent = `OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o concluÃƒÆ’Ã‚Â­da com sucesso! ${result.message || ''}`;
+                    resultText.textContent = `Operação concluída com sucesso! ${result.message || ''}`;
                     resultDiv.className = 'operation-result success';
                 }
-                this.showToast('OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o executada com sucesso!', 'success');
+                this.showToast('Operação executada com sucesso!', 'success');
 
-                logger.success('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o executada com sucesso', {
+                logger.success('✅ Operação executada com sucesso', {
                     operation: operationData.action,
                     message: result.message,
                     responseTime: Date.now() - Date.now() // TODO: calcular tempo real
@@ -857,14 +783,14 @@ class DeParaUI {
 
             } else {
                 // Erro
-                const errorMsg = result.message || 'Erro desconhecido na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o';
+                const errorMsg = result.message || 'Erro desconhecido na operação';
                 if (resultDiv && resultIcon && resultText) {
                     resultIcon.textContent = 'error';
                     resultText.textContent = `Erro: ${errorMsg}`;
                     resultDiv.className = 'operation-result error';
                 }
                 this.showToast(errorMsg, 'error');
-                logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', {
+                logger.error('❌ Erro na operação', {
                     operation: operationData.action,
                     error: errorMsg,
                     result: result,
@@ -873,9 +799,9 @@ class DeParaUI {
             }
 
         } catch (error) {
-            const errorMsg = error.message || 'Erro de conexÃƒÆ’Ã‚Â£o';
+            const errorMsg = error.message || 'Erro de conexão';
 
-            logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', {
+            logger.error('❌ Erro ao executar operação', {
                 operation: operation,
                 error: errorMsg,
                 stack: error.stack,
@@ -896,12 +822,12 @@ class DeParaUI {
             this.showToast(errorMsg, 'error');
         } finally {
             this.isExecutingOperation = false;
-            logger.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o finalizada', { operation });
+            logger.debug('🔄 Operação finalizada', { operation });
         }
     }
 
     // Iniciar slideshow
-    async startSlideshow() {        
+    async startSlideshow() {
         const folderPath = document.getElementById('slideshow-folder-path').value.trim();
 
         if (!folderPath) {
@@ -909,7 +835,7 @@ class DeParaUI {
             return;
         }
 
-        // Coletar extensÃƒÆ’Ã‚Âµes selecionadas
+        // Coletar extensões selecionadas
         const selectedExtensions = [];
         const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]:checked');
         extensionCheckboxes.forEach(checkbox => {
@@ -917,14 +843,14 @@ class DeParaUI {
         });
 
         if (selectedExtensions.length === 0) {
-            this.showToast('Selecione pelo menos uma extensÃƒÆ’Ã‚Â£o de arquivo', 'error');
+            this.showToast('Selecione pelo menos uma extensão de arquivo', 'error');
             return;
         }
         await this.loadSlideshowImages(folderPath, selectedExtensions, true, this.slideshowConfig.interval);
         this.startSlideshowViewer();
     }
 
-    // ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de campos com feedback visual
+    // Validação de campos com feedback visual
     validateField(field, type) {
         const value = field.value.trim();
         const validationDiv = field.parentNode.querySelector('.validation-message');
@@ -939,36 +865,36 @@ class DeParaUI {
             case 'name':
                 if (!value) {
                     isValid = false;
-                    message = 'Nome ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio';
+                    message = 'Nome é obrigatório';
                 } else if (value.length < 3) {
                     isValid = false;
                     message = 'Nome deve ter pelo menos 3 caracteres';
                 } else if (!/^[a-zA-Z0-9\s\-_]+$/.test(value)) {
                     isValid = false;
-                    message = 'Nome contÃƒÆ’Ã‚Â©m caracteres invÃƒÆ’Ã‚Â¡lidos';
+                    message = 'Nome contém caracteres inválidos';
                 }
                 break;
 
             case 'path':
                 if (!value) {
                     isValid = false;
-                    message = 'Caminho ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio';
+                    message = 'Caminho é obrigatório';
                 } else if (!/^[a-zA-Z0-9\s\-_\/\\:.]+$/.test(value)) {
                     isValid = false;
-                    message = 'Caminho contÃƒÆ’Ã‚Â©m caracteres invÃƒÆ’Ã‚Â¡lidos';
+                    message = 'Caminho contém caracteres inválidos';
                 }
                 break;
 
             case 'email':
                 if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
                     isValid = false;
-                    message = 'Email invÃƒÆ’Ã‚Â¡lido';
+                    message = 'Email inválido';
                 }
                 break;
 
             default:
                 isValid = !!value;
-                message = 'Campo obrigatÃƒÆ’Ã‚Â³rio';
+                message = 'Campo obrigatório';
         }
 
         // Atualizar feedback visual
@@ -989,7 +915,7 @@ class DeParaUI {
         return isValid;
     }
 
-    // ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de formulÃƒÆ’Ã‚Â¡rio completo
+    // Validação de formulário completo
     validateForm(formSelector) {
         const form = document.querySelector(formSelector);
         if (!form) return false;
@@ -1007,17 +933,17 @@ class DeParaUI {
         return isValid;
     }
 
-    // Garantir que o campo de origem esteja sempre visÃƒÆ’Ã‚Â­vel
+    // Garantir que o campo de origem esteja sempre visível
     ensureSourceFieldVisible() {
         const sourceField = document.getElementById('source-folder-path');
         const sourceFieldParent = sourceField?.parentElement;
-        
+
         if (sourceFieldParent) {
             sourceFieldParent.style.display = 'block';        } else {
-            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Campo source-folder-path nÃƒÆ’Ã‚Â£o encontrado');
+            console.warn('⚠️ Campo source-folder-path não encontrado');
         }
     }
-    
+
     // Carregar pasta salva do slideshow
     loadSlideshowSavedPath() {
         const savedPath = this.getSlideshowSelectedPath();
@@ -1029,15 +955,15 @@ class DeParaUI {
                 if (!savedPath.startsWith('/') && !savedPath.match(/^[A-Za-z]:/)) {
                     const basePath = '/mnt/lytspot/@SYNC@/_@@PICZ & VIDEOS LYT @@_/_@LYT PicZ por ANO@_';
                     finalPath = `${basePath}/${savedPath}`;                }
-                
-                // Verificar se o caminho jÃƒÆ’Ã‚Â¡ contÃƒÆ’Ã‚Â©m a pasta base (evitar duplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o)
+
+                // Verificar se o caminho já contém a pasta base (evitar duplicação)
                 if (finalPath.includes('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/')) {
                     finalPath = finalPath.replace('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/', '/_@LYT PicZ por ANO@_/');                }
-                
+
                 slideshowField.value = finalPath;            }
         }
     }
-    
+
     // Embaralhar array (algoritmo Fisher-Yates)
     shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
@@ -1047,7 +973,7 @@ class DeParaUI {
         return array;
     }
 
-    // ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o em tempo real para campos de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+    // Validação em tempo real para campos de operação
     setupOperationValidation() {
         // Campos de origem e destino no dashboard
         const sourcePath = document.getElementById('source-path');
@@ -1059,7 +985,7 @@ class DeParaUI {
                 this.updateOperationButtonsState();
             });
             sourcePath.addEventListener('input', () => {
-                // Limpar validaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o quando usuÃƒÆ’Ã‚Â¡rio comeÃƒÆ’Ã‚Â§a a digitar
+                // Limpar validação quando usuário começa a digitar
                 const validationDiv = sourcePath.parentNode.querySelector('.validation-message');
                 if (validationDiv) {
                     validationDiv.textContent = '';
@@ -1067,7 +993,7 @@ class DeParaUI {
                     sourcePath.classList.remove('invalid', 'valid');
                     sourcePath.parentNode.classList.remove('error');
                 }
-                // Atualizar estado dos botÃƒÆ’Ã‚Âµes
+                // Atualizar estado dos botões
                 this.updateOperationButtonsState();
             });
         }
@@ -1085,13 +1011,13 @@ class DeParaUI {
                     destPath.classList.remove('invalid', 'valid');
                     destPath.parentNode.classList.remove('error');
                 }
-                // Atualizar estado dos botÃƒÆ’Ã‚Âµes
+                // Atualizar estado dos botões
                 this.updateOperationButtonsState();
             });
         }
     }
 
-    // Feedback visual para botÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+    // Feedback visual para botões de operação
     updateOperationButtonsState() {
         const sourcePath = document.getElementById('source-path');
         const destPath = document.getElementById('dest-path');
@@ -1104,14 +1030,14 @@ class DeParaUI {
             const operation = btn.getAttribute('data-operation');
 
             if (operation === 'delete') {
-                // Delete sÃƒÆ’Ã‚Â³ precisa do caminho de origem
+                // Delete só precisa do caminho de origem
                 btn.disabled = !hasSourcePath;
-                btn.title = hasSourcePath ? 'Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de exclusÃƒÆ’Ã‚Â£o' : 'Digite o caminho de origem primeiro';
+                btn.title = hasSourcePath ? 'Executar operação de exclusão' : 'Digite o caminho de origem primeiro';
             } else {
                 // Move e copy precisam de origem e destino
                 btn.disabled = !(hasSourcePath && hasDestPath);
                 btn.title = (hasSourcePath && hasDestPath) ?
-                    `Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de ${operation}` :
+                    `Executar operação de ${operation}` :
                     'Digite os caminhos de origem e destino primeiro';
             }
 
@@ -1127,7 +1053,7 @@ class DeParaUI {
     // Atualizar contadores
     async updateCounters() {
         try {
-            // Contar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas
+            // Contar operações ativas
             const scheduledResponse = await fetch('/api/files/scheduled');
             if (scheduledResponse.ok) {
                 const scheduledData = await scheduledResponse.json();
@@ -1139,7 +1065,7 @@ class DeParaUI {
         }
     }
 
-    // Atualizar contador de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas
+    // Atualizar contador de operações ativas
     async updateActiveOperationsCount() {
         try {
             const response = await fetch('/api/files/scheduled');
@@ -1149,11 +1075,11 @@ class DeParaUI {
                 const activeOpsElement = document.getElementById('active-ops');
                 if (activeOpsElement) {
                     activeOpsElement.textContent = activeOps;
-                    logger.debug('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas atualizadas', { activeOps });
+                    logger.debug('✅ Operações ativas atualizadas', { activeOps });
                 }
             }
         } catch (error) {
-            logger.warn('Erro ao atualizar contador de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas:', error);
+            logger.warn('Erro ao atualizar contador de operações ativas:', error);
             const activeOpsElement = document.getElementById('active-ops');
             if (activeOpsElement) {
                 activeOpsElement.textContent = '0';
@@ -1174,7 +1100,7 @@ class DeParaUI {
         this.cacheExpiry = 5 * 60 * 1000; // 5 minutos
     }
 
-    // Verificar se cache ÃƒÆ’Ã‚Â© vÃƒÆ’Ã‚Â¡lido
+    // Verificar se cache é válido
     isCacheValid(key) {
         const timestamp = this.cache.timestamps[key];
         if (!timestamp) return false;
@@ -1192,14 +1118,14 @@ class DeParaUI {
             this.cache.timestamps[key] = Date.now();            return data;
         } catch (error) {
             console.warn(`Erro ao carregar ${key}:`, error);
-            // Retornar cache antigo se disponÃƒÆ’Ã‚Â­vel
+            // Retornar cache antigo se disponível
             if (this.cache[key]) {                return this.cache[key];
             }
             throw error;
         }
     }
 
-    // Limpar cache especÃƒÆ’Ã‚Â­fico
+    // Limpar cache específico
     clearCache(key = null) {
         if (key) {
             this.cache[key] = null;
@@ -1207,25 +1133,25 @@ class DeParaUI {
             this.initializeCache();        }
     }
 
-    // MÃƒÆ’Ã‚Â©todos de cache especÃƒÆ’Ã‚Â­ficos
+    // Métodos de cache específicos
     async loadSettingsCached() {
         return this.getCachedData('settings', async () => {
             const response = await fetch('/api/health');
-            if (!response.ok) throw new Error('Erro ao carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes');
+            if (!response.ok) throw new Error('Erro ao carregar configurações');
             return response.json();
         });
     }
 
     async loadFoldersCached() {
         return this.getCachedData('folders', async () => {
-            // Simular carregamento de pastas (implementar conforme necessÃƒÆ’Ã‚Â¡rio)
+            // Simular carregamento de pastas (implementar conforme necessário)
             return [];
         });
     }
 
     async loadWorkflowsCached() {
         return this.getCachedData('workflows', async () => {
-            // Simular carregamento de workflows (implementar conforme necessÃƒÆ’Ã‚Â¡rio)
+            // Simular carregamento de workflows (implementar conforme necessário)
             return [];
         });
     }
@@ -1233,7 +1159,7 @@ class DeParaUI {
     async loadOperationsCached() {
         return this.getCachedData('operations', async () => {
             const response = await fetch('/api/files/scheduled');
-            if (!response.ok) throw new Error('Erro ao carregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes');
+            if (!response.ok) throw new Error('Erro ao carregar operações');
             return response.json();
         });
     }
@@ -1241,12 +1167,12 @@ class DeParaUI {
     async loadStatsCached() {
         return this.getCachedData('stats', async () => {
             const response = await fetch('/api/files/stats');
-            if (!response.ok) throw new Error('Erro ao carregar estatÃƒÆ’Ã‚Â­sticas');
+            if (!response.ok) throw new Error('Erro ao carregar estatísticas');
             return response.json();
         }, false); // Stats sempre frescos
     }
 
-    // Sistema de GrÃƒÆ’Ã‚Â¡ficos
+    // Sistema de Gráficos
     initializeCharts() {
         this.chartData = {
             operations: 0,
@@ -1258,7 +1184,7 @@ class DeParaUI {
 
     async updateCharts() {
         try {
-            // Obter dados de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+            // Obter dados de operações
             const operationsResponse = await fetch('/api/files/scheduled');
             if (operationsResponse.ok) {
                 const operationsData = await operationsResponse.json();
@@ -1282,7 +1208,7 @@ class DeParaUI {
 
             this.renderChart();
         } catch (error) {
-            console.warn('Erro ao atualizar grÃƒÆ’Ã‚Â¡ficos:', error);
+            console.warn('Erro ao atualizar gráficos:', error);
         }
     }
 
@@ -1297,10 +1223,10 @@ class DeParaUI {
         // Limpar canvas
         ctx.clearRect(0, 0, width, height);
 
-        // Dados do grÃƒÆ’Ã‚Â¡fico
+        // Dados do gráfico
         const data = [
-            { label: 'OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', value: this.chartData.operations, color: '#667eea', max: 20 },
-            { label: 'MemÃƒÆ’Ã‚Â³ria', value: this.chartData.memory, color: '#764ba2', max: 100 },
+            { label: 'Operações', value: this.chartData.operations, color: '#667eea', max: 20 },
+            { label: 'Memória', value: this.chartData.memory, color: '#764ba2', max: 100 },
             { label: 'Disco', value: this.chartData.disk, color: '#f093fb', max: 100 }
         ];
 
@@ -1336,7 +1262,7 @@ class DeParaUI {
         });
     }
 
-    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o global para atualizar grÃƒÆ’Ã‚Â¡ficos
+    // Função global para atualizar gráficos
     refreshCharts() {
         if (window.deParaUI) {
             window.deParaUI.updateCharts();
@@ -1346,16 +1272,16 @@ class DeParaUI {
     // Sistema de Atalhos de Teclado
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (event) => {
-            // Ignorar se usuÃƒÆ’Ã‚Â¡rio estÃƒÆ’Ã‚Â¡ digitando em input
+            // Ignorar se usuário está digitando em input
             if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
                 return;
             }
 
-            // Ctrl+S: Salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+            // Ctrl+S: Salvar configurações
             if (event.ctrlKey && event.key === 's') {
                 event.preventDefault();
                 this.quickSave();
-                this.showToast('ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes salvas!', 'success');
+                this.showToast('Configurações salvas!', 'success');
                 return;
             }
 
@@ -1381,14 +1307,14 @@ class DeParaUI {
                 return;
             }
 
-            // Alt+F: Ir para OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de Arquivos
+            // Alt+F: Ir para Operações de Arquivos
             if (event.altKey && event.key === 'f') {
                 event.preventDefault();
                 this.switchTab('fileops');
                 return;
             }
 
-            // Alt+S: Ir para OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes Agendadas
+            // Alt+S: Ir para Operações Agendadas
             if (event.altKey && event.key === 's') {
                 event.preventDefault();
                 this.switchTab('scheduled');
@@ -1402,7 +1328,7 @@ class DeParaUI {
                 return;
             }
 
-            // Alt+C: Ir para ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+            // Alt+C: Ir para Configurações
             if (event.altKey && event.key === 'c') {
                 event.preventDefault();
                 this.switchTab('settings');
@@ -1426,11 +1352,11 @@ class DeParaUI {
 
     // Alternar fullscreen do dashboard
     toggleDashboardFullscreen() {
-        const isFullscreen = !!(document.fullscreenElement || 
-                               document.webkitFullscreenElement || 
-                               document.mozFullScreenElement || 
+        const isFullscreen = !!(document.fullscreenElement ||
+                               document.webkitFullscreenElement ||
+                               document.mozFullScreenElement ||
                                document.msFullscreenElement);
-        
+
         if (isFullscreen) {
             this.exitDashboardFullscreen();
         } else {
@@ -1439,10 +1365,10 @@ class DeParaUI {
     }
 
     // Entrar em fullscreen do dashboard
-    enterDashboardFullscreen() {        
+    enterDashboardFullscreen() {
         const element = document.documentElement;
-        
-        // Tentar diferentes mÃƒÆ’Ã‚Â©todos de fullscreen
+
+        // Tentar diferentes métodos de fullscreen
         if (element.requestFullscreen) {
             element.requestFullscreen().then(() => {
                 this.showDashboardFullscreenControls();
@@ -1459,12 +1385,12 @@ class DeParaUI {
             element.msRequestFullscreen();
             this.showDashboardFullscreenControls();
         } else {
-            console.warn('Fullscreen nÃƒÆ’Ã‚Â£o suportado neste navegador');
+            console.warn('Fullscreen não suportado neste navegador');
         }
     }
 
     // Sair do fullscreen do dashboard
-    exitDashboardFullscreen() {        
+    exitDashboardFullscreen() {
         if (document.exitFullscreen) {
             document.exitFullscreen();
         } else if (document.webkitExitFullscreen) {
@@ -1474,7 +1400,7 @@ class DeParaUI {
         } else if (document.msExitFullscreen) {
             document.msExitFullscreen();
         }
-        
+
         this.hideDashboardFullscreenControls();
     }
 
@@ -1484,7 +1410,7 @@ class DeParaUI {
         if (controls) {
             controls.style.display = 'flex';
             controls.style.flexDirection = 'row';
-            controls.style.alignItems = 'center';            
+            controls.style.alignItems = 'center';
             // Adicionar fade-in para melhor UX
             controls.style.opacity = '0';
             controls.style.transform = 'translateY(-10px)';
@@ -1504,18 +1430,18 @@ class DeParaUI {
             controls.style.transition = 'all 0.3s ease';
             controls.style.opacity = '0';
             controls.style.transform = 'translateY(-10px)';
-            
+
             setTimeout(() => {
                 controls.style.display = 'none';            }, 300);
         }
     }
 
-    // Fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
-    closeApplication() {        
+    // Fechar aplicação
+    closeApplication() {
         // Primeiro sair do fullscreen se estiver ativo
         this.exitDashboardFullscreen();
-        
-        // Aguardar um pouco para garantir que as operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes sejam concluÃƒÆ’Ã‚Â­das
+
+        // Aguardar um pouco para garantir que as operações sejam concluídas
         setTimeout(() => {
             // Tentar fechar a janela do navegador/Electron
             if (window.close) {
@@ -1524,41 +1450,41 @@ class DeParaUI {
                 // Se estiver rodando no Electron
                 window.electronAPI.closeApp();
             } else {
-                // Fallback: mostrar mensagem para o usuÃƒÆ’Ã‚Â¡rio
-                alert('Para fechar a aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o, use Alt+F4 ou feche a janela do navegador.');
+                // Fallback: mostrar mensagem para o usuário
+                alert('Para fechar a aplicação, use Alt+F4 ou feche a janela do navegador.');
             }
         }, 500);
     }
 
     // Configurar controles de fullscreen do dashboard
     setupDashboardFullscreenControls() {
-        // BotÃƒÆ’Ã‚Â£o sair do fullscreen
+        // Botão sair do fullscreen
         const exitFullscreenBtn = document.getElementById('dashboard-exit-fullscreen-btn');
         if (exitFullscreenBtn) {
             exitFullscreenBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();                logger.info('BotÃƒÆ’Ã‚Â£o sair fullscreen clicado', { source: 'dashboard-controls' });
+                e.stopPropagation();                logger.info('Botão sair fullscreen clicado', { source: 'dashboard-controls' });
                 this.exitDashboardFullscreen();
-            });            logger.debug('Listener do botÃƒÆ’Ã‚Â£o exit fullscreen configurado');
+            });            logger.debug('Listener do botão exit fullscreen configurado');
         } else {
-            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â BotÃƒÆ’Ã‚Â£o exit fullscreen nÃƒÆ’Ã‚Â£o encontrado');
-            logger.warn('BotÃƒÆ’Ã‚Â£o exit fullscreen nÃƒÆ’Ã‚Â£o encontrado no DOM');
+            console.warn('⚠️ Botão exit fullscreen não encontrado');
+            logger.warn('Botão exit fullscreen não encontrado no DOM');
         }
 
-        // BotÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        // Botão fechar aplicação
         const closeAppBtn = document.getElementById('dashboard-close-app-btn');
         if (closeAppBtn) {
             closeAppBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();                logger.info('BotÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o clicado', { source: 'dashboard-controls' });
+                e.stopPropagation();                logger.info('Botão fechar aplicação clicado', { source: 'dashboard-controls' });
                 this.closeApplication();
-            });            logger.debug('Listener do botÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o configurado');
+            });            logger.debug('Listener do botão fechar aplicação configurado');
         } else {
-            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â BotÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o encontrado');
-            logger.warn('BotÃƒÆ’Ã‚Â£o fechar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o encontrado no DOM');
+            console.warn('⚠️ Botão fechar aplicação não encontrado');
+            logger.warn('Botão fechar aplicação não encontrado no DOM');
         }
 
-        // BotÃƒÆ’Ã‚Â£o de fullscreen no header
+        // Botão de fullscreen no header
         const headerFullscreenBtn = document.getElementById('header-fullscreen-btn');
         if (headerFullscreenBtn) {
             headerFullscreenBtn.addEventListener('click', (e) => {
@@ -1566,7 +1492,7 @@ class DeParaUI {
                 e.stopPropagation();                this.toggleDashboardFullscreen();
             });        }
 
-        // Listener para mudanÃƒÆ’Ã‚Â§as de fullscreen do dashboard
+        // Listener para mudanças de fullscreen do dashboard
         document.addEventListener('fullscreenchange', () => {
             this.handleDashboardFullscreenChange();
         });
@@ -1581,15 +1507,15 @@ class DeParaUI {
         });
     }
 
-    // Lidar com mudanÃƒÆ’Ã‚Â§as de fullscreen do dashboard
-    handleDashboardFullscreenChange() {        
-        const isFullscreen = !!(document.fullscreenElement || 
-                               document.webkitFullscreenElement || 
-                               document.mozFullScreenElement || 
-                               document.msFullscreenElement);        
-        // Atualizar botÃƒÆ’Ã‚Â£o do header
+    // Lidar com mudanças de fullscreen do dashboard
+    handleDashboardFullscreenChange() {
+        const isFullscreen = !!(document.fullscreenElement ||
+                               document.webkitFullscreenElement ||
+                               document.mozFullScreenElement ||
+                               document.msFullscreenElement);
+        // Atualizar botão do header
         this.updateHeaderFullscreenButton(isFullscreen);
-        
+
         if (isFullscreen) {
             this.showDashboardFullscreenControls();
         } else {
@@ -1597,17 +1523,17 @@ class DeParaUI {
         }
     }
 
-    // Atualizar botÃƒÆ’Ã‚Â£o de fullscreen no header
+    // Atualizar botão de fullscreen no header
     updateHeaderFullscreenButton(isFullscreen) {
         const headerBtn = document.getElementById('header-fullscreen-btn');
         if (headerBtn) {
             const icon = headerBtn.querySelector('.material-icons');
             const text = headerBtn.querySelector('span:not(.material-icons)') || headerBtn.childNodes[headerBtn.childNodes.length - 1];
-            
+
             if (isFullscreen) {
-                // Modo fullscreen - esconder botÃƒÆ’Ã‚Â£o do header para evitar redundÃƒÆ’Ã‚Â¢ncia
+                // Modo fullscreen - esconder botão do header para evitar redundância
                 headerBtn.style.display = 'none';            } else {
-                // Modo normal - mostrar botÃƒÆ’Ã‚Â£o do header
+                // Modo normal - mostrar botão do header
                 headerBtn.style.display = 'flex';
                 if (icon) icon.textContent = 'fullscreen';
                 if (text) text.textContent = 'Tela Cheia';
@@ -1617,10 +1543,10 @@ class DeParaUI {
         }
     }
 
-    // Salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes rapidamente
+    // Salvar configurações rapidamente
     async quickSave() {
         try {
-            // Salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes da aba atual
+            // Salvar configurações da aba atual
             if (this.currentTab === 'settings') {
                 await this.saveSettings();
             } else if (this.currentTab === 'backups') {
@@ -1633,7 +1559,7 @@ class DeParaUI {
 
     // Atualizar todos os dados
     async refreshAllData() {
-        this.clearCache(); // Limpar cache para forÃƒÆ’Ã‚Â§ar atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        this.clearCache(); // Limpar cache para forçar atualização
         await this.refreshDashboardData();
         await this.updateCharts();
         await this.loadOperationsCached();
@@ -2237,18 +2163,18 @@ class DeParaUI {
     // Mostrar ajuda de atalhos
     showKeyboardHelp() {
         const shortcuts = [
-            { key: 'Ctrl+S', description: 'Salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes' },
+            { key: 'Ctrl+S', description: 'Salvar configurações' },
             { key: 'Ctrl+R', description: 'Atualizar dados' },
             { key: 'F1', description: 'Mostrar esta ajuda' },
             { key: 'Alt+D', description: 'Ir para Dashboard' },
-            { key: 'Alt+F', description: 'Ir para OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de Arquivos' },
-            { key: 'Alt+S', description: 'Ir para OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes Agendadas' },
+            { key: 'Alt+F', description: 'Ir para Operações de Arquivos' },
+            { key: 'Alt+S', description: 'Ir para Operações Agendadas' },
             { key: 'Alt+B', description: 'Ir para Backups' },
-            { key: 'Alt+C', description: 'Ir para ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes' },
+            { key: 'Alt+C', description: 'Ir para Configurações' },
             { key: 'Esc', description: 'Fechar modais' }
         ];
 
-        let helpText = 'ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¹ Atalhos de Teclado DisponÃƒÆ’Ã‚Â­veis:\n\n';
+        let helpText = '🎹 Atalhos de Teclado Disponíveis:\n\n';
         shortcuts.forEach(shortcut => {
             helpText += `${shortcut.key.padEnd(10)} - ${shortcut.description}\n`;
         });
@@ -2256,7 +2182,7 @@ class DeParaUI {
         alert(helpText);
     }
 
-    // Sistema de Busca em OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+    // Sistema de Busca em Operações
     filterScheduledOperations(searchTerm) {
         const searchInput = document.getElementById('scheduled-search');
         const clearButton = document.querySelector('.clear-search');
@@ -2267,7 +2193,7 @@ class DeParaUI {
         const operationItems = operationsList.querySelectorAll('.operation-item');
 
         if (searchTerm.trim() === '') {
-            // Mostrar todas as operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+            // Mostrar todas as operações
             operationItems.forEach(item => {
                 item.style.display = 'block';
             });
@@ -2309,7 +2235,7 @@ class DeParaUI {
             const countElement = document.querySelector('.search-results-count') ||
                                this.createSearchResultsCount();
 
-            countElement.textContent = `Encontrados ${visibleItems.length} de ${totalItems.length} operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes`;
+            countElement.textContent = `Encontrados ${visibleItems.length} de ${totalItems.length} operações`;
         } else {
             const countElement = document.querySelector('.search-results-count');
             if (countElement) {
@@ -2349,14 +2275,14 @@ class DeParaUI {
         }
     }
 
-    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o global para busca
+    // Função global para busca
     filterScheduledOperationsGlobal(searchTerm) {
         if (window.deParaUI) {
             window.deParaUI.filterScheduledOperations(searchTerm);
         }
     }
 
-    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes globais serÃƒÆ’Ã‚Â£o definidas apÃƒÆ’Ã‚Â³s a inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+    // Funções globais serão definidas após a inicialização
 
     // Sistema de Loading States
     showLoading(elementId, message = 'Carregando...') {
@@ -2388,7 +2314,7 @@ class DeParaUI {
             border-radius: 8px;
         `;
 
-        // Tornar elemento relativo se nÃƒÆ’Ã‚Â£o for
+        // Tornar elemento relativo se não for
         const currentPosition = window.getComputedStyle(element).position;
         if (currentPosition === 'static') {
             element.style.position = 'relative';
@@ -2404,7 +2330,7 @@ class DeParaUI {
         }
     }
 
-    // Wrapper para funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes assÃƒÆ’Ã‚Â­ncronas com loading
+    // Wrapper para funções assíncronas com loading
     async withLoading(elementId, asyncFunction, message = 'Carregando...') {
         try {
             this.showLoading(elementId, message);
@@ -2415,7 +2341,7 @@ class DeParaUI {
         }
     }
 
-    // Loading para botÃƒÆ’Ã‚Âµes
+    // Loading para botões
     setButtonLoading(button, loading = true, originalText = null) {
         if (loading) {
             button.disabled = true;
@@ -2434,7 +2360,7 @@ class DeParaUI {
         }
     }
 
-    // Loading para formulÃƒÆ’Ã‚Â¡rios
+    // Loading para formulários
     setFormLoading(form, loading = true) {
         const inputs = form.querySelectorAll('input, select, textarea, button');
         inputs.forEach(input => {
@@ -2459,7 +2385,7 @@ class DeParaUI {
     skipOnboarding() {
         document.getElementById('onboarding-overlay').style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
-        this.showToast('Tutorial pulado! VocÃƒÆ’Ã‚Âª pode acessÃƒÆ’Ã‚Â¡-lo novamente pelo botÃƒÆ’Ã‚Â£o de ajuda.', 'info');
+        this.showToast('Tutorial pulado! Você pode acessá-lo novamente pelo botão de ajuda.', 'info');
     }
 
     startOnboarding() {
@@ -2471,76 +2397,76 @@ class DeParaUI {
     closeOnboarding() {
         document.getElementById('onboarding-overlay').style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
-        this.showToast('Tutorial fechado! Use o botÃƒÆ’Ã‚Â£o de ajuda se precisar de orientaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes.', 'info');
+        this.showToast('Tutorial fechado! Use o botão de ajuda se precisar de orientações.', 'info');
     }
 
-    // ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida e automÃƒÆ’Ã‚Â¡tica
+    // Configuração rápida e automática
     async quickSetup() {
         document.getElementById('onboarding-overlay').style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
 
-        // Mostrar confirmaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o antes de criar pastas automaticamente
+        // Mostrar confirmação antes de criar pastas automaticamente
         const confirmed = await this.showQuickSetupConfirmation();
 
         if (!confirmed) {
-            this.showToast('ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o cancelada. VocÃƒÆ’Ã‚Âª pode configurar manualmente.', 'info');
+            this.showToast('Configuração cancelada. Você pode configurar manualmente.', 'info');
             return;
         }
 
-        this.showToast('Ò°�&¸�&¡â�a¬ Criando pastas e templates...', 'info');
+        this.showToast('[init] Criando pastas e templates...', 'info');
 
         try {
-            // Criar pastas padrÃƒÆ’Ã‚Â£o automaticamente
+            // Criar pastas padrão automaticamente
             await this.createDefaultFolders();
 
-            // Configurar templates bÃƒÆ’Ã‚Â¡sicos
+            // Configurar templates básicos
             await this.createDefaultTemplates();
 
-            this.showToast('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o automÃƒÆ’Ã‚Â¡tica concluÃƒÆ’Ã‚Â­da!', 'success');
+            this.showToast('✅ Configuração automática concluída!', 'success');
 
             // Mostrar modal de pastas configuradas
             this.showQuickSetupResults();
 
         } catch (error) {
-            console.error('Erro na configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida:', error);
-            this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro na configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o automÃƒÆ’Ã‚Â¡tica. Configure manualmente.', 'error');
+            console.error('Erro na configuração rápida:', error);
+            this.showToast('❌ Erro na configuração automática. Configure manualmente.', 'error');
         }
     }
 
-    // Mostrar confirmaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o antes da configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o automÃƒÆ’Ã‚Â¡tica
+    // Mostrar confirmação antes da configuração automática
     async showQuickSetupConfirmation() {
         return new Promise((resolve) => {
             const confirmationHtml = `
                 <div style="text-align: center; padding: 20px;">
-                    <h3 style="color: #2196F3; margin-bottom: 15px;">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o AutomÃƒÆ’Ã‚Â¡tica</h3>
+                    <h3 style="color: #2196F3; margin-bottom: 15px;">🔧 Configuração Automática</h3>
                     <p style="margin-bottom: 20px; color: #666;">
-                        O sistema pode criar automaticamente pastas e templates bÃƒÆ’Ã‚Â¡sicos para vocÃƒÆ’Ã‚Âª comeÃƒÆ’Ã‚Â§ar a usar imediatamente.
+                        O sistema pode criar automaticamente pastas e templates básicos para você começar a usar imediatamente.
                     </p>
 
                     <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
-                        <h4 style="margin-bottom: 10px; color: #333;">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Pastas que serÃƒÆ’Ã‚Â£o criadas:</h4>
+                        <h4 style="margin-bottom: 10px; color: #333;">📁 Pastas que serão criadas:</h4>
                         <ul style="margin: 0; padding-left: 20px; color: #555;">
                             <li><strong>Documentos Entrada</strong> - Para arquivos de entrada</li>
                             <li><strong>Documentos Processados</strong> - Para arquivos processados</li>
-                            <li><strong>Backup AutomÃƒÆ’Ã‚Â¡tico</strong> - Para backups</li>
+                            <li><strong>Backup Automático</strong> - Para backups</li>
                         </ul>
                     </div>
 
                     <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
-                        <h4 style="margin-bottom: 10px; color: #333;">ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â Templates que serÃƒÆ’Ã‚Â£o criados:</h4>
+                        <h4 style="margin-bottom: 10px; color: #333;">⚙️ Templates que serão criados:</h4>
                         <ul style="margin: 0; padding-left: 20px; color: #555;">
-                            <li><strong>Backup DiÃƒÆ’Ã‚Â¡rio</strong> - Backup automÃƒÆ’Ã‚Â¡tico diÃƒÆ’Ã‚Â¡rio</li>
-                            <li><strong>Limpeza Semanal</strong> - Limpeza de arquivos temporÃƒÆ’Ã‚Â¡rios</li>
+                            <li><strong>Backup Diário</strong> - Backup automático diário</li>
+                            <li><strong>Limpeza Semanal</strong> - Limpeza de arquivos temporários</li>
                         </ul>
                     </div>
 
                     <p style="color: #ff9800; font-size: 14px; margin-bottom: 20px;">
-                        ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â <strong>AtenÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:</strong> Isso criarÃƒÆ’Ã‚Â¡ pastas no seu sistema de arquivos. VocÃƒÆ’Ã‚Âª pode remover ou modificar tudo depois.
+                        ⚠️ <strong>Atenção:</strong> Isso criará pastas no seu sistema de arquivos. Você pode remover ou modificar tudo depois.
                     </p>
                 </div>
             `;
 
-            // Criar modal de confirmaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+            // Criar modal de confirmação
             const modal = document.createElement('div');
             modal.style.cssText = `
                 position: fixed;
@@ -2560,21 +2486,21 @@ class DeParaUI {
                     ${confirmationHtml}
                     <div style="padding: 20px; border-top: 1px solid #eee; text-align: center; display: flex; gap: 10px; justify-content: center;">
                         <button class="quick-setup-cancel-btn" style="background: #757575; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
-                            ÃƒÂ¢Ã‚ÂÃ…â€™ Cancelar
+                            ❌ Cancelar
                         </button>
                         <button class="quick-setup-approve-btn" style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
-                            ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Aprovar e Continuar
+                            ✅ Aprovar e Continuar
                         </button>
                     </div>
                 </div>
             `;
 
-            // Armazenar funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de resoluÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+            // Armazenar função de resolução
             window.quickSetupResolve = resolve;
 
             document.body.appendChild(modal);
 
-            // Configurar event listeners para os botÃƒÆ’Ã‚Âµes
+            // Configurar event listeners para os botões
             const cancelBtn = modal.querySelector('.quick-setup-cancel-btn');
             const approveBtn = modal.querySelector('.quick-setup-approve-btn');
 
@@ -2594,7 +2520,7 @@ class DeParaUI {
         });
     }
 
-    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para obter caminhos padrÃƒÆ’Ã‚Â£o baseados na plataforma
+    // Função para obter caminhos padrão baseados na plataforma
     getDefaultPaths() {
         // Detectar se estamos no Windows ou Linux
         const isWindows = navigator.userAgent.indexOf('Windows') > -1;
@@ -2606,7 +2532,7 @@ class DeParaUI {
                 backup: 'C:\\Users\\User\\Documents\\Backup'
             };
         } else {
-            // Linux/Raspberry Pi - usar caminhos genÃƒÆ’Ã‚Â©ricos que serÃƒÆ’Ã‚Â£o resolvidos no backend
+            // Linux/Raspberry Pi - usar caminhos genéricos que serão resolvidos no backend
             return {
                 entrada: '/home/user/Documents/Entrada',
                 processados: '/home/user/Documents/Processados',
@@ -2615,13 +2541,13 @@ class DeParaUI {
         }
     }
 
-    // Criar pastas padrÃƒÆ’Ã‚Â£o automaticamente
+    // Criar pastas padrão automaticamente
     async createDefaultFolders() {
         const paths = this.getDefaultPaths();
         const defaultFolders = [
             { name: 'Documentos Entrada', path: paths.entrada, type: 'source', format: 'any' },
             { name: 'Documentos Processados', path: paths.processados, type: 'target', format: 'any' },
-            { name: 'Backup AutomÃƒÆ’Ã‚Â¡tico', path: paths.backup, type: 'target', format: 'any' }
+            { name: 'Backup Automático', path: paths.backup, type: 'target', format: 'any' }
         ];
 
         for (const folder of defaultFolders) {
@@ -2632,12 +2558,12 @@ class DeParaUI {
         }
     }
 
-    // Criar templates bÃƒÆ’Ã‚Â¡sicos
+    // Criar templates básicos
     async createDefaultTemplates() {
         const templates = [
             {
-                name: 'Backup DiÃƒÆ’Ã‚Â¡rio',
-                description: 'Faz backup diÃƒÆ’Ã‚Â¡rio de documentos importantes',
+                name: 'Backup Diário',
+                description: 'Faz backup diário de documentos importantes',
                 action: 'copy',
                 source: paths.entrada,
                 target: paths.backup,
@@ -2646,7 +2572,7 @@ class DeParaUI {
             },
             {
                 name: 'Limpeza Semanal',
-                description: 'Remove arquivos temporÃƒÆ’Ã‚Â¡rios semanalmente',
+                description: 'Remove arquivos temporários semanalmente',
                 action: 'delete',
                 source: '/tmp',
                 target: '',
@@ -2663,32 +2589,32 @@ class DeParaUI {
         }
     }
 
-    // Mostrar resultados da configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida
+    // Mostrar resultados da configuração rápida
     showQuickSetupResults() {
         const results = `
         <div style="text-align: center; padding: 20px;">
-            <h3 style="color: #4caf50; margin-bottom: 15px;">ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â° ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ConcluÃƒÆ’Ã‚Â­da!</h3>
+            <h3 style="color: #4caf50; margin-bottom: 15px;">🎉 Configuração Concluída!</h3>
             <p style="margin-bottom: 20px;">Pastas e templates foram criados automaticamente:</p>
 
             <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
-                <h4>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Pastas Criadas:</h4>
+                <h4>📁 Pastas Criadas:</h4>
                 <ul style="margin: 10px 0;">
-                    <li>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ <strong>Documentos Entrada</strong> - Para arquivos de entrada</li>
-                    <li>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ <strong>Documentos Processados</strong> - Para arquivos processados</li>
-                    <li>ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¾ <strong>Backup AutomÃƒÆ’Ã‚Â¡tico</strong> - Para backups</li>
+                    <li>📥 <strong>Documentos Entrada</strong> - Para arquivos de entrada</li>
+                    <li>📤 <strong>Documentos Processados</strong> - Para arquivos processados</li>
+                    <li>💾 <strong>Backup Automático</strong> - Para backups</li>
                 </ul>
             </div>
 
             <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
-                <h4>ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â Templates Criados:</h4>
+                <h4>⚙️ Templates Criados:</h4>
                 <ul style="margin: 10px 0;">
-                    <li>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ <strong>Backup DiÃƒÆ’Ã‚Â¡rio</strong> - Backup automÃƒÆ’Ã‚Â¡tico diÃƒÆ’Ã‚Â¡rio</li>
-                    <li>ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ <strong>Limpeza Semanal</strong> - Limpeza de arquivos temporÃƒÆ’Ã‚Â¡rios</li>
+                    <li>📅 <strong>Backup Diário</strong> - Backup automático diário</li>
+                    <li>🧹 <strong>Limpeza Semanal</strong> - Limpeza de arquivos temporários</li>
                 </ul>
             </div>
 
             <p style="color: #666; font-size: 14px;">
-                VocÃƒÆ’Ã‚Âª pode personalizar essas configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes nas abas "OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de Arquivos" e "ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes".
+                Você pode personalizar essas configurações nas abas "Operações de Arquivos" e "Configurações".
             </p>
         </div>
         `;
@@ -2713,7 +2639,7 @@ class DeParaUI {
                 ${results}
                 <div style="padding: 20px; border-top: 1px solid #eee; text-align: center;">
                     <button class="quick-setup-results-close-btn" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
-                        ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ ComeÃƒÆ’Ã‚Â§ar a Usar!
+                        🎯 Começar a Usar!
                     </button>
                 </div>
             </div>
@@ -2721,16 +2647,16 @@ class DeParaUI {
 
         document.body.appendChild(modal);
 
-        // Configurar event listener para o botÃƒÆ’Ã‚Â£o fechar
+        // Configurar event listener para o botão fechar
         const closeBtn = modal.querySelector('.quick-setup-results-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => modal.remove());
         }
     }
 
-    // Sistema de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida de pastas
+    // Sistema de configuração rápida de pastas
     async createQuickFolder(type) {
-        // Obter caminhos padrÃƒÆ’Ã‚Â£o baseados na plataforma
+        // Obter caminhos padrão baseados na plataforma
         const paths = this.getDefaultPaths();
         const isWindows = navigator.userAgent.indexOf('Windows') > -1;
         const basePath = isWindows ? 'C:\\Users\\User' : '/home/user';
@@ -2741,12 +2667,12 @@ class DeParaUI {
                 { name: 'Documentos Processados', path: paths.processados, type: 'target', format: 'any' }
             ],
             backup: [
-                { name: 'Backup DiÃƒÆ’Ã‚Â¡rio', path: isWindows ? basePath + '\\Backup\\Diario' : basePath + '/Backup/Diario', type: 'target', format: 'any' },
+                { name: 'Backup Diário', path: isWindows ? basePath + '\\Backup\\Diario' : basePath + '/Backup/Diario', type: 'target', format: 'any' },
                 { name: 'Backup Semanal', path: isWindows ? basePath + '\\Backup\\Semanal' : basePath + '/Backup/Semanal', type: 'target', format: 'any' }
             ],
             media: [
                 { name: 'Fotos', path: isWindows ? basePath + '\\Pictures' : basePath + '/Pictures', type: 'source', format: 'any' },
-                { name: 'VÃƒÆ’Ã‚Â­deos', path: isWindows ? basePath + '\\Videos' : basePath + '/Videos', type: 'source', format: 'any' }
+                { name: 'Vídeos', path: isWindows ? basePath + '\\Videos' : basePath + '/Videos', type: 'source', format: 'any' }
             ],
             temp: [
                 { name: 'Processamento', path: isWindows ? basePath + '\\Temp\\Processamento' : basePath + '/Temp/Processamento', type: 'temp', format: 'any' },
@@ -2756,18 +2682,18 @@ class DeParaUI {
 
         const folders = folderSets[type];
         if (!folders) {
-            console.error(`ÃƒÂ¢Ã‚ÂÃ…â€™ Tipo de pasta invÃƒÆ’Ã‚Â¡lido: ${type}`);
-            this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Tipo de pasta invÃƒÆ’Ã‚Â¡lido', 'error');
+            console.error(`❌ Tipo de pasta inválido: ${type}`);
+            this.showToast('❌ Tipo de pasta inválido', 'error');
             return;
         }
 
-        this.showToast(`Ò°�&¸�&¡â�a¬ Criando pastas de ${type}...`, 'info');
+        this.showToast(`[init] Criando pastas de ${type}...`, 'info');
 
         try {
             // Criar pastas uma por vez para melhor controle
             for (const folder of folders) {                try {
                     await this.createFolderOnServer(folder);                } catch (error) {
-                    console.warn(`ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Erro ao criar pasta ${folder.name}:`, error);
+                    console.warn(`⚠️ Erro ao criar pasta ${folder.name}:`, error);
                     // Continua tentando as outras pastas
                 }
             }
@@ -2775,12 +2701,12 @@ class DeParaUI {
             // Criar templates relacionados
             await this.createRelatedTemplates(type);
 
-            this.showToast(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pastas de ${type} criadas com sucesso!`, 'success');
+            this.showToast(`✅ Pastas de ${type} criadas com sucesso!`, 'success');
             this.refreshFoldersList();
 
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro geral ao criar pastas:', error);
-            this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao criar pastas', 'error');
+            console.error('❌ Erro geral ao criar pastas:', error);
+            this.showToast('❌ Erro ao criar pastas', 'error');
         }
     }
 
@@ -2804,14 +2730,14 @@ class DeParaUI {
 
     // Criar templates relacionados ao tipo de pasta
     async createRelatedTemplates(type) {
-        // Obter caminhos padrÃƒÆ’Ã‚Â£o baseados na plataforma
+        // Obter caminhos padrão baseados na plataforma
         const paths = this.getDefaultPaths();
 
         const templateSets = {
             documents: [
                 {
                     name: 'Backup Documentos',
-                    description: 'Faz backup diÃƒÆ’Ã‚Â¡rio de documentos importantes',
+                    description: 'Faz backup diário de documentos importantes',
                     action: 'copy',
                     sourcePath: paths.entrada,
                     targetPath: paths.processados,
@@ -2821,8 +2747,8 @@ class DeParaUI {
             ],
             backup: [
                 {
-                    name: 'Backup DiÃƒÆ’Ã‚Â¡rio',
-                    description: 'Backup automÃƒÆ’Ã‚Â¡tico diÃƒÆ’Ã‚Â¡rio',
+                    name: 'Backup Diário',
+                    description: 'Backup automático diário',
                     action: 'copy',
                     sourcePath: paths.entrada.replace('/Entrada', '').replace('\\Entrada', ''),
                     targetPath: paths.backup + (navigator.userAgent.indexOf('Windows') > -1 ? '\\Diario' : '/Diario'),
@@ -2852,8 +2778,8 @@ class DeParaUI {
             ],
             temp: [
                 {
-                    name: 'Limpar TemporÃƒÆ’Ã‚Â¡rios',
-                    description: 'Remove arquivos temporÃƒÆ’Ã‚Â¡rios semanalmente',
+                    name: 'Limpar Temporários',
+                    description: 'Remove arquivos temporários semanalmente',
                     action: 'delete',
                     sourcePath: '/home/pi/Temp',
                     targetPath: '',
@@ -2867,7 +2793,7 @@ class DeParaUI {
 
         for (const template of templates) {
             try {                await this.createTemplateOnServer(template);            } catch (error) {
-                console.warn(`ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Erro ao criar template ${template.name}:`, error);
+                console.warn(`⚠️ Erro ao criar template ${template.name}:`, error);
             }
         }
     }
@@ -2906,14 +2832,14 @@ class DeParaUI {
             this.updateFoldersDisplay();
             this.updateWorkflowsDisplay();
 
-            this.showToast('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Lista de pastas atualizada!', 'success');
+            this.showToast('✅ Lista de pastas atualizada!', 'success');
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao atualizar lista de pastas:', error);
-            this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao atualizar lista', 'error');
+            console.error('❌ Erro ao atualizar lista de pastas:', error);
+            this.showToast('❌ Erro ao atualizar lista', 'error');
         }
     }
 
-    // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pastas
+    // Atualizar exibição de pastas
     updateFoldersDisplay() {
         const foldersList = document.getElementById('folders-list');
         if (!foldersList) return;
@@ -2923,7 +2849,7 @@ class DeParaUI {
                 <div class="empty-state">
                     <span class="material-icons">folder_open</span>
                     <p>Nenhuma pasta configurada</p>
-                    <small>Use a configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida acima ou crie manualmente</small>
+                    <small>Use a configuração rápida acima ou crie manualmente</small>
                 </div>
             `;
         } else {
@@ -2947,7 +2873,7 @@ class DeParaUI {
                 </div>
             `).join('');
 
-            // Configurar event listeners para os botÃƒÆ’Ã‚Âµes de editar/deletar
+            // Configurar event listeners para os botões de editar/deletar
             const editButtons = foldersList.querySelectorAll('.edit-folder-btn');
             const deleteButtons = foldersList.querySelectorAll('.delete-folder-btn');
 
@@ -2967,7 +2893,7 @@ class DeParaUI {
         }
     }
 
-    // Obter ÃƒÆ’Ã‚Â­cone da pasta baseado no tipo
+    // Obter ícone da pasta baseado no tipo
     getFolderIcon(type) {
         const icons = {
             source: 'folder',
@@ -2981,10 +2907,10 @@ class DeParaUI {
     // Editar pasta
     editFolder(folderId) {        const folder = this.folders.find(f => f.id === folderId);
         if (folder) {
-            // Implementar modal de ediÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+            // Implementar modal de edição
             this.showToast('Edicao rapida indisponivel no momento. Use excluir e criar novamente para alterar a pasta.', 'warning');
         } else {
-            this.showToast('Pasta nÃƒÆ’Ã‚Â£o encontrada', 'error');
+            this.showToast('Pasta não encontrada', 'error');
         }
     }
 
@@ -2997,25 +2923,25 @@ class DeParaUI {
                 });
 
                 if (response.ok) {
-                    this.showToast('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta excluÃƒÆ’Ã‚Â­da com sucesso!', 'success');
+                    this.showToast('✅ Pasta excluída com sucesso!', 'success');
                     await this.refreshFoldersList();
                 } else {
                     throw new Error(`Erro HTTP ${response.status}`);
                 }
             } catch (error) {
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao excluir pasta:', error);
-                this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao excluir pasta', 'error');
+                console.error('❌ Erro ao excluir pasta:', error);
+                this.showToast('❌ Erro ao excluir pasta', 'error');
             }
         }
     }
 
-    // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de workflows (placeholder)
-    updateWorkflowsDisplay() {        // Implementar conforme necessÃƒÆ’Ã‚Â¡rio
+    // Atualizar exibição de workflows (placeholder)
+    updateWorkflowsDisplay() {        // Implementar conforme necessário
     }
 
-    // Adicionar event listeners para operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de arquivo
+    // Adicionar event listeners para operações de arquivo
     addFileOperationEventListeners() {
-        // Mostrar/ocultar filtro de extensÃƒÆ’Ã‚Âµes quando recursÃƒÆ’Ã‚Â£o ÃƒÆ’Ã‚Â© selecionada
+        // Mostrar/ocultar filtro de extensões quando recursão é selecionada
         const recursiveCheckbox = document.getElementById('recursive-operation');
         const extensionsFilter = document.getElementById('extensions-filter');
 
@@ -3026,9 +2952,9 @@ class DeParaUI {
         }
     }
 
-    // Configurar event listeners para todos os novos botÃƒÆ’Ã‚Âµes
+    // Configurar event listeners para todos os novos botões
     setupAdditionalEventListeners() {
-        // BotÃƒÆ’Ã‚Âµes de dashboard
+        // Botões de dashboard
         this.addButtonListener('.refresh-charts-btn', () => this.updateCharts());
         this.addButtonListener('.clear-search-btn', () => this.clearSearch());
         this.addButtonListener('.schedule-modal-btn', () => {
@@ -3038,14 +2964,14 @@ class DeParaUI {
             }
         });
 
-        // BotÃƒÆ’Ã‚Âµes de aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida (interface antiga) - redirecionar para nova interface
+        // Botões de ação rápida (interface antiga) - redirecionar para nova interface
         this.addButtonListener('.action-move-btn', () => this.redirectToFileOperations('move'));
         this.addButtonListener('.action-copy-btn', () => this.redirectToFileOperations('copy'));
         this.addButtonListener('.action-delete-btn', () => this.redirectToFileOperations('delete'));
         this.addButtonListener('.action-schedule-btn', () => this.redirectToFileOperations('schedule'));
         this.addButtonListener('.action-slideshow-btn', () => this.showSlideshowModal());
 
-        // BotÃƒÆ’Ã‚Âµes de backup
+        // Botões de backup
         this.addButtonListener('.load-backups-btn', () => {
             if (typeof loadBackups === 'function') loadBackups();
         });
@@ -3059,23 +2985,23 @@ class DeParaUI {
             if (typeof importOperationalConfig === 'function') importOperationalConfig();
         });
 
-        // BotÃƒÆ’Ã‚Âµes de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+        // Botões de configurações
         this.addButtonListener('.show-ignored-btn', () => window.showIgnoredPatterns());
         this.addButtonListener('.save-settings-btn', () => this.saveSettings());
 
-        // BotÃƒÆ’Ã‚Âµes de workflow
+        // Botões de workflow
         this.addButtonListener('.close-workflow-btn', () => window.closeWorkflowModal());
         this.addButtonListener('#prev-step', () => window.previousWorkflowStep());
         this.addButtonListener('#next-step', () => window.nextWorkflowStep());
         this.addButtonListener('#save-step', () => window.saveWorkflow());
         this.addButtonListener('.cancel-workflow-btn', () => window.closeWorkflowModal());
 
-        // BotÃƒÆ’Ã‚Âµes de gerenciamento de pastas
+        // Botões de gerenciamento de pastas
         this.addButtonListener('.close-folder-manager-btn', () => window.closeFolderManagerModal());
         this.addButtonListener('.cancel-folder-manager-btn', () => window.closeFolderManagerModal());
         this.addButtonListener('.save-folder-btn', () => window.saveFolder());
 
-        // BotÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de arquivo
+        // Botões de operações de arquivo
         this.addButtonListener('.close-file-operation-btn', () => {
             if (typeof closeFileOperationModal === 'function') closeFileOperationModal();
         });
@@ -3086,29 +3012,29 @@ class DeParaUI {
             if (typeof executeFileOperation === 'function') executeFileOperation();
         });
 
-        // BotÃƒÆ’Ã‚Âµes de agendamento
+        // Botões de agendamento
         this.addButtonListener('.close-schedule-btn', () => hideScheduleModal());
         this.addButtonListener('.cancel-schedule-btn', () => hideScheduleModal());
-        
-        // BotÃƒÆ’Ã‚Âµes de filtros rÃƒÆ’Ã‚Â¡pidos (event delegation)
+
+        // Botões de filtros rápidos (event delegation)
         document.addEventListener('click', (e) => {
             if (e.target.closest('.filter-btn')) {
                 const btn = e.target.closest('.filter-btn');
                 this.selectFilter({ target: btn });
             }
         });
-        
-        // BotÃƒÆ’Ã‚Âµes de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pastas no modal de agendamento
+
+        // Botões de navegação de pastas no modal de agendamento
         this.addButtonListener('#browse-source-btn', () => this.browsePathForSchedule('source'));
         this.addButtonListener('#browse-target-btn', () => this.browsePathForSchedule('target'));
-        
-        // BotÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas (event delegation)
+
+        // Botões de operações agendadas (event delegation)
         document.addEventListener('click', (e) => {
             if (e.target.closest('.schedule-btn')) {
                 if (typeof window.showScheduleModal === 'function') {
                     this.configureOperation();
                 } else {
-                    this.showToast('Funcionalidade de agendamento nÃƒÆ’Ã‚Â£o disponÃƒÆ’Ã‚Â­vel', 'warning');
+                    this.showToast('Funcionalidade de agendamento não disponível', 'warning');
                 }
             }
             if (e.target.closest('.cancel-scheduled-operation-btn')) {
@@ -3137,35 +3063,35 @@ class DeParaUI {
                 toggleScheduledOperation(operationId);
             }
         });
-        
-        // BotÃƒÆ’Ã‚Â£o de reload da pÃƒÆ’Ã‚Â¡gina
+
+        // Botão de reload da página
         this.addButtonListener('.reload-page-btn', () => window.location.reload());
 
-        // BotÃƒÆ’Ã‚Âµes de slideshow
+        // Botões de slideshow
         this.addButtonListener('.close-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
         this.addButtonListener('.cancel-slideshow-folder-btn', () => window.closeSlideshowFolderModal());
         this.addButtonListener('.close-slideshow-config-btn', () => window.closeSlideshowConfigModal());
-        // Event listeners antigos removidos - usando botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos
+        // Event listeners antigos removidos - usando botões estáticos
 
-        // BotÃƒÆ’Ã‚Â£o seletor de pasta
+        // Botão seletor de pasta
         this.addButtonListener('.select-folder-btn', () => {
             this.showFolderBrowser('source');
         });
 
-        // BotÃƒÆ’Ã‚Â£o seletor de pasta de destino
+        // Botão seletor de pasta de destino
         this.addButtonListener('.select-target-btn', () => {
             this.showFolderBrowser('target');
         });
 
-        // BotÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        // Botões de operação
         this.addButtonListener('.move-btn', () => this.selectOperation('move'));
         this.addButtonListener('.copy-btn', () => this.selectOperation('copy'));
         this.addButtonListener('.delete-btn', () => this.selectOperation('delete'));
 
-        // BotÃƒÆ’Ã‚Âµes de sugestÃƒÆ’Ã‚Â£o de pasta
+        // Botões de sugestão de pasta
         this.addButtonListener('.suggestion-btn', (e) => this.selectSuggestedFolder(e));
 
-        // BotÃƒÆ’Ã‚Âµes de aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        // Botões de ação
         this.addButtonListener('.execute-now-btn', () => this.executeNow());
 
         // Filtros de busca (input events)
@@ -3177,7 +3103,7 @@ class DeParaUI {
         }
     }
 
-    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o auxiliar para adicionar event listeners de botÃƒÆ’Ã‚Âµes
+    // Função auxiliar para adicionar event listeners de botões
     addButtonListener(selector, callback) {
         const element = document.querySelector(selector);
         if (element) {
@@ -3187,13 +3113,13 @@ class DeParaUI {
 
     // Redirecionar da interface antiga para a nova
     redirectToFileOperations(operation) {
-        // Mudar para a aba de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de arquivos
+        // Mudar para a aba de operações de arquivos
         this.switchTab('fileops');
 
-        // PrÃƒÆ’Ã‚Â©-selecionar a operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        // Pré-selecionar a operação
         setTimeout(() => {
             this.selectOperation(operation);
-            this.showToast(`Use a nova interface abaixo para configurar a operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de ${operation}`, 'info');
+            this.showToast(`Use a nova interface abaixo para configurar a operação de ${operation}`, 'info');
         }, 100);
     }
 
@@ -3201,7 +3127,7 @@ class DeParaUI {
     // OPERATION CONFIGURATION
     // ==========================================
 
-    // Estado da configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o atual
+    // Estado da configuração atual
     currentConfig = {
         sourcePath: '',
         operation: '',
@@ -3476,30 +3402,30 @@ class DeParaUI {
         this.showFolderBrowser('target');
     }
 
-    // Mostrar diÃƒÆ’Ã‚Â¡logo nativo de seleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pasta
+    // Mostrar diálogo nativo de seleção de pasta
     showNativeFolderDialog(targetType) {
         this.showFolderBrowser(targetType);
         return;
-        // Criar input file oculto para seleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pasta
+        // Criar input file oculto para seleção de pasta
         const input = document.createElement('input');
         input.type = 'file';
         input.webkitdirectory = true;
         input.directory = true;
         input.multiple = false;
         input.style.display = 'none';
-        
+
         input.addEventListener('change', (event) => {
             const files = event.target.files;
             if (files && files.length > 0) {
                 // Pegar o caminho da primeira pasta selecionada
-                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');                
+                const fullPath = files[0].path || files[0].webkitRelativePath.split('/').slice(0, -1).join('/');
                 this.applyFolderSelection(targetType, fullPath);
             }
-            
-            // Remover o input apÃƒÆ’Ã‚Â³s uso
+
+            // Remover o input após uso
             document.body.removeChild(input);
         });
-        
+
         // Adicionar ao DOM e clicar
         document.body.appendChild(input);
         input.click();
@@ -3535,7 +3461,7 @@ class DeParaUI {
                             <div class="empty-state">
                                 <span class="material-icons">folder_open</span>
                                 <p>Digite o caminho da pasta ou clique em "Atualizar" para navegar</p>
-                                <small>VocÃƒÆ’Ã‚Âª pode inserir o caminho manualmente ou navegar pelas pastas</small>
+                                <small>Você pode inserir o caminho manualmente ou navegar pelas pastas</small>
                             </div>
                         </div>
                     </div>
@@ -3549,15 +3475,15 @@ class DeParaUI {
 
         document.body.appendChild(modal);
 
-        // Configurar event listeners apÃƒÆ’Ã‚Â³s criar o modal
+        // Configurar event listeners após criar o modal
         this.setupFolderBrowserEventListeners(modal, browserContext, callback);
 
-        // Obter diretÃƒÆ’Ã‚Â³rio home do usuÃƒÆ’Ã‚Â¡rio automaticamente
+        // Obter diretório home do usuário automaticamente
         this.setDefaultPath(modal, initialPath);
 
-        // NÃƒÆ’Ã‚Â£o carregar pastas automaticamente - permitir entrada manual    }
+        // Não carregar pastas automaticamente - permitir entrada manual    }
 
-    // Definir caminho padrÃƒÆ’Ã‚Â£o baseado no sistema operacional
+    // Definir caminho padrão baseado no sistema operacional
     async setDefaultPath(modal, preferredPath = '') {
         if (preferredPath) {
             const pathInput = modal.querySelector('#browser-path');
@@ -3568,7 +3494,7 @@ class DeParaUI {
         }
 
         try {
-            // Tentar obter o diretÃƒÆ’Ã‚Â³rio home via API
+            // Tentar obter o diretório home via API
             const response = await fetch('/api/status/system');
             if (response.ok) {
                 const data = await response.json();
@@ -3581,14 +3507,14 @@ class DeParaUI {
             }
         } catch (error) {        }
 
-        // Fallback: usar caminho padrÃƒÆ’Ã‚Â£o baseado no sistema
+        // Fallback: usar caminho padrão baseado no sistema
         const pathInput = modal.querySelector('#browser-path');
         if (pathInput) {
             const defaultPath = this.getDefaultBrowserPath();
             pathInput.value = defaultPath;        }
     }
 
-    // Carregar pastas de um diretÃƒÆ’Ã‚Â³rio (para o modal de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o)
+    // Carregar pastas de um diretório (para o modal de navegação)
     async loadFoldersForBrowser(path) {
         try {
             const response = await fetch('/api/files/list-folders', {
@@ -3603,30 +3529,30 @@ class DeParaUI {
             const result = await response.json();
             if (result.success) {                this.renderFolders(result.data.folders, result.data.currentPath || path);
             } else {
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro na resposta da API:', result.error);
+                console.error('❌ Erro na resposta da API:', result.error);
                 this.showToast('Erro ao carregar pastas: ' + (result.error?.message || 'Erro desconhecido'), 'error');
             }
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar pastas:', error);
+            console.error('❌ Erro ao carregar pastas:', error);
             this.showToast('Erro ao carregar pastas: ' + error.message, 'error');
         }
     }
 
     // Configurar event listeners para o navegador de pastas
     setupFolderBrowserEventListeners(modal, selectionContext, callback = null) {
-        // BotÃƒÆ’Ã‚Â£o fechar
+        // Botão fechar
         const closeBtn = modal.querySelector('.folder-browser-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => modal.remove());
         }
 
-        // BotÃƒÆ’Ã‚Â£o voltar
+        // Botão voltar
         const upBtn = modal.querySelector('.folder-browser-up-btn');
         if (upBtn) {
             upBtn.addEventListener('click', () => this.goUp(modal));
         }
 
-        // BotÃƒÆ’Ã‚Â£o atualizar/refresh
+        // Botão atualizar/refresh
         const refreshBtn = modal.querySelector('.folder-browser-refresh-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
@@ -3650,13 +3576,13 @@ class DeParaUI {
             });
         }
 
-        // BotÃƒÆ’Ã‚Â£o cancelar
+        // Botão cancelar
         const cancelBtn = modal.querySelector('.folder-browser-cancel-btn');
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => modal.remove());
         }
 
-        // BotÃƒÆ’Ã‚Â£o selecionar
+        // Botão selecionar
         const selectBtn = modal.querySelector('.folder-browser-select-btn');
         if (selectBtn) {
             selectBtn.addEventListener('click', () => {
@@ -3675,7 +3601,7 @@ class DeParaUI {
 
         const folderList = document.getElementById('folder-list');
         if (!folderList) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Elemento folder-list nÃƒÆ’Ã‚Â£o encontrado!');
+            console.error('❌ Elemento folder-list não encontrado!');
             return;
         }
 
@@ -3683,15 +3609,15 @@ class DeParaUI {
                 <div class="empty-state">
                     <span class="material-icons">folder_open</span>
                     <p>Nenhuma pasta encontrada</p>
-                    <small>Este diretÃƒÆ’Ã‚Â³rio nÃƒÆ’Ã‚Â£o contÃƒÆ’Ã‚Â©m subpastas ou o caminho nÃƒÆ’Ã‚Â£o existe</small>
+                    <small>Este diretório não contém subpastas ou o caminho não existe</small>
                     <button class="btn btn-sm btn-outline folder-retry-btn" style="margin-top: 10px;">
                         <span class="material-icons">refresh</span>
                         Tentar Novamente
                     </button>
                 </div>
             `;
-            
-            // Configurar event listener para o botÃƒÆ’Ã‚Â£o de tentar novamente
+
+            // Configurar event listener para o botão de tentar novamente
             const retryBtn = folderList.querySelector('.folder-retry-btn');
             if (retryBtn) {
                 retryBtn.addEventListener('click', () => {
@@ -3759,7 +3685,7 @@ class DeParaUI {
         return `/${parts.slice(0, -1).join('/')}`;
     }
 
-    // Voltar um nÃƒÆ’Ã‚Â­vel
+    // Voltar um nível
     goUp(modal = null) {
         const pathInput = modal?.querySelector('#browser-path') || document.getElementById('browser-path');
         const currentPath = pathInput?.value || '';
@@ -3767,36 +3693,36 @@ class DeParaUI {
         this.loadFoldersForBrowser(parentPath);
     }
 
-    // Selecionar filtro rÃƒÆ’Ã‚Â¡pido
+    // Selecionar filtro rápido
     selectFilter(event) {
         const button = event.target;
         const filter = button.getAttribute('data-filter');
-        const filterInput = document.getElementById('schedule-filters');        
+        const filterInput = document.getElementById('schedule-filters');
         if (filterInput) {
             filterInput.value = filter;
-            
-            // Remover classe active de todos os botÃƒÆ’Ã‚Âµes
+
+            // Remover classe active de todos os botões
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            
-            // Adicionar classe active ao botÃƒÆ’Ã‚Â£o clicado
-            button.classList.add('active');            
-            // Atualizar resumo da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o se estiver visÃƒÆ’Ã‚Â­vel
+
+            // Adicionar classe active ao botão clicado
+            button.classList.add('active');
+            // Atualizar resumo da operação se estiver visível
             if (typeof updateOperationSummary === 'function') {
                 updateOperationSummary();
             }
         } else {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo de filtros nÃƒÆ’Ã‚Â£o encontrado!');
+            console.error('❌ Campo de filtros não encontrado!');
         }
     }
 
     // Navegar e selecionar pasta para o modal de agendamento
     legacyBrowsePathForSchedule(type) {
-        const currentPath = type === 'source' 
+        const currentPath = type === 'source'
             ? document.getElementById('schedule-source').value || '/home/yo'
-            : document.getElementById('schedule-target').value || '/home/yo';        
-        // Usar a funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o existente de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pastas
+            : document.getElementById('schedule-target').value || '/home/yo';
+        // Usar a função existente de navegação de pastas
         this.showFolderBrowser(currentPath, (selectedPath) => {
             if (type === 'source') {
                 document.getElementById('schedule-source').value = selectedPath;            } else {
@@ -3804,33 +3730,33 @@ class DeParaUI {
         });
     }
 
-    // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o auxiliar para preencher campo com mÃƒÆ’Ã‚Âºltiplas tentativas
+    // Função auxiliar para preencher campo com múltiplas tentativas
     fillFieldWithRetry(field, value, fieldName) {
         if (!field) return false;
-        
-        // Tentativa 1: MÃƒÆ’Ã‚Â©todo direto
-        field.value = value;        
+
+        // Tentativa 1: Método direto
+        field.value = value;
         if (field.value === value) {            return true;
         }
-        
+
         // Tentativa 2: Disparar eventos
         field.value = value;
         field.dispatchEvent(new Event('input', { bubbles: true }));
-        field.dispatchEvent(new Event('change', { bubbles: true }));        
+        field.dispatchEvent(new Event('change', { bubbles: true }));
         if (field.value === value) {            return true;
         }
-        
-        // Tentativa 3: ForÃƒÆ’Ã‚Â§ar com setTimeout
+
+        // Tentativa 3: Forçar com setTimeout
         setTimeout(() => {
             field.value = value;        }, 50);
-        
+
         return field.value === value;
     }
 
     // Selecionar pasta atual
     selectCurrentFolder(targetType, callback = null) {
-        const selectedPath = document.getElementById('browser-path').value;        
-        // Se hÃƒÆ’Ã‚Â¡ um callback, usar ele em vez da lÃƒÆ’Ã‚Â³gica padrÃƒÆ’Ã‚Â£o
+        const selectedPath = document.getElementById('browser-path').value;
+        // Se há um callback, usar ele em vez da lógica padrão
         if (callback && typeof callback === 'function') {
             callback(selectedPath);
             // Fechar modal
@@ -3843,44 +3769,44 @@ class DeParaUI {
             let sourceField = document.getElementById('source-folder-path'); // Campo complexo
             if (!sourceField) {
                 sourceField = document.getElementById('source-path'); // Campo simples            } else {            }
-            
+
             if (sourceField) {
-                // Usar funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o auxiliar para preencher com mÃƒÆ’Ã‚Âºltiplas tentativas
+                // Usar função auxiliar para preencher com múltiplas tentativas
                 const success = this.fillFieldWithRetry(sourceField, selectedPath, 'source-folder-path');
-                
+
                 if (success) {
                     this.currentConfig.sourcePath = selectedPath;                    this.showToast(`Pasta de origem selecionada: ${selectedPath}`, 'success');
                 } else {
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Falha ao preencher campo de origem');
+                    console.error('❌ Falha ao preencher campo de origem');
                     this.showToast('Erro: Falha ao preencher campo de origem', 'error');
                 }
             } else {
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo de pasta de origem nÃƒÆ’Ã‚Â£o encontrado');
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Tentou source-folder-path:', !!document.getElementById('source-folder-path'));
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Tentou source-path:', !!document.getElementById('source-path'));
-                this.showToast('Erro: Campo de pasta de origem nÃƒÆ’Ã‚Â£o encontrado', 'error');
+                console.error('❌ Campo de pasta de origem não encontrado');
+                console.error('❌ Tentou source-folder-path:', !!document.getElementById('source-folder-path'));
+                console.error('❌ Tentou source-path:', !!document.getElementById('source-path'));
+                this.showToast('Erro: Campo de pasta de origem não encontrado', 'error');
             }
         } else if (targetType === 'target') {
             // Verificar se existe o campo complexo primeiro (mais comum)
             let targetField = document.getElementById('target-folder-path'); // Campo complexo
             if (!targetField) {
                 targetField = document.getElementById('dest-path'); // Campo simples            } else {            }
-            
+
             if (targetField) {
-                // Usar funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o auxiliar para preencher com mÃƒÆ’Ã‚Âºltiplas tentativas
+                // Usar função auxiliar para preencher com múltiplas tentativas
                 const success = this.fillFieldWithRetry(targetField, selectedPath, 'target-folder-path');
-                
+
                 if (success) {
                     this.currentConfig.targetPath = selectedPath;                    this.showToast(`Pasta de destino selecionada: ${selectedPath}`, 'success');
                 } else {
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Falha ao preencher campo de destino');
+                    console.error('❌ Falha ao preencher campo de destino');
                     this.showToast('Erro: Falha ao preencher campo de destino', 'error');
                 }
             } else {
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo de pasta de destino nÃƒÆ’Ã‚Â£o encontrado');
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Tentou target-folder-path:', !!document.getElementById('target-folder-path'));
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Tentou dest-path:', !!document.getElementById('dest-path'));
-                this.showToast('Erro: Campo de pasta de destino nÃƒÆ’Ã‚Â£o encontrado', 'error');
+                console.error('❌ Campo de pasta de destino não encontrado');
+                console.error('❌ Tentou target-folder-path:', !!document.getElementById('target-folder-path'));
+                console.error('❌ Tentou dest-path:', !!document.getElementById('dest-path'));
+                this.showToast('Erro: Campo de pasta de destino não encontrado', 'error');
             }
         }
 
@@ -4078,7 +4004,7 @@ class DeParaUI {
 
     // Configurar event listeners seguros para CSP (substituir onclick/onchange inline)
     setupCSPSafeEventListeners() {
-        // Barra de busca de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas
+        // Barra de busca de operações agendadas
         const searchInput = document.querySelector('.filter-scheduled-input');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
@@ -4086,7 +4012,7 @@ class DeParaUI {
             });
         }
 
-        // Selects do formulÃƒÆ’Ã‚Â¡rio de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+        // Selects do formulário de operações
         const sourceFolderSelect = document.querySelector('.source-folder-select');
         if (sourceFolderSelect) {
             sourceFolderSelect.addEventListener('change', () => {
@@ -4122,7 +4048,7 @@ class DeParaUI {
             });
         }
 
-        // Checkboxes de transformaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        // Checkboxes de transformação
         const uppercaseCheckbox = document.querySelector('.transform-uppercase-checkbox');
         if (uppercaseCheckbox) {
             uppercaseCheckbox.addEventListener('change', () => {
@@ -4144,7 +4070,7 @@ class DeParaUI {
             });
         }
 
-        // Selects do formulÃƒÆ’Ã‚Â¡rio de pastas
+        // Selects do formulário de pastas
         const folderTypeSelect = document.querySelector('.folder-type-select');
         if (folderTypeSelect) {
             folderTypeSelect.addEventListener('change', () => {
@@ -4152,7 +4078,7 @@ class DeParaUI {
             });
         }
 
-        // Select do formulÃƒÆ’Ã‚Â¡rio de agendamento
+        // Select do formulário de agendamento
         const scheduleActionSelect = document.querySelector('.schedule-action-select');
         if (scheduleActionSelect) {
             scheduleActionSelect.addEventListener('change', () => {
@@ -4161,11 +4087,11 @@ class DeParaUI {
                 }
             });
         }
-        
-        // Event listeners para atualizar resumo da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+
+        // Event listeners para atualizar resumo da operação
         const scheduleSourceInput = document.getElementById('schedule-source');
         const scheduleTargetInput = document.getElementById('schedule-target');
-        
+
         if (scheduleSourceInput) {
             scheduleSourceInput.addEventListener('input', updateOperationSummary);
         }
@@ -4201,7 +4127,7 @@ class DeParaUI {
             targetFolderPath.addEventListener('change', () => this.syncDraftFromFileOps());
         }
 
-        // Input de validaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de nome
+        // Input de validação de nome
         const nameInput = document.querySelector('.validate-name-input');
         if (nameInput) {
             nameInput.addEventListener('input', (e) => {
@@ -4209,7 +4135,7 @@ class DeParaUI {
             });
         }
 
-        // BotÃƒÆ’Ã‚Âµes de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pastas no dashboard
+        // Botões de navegação de pastas no dashboard
         const browseSourceBtn = document.querySelector('.browse-source-btn');
         if (browseSourceBtn) {
             browseSourceBtn.addEventListener('click', () => {
@@ -4224,7 +4150,7 @@ class DeParaUI {
             });
         }
 
-        // BotÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes simples
+        // Botões de operações simples
         const simpleOperationBtns = document.querySelectorAll('.simple-operation-btn');
         simpleOperationBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -4256,14 +4182,14 @@ class DeParaUI {
         }
     }
 
-    // Selecionar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
-    selectOperation(operation) {        
-        // Remove classe active de todos os botÃƒÆ’Ã‚Âµes
+    // Selecionar operação
+    selectOperation(operation) {
+        // Remove classe active de todos os botões
         document.querySelectorAll('.operation-btn').forEach(btn => {
             btn.classList.remove('active');
         });
 
-        // Adiciona classe active ao botÃƒÆ’Ã‚Â£o selecionado
+        // Adiciona classe active ao botão selecionado
         const selectedBtn = document.querySelector(`.${operation}-btn`);
         if (selectedBtn) {
             selectedBtn.classList.add('active');
@@ -4271,10 +4197,10 @@ class DeParaUI {
 
         this.currentConfig.operation = operation;
 
-        // Verificar se o campo de origem estÃƒÆ’Ã‚Â¡ visÃƒÆ’Ã‚Â­vel
+        // Verificar se o campo de origem está visível
         const sourceField = document.getElementById('source-folder-path');
         const sourceFieldParent = sourceField?.parentElement;
-        // Garantir que o campo de origem esteja sempre visÃƒÆ’Ã‚Â­vel
+        // Garantir que o campo de origem esteja sempre visível
         if (sourceFieldParent) {
             sourceFieldParent.style.display = 'block';        }
 
@@ -4284,24 +4210,24 @@ class DeParaUI {
         const targetHelp = document.getElementById('target-help');
 
         if (operation === 'delete') {
-            // Para apagar, o campo destino ÃƒÆ’Ã‚Â© opcional e fica oculto
+            // Para apagar, o campo destino é opcional e fica oculto
             targetField.style.display = 'none';
             targetInput.required = false;
             targetInput.value = ''; // Limpar valor
         } else {
-            // Para mover/copiar, o campo destino ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio e fica visÃƒÆ’Ã‚Â­vel
+            // Para mover/copiar, o campo destino é obrigatório e fica visível
             targetField.style.display = 'block';
             targetInput.required = true;
 
             // Atualizar texto de ajuda
             const operationText = operation === 'move' ? 'mover' : 'copiar';
-            targetHelp.textContent = `Selecione a pasta de destino (obrigatÃƒÆ’Ã‚Â³rio para ${operationText})`;
+            targetHelp.textContent = `Selecione a pasta de destino (obrigatório para ${operationText})`;
         }
 
-        this.showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o selecionada: ${operation}`, 'info');
+        this.showToast(`Operação selecionada: ${operation}`, 'info');
     }
 
-    // Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o imediatamente
+    // Executar operação imediatamente
     async executeNow() {
         const sourcePath = this.currentConfig.sourcePath;
         const operation = this.currentConfig.operation;
@@ -4313,7 +4239,7 @@ class DeParaUI {
         }
 
         if (!operation) {
-            this.showToast('Selecione uma operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+            this.showToast('Selecione uma operação', 'error');
             return;
         }
 
@@ -4325,7 +4251,7 @@ class DeParaUI {
         try {
             this.showToast(`Executando ${operation}...`, 'info');
 
-            // Executa a operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o diretamente via API
+            // Executa a operação diretamente via API
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
@@ -4344,18 +4270,18 @@ class DeParaUI {
             const result = await response.json();
 
             if (result.success) {
-                this.showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${operation} executada com sucesso!`, 'success', true);
+                this.showToast(`Operação ${operation} executada com sucesso!`, 'success', true);
             } else {
                 this.showToast(`Erro: ${result.error?.message || 'Erro desconhecido'}`, 'error');
             }
 
         } catch (error) {
-            console.error('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
-            this.showToast('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+            console.error('Erro ao executar operação:', error);
+            this.showToast('Erro ao executar operação', 'error');
         }
     }
 
-    // Configurar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o completa (para agendamento)
+    // Configurar operação completa (para agendamento)
     legacyConfigureOperation() {
         // Obter valores atuais dos campos
         const sourcePath = document.getElementById('source-folder-path')?.value.trim() || this.currentConfig.sourcePath;
@@ -4367,7 +4293,7 @@ class DeParaUI {
         }
 
         if (!operation) {
-            this.showToast('Selecione uma operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+            this.showToast('Selecione uma operação', 'error');
             return;
         }
 
@@ -4376,11 +4302,11 @@ class DeParaUI {
             return;
         }
 
-        // Atualizar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o atual com valores dos campos
+        // Atualizar configuração atual com valores dos campos
         this.currentConfig.sourcePath = sourcePath;
         this.currentConfig.operation = operation;
         this.currentConfig.targetPath = targetPath;
-        this.showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o configurada: ${operation} de ${sourcePath}`, 'success');
+        this.showToast(`Operação configurada: ${operation} de ${sourcePath}`, 'success');
 
         // Abre o modal de agendamento
         if (typeof window.showScheduleModal === 'function') {
@@ -4709,18 +4635,18 @@ class DeParaUI {
         }
     }
 
-    // Carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow do localStorage
+    // Carregar configurações do slideshow do localStorage
     loadSlideshowConfig() {
         const saved = localStorage.getItem('slideshowConfig');
         if (saved) {
             try {
                 this.slideshowConfig = { ...this.slideshowConfig, ...JSON.parse(saved) };            } catch (error) {
-                console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Erro ao carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow:', error);
+                console.warn('⚠️ Erro ao carregar configurações do slideshow:', error);
             }
         } else {        }
     }
 
-    // Salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow no localStorage
+    // Salvar configurações do slideshow no localStorage
     saveSlideshowConfigLegacy() {
         try {
             localStorage.setItem('slideshowConfig', JSON.stringify(this.slideshowConfig));
@@ -4735,24 +4661,24 @@ class DeParaUI {
         }).catch(err => console.warn('Erro ao persistir slideshowConfig no servidor:', err));
     }
 
-    // Aplicar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do modal para o objeto de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+    // Aplicar configurações do modal para o objeto de configuração
     applySlideshowConfigFromModal() {
         const interval = parseInt(document.getElementById('slideshow-interval').value) || 3;
         const random = document.getElementById('slideshow-random').checked;
         const preload = document.getElementById('slideshow-preload').checked;
         const recursive = document.getElementById('slideshow-recursive').checked;
-        
-        // Coletar extensÃƒÆ’Ã‚Âµes selecionadas
+
+        // Coletar extensões selecionadas
         const extensionCheckboxes = document.querySelectorAll('.extensions-list input[type="checkbox"]');
         const extensions = Array.from(extensionCheckboxes)
             .filter(cb => cb.checked)
             .map(cb => cb.value);
 
-        // Coletar pastas de organizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        // Coletar pastas de organização
         const deletedField = document.getElementById('slideshow-deleted-folder');
         const hiddenField = document.getElementById('slideshow-hidden-folder');
         const adjustableField = document.getElementById('slideshow-adjustable-folder');
-        
+
         const deletedFolder = deletedField ? deletedField.value.trim() : '';
         const hiddenFolder = hiddenField ? hiddenField.value.trim() : '';
         const adjustableFolder = adjustableField ? adjustableField.value.trim() : '';
@@ -4767,7 +4693,7 @@ class DeParaUI {
             adjustableFolder
         };    }
 
-    // Aplicar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes salvas ao modal
+    // Aplicar configurações salvas ao modal
     async saveSlideshowSettingsFromModal() {
         const folderPath = document.getElementById('slideshow-folder-path')?.value?.trim() || '';
         if (folderPath) {
@@ -4783,30 +4709,30 @@ class DeParaUI {
         document.getElementById('slideshow-preload').checked = this.slideshowConfig.preload;
         document.getElementById('slideshow-recursive').checked = this.slideshowConfig.recursive;
 
-        // Aplicar extensÃƒÆ’Ã‚Âµes selecionadas
+        // Aplicar extensões selecionadas
         const extensionCheckboxes = document.querySelectorAll('.extensions-list input[type="checkbox"]');
         extensionCheckboxes.forEach(cb => {
             cb.checked = this.slideshowConfig.extensions.includes(cb.value);
         });
 
-        // Aplicar pastas de organizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        // Aplicar pastas de organização
         const deletedField = document.getElementById('slideshow-deleted-folder');
         const hiddenField = document.getElementById('slideshow-hidden-folder');
         const adjustableField = document.getElementById('slideshow-adjustable-folder');
-        
+
         if (deletedField) {
             deletedField.value = this.slideshowConfig.deletedFolder || '';        } else {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo slideshow-deleted-folder nÃƒÆ’Ã‚Â£o encontrado');
+            console.error('❌ Campo slideshow-deleted-folder não encontrado');
         }
-        
+
         if (hiddenField) {
             hiddenField.value = this.slideshowConfig.hiddenFolder || '';        } else {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo slideshow-hidden-folder nÃƒÆ’Ã‚Â£o encontrado');
+            console.error('❌ Campo slideshow-hidden-folder não encontrado');
         }
 
         if (adjustableField) {
             adjustableField.value = this.slideshowConfig.adjustableFolder || '';        } else {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Campo slideshow-adjustable-folder nÃƒÆ’Ã‚Â£o encontrado');
+            console.error('❌ Campo slideshow-adjustable-folder não encontrado');
         }
     }
 
@@ -5067,7 +4993,7 @@ class DeParaUI {
     }
 
 
-    // Navegar para pasta de fotos excluÃƒÆ’Ã‚Â­das
+    // Navegar para pasta de fotos excluídas
     browseDeletedFolder() {
         this.showFolderBrowser('source', async (selectedPath) => {
             const field = document.getElementById('slideshow-deleted-folder');
@@ -5109,21 +5035,21 @@ class DeParaUI {
         });
     }
 
-    // Configurar event listeners para o modal de seleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pasta do slideshow
+    // Configurar event listeners para o modal de seleção de pasta do slideshow
     setupSlideshowFolderEventListeners(modal) {
-        // BotÃƒÆ’Ã‚Â£o fechar
+        // Botão fechar
         const closeBtn = modal.querySelector('.slideshow-folder-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => modal.remove());
         }
 
-        // BotÃƒÆ’Ã‚Â£o testar
+        // Botão testar
         const testBtn = modal.querySelector('.slideshow-folder-test-btn');
         if (testBtn) {
             testBtn.addEventListener('click', () => this.testFolderPath());
         }
 
-        // BotÃƒÆ’Ã‚Âµes de sugestÃƒÆ’Ã‚Â£o
+        // Botões de sugestão
         const suggestionBtns = modal.querySelectorAll('.slideshow-suggestion-btn');
         suggestionBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -5132,13 +5058,13 @@ class DeParaUI {
             });
         });
 
-        // BotÃƒÆ’Ã‚Â£o cancelar
+        // Botão cancelar
         const cancelBtn = modal.querySelector('.slideshow-folder-cancel-btn');
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => modal.remove());
         }
 
-        // BotÃƒÆ’Ã‚Â£o selecionar
+        // Botão selecionar
         const selectBtn = modal.querySelector('.slideshow-folder-select-btn');
         if (selectBtn) {
             selectBtn.addEventListener('click', () => {
@@ -5162,7 +5088,7 @@ class DeParaUI {
         const path = input.value.trim();
 
         if (!path) {
-            this.showToast('Digite um caminho vÃƒÆ’Ã‚Â¡lido', 'warning');
+            this.showToast('Digite um caminho válido', 'warning');
             return;
         }
 
@@ -5182,16 +5108,16 @@ class DeParaUI {
 
             if (result.success) {
                 const count = result.data.totalCount;
-                this.showToast(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Pasta encontrada! ${count} imagem(ns) localizada(s)`, 'success');
+                this.showToast(`✅ Pasta encontrada! ${count} imagem(ns) localizada(s)`, 'success');
             } else {
-                this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Pasta nÃƒÆ’Ã‚Â£o encontrada ou inacessÃƒÆ’Ã‚Â­vel', 'error');
+                this.showToast('❌ Pasta não encontrada ou inacessível', 'error');
             }
         } catch (error) {
-            this.showToast('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao testar pasta', 'error');
+            this.showToast('❌ Erro ao testar pasta', 'error');
         }
     }
 
-    // Confirmar seleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de pasta
+    // Confirmar seleção de pasta
     confirmFolderSelection() {
         const input = document.getElementById('folder-path-input');
         const slideshowInput = document.getElementById('slideshow-folder-path');
@@ -5230,12 +5156,12 @@ class DeParaUI {
 
     // Carregar imagens do slideshow
     async loadSlideshowImages(folderPath, extensions, recursive, interval) {
-        try {            this.showToast('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Procurando imagens...', 'info');
+        try {            this.showToast('🔍 Procurando imagens...', 'info');
 
-            // Preparar extensÃƒÆ’Ã‚Âµes para a API
+            // Preparar extensões para a API
             const formattedExtensions = extensions.map(ext => ext.startsWith('.') ? ext : '.' + ext);
 
-            // SEMPRE forÃƒÆ’Ã‚Â§ar busca recursiva para encontrar TODAS as imagens
+            // SEMPRE forçar busca recursiva para encontrar TODAS as imagens
             const forceRecursive = true;
             const response = await fetch('/api/files/list-images', {
                 method: 'POST',
@@ -5252,7 +5178,7 @@ class DeParaUI {
                 throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
             }
 
-            const result = await response.json();            console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Estrutura da resposta:', {
+            const result = await response.json();            console.debug('📊 Estrutura da resposta:', {
                 success: result.success,
                 hasData: !!result.data,
                 hasImages: !!(result.data && result.data.images),
@@ -5263,10 +5189,10 @@ class DeParaUI {
                 throw new Error(result.error?.message || 'Erro ao listar imagens');
             }
 
-            // Verificar se a estrutura da resposta estÃƒÆ’Ã‚Â¡ correta
+            // Verificar se a estrutura da resposta está correta
             if (!result.data || !result.data.images) {
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Estrutura de resposta invÃƒÆ’Ã‚Â¡lida:', result);
-                throw new Error('Resposta da API nÃƒÆ’Ã‚Â£o contÃƒÆ’Ã‚Â©m dados de imagens');
+                console.error('❌ Estrutura de resposta inválida:', result);
+                throw new Error('Resposta da API não contém dados de imagens');
             }
 
             this.slideshowImages = result.data.images;
@@ -5276,15 +5202,15 @@ class DeParaUI {
                 return;
             }
 
-            // Aplicar modo aleatÃƒÆ’Ã‚Â³rio se configurado
+            // Aplicar modo aleatório se configurado
             if (this.slideshowConfig.random) {
             this.shuffleArray(this.slideshowImages);            }
 
-            // Limpar cache de prÃƒÆ’Ã‚Â©-carregamento
+            // Limpar cache de pré-carregamento
             this.preloadedImages.clear();
 
-            const modeText = this.slideshowConfig.random ? ' (ordem aleatÃƒÆ’Ã‚Â³ria)' : ' (ordem sequencial)';
-            this.showToast(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ${this.slideshowImages.length} imagens encontradas${modeText}`, 'success');
+            const modeText = this.slideshowConfig.random ? ' (ordem aleatória)' : ' (ordem sequencial)';
+            this.showToast(`✅ ${this.slideshowImages.length} imagens encontradas${modeText}`, 'success');
             this.startSlideshowViewer();
 
         } catch (error) {
@@ -5293,7 +5219,7 @@ class DeParaUI {
         }
     }
 
-    // PrÃƒÆ’Ã‚Â©-carregar imagem
+    // Pré-carregar imagem
     preloadImage(imagePath) {
         return new Promise((resolve, reject) => {
             if (this.preloadedImages.has(imagePath)) {
@@ -5306,22 +5232,22 @@ class DeParaUI {
                 this.preloadedImages.set(imagePath, img);                resolve(img);
             };
             img.onerror = () => {
-                console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Erro ao prÃƒÆ’Ã‚Â©-carregar imagem:', imagePath);
+                console.warn('⚠️ Erro ao pré-carregar imagem:', imagePath);
                 reject(new Error('Erro ao carregar imagem'));
             };
             img.src = imagePath;
         });
     }
 
-    // PrÃƒÆ’Ã‚Â©-carregar prÃƒÆ’Ã‚Â³xima imagem se habilitado
+    // Pré-carregar próxima imagem se habilitado
     async preloadNextImage() {
         if (!this.slideshowConfig.preload || this.slideshowImages.length <= 1) {
             return;
         }
 
-        // Limitar prÃƒÆ’Ã‚Â©-carregamento para apenas 1 imagem (prÃƒÆ’Ã‚Â³xima)
+        // Limitar pré-carregamento para apenas 1 imagem (próxima)
         if (this.preloadedImages.size >= 1) {
-            return; // MÃƒÆ’Ã‚Â¡ximo 1 imagem prÃƒÆ’Ã‚Â©-carregada
+            return; // Máximo 1 imagem pré-carregada
         }
 
         const nextIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
@@ -5333,56 +5259,56 @@ class DeParaUI {
         try {
             await this.preloadImage(imageUrl);
         } catch (error) {
-            console.warn('Erro ao prÃƒÆ’Ã‚Â©-carregar prÃƒÆ’Ã‚Â³xima imagem:', error);
+            console.warn('Erro ao pré-carregar próxima imagem:', error);
         }
     }
 
     // Iniciar viewer do slideshow
-    startSlideshowViewer() {        
+    startSlideshowViewer() {
         // Limpar elementos antigos se existirem
         const oldElement = document.getElementById('slideshow-image-new');
         if (oldElement) {
             oldElement.remove();        }
-        
+
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Nenhuma imagem disponÃƒÆ’Ã‚Â­vel para slideshow');
+            console.error('❌ Nenhuma imagem disponível para slideshow');
             this.showToast('Nenhuma imagem encontrada para o slideshow', 'error');
             return;
         }
-        
+
         // Mostrar viewer
-        const viewer = document.getElementById('slideshow-viewer');        
+        const viewer = document.getElementById('slideshow-viewer');
         if (viewer) {
-            console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Estilo atual do viewer:', {
+            console.debug('🖥️ Estilo atual do viewer:', {
                 display: viewer.style.display,
                 visibility: viewer.style.visibility,
                 opacity: viewer.style.opacity,
                 zIndex: viewer.style.zIndex
             });
-            
-            viewer.style.display = 'flex';            
-            // Mostrar controles estÃƒÆ’Ã‚Â¡ticos quando o viewer for exibido
+
+            viewer.style.display = 'flex';
+            // Mostrar controles estáticos quando o viewer for exibido
             const staticControls = document.getElementById('static-slideshow-controls');
             if (staticControls) {
-                staticControls.style.display = 'block';                
-                // Configurar event listeners se ainda nÃƒÆ’Ã‚Â£o foram configurados
+                staticControls.style.display = 'block';
+                // Configurar event listeners se ainda não foram configurados
                 this.setupStaticButtons();
             }
-            
-            console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¥ÃƒÂ¯Ã‚Â¸Ã‚Â Estilo apÃƒÆ’Ã‚Â³s exibir:', {
+
+            console.debug('🖥️ Estilo após exibir:', {
                 display: viewer.style.display,
                 visibility: viewer.style.visibility,
                 opacity: viewer.style.opacity
             });
         } else {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Elemento slideshow-viewer nÃƒÆ’Ã‚Â£o encontrado no DOM');
-            this.showToast('Erro: Elemento de visualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o encontrado', 'error');
+            console.error('❌ Elemento slideshow-viewer não encontrado no DOM');
+            this.showToast('Erro: Elemento de visualização não encontrado', 'error');
             return;
         }
-        
+
         this.currentSlideIndex = 0;
         this.slideshowPlaying = true;
-        console.debug('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow:', {
+        console.debug('🎯 Configurações do slideshow:', {
             currentSlideIndex: this.currentSlideIndex,
             slideshowPlaying: this.slideshowPlaying,
             totalImages: this.slideshowImages.length
@@ -5391,7 +5317,7 @@ class DeParaUI {
         // Entrar em fullscreen automaticamente
         this.enterFullscreen(this.isDedicatedScreensaverWindow || this.screensaverState.isActive);
 
-        // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o e iniciar auto-play APÃƒÆ’Ã¢â‚¬Å“S a imagem ser carregada
+        // Atualizar exibição e iniciar auto-play APÓS a imagem ser carregada
         this.updateSlideDisplay();
     }
 
@@ -5442,12 +5368,12 @@ class DeParaUI {
         }
     }
 
-    // Lidar com mudanÃƒÆ’Ã‚Â§as de fullscreen
-    handleFullscreenChange() {        
-        const isFullscreen = !!(document.fullscreenElement || 
-                               document.webkitFullscreenElement || 
-                               document.mozFullScreenElement || 
-                               document.msFullscreenElement);        
+    // Lidar com mudanças de fullscreen
+    handleFullscreenChange() {
+        const isFullscreen = !!(document.fullscreenElement ||
+                               document.webkitFullscreenElement ||
+                               document.mozFullScreenElement ||
+                               document.msFullscreenElement);
         const viewer = document.getElementById('slideshow-viewer');
         const viewerVisible = viewer && window.getComputedStyle(viewer).display !== 'none';
         const slideshowActive = viewerVisible && (
@@ -5457,56 +5383,56 @@ class DeParaUI {
             return;
         }
 
-        // Garantir que os controles estÃƒÆ’Ã‚Â¡ticos permaneÃƒÆ’Ã‚Â§am visÃƒÆ’Ã‚Â­veis
+        // Garantir que os controles estáticos permaneçam visíveis
         const staticControls = document.getElementById('static-slideshow-controls');
         if (staticControls) {
             staticControls.style.display = 'block';
             staticControls.style.zIndex = '999999';        }
-        
-        // Garantir que o viewer permaneÃƒÆ’Ã‚Â§a visÃƒÃ‚Â­vel no contexto do slideshow/screenaver
+
+        // Garantir que o viewer permaneça visível no contexto do slideshow/screenaver
         if (viewer) {
             viewer.style.display = 'flex';        }
     }
 
-    // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do slide atual
-    async updateSlideDisplay() {        
+    // Atualizar exibição do slide atual
+    async updateSlideDisplay() {
         // Verificar contexto geral antes de prosseguir
-        console.debug('ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â Contexto geral:', {
+        console.debug('🌐 Contexto geral:', {
             documentReady: document.readyState,
             windowLoaded: window.onload ? 'loaded' : 'not loaded',
             slideshowPlaying: this.slideshowPlaying,
             currentSlideIndex: this.currentSlideIndex,
             totalImages: this.slideshowImages?.length || 0
         });
-        
-        // Garantir que os controles estÃƒÆ’Ã‚Â¡ticos existam
+
+        // Garantir que os controles estáticos existam
         if (this.slideshowImages && this.slideshowImages.length > 0) {            this.createDynamicSlideshowControls();
         }
-        
+
         let imageElement = document.getElementById('slideshow-image');
         const counterElement = document.getElementById('slideshow-counter');
         const filenameElement = document.getElementById('slideshow-filename');
         const loadingElement = document.getElementById('slideshow-loading');
         const errorElement = document.getElementById('slideshow-error');
         const imageContainer = document.querySelector('.slideshow-image-container');
-        
-        // Se nÃƒÆ’Ã‚Â£o encontrar o elemento slideshow-image, tentar encontrar o slideshow-image-new
+
+        // Se não encontrar o elemento slideshow-image, tentar encontrar o slideshow-image-new
         if (!imageElement) {
             imageElement = document.getElementById('slideshow-image-new');
             if (imageElement) {            }
         }
 
-        // Verificar se o slideshow-viewer estÃƒÆ’Ã‚Â¡ visÃƒÆ’Ã‚Â­vel
+        // Verificar se o slideshow-viewer está visível
         const viewer = document.getElementById('slideshow-viewer');
         if (viewer) {
-            console.debug('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¬ Estado do viewer:', {
+            console.debug('🎬 Estado do viewer:', {
                 display: viewer.style.display,
                 visibility: viewer.style.visibility,
                 rect: viewer.getBoundingClientRect()
             });
         }
-        
-        console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Elementos encontrados:', {
+
+        console.debug('🔍 Elementos encontrados:', {
             imageElement: !!imageElement,
             counterElement: !!counterElement,
             filenameElement: !!filenameElement,
@@ -5514,17 +5440,17 @@ class DeParaUI {
             errorElement: !!errorElement,
             imageContainer: !!imageContainer
         });
-        
+
         if (imageContainer) {
-            console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Container da imagem:', {
+            console.debug('📦 Container da imagem:', {
                 display: imageContainer.style.display,
                 visibility: imageContainer.style.visibility,
                 opacity: imageContainer.style.opacity,
                 position: imageContainer.style.position,
                 zIndex: imageContainer.style.zIndex
             });
-            
-            // FORÃƒÆ’Ã¢â‚¬Â¡AR ESTILOS NO CONTAINER para garantir que a imagem seja exibida
+
+            // FORÇAR ESTILOS NO CONTAINER para garantir que a imagem seja exibida
             imageContainer.style.display = 'flex';
             imageContainer.style.alignItems = 'center';
             imageContainer.style.justifyContent = 'center';
@@ -5535,8 +5461,8 @@ class DeParaUI {
             imageContainer.style.position = 'relative';
             imageContainer.style.zIndex = '1';
             imageContainer.style.background = 'rgba(0, 0, 0, 0.1)';
-            
-            console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Container apÃƒÆ’Ã‚Â³s forÃƒÆ’Ã‚Â§ar estilos:', {
+
+            console.debug('📦 Container após forçar estilos:', {
                 display: imageContainer.style.display,
                 visibility: imageContainer.style.visibility,
                 opacity: imageContainer.style.opacity,
@@ -5563,8 +5489,8 @@ class DeParaUI {
         // Atualizar contador e nome do arquivo
         if (counterElement) counterElement.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
         if (filenameElement) filenameElement.textContent = currentImage.name;
-        
-        // Atualizar caminho completo da imagem no rodapÃƒÆ’Ã‚Â©
+
+        // Atualizar caminho completo da imagem no rodapé
         const pathElement = document.getElementById('slideshow-path');
         if (pathElement) {
             pathElement.textContent = currentImage.path;
@@ -5575,38 +5501,38 @@ class DeParaUI {
         try {
             // Carregar imagem diretamente
             const img = new Image();
-            
+
             // Timeout para evitar loading infinito
             const loadTimeout = setTimeout(() => {
-                console.error('ÃƒÂ¢Ã‚ÂÃ‚Â° Timeout ao carregar imagem:', imageUrl);
+                console.error('⏰ Timeout ao carregar imagem:', imageUrl);
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (imageElement) imageElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'block';
             }, 10000); // 10 segundos timeout
-            
+
             img.onload = () => {
                 clearTimeout(loadTimeout);
                 if (imageElement) {
-                    // SOLUÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O RADICAL: Criar novo elemento se o atual nÃƒÆ’Ã‚Â£o funcionar
+                    // SOLUÇÃO RADICAL: Criar novo elemento se o atual não funcionar
                     let targetElement = imageElement;
-                    
+
                     // REMOVER imagem anterior para evitar empilhamento
                     const existingDynamicImage = document.getElementById('slideshow-image-new');
                     if (existingDynamicImage) {
                         existingDynamicImage.remove();                    }
-                    
+
                     // Verificar se o elemento atual tem problemas
                     const currentRect = imageElement.getBoundingClientRect();
                     if (currentRect.width === 0 || currentRect.height === 0) {
-                        console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Elemento atual tem dimensÃƒÆ’Ã‚Âµes zero, criando novo elemento...');
-                        
+                        console.warn('⚠️ Elemento atual tem dimensões zero, criando novo elemento...');
+
                         // Criar novo elemento de imagem
                         const newImageElement = document.createElement('img');
                         newImageElement.id = 'slideshow-image-new';
                         newImageElement.className = 'slideshow-image-new';
                         newImageElement.alt = currentImage.name;
-                        
-                        // Aplicar estilos diretamente no elemento (compatÃƒÆ’Ã‚Â­vel com Raspberry Pi)
+
+                        // Aplicar estilos diretamente no elemento (compatível com Raspberry Pi)
                         newImageElement.style.cssText = `
                             display: block !important;
                             visibility: visible !important;
@@ -5629,8 +5555,8 @@ class DeParaUI {
                             border-radius: 0 !important;
                             pointer-events: none !important;
                         `;
-                        
-                        // Aplicar estilos individualmente para mÃƒÆ’Ã‚Â¡xima compatibilidade
+
+                        // Aplicar estilos individualmente para máxima compatibilidade
                         newImageElement.style.display = 'block';
                         newImageElement.style.visibility = 'visible';
                         newImageElement.style.opacity = '1';
@@ -5650,35 +5576,35 @@ class DeParaUI {
                         newImageElement.style.background = 'transparent';
                         newImageElement.style.boxShadow = 'none';
                         newImageElement.style.borderRadius = '0';
-                        
+
                         // Adicionar DENTRO do slideshow-viewer para manter contexto
                         const slideshowViewer = document.getElementById('slideshow-viewer');
                         if (slideshowViewer) {
-                            slideshowViewer.appendChild(newImageElement);                            
-                            // Esconder a imagem original para evitar sobreposiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+                            slideshowViewer.appendChild(newImageElement);
+                            // Esconder a imagem original para evitar sobreposição
                             const originalImage = document.getElementById('slideshow-image');
                             if (originalImage) {
                                 originalImage.style.display = 'none';                            }
                         } else {
                             document.body.appendChild(newImageElement);                        }
                         targetElement = newImageElement;
-                        
-                        // Garantir que a imagem esteja dentro do viewer mas abaixo dos controles estÃƒÆ’Ã‚Â¡ticos
+
+                        // Garantir que a imagem esteja dentro do viewer mas abaixo dos controles estáticos
                         newImageElement.style.zIndex = '1';
                         newImageElement.style.pointerEvents = 'none';
-                        
-                        // Adicionar fundo preto atrÃƒÆ’Ã‚Â¡s de tudo
+
+                        // Adicionar fundo preto atrás de tudo
                         document.body.style.background = 'black';
                         document.body.style.overflow = 'hidden';
                         document.body.style.cursor = 'default';
-                        
-                        // MANTER o slideshow-viewer visÃƒÆ’Ã‚Â­vel para que os botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos sejam exibidos
+
+                        // MANTER o slideshow-viewer visível para que os botões estáticos sejam exibidos
                         if (slideshowViewer) {
-                            // NÃƒÆ’Ã†â€™O ESCONDER! Os botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos estÃƒÆ’Ã‚Â£o dentro dele                        }
-                        
-                        // Criar controles de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para a imagem dinÃƒÆ’Ã‚Â¢mica
-                        // Usar controles estÃƒÆ’Ã‚Â¡ticos
-                        this.createDynamicSlideshowControls();                        console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Debug Raspberry Pi - Elemento criado:', {
+                            // NÃO ESCONDER! Os botões estáticos estão dentro dele                        }
+
+                        // Criar controles de navegação para a imagem dinâmica
+                        // Usar controles estáticos
+                        this.createDynamicSlideshowControls();                        console.debug('🔍 Debug Raspberry Pi - Elemento criado:', {
                             id: newImageElement.id,
                             tagName: newImageElement.tagName,
                             parentNode: newImageElement.parentNode.tagName,
@@ -5691,7 +5617,7 @@ class DeParaUI {
                     targetElement.src = imageUrl;
                     targetElement.alt = currentImage.name;
 
-                    // Se for o elemento original, aplicar estilos bÃƒÆ’Ã‚Â¡sicos
+                    // Se for o elemento original, aplicar estilos básicos
                     if (targetElement === imageElement) {
                         targetElement.style.setProperty('display', 'block', 'important');
                         targetElement.style.setProperty('visibility', 'visible', 'important');
@@ -5700,27 +5626,27 @@ class DeParaUI {
                         targetElement.style.setProperty('height', '90vh', 'important');
                         targetElement.style.setProperty('object-fit', 'contain', 'important');
                         targetElement.style.setProperty('border', '3px solid #4CAF50', 'important');
-                    }                    
-                    // ForÃƒÆ’Ã‚Â§ar reflow para garantir que os estilos sejam aplicados
+                    }
+                    // Forçar reflow para garantir que os estilos sejam aplicados
                     targetElement.offsetHeight;
                     targetElement.offsetWidth;
 
-                    // ForÃƒÆ’Ã‚Â§ar reflow mÃƒÆ’Ã‚Âºltiplas vezes
+                    // Forçar reflow múltiplas vezes
                     targetElement.offsetHeight;
                     targetElement.offsetWidth;
                     targetElement.getBoundingClientRect();
-                    
-                    // VerificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o final das dimensÃƒÆ’Ã‚Âµes
+
+                    // Verificação final das dimensões
                     setTimeout(() => {
                         const finalRect = targetElement.getBoundingClientRect();
-                        console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â VerificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o final das dimensÃƒÆ’Ã‚Âµes:', {
+                        console.debug('🔍 Verificação final das dimensões:', {
                             width: finalRect.width,
                             height: finalRect.height,
                             visible: finalRect.width > 0 && finalRect.height > 0
                         });
-                        
-                        // Debug especÃƒÆ’Ã‚Â­fico para Raspberry Pi
-                        console.debug('ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Å“ Debug Raspberry Pi - Estado final:', {
+
+                        // Debug específico para Raspberry Pi
+                        console.debug('🍓 Debug Raspberry Pi - Estado final:', {
                             userAgent: navigator.userAgent,
                             platform: navigator.platform,
                             elementId: targetElement.id,
@@ -5742,12 +5668,12 @@ class DeParaUI {
                             parentElement: targetElement.parentElement?.tagName,
                             isInBody: targetElement.parentElement === document.body
                         });
-                        
+
                         if (finalRect.width === 0 || finalRect.height === 0) {
-                            console.error('ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Â¨ FALHA CRÃƒÆ’Ã‚ÂTICA: Imagem ainda com dimensÃƒÆ’Ã‚Âµes zero apÃƒÆ’Ã‚Â³s todas as correÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes!');
-                            console.error('ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Å“ Raspberry Pi - Tentando soluÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de emergÃƒÆ’Ã‚Âªncia...');
-                            
-                            // SoluÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de emergÃƒÆ’Ã‚Âªncia especÃƒÆ’Ã‚Â­fica para Raspberry Pi
+                            console.error('🚨 FALHA CRÍTICA: Imagem ainda com dimensões zero após todas as correções!');
+                            console.error('🍓 Raspberry Pi - Tentando solução de emergência...');
+
+                            // Solução de emergência específica para Raspberry Pi
                             targetElement.style.cssText = `
                                 display: block !important;
                                 visibility: visible !important;
@@ -5767,20 +5693,20 @@ class DeParaUI {
                                 background: rgba(255, 0, 0, 0.3) !important;
                                 box-shadow: 0 0 50px rgba(255, 0, 0, 1) !important;
                             `;
-                            
-                            // ForÃƒÆ’Ã‚Â§ar reflow
+
+                            // Forçar reflow
                             targetElement.offsetHeight;
                             targetElement.offsetWidth;                        } else {                        }
                     }, 100);
 
                     // Verificar contexto do documento
-                    console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¾ Contexto do documento:', {
+                    console.debug('📄 Contexto do documento:', {
                         readyState: document.readyState,
                         hidden: document.hidden,
                         visibilityState: document.visibilityState
                     });
 
-                    // Verificar se estÃƒÆ’Ã‚Â¡ no viewport correto
+                    // Verificar se está no viewport correto
                     const rect = targetElement.getBoundingClientRect();
                     const viewport = {
                         width: window.innerWidth,
@@ -5789,7 +5715,7 @@ class DeParaUI {
                         scrollY: window.scrollY
                     };
 
-                    console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â PosiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da imagem:', {
+                    console.debug('🖼️ Posição da imagem:', {
                         top: rect.top,
                         left: rect.left,
                         width: rect.width,
@@ -5799,11 +5725,11 @@ class DeParaUI {
                                    rect.bottom <= viewport.height &&
                                    rect.right <= viewport.width
                     });
-                    // ForÃƒÆ’Ã‚Â§ar renderizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o adicional se ainda nÃƒÆ’Ã‚Â£o estiver visÃƒÆ’Ã‚Â­vel
+                    // Forçar renderização adicional se ainda não estiver visível
                     if (rect.width === 0 || rect.height === 0) {
-                        console.error('ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Â¨ CRÃƒÆ’Ã‚ÂTICO: Imagem ainda com dimensÃƒÆ’Ã‚Âµes zero apÃƒÆ’Ã‚Â³s todas as tentativas!');
+                        console.error('🚨 CRÍTICO: Imagem ainda com dimensões zero após todas as tentativas!');
 
-                        // ÃƒÆ’Ã…Â¡ltimo recurso: forÃƒÆ’Ã‚Â§ar com setTimeout
+                        // Último recurso: forçar com setTimeout
                         setTimeout(() => {                            targetElement.style.setProperty('width', '400px', 'important');
                             targetElement.style.setProperty('height', '400px', 'important');
                             targetElement.style.setProperty('position', 'absolute', 'important');
@@ -5812,7 +5738,7 @@ class DeParaUI {
                             targetElement.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
 
                             const finalRect = targetElement.getBoundingClientRect();
-                            console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â PosiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o FINAL:', {
+                            console.debug('🖼️ Posição FINAL:', {
                                 top: finalRect.top,
                                 left: finalRect.left,
                                 width: finalRect.width,
@@ -5822,7 +5748,7 @@ class DeParaUI {
                         }, 100);
                     }
                 } else {
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Elemento slideshow-image nÃƒÆ’Ã‚Â£o encontrado!');
+                    console.error('❌ Elemento slideshow-image não encontrado!');
                     // Tentar encontrar o elemento novamente
                     const imageElement = document.getElementById('slideshow-image') || document.querySelector('.slideshow-image');
                     if (imageElement) {                imageElement.src = imageUrl;
@@ -5830,41 +5756,41 @@ class DeParaUI {
                         imageElement.style.visibility = 'visible';
                         imageElement.style.opacity = '1';
                     } else {
-                        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Elemento slideshow-image ainda nÃƒÆ’Ã‚Â£o encontrado apÃƒÆ’Ã‚Â³s segunda tentativa');
+                        console.error('❌ Elemento slideshow-image ainda não encontrado após segunda tentativa');
                     }
                 }
 
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'none';
-                
+
                 // Iniciar auto-play apenas na primeira imagem carregada
                 if (this.currentSlideIndex === 0 && this.slideshowPlaying) {                    this.startAutoPlay();
                 }
-                
-                // PrÃƒÆ’Ã‚Â©-carregar prÃƒÆ’Ã‚Â³xima imagem
+
+                // Pré-carregar próxima imagem
                 this.preloadNextImage();
             };
-            
+
             img.onerror = (error) => {
                 clearTimeout(loadTimeout);
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar imagem:', error);
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ URL que falhou:', imageUrl);
+                console.error('❌ Erro ao carregar imagem:', error);
+                console.error('❌ URL que falhou:', imageUrl);
                 if (loadingElement) loadingElement.style.display = 'none';
                 if (imageElement) imageElement.style.display = 'none';
                 if (errorElement) errorElement.style.display = 'block';
             };            img.src = imageUrl;
-            
+
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar imagem:', error);
+            console.error('❌ Erro ao carregar imagem:', error);
             if (loadingElement) loadingElement.style.display = 'none';
             if (imageElement) imageElement.style.display = 'none';
             if (errorElement) errorElement.style.display = 'block';
         }
     }
 
-    // PrÃƒÆ’Ã‚Â³ximo slide
+    // Próximo slide
     nextSlide() {
-        if (this.slideshowImages.length === 0) return;        console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Estado atual:', {
+        if (this.slideshowImages.length === 0) return;        console.debug('📊 Estado atual:', {
             currentIndex: this.currentSlideIndex,
             totalImages: this.slideshowImages.length,
             nextIndex: (this.currentSlideIndex + 1) % this.slideshowImages.length
@@ -5877,7 +5803,7 @@ class DeParaUI {
 
     // Slide anterior
     previousSlide() {
-        if (this.slideshowImages.length === 0) return;        console.debug('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Estado atual:', {
+        if (this.slideshowImages.length === 0) return;        console.debug('📊 Estado atual:', {
             currentIndex: this.currentSlideIndex,
             totalImages: this.slideshowImages.length,
             prevIndex: this.currentSlideIndex === 0 ? this.slideshowImages.length - 1 : this.currentSlideIndex - 1
@@ -5904,7 +5830,7 @@ class DeParaUI {
         }
     }
 
-    // Iniciar reproduÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o automÃƒÆ’Ã‚Â¡tica
+    // Iniciar reprodução automática
     startAutoPlay() {
         this.stopAutoPlay(); // Parar qualquer intervalo existente
 
@@ -5912,14 +5838,14 @@ class DeParaUI {
             const intervalMs = this.slideshowConfig.interval * 1000;
             this.autoPlayInterval = setInterval(() => {                this.nextSlide();
             }, intervalMs);        } else {
-            console.debug('ÃƒÂ¢Ã‚ÂÃ‚Â° Auto-play nÃƒÆ’Ã‚Â£o iniciado:', {
+            console.debug('⏰ Auto-play não iniciado:', {
                 slideshowPlaying: this.slideshowPlaying,
                 imageCount: this.slideshowImages.length
             });
         }
     }
 
-    // Parar reproduÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o automÃƒÆ’Ã‚Â¡tica
+    // Parar reprodução automática
     stopAutoPlay() {
         if (this.autoPlayInterval) {
             clearInterval(this.autoPlayInterval);
@@ -5927,48 +5853,48 @@ class DeParaUI {
         }
     }
 
-    // Criar controles de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para slideshow dinÃƒÆ’Ã‚Â¢mico
-    createDynamicSlideshowControls() {        
-        // Remover controles dinÃƒÆ’Ã‚Â¢micos antigos se existirem
+    // Criar controles de navegação para slideshow dinâmico
+    createDynamicSlideshowControls() {
+        // Remover controles dinâmicos antigos se existirem
         const oldControls = document.getElementById('dynamic-slideshow-controls');
         if (oldControls) {
             oldControls.remove();
         }
-        
-        // Mostrar controles estÃƒÆ’Ã‚Â¡ticos
+
+        // Mostrar controles estáticos
         const staticControls = document.getElementById('static-slideshow-controls');
         if (staticControls) {
             staticControls.style.display = 'block';        } else {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Controles estÃƒÆ’Ã‚Â¡ticos nÃƒÆ’Ã‚Â£o encontrados');
+            console.error('❌ Controles estáticos não encontrados');
         }
-        
-        // Configurar event listeners para botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos
+
+        // Configurar event listeners para botões estáticos
         this.setupStaticButtons();
-        
+
         this.dynamicControlsCreated = true;
-        
+
         // Atualizar contador
         this.updateStaticCounter();
     }
-    
-    setupStaticButtons() {        
-        // BotÃƒÆ’Ã‚Â£o anterior
+
+    setupStaticButtons() {
+        // Botão anterior
         const prevBtn = document.getElementById('static-prev-btn');        if (prevBtn && !prevBtn.hasAttribute('data-listener-added')) {
             prevBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();                this.previousSlide();
             });
             prevBtn.setAttribute('data-listener-added', 'true');        }
-        
-        // BotÃƒÆ’Ã‚Â£o prÃƒÆ’Ã‚Â³ximo
+
+        // Botão próximo
         const nextBtn = document.getElementById('static-next-btn');        if (nextBtn && !nextBtn.hasAttribute('data-listener-added')) {
             nextBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();                this.nextSlide();
             });
             nextBtn.setAttribute('data-listener-added', 'true');        }
-        
-        // BotÃƒÆ’Ã‚Â£o fechar
+
+        // Botão fechar
         const closeBtn = document.getElementById('static-close-btn');
         if (closeBtn && !closeBtn.hasAttribute('data-listener-added')) {
             closeBtn.addEventListener('click', (e) => {
@@ -5977,42 +5903,42 @@ class DeParaUI {
             });
             closeBtn.setAttribute('data-listener-added', 'true');
         }
-        
-        // BotÃƒÆ’Ã‚Â£o apagar
+
+        // Botão apagar
         const deleteBtn = document.getElementById('static-delete-btn');        if (deleteBtn) {        }
-        
+
         if (deleteBtn && !deleteBtn.hasAttribute('data-listener-added')) {            deleteBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();                
+                e.stopPropagation();
                 // Usar window.deParaUI para garantir contexto correto
                 if (window.deParaUI && typeof window.deParaUI.deleteCurrentImage === 'function') {                    window.deParaUI.deleteCurrentImage();
                 } else {
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ DeParaUI nÃƒÆ’Ã‚Â£o disponÃƒÆ’Ã‚Â­vel ou mÃƒÆ’Ã‚Â©todo nÃƒÆ’Ã‚Â£o encontrado');
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ window.deParaUI:', window.deParaUI);
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ typeof deleteCurrentImage:', typeof window.deParaUI?.deleteCurrentImage);
+                    console.error('❌ DeParaUI não disponível ou método não encontrado');
+                    console.error('❌ window.deParaUI:', window.deParaUI);
+                    console.error('❌ typeof deleteCurrentImage:', typeof window.deParaUI?.deleteCurrentImage);
                 }
             });
             deleteBtn.setAttribute('data-listener-added', 'true');        }
-        
-        // BotÃƒÆ’Ã‚Â£o ocultar
+
+        // Botão ocultar
         const hideBtn = document.getElementById('static-hide-btn');        if (hideBtn) {        }
-        
+
         if (hideBtn && !hideBtn.hasAttribute('data-listener-added')) {            hideBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();                
+                e.stopPropagation();
                 // Usar window.deParaUI para garantir contexto correto
                 if (window.deParaUI && typeof window.deParaUI.hideCurrentImage === 'function') {                    window.deParaUI.hideCurrentImage();
                 } else {
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ DeParaUI nÃƒÆ’Ã‚Â£o disponÃƒÆ’Ã‚Â­vel ou mÃƒÆ’Ã‚Â©todo nÃƒÆ’Ã‚Â£o encontrado');
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ window.deParaUI:', window.deParaUI);
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ typeof hideCurrentImage:', typeof window.deParaUI?.hideCurrentImage);
+                    console.error('❌ DeParaUI não disponível ou método não encontrado');
+                    console.error('❌ window.deParaUI:', window.deParaUI);
+                    console.error('❌ typeof hideCurrentImage:', typeof window.deParaUI?.hideCurrentImage);
                 }
             });
             hideBtn.setAttribute('data-listener-added', 'true');        }
-        
-        
-        
-        // BotÃƒÆ’Ã‚Â£o favoritar
+
+
+
+        // Botão favoritar
         const favoriteBtn = document.getElementById('static-favorite-btn');        if (favoriteBtn && !favoriteBtn.hasAttribute('data-listener-added')) {
             favoriteBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -6020,109 +5946,109 @@ class DeParaUI {
             });
             favoriteBtn.setAttribute('data-listener-added', 'true');        }
 
-        // BotÃƒÆ’Ã‚Â£o ajustar
+        // Botão ajustar
         const adjustBtn = document.getElementById('static-adjust-btn');        if (adjustBtn && !adjustBtn.hasAttribute('data-listener-added')) {
             adjustBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();                this.adjustCurrentImage();
             });
             adjustBtn.setAttribute('data-listener-added', 'true');        }    }
-    
+
     updateStaticCounter() {
         const counter = document.getElementById('static-counter');
         const filename = document.getElementById('static-filename');
-        
+
         if (counter && this.slideshowImages) {
             counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
         }
-        
-        if (filename && this.slideshowImages && this.slideshowImages[this.currentSlideIndex]) {
-            const currentImage = this.slideshowImages[this.currentSlideIndex];
-            filename.textContent = currentImage.name || 'Arquivo sem nome';
-        }
-    }
-    
-    // Atualizar contador dinÃƒÆ’Ã‚Â¢mico
-    updateDynamicCounter() {
-        // Usar botÃƒÆ’Ã‚Âµes estÃƒÆ’Ã‚Â¡ticos se disponÃƒÆ’Ã‚Â­veis
-        this.updateStaticCounter();
-        
-        // Fallback para botÃƒÆ’Ã‚Âµes dinÃƒÆ’Ã‚Â¢micos se existirem
-        const counter = document.getElementById('dynamic-slideshow-counter');
-        const filename = document.getElementById('dynamic-slideshow-filename');
-        
-        if (counter && this.slideshowImages) {
-            counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
-        }
-        
+
         if (filename && this.slideshowImages && this.slideshowImages[this.currentSlideIndex]) {
             const currentImage = this.slideshowImages[this.currentSlideIndex];
             filename.textContent = currentImage.name || 'Arquivo sem nome';
         }
     }
 
-    // Apagar imagem atual (mover para pasta de excluÃƒÆ’Ã‚Â­das)
-    async deleteCurrentImage() {        
+    // Atualizar contador dinâmico
+    updateDynamicCounter() {
+        // Usar botões estáticos se disponíveis
+        this.updateStaticCounter();
+
+        // Fallback para botões dinâmicos se existirem
+        const counter = document.getElementById('dynamic-slideshow-counter');
+        const filename = document.getElementById('dynamic-slideshow-filename');
+
+        if (counter && this.slideshowImages) {
+            counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+        }
+
+        if (filename && this.slideshowImages && this.slideshowImages[this.currentSlideIndex]) {
+            const currentImage = this.slideshowImages[this.currentSlideIndex];
+            filename.textContent = currentImage.name || 'Arquivo sem nome';
+        }
+    }
+
+    // Apagar imagem atual (mover para pasta de excluídas)
+    async deleteCurrentImage() {
         if (!this.slideshowImages || this.slideshowImages.length === 0) {            this.showToast('Nenhuma imagem para apagar', 'error');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
-        if (!currentImage) {            this.showToast('Imagem atual nÃƒÆ’Ã‚Â£o encontrada', 'error');
+        if (!currentImage) {            this.showToast('Imagem atual não encontrada', 'error');
             return;
         }
 
-        if (!this.slideshowConfig.deletedFolder) {            this.showToast('Configure a pasta de fotos excluÃƒÆ’Ã‚Â­das nas configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 'error');
+        if (!this.slideshowConfig.deletedFolder) {            this.showToast('Configure a pasta de fotos excluídas nas configurações', 'error');
             return;
         }
 
         try {
-            // Verificar se pasta de destino existe, se nÃƒÆ’Ã‚Â£o, criar            
-            // Pasta de destino jÃƒÆ’Ã‚Â¡ configurada - prosseguir diretamente
+            // Verificar se pasta de destino existe, se não, criar
+            // Pasta de destino já configurada - prosseguir diretamente
             // Debug: Log dos dados sendo enviados
             const fileName = currentImage.name || currentImage.path.split('/').pop();
             const targetPath = `${this.slideshowConfig.deletedFolder}/${fileName}`;
-            
+
             const requestData = {
                 action: 'move',
                 sourcePath: currentImage.path,
                 targetPath: targetPath
-            };            
+            };
             // Chamar API para mover arquivo            const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(requestData)
-            });            
+            });
             // Capturar detalhes do erro se houver
             if (!response.ok) {
                 let errorDetails = {};
                 try {
                     errorDetails = await response.json();
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Detalhes do erro da API:', errorDetails);
+                    console.error('❌ Detalhes do erro da API:', errorDetails);
                 } catch (e) {
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao parsear resposta de erro:', e);
+                    console.error('❌ Erro ao parsear resposta de erro:', e);
                     try {
                         const errorText = await response.text();
-                        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Resposta de erro (texto):', errorText);
+                        console.error('❌ Resposta de erro (texto):', errorText);
                     } catch (textError) {
-                        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ler resposta como texto:', textError);
+                        console.error('❌ Erro ao ler resposta como texto:', textError);
                     }
                 }
             }
-            
+
             if (response.ok) {
-                const result = await response.json();                
+                const result = await response.json();
                 // Remover imagem da lista atual
                 this.slideshowImages.splice(this.currentSlideIndex, 1);
-                
-                // Ajustar ÃƒÆ’Ã‚Â­ndice se necessÃƒÆ’Ã‚Â¡rio
+
+                // Ajustar índice se necessário
                 if (this.currentSlideIndex >= this.slideshowImages.length) {
                     this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
                 }
-                
-                // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+
+                // Atualizar exibição
                 if (this.slideshowImages.length > 0) {
                     this.updateSlideDisplay();
                     this.updateDynamicCounter();
@@ -6130,79 +6056,79 @@ class DeParaUI {
                     this.showToast('Todas as imagens foram apagadas', 'info');
                     this.closeSlideshowViewer();
                 }
-                
+
                 this.showToast('Imagem apagada com sucesso', 'success');
             } else {
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao apagar imagem - status:', response.status);
+                console.error('❌ Erro ao apagar imagem - status:', response.status);
                 this.showToast(`Erro ao apagar imagem: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao apagar imagem:', error);
+            console.error('❌ Erro ao apagar imagem:', error);
             this.showToast('Erro ao apagar imagem', 'error');
         }
     }
 
     // Ocultar imagem atual (mover para pasta de ocultas)
-    async hideCurrentImage() {        
+    async hideCurrentImage() {
         if (!this.slideshowImages || this.slideshowImages.length === 0) {            this.showToast('Nenhuma imagem para ocultar', 'error');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
-        if (!currentImage) {            this.showToast('Imagem atual nÃƒÆ’Ã‚Â£o encontrada', 'error');
+        if (!currentImage) {            this.showToast('Imagem atual não encontrada', 'error');
             return;
         }
 
-        if (!this.slideshowConfig.hiddenFolder || this.slideshowConfig.hiddenFolder.trim() === '') {            this.showToast('Configure a pasta de fotos ocultas nas configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 'error');
+        if (!this.slideshowConfig.hiddenFolder || this.slideshowConfig.hiddenFolder.trim() === '') {            this.showToast('Configure a pasta de fotos ocultas nas configurações', 'error');
             return;
         }
         try {
-            // Verificar se pasta de destino existe, se nÃƒÆ’Ã‚Â£o, criar            
-            // Pasta de destino jÃƒÆ’Ã‚Â¡ configurada - prosseguir diretamente
+            // Verificar se pasta de destino existe, se não, criar
+            // Pasta de destino já configurada - prosseguir diretamente
             // Debug: Log dos dados sendo enviados
             const fileName = currentImage.name || currentImage.path.split('/').pop();
             const targetPath = `${this.slideshowConfig.hiddenFolder}/${fileName}`;
-            
+
             const requestData = {
                 action: 'move',
                 sourcePath: currentImage.path,
                 targetPath: targetPath
-            };            
+            };
             // Chamar API para mover arquivo            const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(requestData)
-            });            
+            });
             // Capturar detalhes do erro se houver
             if (!response.ok) {
                 let errorDetails = {};
                 try {
                     errorDetails = await response.json();
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Detalhes do erro da API:', errorDetails);
+                    console.error('❌ Detalhes do erro da API:', errorDetails);
                 } catch (e) {
-                    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao parsear resposta de erro:', e);
+                    console.error('❌ Erro ao parsear resposta de erro:', e);
                     try {
                         const errorText = await response.text();
-                        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Resposta de erro (texto):', errorText);
+                        console.error('❌ Resposta de erro (texto):', errorText);
                     } catch (textError) {
-                        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ler resposta como texto:', textError);
+                        console.error('❌ Erro ao ler resposta como texto:', textError);
                     }
                 }
             }
-            
+
             if (response.ok) {
-                const result = await response.json();                
+                const result = await response.json();
                 // Remover imagem da lista atual
                 this.slideshowImages.splice(this.currentSlideIndex, 1);
-                
-                // Ajustar ÃƒÆ’Ã‚Â­ndice se necessÃƒÆ’Ã‚Â¡rio
+
+                // Ajustar índice se necessário
                 if (this.currentSlideIndex >= this.slideshowImages.length) {
                     this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
                 }
-                
-                // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+
+                // Atualizar exibição
                 if (this.slideshowImages.length > 0) {
                     this.updateSlideDisplay();
                     this.updateDynamicCounter();
@@ -6210,64 +6136,64 @@ class DeParaUI {
                     this.showToast('Todas as imagens foram ocultadas', 'info');
                     this.closeSlideshowViewer();
                 }
-                
+
                 this.showToast('Imagem ocultada com sucesso', 'success');
             } else {
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ocultar imagem - status:', response.status);
+                console.error('❌ Erro ao ocultar imagem - status:', response.status);
                 this.showToast(`Erro ao ocultar imagem: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ocultar imagem:', error);
+            console.error('❌ Erro ao ocultar imagem:', error);
             this.showToast('Erro ao ocultar imagem', 'error');
         }
     }
 
     // Favoritar imagem atual (mover para subpasta dentro da pasta atual)
-    async favoriteCurrentImage() {        
+    async favoriteCurrentImage() {
         if (!this.slideshowImages || this.slideshowImages.length === 0) {            this.showToast('Nenhuma imagem para favoritar', 'error');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
-        if (!currentImage) {            this.showToast('Imagem atual nÃƒÆ’Ã‚Â£o encontrada', 'error');
+        if (!currentImage) {            this.showToast('Imagem atual não encontrada', 'error');
             return;
         }
 
         try {
-            // Extrair diretÃƒÆ’Ã‚Â³rio pai da imagem atual
+            // Extrair diretório pai da imagem atual
             const pathParts = currentImage.path.split('/');
             const fileName = pathParts.pop(); // Nome do arquivo
-            const currentDir = pathParts.join('/'); // DiretÃƒÆ’Ã‚Â³rio atual da imagem
+            const currentDir = pathParts.join('/'); // Diretório atual da imagem
             const parentFolderName = pathParts[pathParts.length - 1] || 'Fotos';
-            // Criar subdiretÃƒÆ’Ã‚Â³rio "Favoritas + Nome da pasta pai" DENTRO da pasta atual
+            // Criar subdiretório "Favoritas + Nome da pasta pai" DENTRO da pasta atual
             const favoritesSubDir = `Favoritas ${parentFolderName}`;
             const targetDir = `${currentDir}/${favoritesSubDir}`;
             const targetPath = `${targetDir}/${fileName}`;
-            
+
             const requestData = {
                 action: 'move',
                 sourcePath: currentImage.path,
                 targetPath: targetPath,
-                createTargetDir: true // Flag para criar diretÃƒÆ’Ã‚Â³rio se nÃƒÆ’Ã‚Â£o existir
-            };            
+                createTargetDir: true // Flag para criar diretório se não existir
+            };
             // Chamar API para mover arquivo            const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(requestData)
-            });            
+            });
             if (response.ok) {
-                const result = await response.json();                
+                const result = await response.json();
                 // Remover imagem da lista atual
                 this.slideshowImages.splice(this.currentSlideIndex, 1);
-                
-                // Ajustar ÃƒÆ’Ã‚Â­ndice se necessÃƒÆ’Ã‚Â¡rio
+
+                // Ajustar índice se necessário
                 if (this.currentSlideIndex >= this.slideshowImages.length) {
                     this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
                 }
-                
-                // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+
+                // Atualizar exibição
                 if (this.slideshowImages.length > 0) {
                     this.updateSlideDisplay();
                     this.updateDynamicCounter();
@@ -6275,30 +6201,30 @@ class DeParaUI {
                     this.showToast('Todas as imagens foram favoritadas', 'info');
                     this.closeSlideshowViewer();
                 }
-                
+
                 this.showToast(`Imagem favoritada! Movida para: ${favoritesSubDir}`, 'success');
             } else {
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao favoritar imagem - status:', response.status);
+                console.error('❌ Erro ao favoritar imagem - status:', response.status);
                 this.showToast(`Erro ao favoritar imagem: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao favoritar imagem:', error);
+            console.error('❌ Erro ao favoritar imagem:', error);
             this.showToast('Erro ao favoritar imagem', 'error');
         }
     }
 
     // Ajustar imagem atual (mover para pasta configurada)
-    async adjustCurrentImage() {        
+    async adjustCurrentImage() {
         if (!this.slideshowImages || this.slideshowImages.length === 0) {            this.showToast('Nenhuma imagem para ajustar', 'error');
             return;
         }
 
-        if (!this.slideshowConfig.adjustableFolder || this.slideshowConfig.adjustableFolder.trim() === '') {            this.showToast('Configure a pasta de fotos para ajustar nas configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do slideshow', 'error');
+        if (!this.slideshowConfig.adjustableFolder || this.slideshowConfig.adjustableFolder.trim() === '') {            this.showToast('Configure a pasta de fotos para ajustar nas configurações do slideshow', 'error');
             return;
         }
 
         const currentImage = this.slideshowImages[this.currentSlideIndex];
-        if (!currentImage) {            this.showToast('Imagem atual nÃƒÆ’Ã‚Â£o encontrada', 'error');
+        if (!currentImage) {            this.showToast('Imagem atual não encontrada', 'error');
             return;
         }
 
@@ -6306,34 +6232,34 @@ class DeParaUI {
             // Extrair nome do arquivo
             const pathParts = currentImage.path.split('/');
             const fileName = pathParts.pop();
-            
+
             // Usar pasta configurada
             const targetPath = `${this.slideshowConfig.adjustableFolder}/${fileName}`;
-            
+
             const requestData = {
                 action: 'move',
                 sourcePath: currentImage.path,
                 targetPath: targetPath,
-                createTargetDir: true // Flag para criar diretÃƒÆ’Ã‚Â³rio se nÃƒÆ’Ã‚Â£o existir
-            };            
+                createTargetDir: true // Flag para criar diretório se não existir
+            };
             // Chamar API para mover arquivo            const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(requestData)
-            });            
+            });
             if (response.ok) {
-                const result = await response.json();                
+                const result = await response.json();
                 // Remover imagem da lista atual
                 this.slideshowImages.splice(this.currentSlideIndex, 1);
-                
-                // Ajustar ÃƒÆ’Ã‚Â­ndice se necessÃƒÆ’Ã‚Â¡rio
+
+                // Ajustar índice se necessário
                 if (this.currentSlideIndex >= this.slideshowImages.length) {
                     this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
                 }
-                
-                // Atualizar exibiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+
+                // Atualizar exibição
                 if (this.slideshowImages.length > 0) {
                     this.updateSlideDisplay();
                     this.updateDynamicCounter();
@@ -6341,14 +6267,14 @@ class DeParaUI {
                     this.showToast('Todas as imagens foram ajustadas', 'info');
                     this.closeSlideshowViewer();
                 }
-                
+
                 this.showToast(`Imagem ajustada! Movida para: ${this.slideshowConfig.adjustableFolder}`, 'success');
             } else {
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ajustar imagem - status:', response.status);
+                console.error('❌ Erro ao ajustar imagem - status:', response.status);
                 this.showToast(`Erro ao ajustar imagem: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao ajustar imagem:', error);
+            console.error('❌ Erro ao ajustar imagem:', error);
             this.showToast('Erro ao ajustar imagem', 'error');
         }
     }
@@ -6356,41 +6282,41 @@ class DeParaUI {
     // Fechar viewer do slideshow
     closeSlideshowViewer() {
         this.stopAutoPlay();
-        
+
         // Sair do fullscreen antes de fechar o viewer        this.exitFullscreen();
-        
-        // Aguardar um pouco para garantir que a saÃƒÆ’Ã‚Â­da do fullscreen seja processada
+
+        // Aguardar um pouco para garantir que a saída do fullscreen seja processada
         setTimeout(() => {
-            // Verificar se ainda estÃƒÆ’Ã‚Â¡ em fullscreen e forÃƒÆ’Ã‚Â§ar saÃƒÆ’Ã‚Â­da se necessÃƒÆ’Ã‚Â¡rio
-            const isStillFullscreen = !!(document.fullscreenElement || 
-                                       document.webkitFullscreenElement || 
-                                       document.mozFullScreenElement || 
+            // Verificar se ainda está em fullscreen e forçar saída se necessário
+            const isStillFullscreen = !!(document.fullscreenElement ||
+                                       document.webkitFullscreenElement ||
+                                       document.mozFullScreenElement ||
                                        document.msFullscreenElement);
-            
+
             if (isStillFullscreen) {                this.exitFullscreen();
             }
         }, 100);
-        
-        // Limpeza de proteÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de ÃƒÆ’Ã‚Â­cones (sem setInterval)        
+
+        // Limpeza de proteção de ícones (sem setInterval)
         // Resetar flag de controles criados
         this.dynamicControlsCreated = false;
-        
+
         // Limpar elementos criados dinamicamente
         const dynamicElement = document.getElementById('slideshow-image-new');
         if (dynamicElement) {
             dynamicElement.remove();        }
-        
-        // Limpar controles dinÃƒÆ’Ã‚Â¢micos antigos (se existirem)
+
+        // Limpar controles dinâmicos antigos (se existirem)
         const dynamicControls = document.getElementById('dynamic-slideshow-controls');
         if (dynamicControls) {
             dynamicControls.remove();        }
-        
-        // Esconder controles estÃƒÆ’Ã‚Â¡ticos
+
+        // Esconder controles estáticos
         const staticControls = document.getElementById('static-slideshow-controls');
         if (staticControls) {
             staticControls.style.display = 'none';        }
 
-        // Remover botÃƒÆ’Ã‚Âµes de organizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o dinÃƒÆ’Ã‚Â¢micos
+        // Remover botões de organização dinâmicos
         const deleteBtn = document.getElementById('dynamic-slideshow-delete');
         if (deleteBtn) {
             deleteBtn.remove();
@@ -6399,17 +6325,17 @@ class DeParaUI {
         if (hideBtn) {
             hideBtn.remove();
         }
-        
+
         // Restaurar fundo original do body
         document.body.style.background = '';
         document.body.style.overflow = '';
         document.body.style.cursor = '';
-        
+
         // Esconder o modal do slideshow
         const slideshowViewer = document.getElementById('slideshow-viewer');
         if (slideshowViewer) {
             slideshowViewer.style.display = 'none';        }
-        
+
         // Limpar dados do slideshow
         this.slideshowImages = [];
         this.currentSlideIndex = 0;
@@ -6465,7 +6391,7 @@ class DeParaUI {
         }
     }
 
-    // Salvar pasta (mÃƒÆ’Ã‚Â©todo auxiliar)
+    // Salvar pasta (método auxiliar)
     async saveFolder(folder) {
         try {
             const response = await fetch('/api/files/folders', {
@@ -6483,12 +6409,12 @@ class DeParaUI {
             const result = await response.json();            return result;
 
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao salvar pasta:', error);
+            console.error('❌ Erro ao salvar pasta:', error);
             throw error;
         }
     }
 
-    // Salvar template (mÃƒÆ’Ã‚Â©todo auxiliar)
+    // Salvar template (método auxiliar)
     async saveTemplate(template) {
         try {
             const response = await fetch('/api/files/templates', {
@@ -6506,7 +6432,7 @@ class DeParaUI {
             const result = await response.json();            return result;
 
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao salvar template:', error);
+            console.error('❌ Erro ao salvar template:', error);
             throw error;
         }
     }
@@ -6549,7 +6475,7 @@ class DeParaUI {
         document.getElementById('generate-logs').checked = true;
         document.getElementById('notify-completion').checked = false;
         document.getElementById('workflow-status').value = 'active';
-        
+
         this.currentWorkflowStep = 1;
         this.updateWorkflowStep();
         this.hideAllConditionalFields();
@@ -6621,7 +6547,7 @@ class DeParaUI {
         const requiredFields = currentStep.querySelectorAll('input[required], select[required]');
         requiredFields.forEach(field => {
             if (!field.value.trim()) {
-                this.showFieldError(field, 'Este campo ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio');
+                this.showFieldError(field, 'Este campo é obrigatório');
                 isValid = false;
             } else {
                 this.clearFieldError(field);
@@ -6667,7 +6593,7 @@ class DeParaUI {
         const targetFolder = document.getElementById('target-folder');
 
         if (sourceFolder.value === targetFolder.value && sourceFolder.value !== '') {
-            this.showToast('Pasta de origem e destino nÃƒÆ’Ã‚Â£o podem ser iguais', 'warning');
+            this.showToast('Pasta de origem e destino não podem ser iguais', 'warning');
             isValid = false;
         }
 
@@ -6680,7 +6606,7 @@ class DeParaUI {
         const cronExpression = document.getElementById('cron-expression');
 
         if (frequency.value === 'custom' && !cronExpression.value.trim()) {
-            this.showFieldError(cronExpression, 'ExpressÃƒÆ’Ã‚Â£o cron ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³ria para frequÃƒÆ’Ã‚Âªncia personalizada');
+            this.showFieldError(cronExpression, 'Expressão cron é obrigatória para frequência personalizada');
             isValid = false;
         }
 
@@ -6695,17 +6621,17 @@ class DeParaUI {
         const minAge = document.getElementById('min-age');
 
         if (filterType === 'extension' && !extensions.value.trim()) {
-            this.showFieldError(extensions, 'Especifique as extensÃƒÆ’Ã‚Âµes permitidas');
+            this.showFieldError(extensions, 'Especifique as extensões permitidas');
             isValid = false;
         }
 
         if (filterType === 'size' && (!minSize.value || parseFloat(minSize.value) < 0)) {
-            this.showFieldError(minSize, 'Tamanho mÃƒÆ’Ã‚Â­nimo deve ser um nÃƒÆ’Ã‚Âºmero positivo');
+            this.showFieldError(minSize, 'Tamanho mínimo deve ser um número positivo');
             isValid = false;
         }
 
         if (filterType === 'age' && (!minAge.value || parseFloat(minAge.value) < 0)) {
-            this.showFieldError(minAge, 'Idade mÃƒÆ’Ã‚Â­nima deve ser um nÃƒÆ’Ã‚Âºmero positivo');
+            this.showFieldError(minAge, 'Idade mínima deve ser um número positivo');
             isValid = false;
         }
 
@@ -6713,7 +6639,7 @@ class DeParaUI {
         const lowercase = document.getElementById('transform-lowercase');
 
         if (uppercase.checked && lowercase.checked) {
-            this.showToast('NÃƒÆ’Ã‚Â£o ÃƒÆ’Ã‚Â© possÃƒÆ’Ã‚Â­vel aplicar maiÃƒÆ’Ã‚Âºsculas e minÃƒÆ’Ã‚Âºsculas simultaneamente', 'warning');
+            this.showToast('Não é possível aplicar maiúsculas e minúsculas simultaneamente', 'warning');
             isValid = false;
         }
 
@@ -6727,7 +6653,7 @@ class DeParaUI {
         const customTrashPath = document.getElementById('custom-trash-path');
 
         if (autoCleanup.checked && customTrash.value === 'custom' && !customTrashPath.value.trim()) {
-            this.showFieldError(customTrashPath, 'Caminho da pasta de lixeira personalizada ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio');
+            this.showFieldError(customTrashPath, 'Caminho da pasta de lixeira personalizada é obrigatório');
             isValid = false;
         }
 
@@ -6761,7 +6687,7 @@ class DeParaUI {
         const description = document.getElementById('folder-description').value.trim();
 
         if (!name || !path) {
-            this.showToast('Preencha todos os campos obrigatÃƒÆ’Ã‚Â³rios', 'warning');
+            this.showToast('Preencha todos os campos obrigatórios', 'warning');
             return;
         }
 
@@ -6809,7 +6735,7 @@ class DeParaUI {
 
         try {
             const workflowData = this.collectWorkflowData();
-            
+
             const response = await fetch('/api/files/workflows', {
                 method: 'POST',
                 headers: {
@@ -6871,22 +6797,22 @@ class DeParaUI {
     updateWorkflowSummary() {
         const summary = document.getElementById('workflow-summary');
         const workflowData = this.collectWorkflowData();
-        
+
         summary.innerHTML = `
-            <h5>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Resumo do Fluxo de Trabalho</h5>
+            <h5>📋 Resumo do Fluxo de Trabalho</h5>
             <ul>
                 <li><strong>Nome:</strong> ${workflowData.name}</li>
                 <li><strong>Origem:</strong> ${this.getFolderName(workflowData.sourceFolder)}</li>
                 <li><strong>Destino:</strong> ${this.getFolderName(workflowData.targetFolder)}</li>
-                <li><strong>AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:</strong> ${this.getActionLabel(workflowData.fileAction)}</li>
-                <li><strong>FrequÃƒÆ’Ã‚Âªncia:</strong> ${this.getFrequencyLabel(workflowData.executionFrequency)}</li>
+                <li><strong>Ação:</strong> ${this.getActionLabel(workflowData.fileAction)}</li>
+                <li><strong>Frequência:</strong> ${this.getFrequencyLabel(workflowData.executionFrequency)}</li>
                 <li><strong>Filtro:</strong> ${this.getFilterLabel(workflowData.filterType)}</li>
                 ${workflowData.autoCleanup ? `<li><strong>Limpeza:</strong> ${workflowData.cleanupFrequency} (${workflowData.maxFileAge} dias)</li>` : ''}
             </ul>
         `;
     }
 
-    // MÃƒÆ’Ã‚Â©todos auxiliares
+    // Métodos auxiliares
     getFolderName(folderId) {
         const folder = this.folders.find(f => f.id === folderId);
         return folder ? folder.name : 'N/A';
@@ -6894,51 +6820,51 @@ class DeParaUI {
 
     getActionLabel(action) {
         const labels = {
-            'copy': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Copiar',
-            'move': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Mover',
-            'copy_and_clean': 'ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ Copiar e Limpar'
+            'copy': '📋 Copiar',
+            'move': '📤 Mover',
+            'copy_and_clean': '🧹 Copiar e Limpar'
         };
         return labels[action] || action;
     }
 
     getFrequencyLabel(frequency) {
         const labels = {
-            'realtime': 'ÃƒÂ¢Ã…Â¡Ã‚Â¡ Tempo Real',
-            '1min': 'ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â A cada 1 minuto',
-            '5min': 'ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â A cada 5 minutos',
-            '15min': 'ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â A cada 15 minutos',
-            '30min': 'ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â A cada 30 minutos',
-            '1hour': 'ÃƒÂ¢Ã‚ÂÃ‚Â° A cada 1 hora',
-            '6hours': 'ÃƒÂ¢Ã‚ÂÃ‚Â° A cada 6 horas',
-            '12hours': 'ÃƒÂ¢Ã‚ÂÃ‚Â° A cada 12 horas',
-            'daily': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ DiÃƒÆ’Ã‚Â¡rio',
-            'weekly': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ Semanal',
-            'monthly': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ Mensal',
-            'custom': 'ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â Personalizado'
+            'realtime': '⚡ Tempo Real',
+            '1min': '⏱️ A cada 1 minuto',
+            '5min': '⏱️ A cada 5 minutos',
+            '15min': '⏱️ A cada 15 minutos',
+            '30min': '⏱️ A cada 30 minutos',
+            '1hour': '⏰ A cada 1 hora',
+            '6hours': '⏰ A cada 6 horas',
+            '12hours': '⏰ A cada 12 horas',
+            'daily': '📅 Diário',
+            'weekly': '📅 Semanal',
+            'monthly': '📅 Mensal',
+            'custom': '⚙️ Personalizado'
         };
         return labels[frequency] || frequency;
     }
 
     getFilterLabel(filterType) {
         const labels = {
-            'all': 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Todos os Arquivos',
-            'new': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Â Ã¢â‚¬Â¢ Apenas Novos',
-            'modified': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Apenas Modificados',
-            'extension': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Por ExtensÃƒÆ’Ã‚Â£o',
-            'size': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Por Tamanho',
-            'age': 'ÃƒÂ¢Ã‚ÂÃ‚Â° Por Idade'
+            'all': '✅ Todos os Arquivos',
+            'new': '🆕 Apenas Novos',
+            'modified': '📝 Apenas Modificados',
+            'extension': '🔍 Por Extensão',
+            'size': '📏 Por Tamanho',
+            'age': '⏰ Por Idade'
         };
         return labels[filterType] || filterType;
     }
 
-    // PopulaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de campos
+    // População de campos
     populateFolderSelects() {
         const sourceSelect = document.getElementById('source-folder');
         const targetSelect = document.getElementById('target-folder');
-        
+
         sourceSelect.innerHTML = '<option value="">Selecione uma pasta de origem</option>';
         targetSelect.innerHTML = '<option value="">Selecione uma pasta de destino</option>';
-        
+
         this.folders.forEach(folder => {
             if (folder.type === 'source' || folder.type === 'any') {
                 const option = document.createElement('option');
@@ -6946,7 +6872,7 @@ class DeParaUI {
                 option.textContent = `${folder.name} (${folder.path})`;
                 sourceSelect.appendChild(option);
             }
-            
+
             if (folder.type === 'target' || folder.type === 'any') {
                 const option = document.createElement('option');
                 option.value = folder.id;
@@ -6971,7 +6897,7 @@ setupEventListeners() {
         });
     }
 
-            // BotÃƒÆ’Ã‚Â£o de system tray
+            // Botão de system tray
         const trayBtn = document.getElementById('tray-btn');
         if (trayBtn) {
             trayBtn.addEventListener('click', () => {
@@ -6979,13 +6905,13 @@ setupEventListeners() {
             });
         }
 
-        // Sistema de atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+        // Sistema de atualizações
         this.setupUpdateEventListeners();
 
         this.setupWorkflowEventListeners();
 }
 
-    // Sistema de AtualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+    // Sistema de Atualizações
     setupUpdateEventListeners() {
         const checkUpdatesBtn = document.getElementById('check-updates-btn');
         if (checkUpdatesBtn) {
@@ -7071,15 +6997,15 @@ setupEventListeners() {
 
             const result = await response.json();
             if (!result.success) {
-                throw new Error(result.error?.message || 'Falha ao salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
+                throw new Error(result.error?.message || 'Falha ao salvar configuração');
             }
         } catch (error) {
             logger.error('Erro ao salvar config de auto update:', error);
-            showToast('Erro ao salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+            showToast('Erro ao salvar configuração de atualização', 'error');
         }
     }
 
-    // Verificar atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes disponÃƒÆ’Ã‚Â­veis
+    // Verificar atualizações disponíveis
     async checkForUpdates(forceRemote = false) {
         try {
             logger.info('Verificando status de auto update...');
@@ -7095,7 +7021,7 @@ setupEventListeners() {
             this.updateUpdateStatus(result.data);
             this.loadUpdateHistory();
         } catch (error) {
-            logger.error('Erro ao verificar atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes:', error);
+            logger.error('Erro ao verificar atualizações:', error);
             this.updateUpdateStatus({
                 state: {
                     status: 'error',
@@ -7163,11 +7089,11 @@ setupEventListeners() {
         }
 
         if (lastCheckText) {
-            lastCheckText.textContent = `ÃƒÆ’Ã…Â¡ltima verificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: ${state.lastCheckAt ? new Date(state.lastCheckAt).toLocaleString('pt-BR') : '-'}`;
+            lastCheckText.textContent = `Última verificação: ${state.lastCheckAt ? new Date(state.lastCheckAt).toLocaleString('pt-BR') : '-'}`;
         }
 
         if (lastResultText) {
-            lastResultText.textContent = `ÃƒÆ’Ã…Â¡ltimo resultado: ${state.lastEvent || '-'}`;
+            lastResultText.textContent = `Último resultado: ${state.lastEvent || '-'}`;
         }
 
         if (versionText) {
@@ -7181,7 +7107,7 @@ setupEventListeners() {
         if (lastResultText) {
             const supervisorLabel = supervisor.supervisor || 'desconhecido';
             const failureStage = runtime.lastFailureStage || state.lastFailureStage || '-';
-            lastResultText.textContent = `Ãšltimo resultado: ${state.lastEvent || '-'} | supervisor: ${supervisorLabel} | etapa: ${failureStage}`;
+            lastResultText.textContent = `Último resultado: ${state.lastEvent || '-'} | supervisor: ${supervisorLabel} | etapa: ${failureStage}`;
         }
 
         if (versionText) {
@@ -7267,7 +7193,7 @@ setupEventListeners() {
             const response = await fetch('/api/update/auto/history?limit=5');
             const result = await response.json();
             if (!result.success || !Array.isArray(result.data)) {
-                throw new Error(result.error?.message || 'Falha ao carregar histÃƒÆ’Ã‚Â³rico');
+                throw new Error(result.error?.message || 'Falha ao carregar histórico');
             }
 
             if (result.data.length === 0) {
@@ -7284,11 +7210,11 @@ setupEventListeners() {
                 })
                 .join('');
         } catch (error) {
-            list.innerHTML = '<small>Erro ao carregar histÃƒÆ’Ã‚Â³rico</small>';
+            list.innerHTML = '<small>Erro ao carregar histórico</small>';
         }
     }
 
-    // Aplicar atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+    // Aplicar atualizações
     async applyUpdates() {
         const applyBtn = document.getElementById('apply-updates-btn');
         try {
@@ -7339,7 +7265,7 @@ setupEventListeners() {
         }
     }
 
-    // Reiniciar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+    // Reiniciar aplicação
     async restartApplication() {
         try {
             const restartBtn = document.getElementById('restart-app-btn');
@@ -7351,13 +7277,13 @@ setupEventListeners() {
 
             showToast('No RP4, reinicie a aplicação com pm2 restart DePara.', 'info');
         } catch (error) {
-            logger.error('Erro ao reiniciar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
-            showToast(error.message || 'Erro ao reiniciar aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+            logger.error('Erro ao reiniciar aplicação:', error);
+            showToast(error.message || 'Erro ao reiniciar aplicação', 'error');
         } finally {
             const restartBtn = document.getElementById('restart-app-btn');
             if (restartBtn) {
                 restartBtn.disabled = false;
-                restartBtn.innerHTML = '<span class="material-icons">restart_alt</span> Reiniciar AplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o';
+                restartBtn.innerHTML = '<span class="material-icons">restart_alt</span> Reiniciar Aplicação';
             }
         }
     }
@@ -7386,7 +7312,7 @@ setupEventListeners() {
         }
     }
 
-    // MÃƒÆ’Ã‚Â©todos de validaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+    // Métodos de validação
     showFieldError(field, message) {
         const validationDiv = field.parentNode.querySelector('.validation-message');
         if (validationDiv) {
@@ -7405,14 +7331,14 @@ setupEventListeners() {
         field.style.borderColor = 'rgba(102, 126, 234, 0.2)';
     }
 
-    // MÃƒÆ’Ã‚Â©todos de toggle
+    // Métodos de toggle
     toggleFilterOptions() {
         const filterType = document.getElementById('filter-type').value;
-        
+
         document.getElementById('extension-filter').classList.remove('active');
         document.getElementById('size-filter').classList.remove('active');
         document.getElementById('age-filter').classList.remove('active');
-        
+
         switch (filterType) {
             case 'extension':
                 document.getElementById('extension-filter').classList.add('active');
@@ -7439,7 +7365,7 @@ setupEventListeners() {
     toggleCaseConflict() {
         const uppercase = document.getElementById('transform-uppercase');
         const lowercase = document.getElementById('transform-lowercase');
-        
+
         if (uppercase.checked && lowercase.checked) {
             if (event.target === uppercase) {
                 lowercase.checked = false;
@@ -7449,7 +7375,7 @@ setupEventListeners() {
         }
     }
 
-    // MÃƒÆ’Ã‚Â©todos de carregamento de dados
+    // Métodos de carregamento de dados
     async loadWorkflows() {
         try {            const response = await fetch('/api/files/workflows');
             if (response.ok) {
@@ -7459,7 +7385,7 @@ setupEventListeners() {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar workflows:', error);
+            console.error('❌ Erro ao carregar workflows:', error);
             this.workflows = [];
             this.renderWorkflows();
         }
@@ -7469,7 +7395,7 @@ setupEventListeners() {
         const workflowsList = document.getElementById('workflows-list');
 
         if (!workflowsList) {
-            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Elemento workflows-list nÃƒÆ’Ã‚Â£o encontrado');
+            console.warn('⚠️ Elemento workflows-list não encontrado');
             return;
         }
         if (this.workflows.length === 0) {
@@ -7488,11 +7414,11 @@ setupEventListeners() {
                 <div class="workflow-header">
                     <div>
                         <div class="workflow-name">${workflow.name}</div>
-                        <div class="workflow-description">${workflow.description || 'Sem descriÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o'}</div>
+                        <div class="workflow-description">${workflow.description || 'Sem descrição'}</div>
                     </div>
                     <span class="workflow-status ${workflow.status}">${workflow.status}</span>
                 </div>
-                
+
                 <div class="workflow-details">
                     <div class="workflow-detail-item">
                         <span class="material-icons">folder</span>
@@ -7511,7 +7437,7 @@ setupEventListeners() {
                         <span>${this.getFilterLabel(workflow.filterType)}</span>
                     </div>
                 </div>
-                
+
                 <div class="workflow-actions">
                     <button class="edit-btn edit-workflow-btn" data-workflow-id="${workflow.id}">
                         <span class="material-icons">edit</span>
@@ -7529,7 +7455,7 @@ setupEventListeners() {
             </div>
         `).join('');
 
-        // Configurar event listeners para os botÃƒÆ’Ã‚Âµes de workflow
+        // Configurar event listeners para os botões de workflow
         const editButtons = workflowsList.querySelectorAll('.edit-workflow-btn');
         const toggleButtons = workflowsList.querySelectorAll('.toggle-workflow-btn');
         const deleteButtons = workflowsList.querySelectorAll('.delete-workflow-btn');
@@ -7557,7 +7483,7 @@ setupEventListeners() {
     }
 
     async loadFolders() {
-        // Evitar chamadas simultÃƒÆ’Ã‚Â¢neas
+        // Evitar chamadas simultâneas
         if (this.isLoadingFolders) {            return;
         }
         this.isLoadingFolders = true;
@@ -7571,11 +7497,11 @@ setupEventListeners() {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar pastas:', error);
+            console.error('❌ Erro ao carregar pastas:', error);
 
-            // Verificar se ÃƒÆ’Ã‚Â© erro de conexÃƒÆ’Ã‚Â£o (API nÃƒÆ’Ã‚Â£o disponÃƒÆ’Ã‚Â­vel)
+            // Verificar se é erro de conexão (API não disponível)
             if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
-                console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â API nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ disponÃƒÆ’Ã‚Â­vel. Mostrando mensagem para o usuÃƒÆ’Ã‚Â¡rio.');
+                console.warn('⚠️ API não está disponível. Mostrando mensagem para o usuário.');
                 this.showApiUnavailableMessage();
             } else {
                 this.folders = [];
@@ -7587,7 +7513,7 @@ setupEventListeners() {
         }
     }
 
-    // Mostrar mensagem quando API nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ disponÃƒÆ’Ã‚Â­vel
+    // Mostrar mensagem quando API não está disponível
     renderFileOpsFolderOptions() {
         const sourceSelect = document.getElementById('fileops-source-configured');
         const targetSelect = document.getElementById('fileops-target-configured');
@@ -7621,7 +7547,7 @@ setupEventListeners() {
         foldersList.innerHTML = `
             <div class="empty-state api-unavailable">
                 <span class="material-icons" style="color: #ff9800;">warning</span>
-                <p><strong>Servidor nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ executando</strong></p>
+                <p><strong>Servidor não está executando</strong></p>
                 <small style="color: #666;">
                     O servidor Node.js precisa estar rodando para carregar as pastas.<br>
                     Execute: <code style="background: #f5f5f5; padding: 2px 4px; border-radius: 3px;">node src/main.js</code>
@@ -7634,14 +7560,14 @@ setupEventListeners() {
         `;    }
 
     renderConfiguredFolders() {
-        // Verificar se jÃƒÆ’Ã‚Â¡ estÃƒÆ’Ã‚Â¡ renderizando para evitar loops
+        // Verificar se já está renderizando para evitar loops
         if (this.isRenderingFolders) {            return;
         }
         this.isRenderingFolders = true;
 
         const foldersList = document.getElementById('folders-list');
         if (!foldersList) {
-            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Elemento folders-list nÃƒÆ’Ã‚Â£o encontrado');
+            console.warn('⚠️ Elemento folders-list não encontrado');
             this.isRenderingFolders = false;
             return;
         }
@@ -7650,7 +7576,7 @@ setupEventListeners() {
                 <div class="empty-state">
                     <span class="material-icons">folder_open</span>
                     <p>Nenhuma pasta configurada</p>
-                    <small>Use a configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida acima ou crie manualmente</small>
+                    <small>Use a configuração rápida acima ou crie manualmente</small>
                 </div>
             `;
             this.isRenderingFolders = false;
@@ -7676,27 +7602,27 @@ setupEventListeners() {
                 </div>
             </div>
         `).join('');
-        // Adicionar event listeners para os botÃƒÆ’Ã‚Âµes (evita CSP violation)
+        // Adicionar event listeners para os botões (evita CSP violation)
         this.addFolderEventListeners();
 
-        // Liberar flag de renderizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        // Liberar flag de renderização
         this.isRenderingFolders = false;
     }
 
     getFolderTypeLabel(type) {
         const labels = {
-            'source': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ Origem',
-            'target': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Destino',
-            'temp': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬Å¡ÃƒÂ¯Ã‚Â¸Ã‚Â TemporÃƒÆ’Ã‚Â¡ria',
-            'trash': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬ËœÃƒÂ¯Ã‚Â¸Ã‚Â Lixeira',
-            'any': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Qualquer'
+            'source': '📥 Origem',
+            'target': '📤 Destino',
+            'temp': '🗂️ Temporária',
+            'trash': '🗑️ Lixeira',
+            'any': '📁 Qualquer'
         };
         return labels[type] || type;
     }
 
-    // Adicionar event listeners para botÃƒÆ’Ã‚Âµes de pasta (evita CSP violation)
+    // Adicionar event listeners para botões de pasta (evita CSP violation)
     addFolderEventListeners() {
-        // BotÃƒÆ’Ã‚Âµes de editar pasta
+        // Botões de editar pasta
         const editButtons = document.querySelectorAll('.edit-folder-btn');
         editButtons.forEach(button => {
             button.addEventListener('click', (e) => {
@@ -7705,7 +7631,7 @@ setupEventListeners() {
             });
         });
 
-        // BotÃƒÆ’Ã‚Âµes de deletar pasta
+        // Botões de deletar pasta
         const deleteButtons = document.querySelectorAll('.delete-folder-btn');
         deleteButtons.forEach(button => {
             button.addEventListener('click', (e) => {
@@ -7717,7 +7643,7 @@ setupEventListeners() {
 
     // Adicionar event listeners para onboarding (evita CSP violation)
     addOnboardingEventListeners() {
-        // BotÃƒÆ’Ã‚Â£o de ajuda/tutorial
+        // Botão de ajuda/tutorial
         const helpBtn = document.querySelector('.help-tutorial-btn');
         if (helpBtn) {
             helpBtn.addEventListener('click', () => {
@@ -7725,7 +7651,7 @@ setupEventListeners() {
             });
         }
 
-        // BotÃƒÆ’Ã‚Âµes do modal de onboarding
+        // Botões do modal de onboarding
         const closeBtn = document.querySelector('.onboarding-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
@@ -7747,19 +7673,19 @@ setupEventListeners() {
             });
         }
 
-        // BotÃƒÆ’Ã‚Âµes de aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o principal (evita CSP violation)
+        // Botões de ação principal (evita CSP violation)
         this.addActionButtonListeners();
 
-        // BotÃƒÆ’Ã‚Âµes de slideshow
+        // Botões de slideshow
         this.addSlideshowEventListeners();
 
-        // Filtros de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de arquivo
+        // Filtros de operação de arquivo
         this.addFileOperationEventListeners();
     }
 
-    // Adicionar event listeners para botÃƒÆ’Ã‚Âµes de aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o (evita CSP violation)
+    // Adicionar event listeners para botões de ação (evita CSP violation)
     addActionButtonListeners() {
-        // BotÃƒÆ’Ã‚Âµes da dashboard principal
+        // Botões da dashboard principal
         const moveCard = document.querySelector('.action-move-card');
         if (moveCard) {
             moveCard.addEventListener('click', () => {
@@ -7805,10 +7731,10 @@ setupEventListeners() {
             });
         }
 
-        // BotÃƒÆ’Ã‚Âµes de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida de pastas
+        // Botões de configuração rápida de pastas
         this.addQuickFolderListeners();
 
-        // BotÃƒÆ’Ã‚Âµes de gerenciamento de pastas
+        // Botões de gerenciamento de pastas
         const folderManagerBtn = document.querySelector('.folder-manager-btn');
         if (folderManagerBtn) {
             folderManagerBtn.addEventListener('click', () => {
@@ -7824,7 +7750,7 @@ setupEventListeners() {
         }
     }
 
-    // Adicionar event listeners para botÃƒÆ’Ã‚Âµes de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida de pastas
+    // Adicionar event listeners para botões de configuração rápida de pastas
     addQuickFolderListeners() {
         const documentsCard = document.querySelector('.quick-folder-documents');
         if (documentsCard) {
@@ -7855,7 +7781,7 @@ setupEventListeners() {
         }
     }
 
-    // MÃƒÆ’Ã‚Â©todos de navegaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+    // Métodos de navegação
     switchTab(tabName) {
         document.querySelectorAll('.tab-content').forEach(tab => {
             tab.classList.remove('active');
@@ -7878,7 +7804,7 @@ setupEventListeners() {
                 this.loadWorkflows();
                 break;
             case 'folders':
-                // NÃƒÆ’Ã‚Â£o recarregar pastas se jÃƒÆ’Ã‚Â¡ foram carregadas na inicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+                // Não recarregar pastas se já foram carregadas na inicialização
                 if (!this.folders || this.folders.length === 0) {
                     this.loadFolders();
                 }
@@ -7889,7 +7815,7 @@ setupEventListeners() {
         }
     }
 
-    // MÃƒÆ’Ã‚Â©todos existentes mantidos
+    // Métodos existentes mantidos
     async updateDashboard() {
         try {
             await this.refreshDashboardData();
@@ -7903,9 +7829,9 @@ setupEventListeners() {
         if (!activityList) return;
 
         const activities = [
-            { icon: 'workflow', text: 'Fluxo configurado: Processamento CSV', time: '2 min atrÃƒÆ’Ã‚Â¡s' },
-            { icon: 'transform', text: 'Arquivo convertido: dados.csv ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ dados.json', time: '5 min atrÃƒÆ’Ã‚Â¡s' },
-            { icon: 'folder', text: 'Pasta configurada: Dados_Entrada', time: '10 min atrÃƒÆ’Ã‚Â¡s' }
+            { icon: 'workflow', text: 'Fluxo configurado: Processamento CSV', time: '2 min atrás' },
+            { icon: 'transform', text: 'Arquivo convertido: dados.csv → dados.json', time: '5 min atrás' },
+            { icon: 'folder', text: 'Pasta configurada: Dados_Entrada', time: '10 min atrás' }
         ];
 
         activityList.innerHTML = activities.map(activity => `
@@ -7919,7 +7845,7 @@ setupEventListeners() {
         `).join('');
     }
 
-    // MÃƒÆ’Ã‚Â©todos de conversÃƒÆ’Ã‚Â£o e mapeamento mantidos
+    // Métodos de conversão e mapeamento mantidos
     async convertData() {
         const sourceFormat = document.getElementById('source-format').value;
         const targetFormat = document.getElementById('target-format').value;
@@ -7946,14 +7872,14 @@ setupEventListeners() {
             if (response.ok) {
                 const result = await response.json();
                 this.showConversionResult(result);
-                this.showToast('ConversÃƒÆ’Ã‚Â£o realizada com sucesso!', 'success');
+                this.showToast('Conversão realizada com sucesso!', 'success');
             } else {
                 const error = await response.json();
-                this.showToast(`Erro na conversÃƒÆ’Ã‚Â£o: ${error.message}`, 'error');
+                this.showToast(`Erro na conversão: ${error.message}`, 'error');
             }
         } catch (error) {
-            console.error('Erro na conversÃƒÆ’Ã‚Â£o:', error);
-            this.showToast('Erro na conversÃƒÆ’Ã‚Â£o', 'error');
+            console.error('Erro na conversão:', error);
+            this.showToast('Erro na conversão', 'error');
         }
     }
 
@@ -7963,7 +7889,7 @@ setupEventListeners() {
 
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = `
-            <h3>Resultado da ConversÃƒÆ’Ã‚Â£o</h3>
+            <h3>Resultado da Conversão</h3>
             <div class="form-group">
                 <label>Dados Convertidos:</label>
                 <textarea readonly style="min-height: 200px; font-family: monospace;">${result.convertedData || result.data}</textarea>
@@ -8028,19 +7954,19 @@ setupEventListeners() {
                 <textarea readonly style="min-height: 200px; font-family: monospace;">${JSON.stringify(result.mapping, null, 2)}</textarea>
             </div>
             <div class="form-group">
-                <label>ConfianÃƒÆ’Ã‚Â§a:</label>
+                <label>Confiança:</label>
                 <input type="text" readonly value="${result.confidence || 'N/A'}%">
             </div>
         `;
     }
 
-    // MÃƒÆ’Ã‚Â©todos de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+    // Métodos de configurações
     async loadSettings() {
         try {
             this.settings = this.normalizeAppSettings(this.persistedConfig?.appSettings || this.settings || this.getDefaultAppSettings());
             this.populateSettingsForm();
         } catch (error) {
-            console.error('Erro ao carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes:', error);
+            console.error('Erro ao carregar configurações:', error);
         }
     }
 
@@ -8069,14 +7995,14 @@ setupEventListeners() {
             await this.saveFunctionalConfig({
                 appSettings: settings
             });
-            this.showToast('ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes salvas com sucesso!', 'success');
+            this.showToast('Configurações salvas com sucesso!', 'success');
         } catch (error) {
-            console.error('Erro ao salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes:', error);
-            this.showToast('Erro ao salvar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 'error');
+            console.error('Erro ao salvar configurações:', error);
+            this.showToast('Erro ao salvar configurações', 'error');
         }
     }
 
-    // MÃƒÆ’Ã‚Â©todos de arquivo
+    // Métodos de arquivo
     handleFileUpload(file) {
         if (!file) return;
 
@@ -8090,12 +8016,12 @@ setupEventListeners() {
         };
         reader.readAsText(file);
     }
-    // MÒ©todos de monitoramento
+    // Mҩtodos de monitoramento
     startMonitoring() {
         this.startUnifiedRefreshScheduler();
     }
 
-    // Sistema de notificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
+    // Sistema de notificações
     showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -8131,17 +8057,17 @@ setupEventListeners() {
         return icons[type] || 'info';
     }
 
-    // MÃƒÆ’Ã‚Â©todos de ajuda
+    // Métodos de ajuda
     updateSourceFolderInfo() {
         const sourceFolder = document.getElementById('source-folder');
         const helpText = document.getElementById('source-folder-help');
-        
+
         if (sourceFolder && helpText) {
             const selectedFolder = this.folders.find(f => f.id === sourceFolder.value);
             if (selectedFolder) {
                 helpText.textContent = `Pasta: ${selectedFolder.name} (${selectedFolder.path})`;
             } else {
-                helpText.textContent = 'Pasta onde os arquivos estÃƒÆ’Ã‚Â£o localizados';
+                helpText.textContent = 'Pasta onde os arquivos estão localizados';
             }
         }
     }
@@ -8149,13 +8075,13 @@ setupEventListeners() {
     updateTargetFolderInfo() {
         const targetFolder = document.getElementById('target-folder');
         const helpText = document.getElementById('target-folder-help');
-        
+
         if (targetFolder && helpText) {
             const selectedFolder = this.folders.find(f => f.id === targetFolder.value);
             if (selectedFolder) {
                 helpText.textContent = `Pasta: ${selectedFolder.name} (${selectedFolder.path})`;
             } else {
-                helpText.textContent = 'Pasta para onde os arquivos serÃƒÆ’Ã‚Â£o enviados';
+                helpText.textContent = 'Pasta para onde os arquivos serão enviados';
             }
         }
     }
@@ -8163,12 +8089,12 @@ setupEventListeners() {
     updateActionHelp() {
         const action = document.getElementById('file-action');
         const helpText = document.getElementById('action-help');
-        
+
         if (action && helpText) {
             const helpTexts = {
-                'copy': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Os arquivos originais permanecerÃƒÆ’Ã‚Â£o na pasta de origem',
-                'move': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Os arquivos originais serÃƒÆ’Ã‚Â£o removidos da pasta de origem',
-                'copy_and_clean': 'ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¹ Os arquivos serÃƒÆ’Ã‚Â£o copiados e os originais limpos/truncados'
+                'copy': '📋 Os arquivos originais permanecerão na pasta de origem',
+                'move': '📤 Os arquivos originais serão removidos da pasta de origem',
+                'copy_and_clean': '🧹 Os arquivos serão copiados e os originais limpos/truncados'
             };
             helpText.textContent = helpTexts[action.value] || helpTexts['copy'];
         }
@@ -8177,22 +8103,22 @@ setupEventListeners() {
     updateFolderTypeHelp() {
         const typeSelect = document.getElementById('folder-type');
         const typeHelp = document.getElementById('folder-type-help');
-        
+
         if (typeSelect && typeHelp) {
             const type = typeSelect.value;
             const helpTexts = {
-                'source': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ Pasta onde arquivos chegam para processamento',
-                'target': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Pasta onde arquivos processados sÃƒÆ’Ã‚Â£o salvos',
-                'temp': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬Å¡ÃƒÂ¯Ã‚Â¸Ã‚Â Pasta temporÃƒÆ’Ã‚Â¡ria para arquivos em processamento',
-                'trash': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬ËœÃƒÂ¯Ã‚Â¸Ã‚Â Pasta para arquivos removidos/antigos',
-                'any': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Pasta que pode ser usada como origem ou destino'
+                'source': '📥 Pasta onde arquivos chegam para processamento',
+                'target': '📤 Pasta onde arquivos processados são salvos',
+                'temp': '🗂️ Pasta temporária para arquivos em processamento',
+                'trash': '🗑️ Pasta para arquivos removidos/antigos',
+                'any': '📁 Pasta que pode ser usada como origem ou destino'
             };
             typeHelp.textContent = helpTexts[type] || helpTexts['source'];
         }
     }
 }
 
-// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes globais
+// Funções globais
 function openWorkflowConfig() {
     ui.openWorkflowConfig();
 }
@@ -8307,11 +8233,11 @@ function closeFileOperationModal() {
     document.getElementById('file-operation-modal').style.display = 'none';
 }
 
-// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para minimizar para system tray
+// Função para minimizar para system tray
 async function minimizeToTray() {
     try {
-        logger.info('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â± Minimizando aplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para system tray...');
-        
+        logger.info('📱 Minimizando aplicação para system tray...');
+
         const response = await fetch('/api/tray/minimize', {
             method: 'POST',
             headers: {
@@ -8322,18 +8248,18 @@ async function minimizeToTray() {
         const result = await response.json();
 
         if (result.success) {
-            logger.info('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ AplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o minimizada para system tray');
+            logger.info('✅ Aplicação minimizada para system tray');
             const activeUi = window.deParaUI || ui;
             if (activeUi && typeof activeUi.handleAppMinimizedToTray === 'function') {
                 await activeUi.handleAppMinimizedToTray();
             }
-            showToast('AplicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o minimizada para system tray', 'success');
+            showToast('Aplicação minimizada para system tray', 'success');
         } else {
-            logger.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Erro ao minimizar para system tray:', result.error);
+            logger.warn('⚠️ Erro ao minimizar para system tray:', result.error);
             showToast(result.error?.message || 'Erro ao minimizar para system tray', 'error');
         }
     } catch (error) {
-        logger.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao minimizar para system tray:', error);
+        logger.error('❌ Erro ao minimizar para system tray:', error);
         showToast('Erro ao minimizar para system tray', 'error');
     }
 }
@@ -8351,12 +8277,12 @@ async function executeFileOperation() {
     const extensions = extensionsInput ? extensionsInput.split(',').map(ext => ext.trim().toLowerCase()) : null;
 
     if (!sourcePath) {
-        showToast('Caminho de origem ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio', 'error');
+        showToast('Caminho de origem é obrigatório', 'error');
         return;
     }
 
     if ((action === 'move' || action === 'copy') && !targetPath) {
-        showToast('Caminho de destino ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio', 'error');
+        showToast('Caminho de destino é obrigatório', 'error');
         return;
     }
 
@@ -8390,18 +8316,18 @@ async function executeFileOperation() {
 
         if (result.success) {
             const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
-            showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${action} executada com sucesso!${structureMsg}`, 'success', true);
+            showToast(`Operação ${action} executada com sucesso!${structureMsg}`, 'success', true);
             closeFileOperationModal();
             // Refresh relevant sections
             forceReloadScheduledOperations();
             loadBackups();
         } else {
-            showToast(result.error?.message || 'Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error', true);
+            showToast(result.error?.message || 'Erro na operação', 'error', true);
         }
 
     } catch (error) {
-        console.error('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
-        showToast('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+        console.error('Erro ao executar operação:', error);
+        showToast('Erro ao executar operação', 'error');
     }
 }
 
@@ -8409,30 +8335,30 @@ async function executeFileOperation() {
 function legacyShowScheduleModal() {
     const modal = document.getElementById('schedule-modal');
 
-    // Preencher com dados da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o atual se disponÃƒÆ’Ã‚Â­vel
+    // Preencher com dados da operação atual se disponível
     if (window.deParaUI && window.deParaUI.currentConfig) {
         const config = window.deParaUI.currentConfig;
-        
+
         // Preencher campos com valores atuais
-        document.getElementById('schedule-name').value = config.name || `OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${config.operation || 'arquivo'}`;
+        document.getElementById('schedule-name').value = config.name || `Operação ${config.operation || 'arquivo'}`;
         document.getElementById('schedule-action').value = config.operation || '';
-        document.getElementById('schedule-frequency').value = '1d'; // PadrÃƒÆ’Ã‚Â£o: diariamente
+        document.getElementById('schedule-frequency').value = '1d'; // Padrão: diariamente
         document.getElementById('schedule-source').value = config.sourcePath || '';
         document.getElementById('schedule-target').value = config.targetPath || '';
-        
-        // Carregar filtros de extensÃƒÆ’Ã‚Âµes corretamente
+
+        // Carregar filtros de extensões corretamente
         let filtersValue = '';
         if (config.options && config.options.filters && config.options.filters.extensions) {
             filtersValue = config.options.filters.extensions.map(ext => `*.${ext}`).join(', ');
         }
         document.getElementById('schedule-filters').value = filtersValue;
-        
+
         document.getElementById('schedule-batch').checked = true;
         document.getElementById('schedule-backup').checked = false;    } else {
-        // Reset form se nÃƒÆ’Ã‚Â£o hÃƒÆ’Ã‚Â¡ configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        // Reset form se não há configuração
         document.getElementById('schedule-name').value = '';
         document.getElementById('schedule-action').value = '';
-        document.getElementById('schedule-frequency').value = '1d'; // PadrÃƒÆ’Ã‚Â£o: diariamente
+        document.getElementById('schedule-frequency').value = '1d'; // Padrão: diariamente
         document.getElementById('schedule-source').value = '';
         document.getElementById('schedule-target').value = '';
         document.getElementById('schedule-filters').value = '';
@@ -8445,7 +8371,7 @@ function legacyShowScheduleModal() {
     document.body.classList.add('modal-open');
 }
 
-// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o closeScheduleModal removida - usando window.closeScheduleModal
+// Função closeScheduleModal removida - usando window.closeScheduleModal
 
 function updateScheduleForm() {
     const action = document.getElementById('schedule-action').value;
@@ -8456,8 +8382,8 @@ function updateScheduleForm() {
     } else {
         targetGroup.style.display = 'block';
     }
-    
-    // Atualizar resumo da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+
+    // Atualizar resumo da operação
     updateOperationSummary();
 }
 
@@ -8466,15 +8392,15 @@ function updateOperationSummary() {
     const source = document.getElementById('schedule-source').value;
     const target = document.getElementById('schedule-target').value;
     const summaryDiv = document.getElementById('operation-summary');
-    
-    // Mostrar resumo apenas se hÃƒÆ’Ã‚Â¡ dados suficientes
+
+    // Mostrar resumo apenas se há dados suficientes
     if (action && source) {
         summaryDiv.style.display = 'block';
-        
-        // Atualizar conteÃƒÆ’Ã‚Âºdo do resumo
+
+        // Atualizar conteúdo do resumo
         document.getElementById('summary-action').textContent = action.toUpperCase();
         document.getElementById('summary-source').textContent = source;
-        document.getElementById('summary-target').textContent = target || (action === 'delete' ? 'N/A' : 'NÃƒÆ’Ã‚Â£o definido');
+        document.getElementById('summary-target').textContent = target || (action === 'delete' ? 'N/A' : 'Não definido');
     } else {
         summaryDiv.style.display = 'none';
     }
@@ -8483,7 +8409,7 @@ function updateOperationSummary() {
 async function legacyScheduleOperation() {
     const modal = document.getElementById('schedule-modal');
     const isEditing = modal.dataset.editingOperationId;
-    
+
     const name = document.getElementById('schedule-name').value.trim();
     const action = document.getElementById('schedule-action').value;
     const frequency = document.getElementById('schedule-frequency').value;
@@ -8494,12 +8420,12 @@ async function legacyScheduleOperation() {
     const backup = document.getElementById('schedule-backup').checked;
     const preserveStructure = document.getElementById('schedule-preserve-structure').checked;
     if (!name || !action || !frequency || !sourcePath) {
-        showToast('Preencha todos os campos obrigatÃƒÆ’Ã‚Â³rios', 'error');
+        showToast('Preencha todos os campos obrigatórios', 'error');
         return;
     }
 
     if ((action === 'move' || action === 'copy') && !targetPath) {
-        showToast('Caminho de destino ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio', 'error');
+        showToast('Caminho de destino é obrigatório', 'error');
         return;
     }
 
@@ -8507,13 +8433,13 @@ async function legacyScheduleOperation() {
         // Gerar ID correto baseado no contexto
         let operationId;
         if (isEditing) {
-            // EdiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: usar ID existente
+            // Edição: usar ID existente
             operationId = isEditing;
         } else {
-            // CriaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nova: gerar novo ID
+            // Criação nova: gerar novo ID
             operationId = `ui_${Date.now()}`;
         }
-        
+
         const requestData = {
             operationId,
             name,
@@ -8534,12 +8460,12 @@ async function legacyScheduleOperation() {
 
         // Processar filtros - sempre criar objeto filters, mesmo se vazio
         if (filters && filters.trim()) {
-            // Filtro especificado - processar extensÃƒÆ’Ã‚Âµes
+            // Filtro especificado - processar extensões
             requestData.options.filters = {
                 extensions: filters.split(',').map(ext => ext.trim().replace('*.', ''))
             };
         } else {
-            // Filtro vazio - nÃƒÆ’Ã‚Â£o aplicar filtros (aceitar todos os arquivos)
+            // Filtro vazio - não aplicar filtros (aceitar todos os arquivos)
             requestData.options.filters = {};
         }
 
@@ -8558,17 +8484,17 @@ async function legacyScheduleOperation() {
         if (result.success) {
             const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
             const actionMsg = isEditing ? 'editada' : 'agendada';
-            showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o "${name}" ${actionMsg} com sucesso!${structureMsg}`, 'success', true);
+            showToast(`Operação "${name}" ${actionMsg} com sucesso!${structureMsg}`, 'success', true);
             window.closeScheduleModal();
             forceReloadScheduledOperations();
         } else {
             const actionMsg = isEditing ? 'editar' : 'agendar';
-            showToast(result.error?.message || `Erro ao ${actionMsg} operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o`, 'error', true);
+            showToast(result.error?.message || `Erro ao ${actionMsg} operação`, 'error', true);
         }
 
     } catch (error) {
-        console.error('Erro ao agendar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
-        showToast('Erro ao agendar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+        console.error('Erro ao agendar operação:', error);
+        showToast('Erro ao agendar operação', 'error');
     }
 }
 
@@ -8799,21 +8725,21 @@ const loadingControl = {
     }
 };
 
-// Controle de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes simples
+// Controle de operações simples
 let isExecutingOperation = false;
 
-// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o helper para controle de carregamento com debouncing
+// Função helper para controle de carregamento com debouncing
 function shouldLoadData(type) {
     const now = Date.now();
     const control = loadingControl[type];
 
     if (!control) return false;
 
-    // Se jÃƒÆ’Ã‚Â¡ estÃƒÆ’Ã‚Â¡ carregando, nÃƒÆ’Ã‚Â£o permitir nova chamada
+    // Se já está carregando, não permitir nova chamada
     if (control.isLoading) {        return false;
     }
 
-    // Se carregou recentemente (debounce), nÃƒÆ’Ã‚Â£o permitir
+    // Se carregou recentemente (debounce), não permitir
     if (now - control.lastLoad < control.debounceMs) {        return false;
     }
 
@@ -8830,7 +8756,7 @@ function markLoading(type, isLoading) {
     }
 }
 
-// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o helper para carregamento seguro com verificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+// Função helper para carregamento seguro com verificação
 function safeLoadData(type, loadFunction) {
     if (shouldLoadData(type)) {        loadFunction();
     } else {    }
@@ -8847,14 +8773,14 @@ async function loadTemplates() {
     try {        const response = await fetch('/api/files/templates');
         const result = await response.json();
         if (result.success && result.data) {
-            // Usar categories diretamente se existir, senÃƒÆ’Ã‚Â£o usar array vazio
+            // Usar categories diretamente se existir, senão usar array vazio
             const categories = result.data.categories || [];            renderTemplates(categories);
         } else {
-            console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Resposta da API nÃƒÆ’Ã‚Â£o contÃƒÆ’Ã‚Â©m dados vÃƒÆ’Ã‚Â¡lidos');
+            console.warn('⚠️ Resposta da API não contém dados válidos');
             renderTemplates([]);
         }
     } catch (error) {
-        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao carregar templates:', error);
+        console.error('❌ Erro ao carregar templates:', error);
         renderTemplates([]);
     } finally {
         // Sempre liberar o flag de carregamento
@@ -8866,12 +8792,12 @@ function renderTemplates(categories) {
     const container = document.getElementById('template-categories');
 
     if (!container) {
-        console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Container de templates nÃƒÆ’Ã‚Â£o encontrado');
+        console.warn('⚠️ Container de templates não encontrado');
         return;
     }
-    // Verificar se categories ÃƒÆ’Ã‚Â© um array
+    // Verificar se categories é um array
     if (!Array.isArray(categories)) {
-        console.warn('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Categories nÃƒÆ’Ã‚Â£o ÃƒÆ’Ã‚Â© um array:', categories);
+        console.warn('⚠️ Categories não é um array:', categories);
         categories = [];
     }
 
@@ -8881,7 +8807,7 @@ function renderTemplates(categories) {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'template-category';
 
-        // Verificar se templates existe e ÃƒÆ’Ã‚Â© um array
+        // Verificar se templates existe e é um array
         const templates = category.templates || [];
         const templatesHtml = Array.isArray(templates) ? templates.map(template => `
                     <div class="template-card" onclick="applyTemplate('${template.category}', '${template.templateName}')">
@@ -8891,7 +8817,7 @@ function renderTemplates(categories) {
                             <button class="btn btn-sm btn-primary">Aplicar</button>
                         </div>
                     </div>
-                `).join('') : '<p class="no-templates">Nenhum template disponÃƒÆ’Ã‚Â­vel</p>';
+                `).join('') : '<p class="no-templates">Nenhum template disponível</p>';
 
         categoryDiv.innerHTML = `
             <div class="category-header">
@@ -8935,19 +8861,19 @@ async function applyTemplate(category, name) {
 async function loadProgress() {
     try {
         const response = await fetch('/api/files/progress');
-        
+
         if (!response.ok) {
-            // Se a resposta nÃƒÆ’Ã‚Â£o for OK, nÃƒÆ’Ã‚Â£o logar erro (pode ser normal)
+            // Se a resposta não for OK, não logar erro (pode ser normal)
             return;
         }
-        
+
         const result = await response.json();
 
         if (result.success) {
             renderProgress(result.data);
         }
     } catch (error) {
-        // SÃƒÆ’Ã‚Â³ logar erro se nÃƒÆ’Ã‚Â£o for erro de conexÃƒÆ’Ã‚Â£o (que ÃƒÆ’Ã‚Â© normal quando nÃƒÆ’Ã‚Â£o hÃƒÆ’Ã‚Â¡ operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ativas)
+        // Só logar erro se não for erro de conexão (que é normal quando não há operações ativas)
         if (!error.message.includes('Failed to fetch') && !error.message.includes('ERR_CONNECTION_REFUSED')) {
             console.error('Erro ao carregar progresso:', error);
         }
@@ -8958,7 +8884,7 @@ function renderProgress(operations) {
     const container = document.getElementById('progress-list');
 
     if (operations.length === 0) {
-        container.innerHTML = '<p class="empty-state">Nenhuma operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o em andamento</p>';
+        container.innerHTML = '<p class="empty-state">Nenhuma operação em andamento</p>';
         return;
     }
 
@@ -8973,7 +8899,7 @@ function renderProgress(operations) {
                 <div class="progress-header">
                     <span class="progress-title">${op.operationId}</span>
                     <span class="progress-percentage">
-                        ${isError ? 'Erro' : isCompleted ? 'ConcluÃƒÆ’Ã‚Â­do' : `${op.percentage}%`}
+                        ${isError ? 'Erro' : isCompleted ? 'Concluído' : `${op.percentage}%`}
                     </span>
                 </div>
                 <div class="progress-bar-container">
@@ -9001,7 +8927,7 @@ async function loadScheduledOperations(options = {}) {
             renderScheduledOperations(result.data);
         }
     } catch (error) {
-        console.error('Erro ao carregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas:', error);
+        console.error('Erro ao carregar operações agendadas:', error);
     } finally {
         // Sempre liberar o flag de carregamento
         markLoading('scheduledOperations', false);
@@ -9012,7 +8938,7 @@ function renderScheduledOperations(operations) {
     const container = document.getElementById('scheduled-operations-list');
 
     if (operations.length === 0) {
-        container.innerHTML = '<p class="empty-state">Nenhuma operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o agendada</p>';
+        container.innerHTML = '<p class="empty-state">Nenhuma operação agendada</p>';
         return;
     }
 
@@ -9027,19 +8953,19 @@ function renderScheduledOperations(operations) {
                 <p><strong>Status:</strong> ${op.active ? 'Ativa' : 'Pausada'}</p>
             </div>
             <div class="operation-actions">
-                <button class="btn btn-sm btn-primary edit-scheduled-operation-btn" data-operation-id="${op.id}" title="Editar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o">
+                <button class="btn btn-sm btn-primary edit-scheduled-operation-btn" data-operation-id="${op.id}" title="Editar operação">
                     <span class="material-icons">edit</span>
                 </button>
-                <button class="btn btn-sm btn-info duplicate-scheduled-operation-btn" data-operation-id="${op.id}" title="Duplicar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o">
+                <button class="btn btn-sm btn-info duplicate-scheduled-operation-btn" data-operation-id="${op.id}" title="Duplicar operação">
                     <span class="material-icons">content_copy</span>
                 </button>
                 <button class="btn btn-sm btn-success execute-scheduled-operation-btn" data-operation-id="${op.id}" title="Executar agora">
                     <span class="material-icons">play_arrow</span>
                 </button>
-                <button class="btn btn-sm btn-warning toggle-scheduled-operation-btn" data-operation-id="${op.id}" data-active="${op.active}" title="${op.active ? 'Pausar' : 'Retomar'} operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o">
+                <button class="btn btn-sm btn-warning toggle-scheduled-operation-btn" data-operation-id="${op.id}" data-active="${op.active}" title="${op.active ? 'Pausar' : 'Retomar'} operação">
                     <span class="material-icons">${op.active ? 'pause' : 'play_arrow'}</span>
                 </button>
-                <button class="btn btn-sm btn-danger cancel-scheduled-operation-btn" data-operation-id="${op.id}" title="Cancelar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o">
+                <button class="btn btn-sm btn-danger cancel-scheduled-operation-btn" data-operation-id="${op.id}" title="Cancelar operação">
                     <span class="material-icons">delete</span>
                 </button>
             </div>
@@ -9057,22 +8983,22 @@ async function cancelScheduledOperation(operationId) {
         const result = await response.json();
 
         if (result.success) {
-            showToast('OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o cancelada com sucesso!', 'success', true);
+            showToast('Operação cancelada com sucesso!', 'success', true);
             forceReloadScheduledOperations();
         } else {
-            showToast(result.error?.message || 'Erro ao cancelar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error', true);
+            showToast(result.error?.message || 'Erro ao cancelar operação', 'error', true);
         }
 
     } catch (error) {
-        console.error('Erro ao cancelar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
-        showToast('Erro ao cancelar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+        console.error('Erro ao cancelar operação:', error);
+        showToast('Erro ao cancelar operação', 'error');
     }
 }
 
-// Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o agendada imediatamente
+// Executar operação agendada imediatamente
 async function executeScheduledOperation(operationId) {
     if (!operationId) {
-        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ ID da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o fornecido');
+        console.error('❌ ID da operação não fornecido');
         return;
     }
 
@@ -9083,35 +9009,35 @@ async function executeScheduledOperation(operationId) {
 
         if (response.ok) {
             const result = await response.json();
-            
+
             if (result.success) {
-                showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o executada com sucesso! ${result.message || ''}`, 'success', true);
-                
-                // Recarregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas para mostrar status atualizado
+                showToast(`Operação executada com sucesso! ${result.message || ''}`, 'success', true);
+
+                // Recarregar operações agendadas para mostrar status atualizado
                 if (typeof loadScheduledOperations === 'function') {
                     forceReloadScheduledOperations();
                 }
             } else {
-                throw new Error(result.error || 'Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
+                throw new Error(result.error || 'Erro ao executar operação');
             }
         } else {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
     } catch (error) {
-        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
-        showToast('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: ' + error.message, 'error', true);
+        console.error('❌ Erro ao executar operação:', error);
+        showToast('Erro ao executar operação: ' + error.message, 'error', true);
     }
 }
 
-// Pausar/Retomar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o agendada
+// Pausar/Retomar operação agendada
 async function toggleScheduledOperation(operationId) {
     if (!operationId) {
-        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ ID da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o fornecido');
+        console.error('❌ ID da operação não fornecido');
         return;
     }
 
     try {
-        // Primeiro, obter o status atual da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+        // Primeiro, obter o status atual da operação
         const response = await fetch(`/api/files/schedule/${operationId}`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -9119,7 +9045,7 @@ async function toggleScheduledOperation(operationId) {
 
         const result = await response.json();
         if (!result.success) {
-            throw new Error(result.error || 'Erro ao obter operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
+            throw new Error(result.error || 'Erro ao obter operação');
         }
 
         const currentStatus = result.data.active;
@@ -9135,22 +9061,22 @@ async function toggleScheduledOperation(operationId) {
         if (updateResponse.ok) {
             const updateResult = await updateResponse.json();
             if (updateResult.success) {
-                showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${newStatus ? 'retomada' : 'pausada'} com sucesso!`, 'success', true);
-                // Recarregar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes agendadas
+                showToast(`Operação ${newStatus ? 'retomada' : 'pausada'} com sucesso!`, 'success', true);
+                // Recarregar operações agendadas
                 forceReloadScheduledOperations();
             } else {
-                throw new Error(updateResult.error || 'Erro ao atualizar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o');
+                throw new Error(updateResult.error || 'Erro ao atualizar operação');
             }
         } else {
             throw new Error(`HTTP ${updateResponse.status}: ${updateResponse.statusText}`);
         }
     } catch (error) {
-        console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Erro ao alterar status da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
-        showToast('Erro ao alterar status da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: ' + error.message, 'error', true);
+        console.error('❌ Erro ao alterar status da operação:', error);
+        showToast('Erro ao alterar status da operação: ' + error.message, 'error', true);
     }
 }
 
-// Editar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o agendada
+// Editar operação agendada
 // Editar operação agendada
 async function editScheduledOperation(operationId) {
     try {
@@ -9452,7 +9378,7 @@ function showSystemNotification(title, body, icon = '/icon-192x192.png') {
         };
 
     } catch (error) {
-        console.error('Erro ao mostrar notificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+        console.error('Erro ao mostrar notificação:', error);
     }
 }
 
@@ -9471,7 +9397,7 @@ function showToast(message, type = 'info', showSystemNotification = false) {
 
     // Show system notification for important messages
     if (showSystemNotification && (type === 'success' || type === 'error')) {
-        const title = type === 'success' ? 'OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ConcluÃƒÆ’Ã‚Â­da' : 'Erro na OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o';
+        const title = type === 'success' ? 'Operação Concluída' : 'Erro na Operação';
         if (typeof showSystemNotification === 'function') {
             showSystemNotification(title, message);
         }
@@ -9492,7 +9418,7 @@ async function executeFileOperationDirectLegacy(file, operation, destination) {
 
         const requestData = {
             action: operation,
-            sourcePath: file.path || file.name, // Para arquivos do drag & drop, pode nÃƒÆ’Ã‚Â£o ter path
+            sourcePath: file.path || file.name, // Para arquivos do drag & drop, pode não ter path
             options: {
                 preserveStructure,
                 batch: false
@@ -9515,7 +9441,7 @@ async function executeFileOperationDirectLegacy(file, operation, destination) {
 
         if (result.success) {
             const structureMsg = preserveStructure ? ' (estrutura preservada)' : ' (estrutura achatada)';
-            showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${operation} executada com sucesso!${structureMsg}`, 'success', true);
+            showToast(`Operação ${operation} executada com sucesso!${structureMsg}`, 'success', true);
 
             // Fecha modal se existir
             const modal = document.querySelector('.modal');
@@ -9524,12 +9450,12 @@ async function executeFileOperationDirectLegacy(file, operation, destination) {
             // Limpa preview
             clearFilePreview();
         } else {
-            showToast(result.error?.message || 'Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error', true);
+            showToast(result.error?.message || 'Erro na operação', 'error', true);
         }
 
     } catch (error) {
-        console.error('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
-        showToast('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error', true);
+        console.error('Erro ao executar operação:', error);
+        showToast('Erro ao executar operação', 'error', true);
     }
 }
 
@@ -9560,15 +9486,15 @@ async function updateBackupConfig() {
         const result = await response.json();
 
         if (result.success) {
-            showToast('ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de backup atualizadas!', 'success', true);
+            showToast('Configurações de backup atualizadas!', 'success', true);
             loadBackups();
         } else {
-            showToast(result.error?.message || 'Erro ao atualizar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 'error', true);
+            showToast(result.error?.message || 'Erro ao atualizar configurações', 'error', true);
         }
 
     } catch (error) {
-        console.error('Erro ao atualizar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de backup:', error);
-        showToast('Erro ao atualizar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de backup', 'error');
+        console.error('Erro ao atualizar configurações de backup:', error);
+        showToast('Erro ao atualizar configurações de backup', 'error');
     }
 }
 
@@ -9585,7 +9511,7 @@ async function loadBackupConfig() {
             document.getElementById('backup-enabled').checked = config.enabled !== false;
         }
     } catch (error) {
-        console.error('Erro ao carregar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de backup:', error);
+        console.error('Erro ao carregar configurações de backup:', error);
     }
 }
 
@@ -9626,7 +9552,7 @@ function handleDragLeave(e) {
     e.stopPropagation();
 
     const dropZone = document.getElementById('drag-drop-zone');
-    // SÃƒÆ’Ã‚Â³ remove a classe se o mouse saiu realmente da zona
+    // Só remove a classe se o mouse saiu realmente da zona
     const rect = dropZone.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
@@ -9666,7 +9592,7 @@ function showFilePreview(files) {
     const dropContent = dropZone.querySelector('.drop-zone-content');
     const dropPreview = document.getElementById('drop-preview');
 
-    // Esconde conteÃƒÆ’Ã‚Âºdo original
+    // Esconde conteúdo original
     dropContent.style.display = 'none';
 
     // Mostra preview
@@ -9681,7 +9607,7 @@ function showFilePreview(files) {
                     </span>
                     <div class="file-preview-info">
                         <h5>${file.name}</h5>
-                        <p>${formatFileSize(file.size)} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ ${getFileType(file.type, file.name)}</p>
+                        <p>${formatFileSize(file.size)} • ${getFileType(file.type, file.name)}</p>
                     </div>
                     <div class="file-preview-actions">
                         <button class="btn btn-sm btn-primary" onclick="selectOperationForFile(${index}, 'move')">
@@ -9700,7 +9626,7 @@ function showFilePreview(files) {
         <div class="preview-actions" style="margin-top: 20px;">
             <button class="btn btn-secondary" onclick="clearFilePreview()">
                 <span class="material-icons">clear</span>
-                Limpar SeleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+                Limpar Seleção
             </button>
         </div>
     `;
@@ -9711,7 +9637,7 @@ function selectOperationForFile(fileIndex, operation) {
     currentOperation = { file, operation };
 
     if (operation === 'delete') {
-        // Para delete, nÃƒÆ’Ã‚Â£o precisa de destino
+        // Para delete, não precisa de destino
         showDeleteConfirmation(file);
     } else {
         // Para move/copy, precisa escolher destino
@@ -9720,7 +9646,7 @@ function selectOperationForFile(fileIndex, operation) {
 }
 
 function showDeleteConfirmation(file) {
-    if (confirm(`Tem certeza que deseja apagar "${file.name}"?\n\nEsta aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o criarÃƒÆ’Ã‚Â¡ um backup automÃƒÆ’Ã‚Â¡tico.`)) {
+    if (confirm(`Tem certeza que deseja apagar "${file.name}"?\n\nEsta ação criará um backup automático.`)) {
         executeFileOperationDirect(file, 'delete', null);
     }
 }
@@ -9745,14 +9671,14 @@ function showDestinationModal(file, operation) {
                 <div class="form-group">
                     <label>Caminho de destino:</label>
                     <input type="text" id="destination-path" placeholder="/caminho/destino" required>
-                    <small class="form-help">Digite o caminho completo onde o arquivo serÃƒÆ’Ã‚Â¡ ${operation === 'move' ? 'movido' : 'copiado'}</small>
+                    <small class="form-help">Digite o caminho completo onde o arquivo será ${operation === 'move' ? 'movido' : 'copiado'}</small>
                 </div>
                 <div class="form-group">
                     <label>
                         <input type="checkbox" id="preserve-structure-modal" checked>
                         Preservar estrutura de pastas
                     </label>
-                    <small class="form-help">MantÃƒÆ’Ã‚Â©m a organizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de subpastas no destino</small>
+                    <small class="form-help">Mantém a organização de subpastas no destino</small>
                 </div>
             </div>
             <div class="modal-footer">
@@ -9774,7 +9700,7 @@ async function executeFileOperationDirect(file, operation, destination) {
 
         const requestData = {
             action: operation,
-            sourcePath: file.path || file.name, // Para arquivos do drag & drop, pode nÃƒÆ’Ã‚Â£o ter path
+            sourcePath: file.path || file.name, // Para arquivos do drag & drop, pode não ter path
             options: {
                 preserveStructure,
                 batch: false
@@ -9796,7 +9722,7 @@ async function executeFileOperationDirect(file, operation, destination) {
         const result = await response.json();
 
         if (result.success) {
-            showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${operation} executada com sucesso!`, 'success');
+            showToast(`Operação ${operation} executada com sucesso!`, 'success');
 
             // Fecha modal se existir
             const modal = document.querySelector('.modal');
@@ -9805,12 +9731,12 @@ async function executeFileOperationDirect(file, operation, destination) {
             // Limpa preview
             clearFilePreview();
         } else {
-            showToast(result.error?.message || 'Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+            showToast(result.error?.message || 'Erro na operação', 'error');
         }
 
     } catch (error) {
-        console.error('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
-        showToast('Erro ao executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+        console.error('Erro ao executar operação:', error);
+        showToast('Erro ao executar operação', 'error');
     }
 }
 
@@ -9833,7 +9759,7 @@ function getFileIcon(mimeType, fileName) {
     if (mimeType.startsWith('audio/')) return 'audiotrack';
     if (mimeType === 'application/pdf') return 'picture_as_pdf';
 
-    // Por extensÃƒÆ’Ã‚Â£o
+    // Por extensão
     const ext = fileName.split('.').pop().toLowerCase();
     switch (ext) {
         case 'txt': return 'description';
@@ -9879,11 +9805,11 @@ async function showIgnoredPatterns() {
         if (result.success) {
             showIgnoredPatternsModal(result.data);
         } else {
-            showToast('Erro ao carregar padrÃƒÆ’Ã‚Âµes ignorados', 'error');
+            showToast('Erro ao carregar padrões ignorados', 'error');
         }
     } catch (error) {
-        console.error('Erro ao carregar padrÃƒÆ’Ã‚Âµes ignorados:', error);
-        showToast('Erro ao carregar padrÃƒÆ’Ã‚Âµes ignorados', 'error');
+        console.error('Erro ao carregar padrões ignorados:', error);
+        showToast('Erro ao carregar padrões ignorados', 'error');
     }
 }
 
@@ -9893,26 +9819,26 @@ function showIgnoredPatternsModal(data) {
     modal.innerHTML = `
         <div class="modal-content large-modal">
             <div class="modal-header">
-                <h3>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â¡ÃƒÂ¯Ã‚Â¸Ã‚Â Arquivos Automaticamente Ignorados</h3>
+                <h3>🛡️ Arquivos Automaticamente Ignorados</h3>
                 <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
             </div>
             <div class="modal-body">
                 <div class="ignored-description">
                     <p><strong>Por que ignorar arquivos?</strong></p>
-                    <p>Certos arquivos sÃƒÆ’Ã‚Â£o crÃƒÆ’Ã‚Â­ticos para o funcionamento do sistema e sincronizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o.
-                    Eles sÃƒÆ’Ã‚Â£o automaticamente ignorados para evitar:</p>
+                    <p>Certos arquivos são críticos para o funcionamento do sistema e sincronização.
+                    Eles são automaticamente ignorados para evitar:</p>
                     <ul>
-                        <li>ÃƒÂ¢Ã‚ÂÃ…â€™ InterrupÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da sincronizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do Resilio Sync</li>
-                        <li>ÃƒÂ¢Ã‚ÂÃ…â€™ Problemas de compatibilidade entre sistemas</li>
-                        <li>ÃƒÂ¢Ã‚ÂÃ…â€™ Processamento desnecessÃƒÆ’Ã‚Â¡rio de arquivos temporÃƒÆ’Ã‚Â¡rios</li>
-                        <li>ÃƒÂ¢Ã‚ÂÃ…â€™ Conflitos com ferramentas de desenvolvimento</li>
+                        <li>❌ Interrupção da sincronização do Resilio Sync</li>
+                        <li>❌ Problemas de compatibilidade entre sistemas</li>
+                        <li>❌ Processamento desnecessário de arquivos temporários</li>
+                        <li>❌ Conflitos com ferramentas de desenvolvimento</li>
                     </ul>
                 </div>
 
                 <div class="ignored-categories">
                     ${Object.entries(data.categories).map(([key, description]) => `
                         <div class="ignored-category">
-                            <h4>${key === 'resilioSync' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾' : key === 'systemFiles' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â»' : 'ÃƒÂ¢Ã‚ÂÃ‚Â°'} ${description.split(' - ')[0]}</h4>
+                            <h4>${key === 'resilioSync' ? '🔄' : key === 'systemFiles' ? '💻' : '⏰'} ${description.split(' - ')[0]}</h4>
                             <p>${description}</p>
                             <div class="patterns-grid">
                                 ${data.patterns[key].map(pattern => `
@@ -9924,8 +9850,8 @@ function showIgnoredPatternsModal(data) {
                 </div>
 
                 <div class="ignored-test">
-                    <h4>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Testar Arquivo</h4>
-                    <p>Verifique se um arquivo especÃƒÆ’Ã‚Â­fico seria ignorado:</p>
+                    <h4>🔍 Testar Arquivo</h4>
+                    <p>Verifique se um arquivo específico seria ignorado:</p>
                     <div class="test-form">
                         <input type="text" id="test-file-path" placeholder="/caminho/arquivo.ext" style="flex: 1;">
                         <button class="btn btn-primary" onclick="testFileIgnore()">
@@ -9975,7 +9901,7 @@ async function testFileIgnore() {
             const isIgnored = result.data.shouldIgnore;
             resultDiv.innerHTML = `
                 <div style="padding: 10px; border-radius: 6px; background: ${isIgnored ? '#ffebee' : '#e8f5e8'}; border-left: 4px solid ${isIgnored ? '#f44336' : '#4caf50'};">
-                    <strong>${isIgnored ? 'ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Â« IGNORADO' : 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ PROCESSADO'}</strong><br>
+                    <strong>${isIgnored ? '🚫 IGNORADO' : '✅ PROCESSADO'}</strong><br>
                     <small>${result.data.reason}</small>
                 </div>
             `;
@@ -10036,7 +9962,7 @@ function saveSettings() {
 // ==========================================
 // SLIDESHOW FUNCTIONALITY (LEGACY - REMOVIDO)
 // ==========================================
-// Agora usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
+// Agora usando implementação da classe DeParaUI
 
 
 function closeSlideshowConfigModal() {
@@ -10048,15 +9974,15 @@ function closeSlideshowConfigModal() {
 }
 
 function resetSlideshowFolderForm() {
-    // NÃƒÆ’Ã‚Â£o limpar o campo de pasta se houver uma pasta salva
+    // Não limpar o campo de pasta se houver uma pasta salva
     const savedPath = window.deParaUI?.getSlideshowSelectedPath?.() || '';
     if (!savedPath) {
         document.getElementById('slideshow-folder-path').value = '';
     }
-    
+
     document.getElementById('slideshow-max-depth').value = '3';
 
-    // Resetar checkboxes de extensÃƒÆ’Ã‚Âµes
+    // Resetar checkboxes de extensões
     const extensionCheckboxes = document.querySelectorAll('.extension-selector input[type="checkbox"]');
     extensionCheckboxes.forEach(checkbox => {
         const isDefaultChecked = ['jpg', 'jpeg', 'png', 'gif'].includes(checkbox.value);
@@ -10065,12 +9991,12 @@ function resetSlideshowFolderForm() {
 }
 
 async function startSlideshow() {
-    // Usar a implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
+    // Usar a implementação da classe DeParaUI
     if (window.deParaUI) {
         window.deParaUI.startSlideshowFromModal();
     } else {
-        console.error('DeParaUI nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ disponÃƒÆ’Ã‚Â­vel');
-        showToast('Erro: Interface nÃƒÆ’Ã‚Â£o inicializada', 'error');
+        console.error('DeParaUI não está disponível');
+        showToast('Erro: Interface não inicializada', 'error');
     }
 }
 
@@ -10085,26 +10011,26 @@ async function startSlideshow() {
 // END SLIDESHOW FUNCTIONALITY
 // ==========================================
 
-// InicializaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+// Inicialização
 let ui;
 document.addEventListener('DOMContentLoaded', () => {
     if (window.__deparaMainInitDone) return;
     window.__deparaMainInitDone = true;
     ui = new DeParaUI();
 
-    // ApÃƒÆ’Ã‚Â³s inicializar, definir funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes globais
+    // Após inicializar, definir funções globais
     setTimeout(() => {
-        // Tornar UI disponÃƒÆ’Ã‚Â­vel globalmente primeiro
+        // Tornar UI disponível globalmente primeiro
         window.deParaUI = ui;
 
-        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o global para limpar busca
+        // Função global para limpar busca
         window.clearSearchGlobal = function() {
             if (window.deParaUI) {
                 window.deParaUI.clearSearch();
             }
         };
 
-        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes globais para onboarding
+        // Funções globais para onboarding
         window.closeOnboarding = function() {
             if (window.deParaUI) {
                 window.deParaUI.closeOnboarding();
@@ -10117,7 +10043,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida de pastas
+        // Funções de configuração rápida de pastas
         window.createQuickFolder = function(type) {
             if (window.deParaUI) {
                 window.deParaUI.createQuickFolder(type);
@@ -10136,7 +10062,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-            // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes auxiliares globais
+            // Funções auxiliares globais
         window.editFolder = function(folderId) {
             if (window.deParaUI) {
                 window.deParaUI.editFolder(folderId);
@@ -10149,7 +10075,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes para botÃƒÆ’Ã‚Âµes de dashboard
+        // Funções para botões de dashboard
         window.refreshCharts = function() {
             if (window.deParaUI) {
                 window.deParaUI.updateCharts();
@@ -10243,10 +10169,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.classList.remove('modal-open');            }
         };
 
-        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o startSlideshow removida - usando implementaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o da classe DeParaUI
-        // window.startSlideshow agora ÃƒÆ’Ã‚Â© apenas um alias para window.deParaUI.startSlideshowFromModal()
+        // Função startSlideshow removida - usando implementação da classe DeParaUI
+        // window.startSlideshow agora é apenas um alias para window.deParaUI.startSlideshowFromModal()
 
-        // FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de slideshow (estas sÃƒÆ’Ã‚Â£o mÃƒÆ’Ã‚Â©todos da classe DeParaUI)
+        // Funções de slideshow (estas são métodos da classe DeParaUI)
         window.previousImage = function() {
             if (window.deParaUI && typeof window.deParaUI.previousSlide === 'function') {
                 window.deParaUI.previousSlide();
@@ -10265,13 +10191,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Adicionar event listeners para botÃƒÆ’Ã‚Âµes (evita CSP violation)
+        // Adicionar event listeners para botões (evita CSP violation)
         ui.addOnboardingEventListeners();
         ui.setupAdditionalEventListeners();
     }, 100);
 });
 
-// FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para substituir caminhos dinÃƒÆ’Ã‚Â¢micos baseados na plataforma
+// Função para substituir caminhos dinâmicos baseados na plataforma
 function updateDynamicPaths() {
     const isWindows = navigator.userAgent.indexOf('Windows') > -1;
     const defaultPicturesPath = isWindows ? 'C:\\Users\\User\\Pictures' : '/home/yo/Pictures';
@@ -10290,16 +10216,16 @@ function updateDynamicPaths() {
     }
 }
 
-// Executar quando o DOM estiver carregado (jÃƒÆ’Ã‚Â¡ feito em updateSimplePaths)
+// Executar quando o DOM estiver carregado (já feito em updateSimplePaths)
 
 // ===========================================
-// FUNÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã¢â‚¬Â¢ES DE OPERAÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã¢â‚¬Â¢ES SIMPLES DE ARQUIVOS
+// FUNÇÕES DE OPERAÇÕES SIMPLES DE ARQUIVOS
 // ===========================================
 
-// Executar operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o simples
+// Executar operação simples
 async function executeSimpleOperation(action) {
     if (isExecutingOperation) {
-        showToast('OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o jÃƒÆ’Ã‚Â¡ em andamento. Aguarde...', 'warning');
+        showToast('Operação já em andamento. Aguarde...', 'warning');
         return;
     }
 
@@ -10308,7 +10234,7 @@ async function executeSimpleOperation(action) {
     const recursive = document.getElementById('recursive-option').checked;
     const backup = document.getElementById('backup-option').checked;
 
-    // ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o bÃƒÆ’Ã‚Â¡sica
+    // Validação básica
     if (!sourcePath) {
         showToast('Digite o caminho de origem', 'error');
         return;
@@ -10319,16 +10245,16 @@ async function executeSimpleOperation(action) {
         return;
     }
 
-    // Mostrar resultado da operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+    // Mostrar resultado da operação
     const resultDiv = document.getElementById('operation-result');
     const resultIcon = document.getElementById('result-icon');
     const resultText = document.getElementById('result-text');
 
     resultDiv.style.display = 'block';
     resultIcon.textContent = 'hourglass_empty';
-    resultText.textContent = 'Executando operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o...';
+    resultText.textContent = 'Executando operação...';
 
-    // Desabilitar botÃƒÆ’Ã‚Âµes durante execuÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+    // Desabilitar botões durante execução
     setOperationButtonsDisabled(true);
     isExecutingOperation = true;
 
@@ -10366,8 +10292,8 @@ async function executeSimpleOperation(action) {
 
         if (response.ok && result.success) {
             resultIcon.textContent = 'check_circle';
-            resultText.textContent = `ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${action} executada com sucesso!`;
-            showToast(`OperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ${action} concluÃƒÆ’Ã‚Â­da!`, 'success');
+            resultText.textContent = `✅ Operação ${action} executada com sucesso!`;
+            showToast(`Operação ${action} concluída!`, 'success');
 
             // Atualizar atividades recentes
             if (typeof loadRecentActivities === 'function') {
@@ -10375,23 +10301,23 @@ async function executeSimpleOperation(action) {
             }
         } else {
             resultIcon.textContent = 'error';
-            resultText.textContent = `ÃƒÂ¢Ã‚ÂÃ…â€™ Erro: ${result.error?.message || 'Erro desconhecido'}`;
-            showToast(result.error?.message || 'Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', 'error');
+            resultText.textContent = `❌ Erro: ${result.error?.message || 'Erro desconhecido'}`;
+            showToast(result.error?.message || 'Erro na operação', 'error');
         }
 
     } catch (error) {
-        console.error('Erro na operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o:', error);
+        console.error('Erro na operação:', error);
         resultIcon.textContent = 'error';
-        resultText.textContent = `ÃƒÂ¢Ã‚ÂÃ…â€™ Erro de conexÃƒÆ’Ã‚Â£o: ${error.message}`;
-        showToast('Erro de conexÃƒÆ’Ã‚Â£o com o servidor', 'error');
+        resultText.textContent = `❌ Erro de conexão: ${error.message}`;
+        showToast('Erro de conexão com o servidor', 'error');
     } finally {
-        // Reabilitar botÃƒÆ’Ã‚Âµes
+        // Reabilitar botões
         setOperationButtonsDisabled(false);
         isExecutingOperation = false;
     }
 }
 
-// Desabilitar/Habilitar botÃƒÆ’Ã‚Âµes de operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
+// Desabilitar/Habilitar botões de operação
 function setOperationButtonsDisabled(disabled) {
     const buttons = ['move-btn', 'copy-btn', 'delete-btn'];
     buttons.forEach(btnId => {
@@ -10408,7 +10334,7 @@ function browseSourcePath() {
     if (window.deParaUI && typeof window.deParaUI.showFolderBrowser === 'function') {
         window.deParaUI.showFolderBrowser('source');
     } else {
-        console.warn('FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o showFolderBrowser nÃƒÆ’Ã‚Â£o encontrada');
+        console.warn('Função showFolderBrowser não encontrada');
         // Fallback: apenas focar no input
         const input = document.getElementById('source-path');
         if (input) {
@@ -10423,7 +10349,7 @@ function browseDestPath() {
     if (window.deParaUI && typeof window.deParaUI.showFolderBrowser === 'function') {
         window.deParaUI.showFolderBrowser('target');
     } else {
-        console.warn('FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o showFolderBrowser nÃƒÆ’Ã‚Â£o encontrada');
+        console.warn('Função showFolderBrowser não encontrada');
         // Fallback: apenas focar no input
         const input = document.getElementById('dest-path');
         if (input) {
@@ -10433,10 +10359,10 @@ function browseDestPath() {
     }
 }
 
-// Atualizar caminhos baseados na plataforma (versÃƒÆ’Ã‚Â£o simplificada)
+// Atualizar caminhos baseados na plataforma (versão simplificada)
 function updateSimplePaths() {
     const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-    const userName = 'user'; // Valor padrÃƒÆ’Ã‚Â£o simples
+    const userName = 'user'; // Valor padrão simples
 
     const sourceInput = document.getElementById('source-path');
     const destInput = document.getElementById('dest-path');
@@ -10454,14 +10380,14 @@ function updateSimplePaths() {
     }
 }
 
-// Inicializar caminhos quando a pÃƒÆ’Ã‚Â¡gina carregar
+// Inicializar caminhos quando a página carregar
 document.addEventListener('DOMContentLoaded', function() {
     if (window.__deparaSimplePathsInitDone) return;
     window.__deparaSimplePathsInitDone = true;
     updateSimplePaths();
 });
 
-// Adicionar animaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o CSS
+// Adicionar animação CSS
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideOutRight {
@@ -10469,7 +10395,7 @@ style.textContent = `
         to { transform: translateX(100%); opacity: 0; }
     }
 
-    /* Estilos para operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes simples */
+    /* Estilos para operações simples */
     .file-operations-form {
         display: flex;
         flex-direction: column;

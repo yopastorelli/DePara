@@ -18,6 +18,10 @@ const { normalRateLimiter, strictRateLimiter, slideshowRateLimiter } = require('
 const { sanitizeString, sanitizeFilePath, sanitizeIdentifier, ValidationError } = require('../utils/inputSanitizer');
 const { scanImagesRecursive } = require('../utils/fileOps/imageScanner');
 
+function isPathValidationError(error) {
+    return /^(Acesso negado|Caminho inválido|Caminho contém|Nenhum diretório pai)/.test(error.message || '');
+}
+
 /**
  * Gerenciamento de Pastas
  * GET /api/files/folders - Listar pastas configuradas
@@ -572,7 +576,7 @@ router.post('/execute', normalRateLimiter, async (req, res) => {
             errorCode: error.code
         });
         
-        res.status(500).json({
+        res.status(isPathValidationError(error) ? 400 : 500).json({
             error: {
                 message: 'Erro na execução da operação',
                 details: error.message,
@@ -587,7 +591,7 @@ router.post('/execute', normalRateLimiter, async (req, res) => {
  * Agendar operação periódica
  * POST /api/files/schedule
  */
-router.post('/schedule', async (req, res) => {
+router.post('/schedule', normalRateLimiter, async (req, res) => {
     try {
         const { operationId, name, frequency, action, sourcePath, targetPath, active, options = {} } = req.body;
 
@@ -1518,7 +1522,7 @@ router.post('/check-ignore', async (req, res) => {
  * Listar imagens recursivamente para slideshow
  * GET /api/files/images/:folderPath
  */
-router.get('/images/:folderPath(*)', async (req, res) => {
+router.get('/images/:folderPath', async (req, res) => {
     const startTime = Date.now();
     try {
         // CORREÇÃO: Não adicionar barra extra, usar caminho como vem
@@ -1567,7 +1571,7 @@ router.get('/images/:folderPath(*)', async (req, res) => {
 
     } catch (error) {
         logger.operationError('List Images', error);
-        res.status(500).json({
+        res.status(isPathValidationError(error) ? 400 : 500).json({
             error: {
                 message: 'Erro ao listar imagens',
                 details: error.message
@@ -1580,9 +1584,9 @@ router.get('/images/:folderPath(*)', async (req, res) => {
  * Servir imagem diretamente para o slideshow
  * GET /api/files/image/:imagePath
  */
-router.get('/image/:imagePath(*)', async (req, res) => {
+router.get('/image/:imagePath', async (req, res) => {
     try {
-        const imagePath = req.params.imagePath;
+        const imagePath = await fileOperationsManager.validateSafePath(req.params.imagePath, 'read');
         
         logger.info(`🖼️ Servindo imagem: ${imagePath}`);
 
@@ -1698,7 +1702,7 @@ router.get('/image/:imagePath(*)', async (req, res) => {
     } catch (error) {
         logger.operationError('Serve Image', error);
         if (!res.headersSent) {
-            res.status(500).json({
+            res.status(isPathValidationError(error) ? 400 : 500).json({
                 error: {
                     message: 'Erro ao servir imagem',
                     details: error.message
@@ -1838,16 +1842,8 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
             recursive
         });
 
-        // Validar caminho (mais permissivo para slideshow)
-        let safePath;
-        try {
-            safePath = await fileOperationsManager.validateSafePath(folderPath, 'read');
-            logger.debug('List Images path validated', { safePath });
-        } catch (error) {
-            // Se a validação falhar, tentar usar o caminho diretamente para slideshow
-            logger.warn(`Validação de caminho falhou para slideshow, usando caminho direto: ${folderPath}`);
-            safePath = folderPath;
-        }
+        const safePath = await fileOperationsManager.validateSafePath(folderPath, 'read');
+        logger.debug('List Images path validated', { safePath });
 
         const images = await scanImagesRecursive(safePath, {
             recursive,
@@ -1878,7 +1874,7 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
     } catch (error) {
         const duration = Date.now() - startTime;
         logger.operationError('List Images', error);
-        res.status(500).json({
+        res.status(isPathValidationError(error) ? 400 : 500).json({
             error: {
                 message: 'Erro interno do servidor',
                 details: error.message
@@ -1979,7 +1975,7 @@ router.post('/list-folders', async (req, res) => {
     } catch (error) {
         const duration = Date.now() - startTime;
         logger.operationError('List Folders', error);
-        res.status(500).json({
+        res.status(isPathValidationError(error) ? 400 : 500).json({
             error: {
                 message: 'Erro interno do servidor',
                 details: error.message

@@ -49,6 +49,7 @@ describe('API smoke', () => {
     delete process.env.DEPARA_CONFIG_FILE;
     delete process.env.LOG_FILE;
     delete process.env.DEPARA_BACKUP_DIR;
+    delete process.env.DEPARA_ALLOWED_PATHS;
     delete process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS;
     delete process.env.DEPARA_DISABLE_UPDATE_SCHEDULER;
     await fsp.rm(runtimeRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
@@ -144,6 +145,34 @@ describe('API smoke', () => {
 
     const updateResponse = await request(app).get('/api/update/auto/status').expect(200);
     expect(updateResponse.body.success).toBe(true);
+  });
+
+  it('bloqueia symlink fora de DEPARA_ALLOWED_PATHS na rota GET legada de imagens', async () => {
+    const allowedRoot = path.join(runtimeRoot, 'allowed');
+    const imagesDir = path.join(allowedRoot, 'images');
+    const outsideRoot = path.join(runtimeRoot, 'outside');
+    await fsp.mkdir(imagesDir, { recursive: true });
+    await fsp.mkdir(outsideRoot, { recursive: true });
+    await writePng(path.join(outsideRoot, 'leak.png'));
+
+    try {
+      await fsp.symlink(outsideRoot, path.join(imagesDir, 'outside-link'), 'dir');
+    } catch (error) {
+      if (['EPERM', 'EACCES', 'ENOTSUP'].includes(error.code)) {
+        return;
+      }
+      throw error;
+    }
+
+    process.env.DEPARA_ALLOWED_PATHS = allowedRoot;
+
+    const response = await request(app)
+      .get(`/api/files/images/${encodeURIComponent(imagesDir)}`)
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.count).toBe(0);
+    expect(response.body.data.images).toEqual([]);
   });
 
   it('retorna erros acionaveis para execute e trata list-folders inexistente sem quebrar', async () => {

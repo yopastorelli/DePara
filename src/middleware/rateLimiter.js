@@ -19,6 +19,10 @@ const rateLimiter = (options = {}) => {
   } = options;
 
   return (req, res, next) => {
+    if (process.env.DEPARA_DISABLE_RATE_LIMITS === 'true') {
+      return next();
+    }
+
     const key = keyGenerator(req);
     const now = Date.now();
 
@@ -79,6 +83,11 @@ const rateLimiter = (options = {}) => {
   };
 };
 
+function getLimitFromEnv(name, fallback) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 const cleanupOldRecords = () => {
   const now = Date.now();
   const maxAge = 60 * 60 * 1000;
@@ -97,23 +106,23 @@ if (typeof cleanupInterval.unref === 'function') {
 
 const strictRateLimiter = rateLimiter({
   windowMs: 5 * 60 * 1000,
-  maxRequests: 20,
+  maxRequests: getLimitFromEnv('DEPARA_STRICT_RATE_LIMIT', 20),
   keyGenerator: (req) => `${req.ip}:${req.path}`
 });
 
 const normalRateLimiter = rateLimiter({
   windowMs: 15 * 60 * 1000,
-  maxRequests: 100
+  maxRequests: getLimitFromEnv('DEPARA_NORMAL_RATE_LIMIT', 300)
 });
 
 const readRateLimiter = rateLimiter({
   windowMs: 60 * 1000,
-  maxRequests: 200
+  maxRequests: getLimitFromEnv('DEPARA_READ_RATE_LIMIT', 1000)
 });
 
 const slideshowRateLimiter = rateLimiter({
   windowMs: 60 * 1000,
-  maxRequests: 500
+  maxRequests: getLimitFromEnv('DEPARA_SLIDESHOW_RATE_LIMIT', 1000)
 });
 
 module.exports = {

@@ -11,7 +11,7 @@
     "restart:bg": "pm2 restart DePara",
     "status": "pm2 status",
     "logs": "pm2 logs DePara",
-    "dev": "nodemon src/main.js",
+    "dev": "node --watch src/main.js",
     "test": "npm run test:unit",
     "test:unit": "jest --runInBand --forceExit",
     "test:smoke": "jest --runInBand tests/smoke --forceExit",
@@ -38,19 +38,25 @@
   "author": "yopastorelli",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "helmet": "^7.1.0",
-    "morgan": "^1.10.0",
-    "dotenv": "^16.3.1"
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.2.0",
+    "morgan": "^1.11.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2",
-    "nodemon": "^3.0.2",
-    "jest": "^29.7.0",
-    "eslint": "^8.56.0",
-    "supertest": "^6.3.3",
-    "pm2": "^5.3.0"
+    "@playwright/test": "^1.61.0",
+    "eslint": "^10.5.0",
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
+  },
+  "overrides": {
+    "@istanbuljs/load-nyc-config": {
+      "js-yaml": "5.0.0"
+    },
+    "anymatch": {
+      "picomatch": "2.3.2"
+    }
   },
   "engines": {
     "node": ">=18.0.0",
