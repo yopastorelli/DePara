@@ -21,7 +21,8 @@ Primary jobs:
 
 - HTTP entrypoint: `src/main.js`
 - Default host: `127.0.0.1`
-- Default port: `3000`
+- Default app/config port: `3000`
+- Default PM2 production port in `ecosystem.config.js`: `3001`
 - UI: `http://127.0.0.1:<PORT>/ui`
 - Root metadata: `http://127.0.0.1:<PORT>/`
 - Health: `http://127.0.0.1:<PORT>/health`

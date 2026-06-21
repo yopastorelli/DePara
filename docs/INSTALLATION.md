@@ -26,6 +26,10 @@ Default URLs:
 - Health: `http://127.0.0.1:3000/health`
 - API docs: `http://127.0.0.1:3000/api/docs`
 
+PM2 production note:
+
+- `ecosystem.config.js` pins the RP4/PM2 runtime to `PORT=3001` unless explicitly overridden.
+
 ## Script contract
 
 | Script | Contract |
@@ -50,7 +54,7 @@ Use `env.example` as the canonical template.
 | Variable | Default | Contract |
 |---|---|---|
 | `HOST` | `127.0.0.1` | bind host; use `0.0.0.0` only for intentional LAN exposure |
-| `PORT` | `3000` | HTTP port |
+| `PORT` | `3000` | HTTP port in app/config defaults; PM2 production env uses `3001` unless overridden |
 | `NODE_ENV` | `development` or PM2 env | runtime mode |
 | `MAX_PAYLOAD` | `100mb` | Express body limit |
 | `DEPARA_RUNTIME_ROOT` | `~/.depara` | operational root |
@@ -97,7 +101,7 @@ Post-setup assertions:
 - `~/.depara/releases/<commit>` exists.
 - `~/.depara/current` exists and points/wraps to active release.
 - PM2 process `DePara` is registered.
-- `/health` returns `status: OK`.
+- `/health` returns `status: OK` on the effective PM2 port, which is `3001` by default.
 
 ## Desktop launcher setup
 

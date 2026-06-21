@@ -4,6 +4,7 @@ PLATFORM=Raspberry Pi 4
 SUPERVISOR=PM2
 DEFAULT_BIND_HOST=127.0.0.1
 DEFAULT_RUNTIME_ROOT=~/.depara
+DEFAULT_PM2_PORT=3001
 
 ## Production invariants
 
@@ -11,6 +12,7 @@ DEFAULT_RUNTIME_ROOT=~/.depara
 - `HOST=127.0.0.1` is the safe default.
 - `HOST=0.0.0.0` requires intentional LAN exposure and external network controls.
 - `~/.depara/config.env` is the durable runtime env file.
+- `ecosystem.config.js` sets `PORT=3001` for PM2 env blocks unless overridden.
 - `~/.depara/data` is the durable mutable data store.
 - `~/.depara/releases/<commit>` stores immutable releases.
 - `~/.depara/current` is the active release wrapper.
@@ -33,7 +35,7 @@ pm2 start ecosystem.config.js --env production
 pm2 save
 pm2 startup
 PORT="$(grep -E '^PORT=' "$HOME/.depara/config.env" | tail -n 1 | cut -d '=' -f 2-)"
-PORT="${PORT:-3000}"
+PORT="${PORT:-3001}"
 pm2 status
 curl -fsS "http://127.0.0.1:${PORT}/health"
 curl -fsS "http://127.0.0.1:${PORT}/api/update/auto/diagnostics"
@@ -108,7 +110,7 @@ Recommended `~/.depara/config.env`:
 
 ```env
 HOST=127.0.0.1
-PORT=3000
+PORT=3001
 NODE_ENV=production
 LOG_LEVEL=warn
 LOG_TO_CONSOLE=false

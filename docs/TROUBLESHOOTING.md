@@ -1,5 +1,11 @@
 # TROUBLESHOOTING_CONTRACT
 
+Port note:
+
+- `3000` is the app/config default for direct local runs.
+- `3001` is the PM2/RP4 default from `ecosystem.config.js`.
+- When troubleshooting production or launcher behavior, prefer the effective port from `~/.depara/config.env` or PM2 env.
+
 ## Symptom: UI does not load
 
 Commands:
