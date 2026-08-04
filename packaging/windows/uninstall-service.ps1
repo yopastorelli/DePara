@@ -16,22 +16,53 @@ function Assert-Administrator {
     }
 }
 
+function Wait-ServiceAbsent {
+    param([string]$Name)
+
+    for ($attempt = 1; $attempt -le 30; $attempt += 1) {
+        if ($null -eq (Get-Service -Name $Name -ErrorAction SilentlyContinue)) {
+            return
+        }
+        Start-Sleep -Milliseconds 500
+    }
+
+    throw "O serviço $Name não foi removido dentro do tempo esperado."
+}
+
 Assert-Administrator
 
+$serviceName = 'DePara'
 $runtimeRoot = Join-Path $env:ProgramData 'DePara'
 $serviceExe = Join-Path $PSScriptRoot 'DeParaService.exe'
-if (-not (Test-Path -LiteralPath $serviceExe)) {
-    throw "Executável do serviço ausente: $serviceExe"
-}
+$existingService = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
 
-& $serviceExe stop
-if ($LASTEXITCODE -ne 0) {
-    Write-Warning "O serviço pode já estar parado. Código: $LASTEXITCODE"
-}
+if ($null -ne $existingService) {
+    if (Test-Path -LiteralPath $serviceExe) {
+        if ($existingService.Status -ne 'Stopped') {
+            & $serviceExe stop
+            if ($LASTEXITCODE -ne 0) {
+                throw "Falha ao parar o serviço DePara. Código: $LASTEXITCODE"
+            }
+        }
 
-& $serviceExe uninstall
-if ($LASTEXITCODE -ne 0) {
-    throw "Falha ao remover o serviço DePara. Código: $LASTEXITCODE"
+        & $serviceExe uninstall
+        if ($LASTEXITCODE -ne 0) {
+            throw "Falha ao remover o serviço DePara. Código: $LASTEXITCODE"
+        }
+    } else {
+        if ($existingService.Status -ne 'Stopped') {
+            Stop-Service -Name $serviceName -Force
+        }
+
+        & sc.exe delete $serviceName | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Executável WinSW ausente e sc.exe não removeu o serviço. Código: $LASTEXITCODE"
+        }
+    }
+
+    Wait-ServiceAbsent -Name $serviceName
+} else {
+    Write-Host 'O serviço DePara já não está instalado.'
 }
 
 if ($PurgeData) {
