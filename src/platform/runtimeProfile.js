@@ -18,7 +18,7 @@ function getRuntimeProfile(options = {}) {
   const isWindows = platform === 'win32';
   const isLinux = platform === 'linux';
   const isRaspberryPi = isLinux && (arch === 'arm' || arch === 'arm64');
-  const pathApi = isWindows ? path.win32 : path;
+  const pathApi = isWindows ? path.win32 : path.posix;
 
   const windowsUserRoot = env.LOCALAPPDATA || env.USERPROFILE || homedir;
   const runtimeRootDefault = isWindows
