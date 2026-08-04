@@ -1,6 +1,6 @@
 # TESTING_CONTRACT
 
-## Canonical gates
+## Canonical local gates
 
 ```bash
 npm run lint
@@ -10,190 +10,160 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
-Expected audit output:
+`npm run test:all` executes the complete sequence above.
+
+Expected audit result:
 
 ```text
 found 0 vulnerabilities
 ```
 
-## Test scripts
+## Suite separation
 
 | Script | Scope |
 |---|---|
-| `npm test` | alias for unit tests |
-| `npm run test:unit` | Jest backend/unit contracts |
-| `npm run test:platform` | focused Windows/RP4 runtime-profile contracts |
-| `npm run test:smoke` | Jest API smoke contracts and controlled file operations |
-| `npm run test:e2e` | Playwright browser E2E against real UI/API flow |
-| `npm run test:all` | lint + unit + E2E |
-| `npm run test:coverage` | Jest coverage |
-| `npm run test:watch` | local Jest watch |
+| `npm test` | unit alias |
+| `npm run test:unit` | Jest unit/backend contracts; excludes `tests/smoke/` |
+| `npm run test:platform` | focused runtime-profile contracts |
+| `npm run test:smoke` | API, filesystem and platform smoke contracts |
+| `npm run test:e2e` | Playwright browser product flow |
+| `npm run test:coverage` | unit coverage; excludes smoke |
+
+Unit jobs must not execute smoke tests implicitly. Smoke runs once per operating system in its dedicated job.
 
 ## Cross-platform CI matrix
 
-`.github/workflows/cross-platform-ci.yml` is the canonical source-level matrix.
-
-Required jobs:
+`.github/workflows/cross-platform-ci.yml` is canonical.
 
 | Scope | Operating systems | Node versions |
 |---|---|---|
 | lint + unit | Ubuntu and Windows | 22 and 24 |
 | smoke | Ubuntu and Windows | 22 |
-| native launcher, health, runtime directories, PowerShell and WinSW contracts | Windows | 22 |
+| native launcher/config precedence/PowerShell/WinSW | Windows | 22 |
 | dependency audit | Ubuntu | 22 |
 | Playwright E2E | Ubuntu | 22 |
 
-The native Windows runtime job must start `scripts/start-windows.js`, validate `/health` and `/api/status`, confirm isolated runtime directories and parse the PowerShell/WinSW service contracts.
+CI efficiency controls:
 
-CI proves source portability; it does not replace physical release certification.
+- pull-request commits run one workflow, not duplicate push plus PR workflows;
+- direct `main` pushes remain validated;
+- documentation-only changes are ignored;
+- concurrency cancels obsolete runs for the same PR/ref;
+- every job has a timeout;
+- unit and smoke suites are separated;
+- Actions use current Node 24-based major versions.
 
-Production release gates additionally require:
+The Windows native job must:
 
-- Raspberry Pi 4 physical validation for every shared runtime change.
-- Windows 11 x64 physical validation before Windows promotion.
-- Windows 10 22H2 x64 physical compatibility validation before claiming Windows 10 support.
-- Windows service install, reboot, health, stop, uninstall and data-preservation validation.
-- NTFS, removable-media, locked-file and UNC-path file-operation validation.
+- parse `build-package.ps1`, install, uninstall and certification scripts;
+- parse `DeParaService.xml`;
+- reject supervisor overrides for `HOST`, `PORT`, `NODE_ENV` and logging;
+- start `scripts/start-windows.js` with a non-default port stored only in `config.env`;
+- validate `/health`, `/api/status` and runtime directories.
 
-## Browser dependencies
+The Linux Node 22 job must run `bash -n` on RP4 install, launcher and certification scripts.
 
-Install Playwright browser once per machine/runtime:
+## Required unit contracts
 
-```bash
-npx playwright install chromium
-```
+- Windows path selection uses `path.win32` even when simulated from another host.
+- Windows launcher can defer network defaults so `config.env` remains canonical.
+- RP4 bootstrap defaults to port `3001` and PM2 identity.
+- Generic bootstrap remains on port `3000`.
+- PM2 ecosystem consumes the persisted configured port in all environments.
+- Explicit process environment remains higher priority than `config.env`.
 
-Install native Chromium dependencies when the OS image lacks them:
+## Filesystem smoke contracts
 
-```bash
-npx playwright install-deps chromium
-```
+Smoke must cover:
 
-Known environment note:
+- `/health` and `/api/status`;
+- config persistence;
+- copy/move/delete with isolated temporary files;
+- folders and images;
+- scheduled operation lifecycle;
+- backup export/import;
+- update status with destructive effects disabled;
+- unsafe traversal and symlink/junction escape protection.
 
-- WSL is allowed for development diagnostics only; it is not the Windows production runtime contract.
-- Browser verification must be trusted to Playwright when an in-app browser cannot reach a test loopback endpoint.
+On Windows, `tests/smoke/windows-path-security.smoke.test.js` must create a real NTFS junction and prove that it cannot escape `DEPARA_ALLOWED_PATHS`. A skipped privilege-dependent directory-symlink test is not sufficient evidence.
 
-## Isolation rules
+Physical Windows testing still covers locked files, removable media, required UNC roots and service-account permissions.
 
-Tests must set isolated paths for:
+## Process isolation
 
-- `DEPARA_RUNTIME_ROOT`
-- `DEPARA_DATA_DIR`
-- `DEPARA_CONFIG_FILE`
-- `DEPARA_BACKUP_DIR`
-- `DEPARA_LOG_DIR`
-- `DEPARA_TEMP_DIR`
-- `LOG_FILE`
+Tests set isolated values for runtime, data, config, backup, log and temp paths.
 
-Tests that touch update must set:
+Update tests use:
 
 ```bash
 DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true
 DEPARA_DISABLE_UPDATE_SCHEDULER=true
 ```
 
-Do not set `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true` globally for the complete unit suite because supervisor/restart unit tests intentionally verify the non-suppressed control flow with mocks.
+Do not set update-side-effect suppression globally for the complete unit suite because mocked supervisor tests exercise the normal control path.
 
-Tests that start or import process lifecycle code may set:
+Lifecycle tests may use:
 
 ```bash
 DEPARA_DISABLE_PROCESS_HOOKS=true
 ```
 
-Tests that need deterministic limiter behavior may set:
+Rate-limit tests may use:
 
 ```bash
 DEPARA_DISABLE_RATE_LIMITS=true
 ```
 
-## Platform-profile coverage
+## Physical certification
 
-`tests/unit/platform/runtimeProfile.test.js` must verify at least:
+Hosted CI cannot certify hardware boot/service restoration.
 
-- RP4 ARM detection.
-- RP4 runtime root and PM2 contract remain unchanged.
-- Windows x64 detection.
-- Windows interactive runtime root uses `%LOCALAPPDATA%\DePara`.
-- Explicit env values override defaults.
-- Windows disables the RP4 scheduler by default.
-- Windows-only flags are not injected on Linux.
+RP4 after install and after reboot:
 
-## E2E product story
+```bash
+./scripts/certify-rp4.sh
+```
 
-Playwright must verify at least:
+Required marker:
 
-- UI loads without parser/runtime console errors.
-- API status is reachable from the UI.
-- Configuration can be saved and rehydrated.
-- File operation flow can use controlled fixture paths.
-- Slideshow can list fixture images and serve image assets.
+```text
+"certification": "RP4_PASS"
+```
 
-## Smoke coverage requirements
+Windows service after install and after reboot:
 
-Smoke tests must cover:
+```powershell
+.\certify-service.ps1
+```
 
-- `/health` and `/api/status`
-- config persistence
-- copy/move/delete with temp files
-- folder listing
-- image listing
-- scheduled operation create/edit/pause/execute
-- backup export/import
-- auto-update status with destructive side effects disabled
-- invalid input returning actionable errors
-- path security for unsafe traversal/symlink cases
+Required marker:
 
-Windows-specific smoke expansion must eventually cover:
+```text
+"certification": "WINDOWS_SERVICE_PASS"
+```
 
-- drive-root allowlists;
-- path delimiters and casing;
-- NTFS junction escape prevention;
-- locked-file error contracts;
-- UNC path authorization;
-- service runtime persistence.
+These scripts are non-destructive. Their reports should be attached to the release/change record used for promotion.
 
 ## Dependency audit policy
 
-Use:
+Targeted major-compatible overrides currently protect the test dependency tree:
 
-```bash
-npm audit --audit-level=high
-```
+- `@istanbuljs/load-nyc-config -> js-yaml@5.2.2`;
+- `minimatch@10.2.5 -> brace-expansion@5.0.9`;
+- `minimatch@9.0.9 -> brace-expansion@2.1.4`;
+- `minimatch@3.1.5 -> brace-expansion@1.1.18`;
+- `anymatch -> picomatch@2.3.2`.
 
-Current lockfile is expected to have zero vulnerabilities because `package.json` includes targeted, major-compatible overrides:
+Do not replace the three `brace-expansion` lines with a single incompatible major override.
 
-- `@istanbuljs/load-nyc-config -> js-yaml@5.2.2`
-- `minimatch@10.2.5 -> brace-expansion@5.0.9`
-- `minimatch@9.0.9 -> brace-expansion@2.1.4`
-- `minimatch@3.1.5 -> brace-expansion@1.1.18`
-- `anymatch -> picomatch@2.3.2`
-
-The `brace-expansion` overrides intentionally preserve the dependency major expected by each `minimatch` line. Do not replace them with one global major override.
-
-Do not remove or change these overrides unless the upstream dependency tree no longer needs them and `npm audit --audit-level=high` still reports zero vulnerabilities.
-
-## Text/encoding verification
-
-Command:
-
-```bash
-rg -n "Ã[ƒ‚]|â[€™€œ€]|\x{00D2}|\x{FFFD}" README.md docs src/public src/routes
-```
-
-Interpretation:
-
-- If only terminal rendering is wrong, do not rewrite files.
-- If source files contain mojibake, fix UTF-8 content and rerun lint/E2E.
-- Do not mask mojibake by overriding `innerHTML` or `textContent`; fix source encoding.
-
-## Generated artifact policy
+## Generated artifacts
 
 Do not commit:
 
-- `test-results/`
-- `playwright-report/`
-- `coverage/`
-- runtime `logs/`, `backups/`, `data/`
-- bundled Node/WinSW binaries
-- unsigned Windows installer outputs
+- `test-results/`;
+- `playwright-report/`;
+- `coverage/`;
+- runtime `logs/`, `backups/`, `data/`;
+- `packaging/windows/dist/`;
+- bundled Node/WinSW binaries;
+- unsigned Windows installer outputs.
