@@ -1,0 +1,115 @@
+name: Apply safe path patch
+
+on:
+  push:
+    branches:
+      - feat/windows-native-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[safe-path-generated]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/windows-native-foundation
+
+      - name: Patch safe path canonicalization
+        shell: python
+        run: |
+          from pathlib import Path
+
+          target = Path('src/utils/fileOperations.js')
+          content = target.read_text(encoding='utf-8')
+
+          old = '''function getAllowedBasePaths() {
+            const configuredPaths = (process.env.DEPARA_ALLOWED_PATHS || '')
+              .split(path.delimiter)
+              .map((item) => item.trim())
+              .filter(Boolean);
+
+            if (configuredPaths.length > 0) {
+              return configuredPaths.map((item) => path.resolve(item));
+            }
+
+            if (process.platform === 'win32') {
+              return [os.homedir(), 'C:\\\\', 'D:\\\\', 'E:\\\\'].map((item) => path.resolve(item));
+            }
+
+            return [os.homedir(), os.tmpdir(), '/media', '/mnt'].map((item) => path.resolve(item));
+          }
+
+          function isPathWithinBase(candidatePath, basePath) {
+            const relativePath = path.relative(basePath, candidatePath);
+            return relativePath === '' || (!relativePath.startsWith(`..${path.sep}`) && relativePath !== '..' && !path.isAbsolute(relativePath));
+          }
+'''
+
+          new = '''function normalizeComparablePath(candidatePath) {
+            const resolvedPath = path.resolve(candidatePath);
+            return process.platform === 'win32'
+              ? resolvedPath.toLowerCase()
+              : resolvedPath;
+          }
+
+          function canonicalizeExistingPath(candidatePath) {
+            const resolvedPath = path.resolve(candidatePath);
+
+            try {
+              const realPath = typeof fsSync.realpathSync.native === 'function'
+                ? fsSync.realpathSync.native(resolvedPath)
+                : fsSync.realpathSync(resolvedPath);
+              return normalizeComparablePath(realPath);
+            } catch {
+              return normalizeComparablePath(resolvedPath);
+            }
+          }
+
+          function getAllowedBasePaths() {
+            const configuredPaths = (process.env.DEPARA_ALLOWED_PATHS || '')
+              .split(path.delimiter)
+              .map((item) => item.trim())
+              .filter(Boolean);
+
+            if (configuredPaths.length > 0) {
+              return configuredPaths.map(canonicalizeExistingPath);
+            }
+
+            if (process.platform === 'win32') {
+              return [os.homedir(), 'C:\\\\', 'D:\\\\', 'E:\\\\'].map(canonicalizeExistingPath);
+            }
+
+            return [os.homedir(), os.tmpdir(), '/media', '/mnt'].map(canonicalizeExistingPath);
+          }
+
+          function isPathWithinBase(candidatePath, basePath) {
+            const comparableCandidate = canonicalizeExistingPath(candidatePath);
+            const comparableBase = canonicalizeExistingPath(basePath);
+            const relativePath = path.relative(comparableBase, comparableCandidate);
+            return relativePath === '' || (!relativePath.startsWith(`..${path.sep}`) && relativePath !== '..' && !path.isAbsolute(relativePath));
+          }
+'''
+
+          if old not in content:
+              raise SystemExit('Expected safe-path block was not found')
+
+          content = content.replace(old, new, 1)
+          content = content.replace(
+              "  const resolvedPath = path.resolve(filePath);\n  assertAllowedPath(resolvedPath);\n\n  try {",
+              "  const resolvedPath = path.resolve(filePath);\n\n  try {",
+              1,
+          )
+          target.write_text(content, encoding='utf-8')
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/utils/fileOperations.js
+          git commit -m "fix(files): canonicalize Windows allowlist paths [safe-path-generated]"
+          git push origin HEAD:feat/windows-native-foundation
