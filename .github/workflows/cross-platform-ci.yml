@@ -118,6 +118,7 @@ jobs:
         shell: pwsh
         run: |
           foreach ($scriptPath in @(
+            'packaging/windows/build-package.ps1',
             'packaging/windows/install-service.ps1',
             'packaging/windows/uninstall-service.ps1',
             'packaging/windows/certify-service.ps1'
@@ -156,7 +157,7 @@ jobs:
             }
           }
 
-      - name: Start native launcher and validate config precedence
+      - name: Start native service launcher and validate config isolation
         shell: pwsh
         run: |
           $runtimeRoot = Join-Path $env:RUNNER_TEMP 'depara-windows-runtime'
@@ -177,11 +178,12 @@ jobs:
             'LOG_TO_CONSOLE=false'
           ) | Set-Content -LiteralPath $configPath -Encoding utf8
 
-          Remove-Item Env:HOST -ErrorAction SilentlyContinue
-          Remove-Item Env:PORT -ErrorAction SilentlyContinue
-          Remove-Item Env:NODE_ENV -ErrorAction SilentlyContinue
           $env:DEPARA_RUNTIME_ROOT = $runtimeRoot
           $env:DEPARA_CONFIG_ENV_PATH = $configPath
+          $env:DEPARA_WINDOWS_SERVICE = 'true'
+          $env:HOST = '0.0.0.0'
+          $env:PORT = '3999'
+          $env:NODE_ENV = 'production'
 
           $nodePath = (Get-Command node).Source
           $startOptions = @{
@@ -208,16 +210,25 @@ jobs:
             if ($null -eq $health) {
               if (Test-Path $stdoutPath) { Get-Content $stdoutPath }
               if (Test-Path $stderrPath) { Get-Content $stderrPath }
-              throw 'Launcher Windows não respeitou config.env ou não respondeu ao health check.'
+              throw 'Launcher Windows não isolou config.env ou não respondeu ao health check.'
             }
 
             if ($health.status -ne 'OK' -or $health.environment -ne 'test') {
               throw "Health inesperado: $($health | ConvertTo-Json -Compress)"
             }
 
+            try {
+              Invoke-RestMethod 'http://127.0.0.1:3999/health' -TimeoutSec 1 | Out-Null
+              throw 'A porta herdada 3999 não deveria estar ativa.'
+            } catch {
+              if ($_.Exception.Message -eq 'A porta herdada 3999 não deveria estar ativa.') {
+                throw
+              }
+            }
+
             $status = Invoke-RestMethod 'http://127.0.0.1:3210/api/status' -TimeoutSec 5
-            if ($null -eq $status) {
-              throw 'API status não respondeu.'
+            if ($status.status -ne 'OPERATIONAL') {
+              throw "API status inesperado: $($status | ConvertTo-Json -Compress)"
             }
 
             foreach ($requiredDirectory in @('data', 'logs', 'backups', 'temp')) {
