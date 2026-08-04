@@ -56,13 +56,17 @@ function getRuntimeProfile(options = {}) {
 
 function applyPlatformDefaults(options = {}) {
   const env = options.env || process.env;
+  const applyNetworkDefaults = options.applyNetworkDefaults !== false;
   const profile = getRuntimeProfile({
     ...options,
     env
   });
 
-  setDefault(env, 'HOST', '127.0.0.1');
-  setDefault(env, 'PORT', '3000');
+  if (applyNetworkDefaults) {
+    setDefault(env, 'HOST', '127.0.0.1');
+    setDefault(env, 'PORT', '3000');
+  }
+
   setDefault(env, 'DEPARA_RUNTIME_ROOT', profile.runtimeRootDefault);
   setDefault(env, 'DEPARA_PLATFORM_TARGET', profile.id);
 
