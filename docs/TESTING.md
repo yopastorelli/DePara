@@ -39,6 +39,7 @@ Required jobs:
 |---|---|---|
 | lint + unit | Ubuntu and Windows | 22 and 24 |
 | smoke | Ubuntu and Windows | 22 |
+| dependency audit | Ubuntu | 22 |
 | Playwright E2E | Ubuntu | 22 |
 
 CI proves source portability; it does not replace physical release certification.
@@ -88,6 +89,8 @@ Tests that touch update must set:
 DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true
 DEPARA_DISABLE_UPDATE_SCHEDULER=true
 ```
+
+Do not set `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true` globally for the complete unit suite because supervisor/restart unit tests intentionally verify the non-suppressed control flow with mocks.
 
 Tests that start or import process lifecycle code may set:
 
@@ -155,12 +158,17 @@ Use:
 npm audit --audit-level=high
 ```
 
-Current lockfile is expected to have zero vulnerabilities because `package.json` includes targeted overrides:
+Current lockfile is expected to have zero vulnerabilities because `package.json` includes targeted, major-compatible overrides:
 
-- `@istanbuljs/load-nyc-config -> js-yaml@5.0.0`
+- `@istanbuljs/load-nyc-config -> js-yaml@5.2.2`
+- `minimatch@10.2.5 -> brace-expansion@5.0.9`
+- `minimatch@9.0.9 -> brace-expansion@2.1.4`
+- `minimatch@3.1.5 -> brace-expansion@1.1.18`
 - `anymatch -> picomatch@2.3.2`
 
-Do not remove these overrides unless the upstream dependency tree no longer needs them and `npm audit --audit-level=high` still reports zero vulnerabilities.
+The `brace-expansion` overrides intentionally preserve the dependency major expected by each `minimatch` line. Do not replace them with one global major override.
+
+Do not remove or change these overrides unless the upstream dependency tree no longer needs them and `npm audit --audit-level=high` still reports zero vulnerabilities.
 
 ## Text/encoding verification
 
