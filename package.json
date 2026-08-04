@@ -5,6 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "start": "node src/main.js",
+    "start:windows": "node scripts/start-windows.js",
     "start:bg": "pm2 start src/main.js --name DePara",
     "start:bg:prod": "pm2 start src/main.js --name DePara --env production",
     "stop:bg": "pm2 stop DePara",
@@ -14,6 +15,7 @@
     "dev": "node --watch src/main.js",
     "test": "npm run test:unit",
     "test:unit": "jest --runInBand --forceExit",
+    "test:platform": "jest --runInBand tests/unit/platform --forceExit",
     "test:smoke": "jest --runInBand tests/smoke --forceExit",
     "test:e2e": "playwright test",
     "test:all": "npm run lint && npm run test:unit && npm run test:e2e",
