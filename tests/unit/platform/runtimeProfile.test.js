@@ -64,6 +64,26 @@ describe('runtimeProfile', () => {
     expect(env.DEPARA_WINDOWS_RUNTIME).toBe('true');
   });
 
+  test('can defer network defaults so config.env remains canonical', () => {
+    const env = {
+      LOCALAPPDATA: 'C:\\Users\\Ada\\AppData\\Local'
+    };
+
+    applyPlatformDefaults({
+      platform: 'win32',
+      arch: 'x64',
+      env,
+      homedir: 'C:\\Users\\Ada',
+      applyNetworkDefaults: false
+    });
+
+    expect(env.HOST).toBeUndefined();
+    expect(env.PORT).toBeUndefined();
+    expect(env.DEPARA_RUNTIME_ROOT).toBe('C:\\Users\\Ada\\AppData\\Local\\DePara');
+    expect(env.DEPARA_PLATFORM_TARGET).toBe('windows');
+    expect(env.DEPARA_DISABLE_UPDATE_SCHEDULER).toBe('true');
+  });
+
   test('does not inject Windows-only flags on a generic Linux workstation', () => {
     const env = {};
 
