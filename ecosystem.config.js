@@ -4,7 +4,7 @@ const {
   getRuntimeRoot
 } = require('./src/utils/runtimeConfig');
 
-loadOperationalConfig();
+loadOperationalConfig({ override: true });
 
 const runtimeRoot = getRuntimeRoot();
 const logsDir = path.join(runtimeRoot, 'logs');
