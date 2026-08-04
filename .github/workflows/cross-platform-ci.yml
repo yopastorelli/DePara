@@ -122,7 +122,8 @@ jobs:
           if ($serviceConfig.service.executable -notmatch 'node\.exe$') {
             throw 'WinSW não aponta para o runtime Node empacotado.'
           }
-          if ($serviceConfig.service.env | Where-Object { $_.name -eq 'HOST' -and $_.value -ne '127.0.0.1' }) {
+          $hostEnv = $serviceConfig.service.env | Where-Object { $_.name -eq 'HOST' }
+          if ($null -eq $hostEnv -or $hostEnv.value -ne '127.0.0.1') {
             throw 'WinSW HOST deve permanecer em loopback.'
           }
 
@@ -140,13 +141,15 @@ jobs:
           $env:DEPARA_CONFIG_ENV_PATH = Join-Path $runtimeRoot 'config.env'
 
           $nodePath = (Get-Command node).Source
-          $process = Start-Process \
-            -FilePath $nodePath \
-            -ArgumentList 'scripts/start-windows.js' \
-            -WorkingDirectory $PWD \
-            -RedirectStandardOutput $stdoutPath \
-            -RedirectStandardError $stderrPath \
-            -PassThru
+          $startOptions = @{
+            FilePath = $nodePath
+            ArgumentList = 'scripts/start-windows.js'
+            WorkingDirectory = $PWD
+            RedirectStandardOutput = $stdoutPath
+            RedirectStandardError = $stderrPath
+            PassThru = $true
+          }
+          $process = Start-Process @startOptions
 
           try {
             $health = $null
