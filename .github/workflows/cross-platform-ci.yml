@@ -74,6 +74,118 @@ jobs:
       - name: Smoke tests
         run: npm run test:smoke
 
+  windows-native-runtime:
+    name: Native Windows runtime
+    runs-on: windows-latest
+    env:
+      DEPARA_DISABLE_UPDATE_SIDE_EFFECTS: 'true'
+      DEPARA_DISABLE_UPDATE_SCHEDULER: 'true'
+      DEPARA_DISABLE_PROCESS_HOOKS: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate PowerShell and WinSW contracts
+        shell: pwsh
+        run: |
+          foreach ($scriptPath in @(
+            'packaging/windows/install-service.ps1',
+            'packaging/windows/uninstall-service.ps1'
+          )) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $scriptPath),
+              [ref]$tokens,
+              [ref]$parseErrors
+            ) | Out-Null
+
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | ForEach-Object { Write-Error $_.Message }
+              throw "PowerShell inválido: $scriptPath"
+            }
+          }
+
+          [xml]$serviceConfig = Get-Content 'packaging/windows/DeParaService.xml' -Raw
+          if ($serviceConfig.service.id -ne 'DePara') {
+            throw 'WinSW service id inválido.'
+          }
+          if ($serviceConfig.service.executable -notmatch 'node\.exe$') {
+            throw 'WinSW não aponta para o runtime Node empacotado.'
+          }
+          if ($serviceConfig.service.env | Where-Object { $_.name -eq 'HOST' -and $_.value -ne '127.0.0.1' }) {
+            throw 'WinSW HOST deve permanecer em loopback.'
+          }
+
+      - name: Start native launcher and validate health
+        shell: pwsh
+        run: |
+          $runtimeRoot = Join-Path $env:RUNNER_TEMP 'depara-windows-runtime'
+          $stdoutPath = Join-Path $env:RUNNER_TEMP 'depara-windows-stdout.log'
+          $stderrPath = Join-Path $env:RUNNER_TEMP 'depara-windows-stderr.log'
+
+          $env:HOST = '127.0.0.1'
+          $env:PORT = '3210'
+          $env:NODE_ENV = 'test'
+          $env:DEPARA_RUNTIME_ROOT = $runtimeRoot
+          $env:DEPARA_CONFIG_ENV_PATH = Join-Path $runtimeRoot 'config.env'
+
+          $nodePath = (Get-Command node).Source
+          $process = Start-Process \
+            -FilePath $nodePath \
+            -ArgumentList 'scripts/start-windows.js' \
+            -WorkingDirectory $PWD \
+            -RedirectStandardOutput $stdoutPath \
+            -RedirectStandardError $stderrPath \
+            -PassThru
+
+          try {
+            $health = $null
+            for ($attempt = 1; $attempt -le 30; $attempt += 1) {
+              try {
+                $health = Invoke-RestMethod 'http://127.0.0.1:3210/health' -TimeoutSec 2
+                break
+              } catch {
+                Start-Sleep -Seconds 1
+              }
+            }
+
+            if ($null -eq $health) {
+              if (Test-Path $stdoutPath) { Get-Content $stdoutPath }
+              if (Test-Path $stderrPath) { Get-Content $stderrPath }
+              throw 'Launcher Windows não respondeu ao health check.'
+            }
+
+            if ($health.status -ne 'OK') {
+              throw "Health inesperado: $($health | ConvertTo-Json -Compress)"
+            }
+
+            $status = Invoke-RestMethod 'http://127.0.0.1:3210/api/status' -TimeoutSec 5
+            if ($null -eq $status) {
+              throw 'API status não respondeu.'
+            }
+
+            foreach ($requiredDirectory in @('data', 'logs', 'backups', 'temp')) {
+              $directoryPath = Join-Path $runtimeRoot $requiredDirectory
+              if (-not (Test-Path $directoryPath -PathType Container)) {
+                throw "Diretório de runtime ausente: $directoryPath"
+              }
+            }
+          } finally {
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+            }
+          }
+
   dependency-audit:
     name: Dependency audit
     runs-on: ubuntu-latest
