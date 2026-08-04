@@ -10,11 +10,13 @@ if (process.platform !== 'win32' && process.env.DEPARA_ALLOW_NON_WINDOWS_START !
 const profile = applyPlatformDefaults();
 const app = require('../src/main');
 
-app.startServer({ registerHandlers: true }).catch((error) => {
-  console.error('Falha ao iniciar o DePara no Windows:', error);
-  process.exit(1);
-});
-
-process.stdout.write(
-  `DePara iniciado para ${profile.id}/${profile.arch} com runtime em ${process.env.DEPARA_RUNTIME_ROOT}\n`
-);
+app.startServer({ registerHandlers: true })
+  .then(() => {
+    process.stdout.write(
+      `DePara iniciado para ${profile.id}/${profile.arch} com runtime em ${process.env.DEPARA_RUNTIME_ROOT}\n`
+    );
+  })
+  .catch((error) => {
+    console.error('Falha ao iniciar o DePara no Windows:', error);
+    process.exit(1);
+  });
