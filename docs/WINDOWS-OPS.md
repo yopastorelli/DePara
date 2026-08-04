@@ -5,43 +5,25 @@ PLATFORM_COMPATIBILITY=Windows 10 22H2 x64
 RUNTIME_MODE=native
 WSL_REQUIRED=false
 SERVICE_SUPERVISOR=WinSW
+CERTIFIED_NODE_MAJORS=22,24
 DEFAULT_BIND_HOST=127.0.0.1
 DEFAULT_SERVICE_PORT=3001
 DEFAULT_SERVICE_RUNTIME_ROOT=%ProgramData%\DePara
 DEFAULT_INTERACTIVE_RUNTIME_ROOT=%LOCALAPPDATA%\DePara
 
-## Scope of this foundation
+## Runtime contract
 
-This contract establishes a native Windows backend without changing the Raspberry Pi 4 production contract.
+- The shared Node.js/Express backend runs natively on Windows.
+- WSL, PM2, Bash and Git are not runtime dependencies of the packaged service.
+- `config.env` is canonical for `HOST`, `PORT`, `NODE_ENV` and logging settings.
+- WinSW defines only service identity and persistent runtime locations; it must not override operational network settings.
+- Explicit process environment values take precedence over `config.env`.
+- The RP4 Git/PM2 updater remains disabled on Windows.
+- The service binds to loopback by default.
 
-Included:
+## Native source execution
 
-- Native Node.js/Express execution on Windows.
-- Platform-specific runtime defaults.
-- Windows service template using WinSW.
-- PowerShell installation and removal scripts.
-- Windows/Linux CI coverage.
-- Browser UI at `http://127.0.0.1:<PORT>/ui`.
-
-Not included yet:
-
-- Electron tray shell.
-- Native fullscreen/screensaver window control.
-- Signed installer artifact.
-- Signed packaged-release auto-update and rollback.
-- Production certification on physical Windows 10 and Windows 11 hosts.
-
-The RP4 remains supervised by PM2 and keeps its immutable Git release workflow.
-
-## Source execution
-
-Requirements:
-
-- Windows 10 or Windows 11 x64.
-- Node.js and npm compatible with `package.json`.
-- Git only when working from a repository clone.
-
-Commands in PowerShell:
+Use PowerShell on Windows 10/11 x64:
 
 ```powershell
 npm ci
@@ -52,6 +34,8 @@ npm run test:smoke
 npm run start:windows
 ```
 
+Interactive execution defaults to `%LOCALAPPDATA%\DePara`. When a config file exists under that runtime root, the launcher must respect its port rather than replacing it with `3000`.
+
 Validation:
 
 ```powershell
@@ -59,74 +43,140 @@ Invoke-RestMethod http://127.0.0.1:3000/health
 Start-Process http://127.0.0.1:3000/ui
 ```
 
-Interactive execution defaults to `%LOCALAPPDATA%\DePara` unless `DEPARA_RUNTIME_ROOT` is explicitly configured.
+Use the configured port when it differs from the default.
 
-## Service artifact layout
+## Local package assembly
 
-The packaging pipeline must produce this layout before `install-service.ps1` is executed:
+Package assembly is intentionally local and does not consume GitHub Actions minutes.
 
-```text
-windows-dist\
-  DeParaService.exe
-  DeParaService.xml
-  install-service.ps1
-  uninstall-service.ps1
-  runtime\
-    node.exe
-  app\
-    package.json
-    node_modules\
-    scripts\start-windows.js
-    src\
+Required inputs:
+
+- official Windows x64 Node.js ZIP for Node 22 or 24 LTS;
+- SHA-256 from the official Node.js checksum manifest;
+- WinSW executable;
+- independently verified SHA-256 for that WinSW executable.
+
+Run from PowerShell 7 at the repository root:
+
+```powershell
+.\packaging\windows\build-package.ps1 `
+  -NodeArchivePath C:\inputs\node-v22.x-win-x64.zip `
+  -NodeArchiveSha256 '<official-node-sha256>' `
+  -WinSWPath C:\inputs\WinSW.exe `
+  -WinSWSha256 '<verified-winsw-sha256>'
 ```
 
-`DeParaService.exe` is the WinSW executable renamed to match `DeParaService.xml`.
+Output:
 
-The final distribution must bundle a pinned Node.js runtime and production dependencies. End users must not need global Node.js, npm, Git, PM2, Bash, WSL or Linux utilities.
+```text
+packaging\windows\dist\
+  DePara-windows-service.zip
+  windows-dist\
+    DeParaService.exe
+    DeParaService.xml
+    install-service.ps1
+    uninstall-service.ps1
+    certify-service.ps1
+    config.env.example
+    manifest.json
+    runtime\
+      node.exe
+      npm.cmd
+      ...
+    app\
+      package.json
+      package-lock.json
+      node_modules\
+      scripts\
+      src\
+```
+
+The builder:
+
+- refuses inputs whose SHA-256 differs;
+- accepts only Node 22 or 24;
+- installs production dependencies with the bundled npm;
+- creates a file manifest with hashes and source commit;
+- produces a ZIP;
+- does not sign the artifact.
+
+The final ZIP and executables still require external code signing before public production distribution.
 
 ## Service installation
 
-Run an elevated PowerShell from the packaged directory:
+Extract the ZIP and run elevated PowerShell from the package directory:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 .\install-service.ps1
 ```
 
-Post-install assertions:
+The installer:
+
+- validates administrator elevation;
+- validates WinSW, the application entrypoint and bundled Node runtime;
+- accepts only Node 22 or 24;
+- creates durable runtime directories;
+- creates `config.env` only when absent;
+- preserves existing configuration and product data;
+- rejects non-loopback `HOST` values;
+- validates the configured port;
+- replaces an existing service registration idempotently;
+- starts the service unless `-SkipStart` is supplied;
+- polls `/health` and fails when the service is not healthy.
+
+Post-install checks:
 
 ```powershell
 Get-Service DePara
-Invoke-RestMethod http://127.0.0.1:3001/health
-Invoke-RestMethod http://127.0.0.1:3001/api/status
+.\certify-service.ps1
 ```
-
-The installation script:
-
-- Refuses non-administrator execution.
-- Validates the service wrapper, bundled Node runtime and application entrypoint.
-- Creates durable runtime directories.
-- Creates `config.env` only when it does not already exist.
-- Installs the service.
-- Starts it unless `-SkipStart` is supplied.
 
 ## Service removal
 
-Preserve product data by default:
+Preserve data by default:
 
 ```powershell
 .\uninstall-service.ps1
 ```
 
-Remove service and durable data only when explicitly required:
+Purge data only when explicit:
 
 ```powershell
 .\uninstall-service.ps1 -PurgeData
 ```
 
-## Persistence contract
+Removal is idempotent. When the WinSW package directory is unavailable, the script falls back to Windows service control APIs.
 
-Service runtime:
+## Physical certification
+
+Run after installation and again after a real reboot:
+
+```powershell
+.\certify-service.ps1
+```
+
+A passing report contains:
+
+```json
+{
+  "certification": "WINDOWS_SERVICE_PASS"
+}
+```
+
+The non-destructive certification verifies:
+
+- 64-bit Windows;
+- service registration and running state;
+- service executable path;
+- durable config and runtime directories;
+- loopback bind and valid port;
+- `/health` returns `OK`;
+- `/api/status` returns `OPERATIONAL`.
+
+CI starts the native launcher and validates PowerShell/XML syntax, but it does not install a real Windows service or replace reboot certification.
+
+## Persistence contract
 
 | Data | Default path |
 |---|---|
@@ -139,19 +189,17 @@ Service runtime:
 | Releases | `%ProgramData%\DePara\releases` |
 | Current release | `%ProgramData%\DePara\current` |
 
-Interactive development runtime:
+Interactive development uses `%LOCALAPPDATA%\DePara` unless explicitly overridden.
 
-- `%LOCALAPPDATA%\DePara` by default.
-- Explicit environment variables always override platform defaults.
+## Filesystem and service-account contract
 
-## Filesystem contract
-
-- Use Node.js filesystem APIs only.
-- All user paths must pass `validateSafePath`.
-- Windows allowlist entries use `;` as delimiter.
-- Prefer UNC paths such as `\\server\share` for service-accessed network storage.
-- Do not depend on mapped drive letters in service mode.
-- Test NTFS junctions, symlinks, locked files, removable media and long paths.
+- All paths pass `validateSafePath`.
+- Allowlist entries use `;` as the Windows delimiter.
+- NTFS path comparison is case-insensitive and canonicalized.
+- CI requires an NTFS junction escape test to pass.
+- Prefer UNC paths rather than mapped drive letters in service mode.
+- The service account must have explicit access to every allowed root.
+- WinSW defaults to LocalSystem; network shares generally require a deliberate service identity and permissions.
 
 Example:
 
@@ -159,50 +207,25 @@ Example:
 DEPARA_ALLOWED_PATHS=C:\Users;D:\Media;\\server\share
 ```
 
-The account running the service must have explicit filesystem permissions for every allowed root.
-
 ## Security invariants
 
-- `HOST=127.0.0.1` is mandatory by default.
-- `HOST=0.0.0.0` requires a separate network-security review.
-- The service must not display UI or interact directly with a user desktop session.
-- Native tray/window behavior belongs in a separate user-session shell.
-- Installer and update artifacts must be signed before production distribution.
-- The Windows packaged updater must not use the RP4 Git/PM2 update path.
-- Until the packaged updater exists, `DEPARA_DISABLE_UPDATE_SCHEDULER=true` is mandatory on Windows.
+- `HOST=127.0.0.1` is mandatory for the standard installer.
+- The service does not interact with the user desktop.
+- Native tray/fullscreen behavior belongs in a separate user-session shell.
+- The Windows service cannot use the RP4 Git/PM2 updater.
+- Installer, wrapper, runtime and update artifacts require signing before public distribution.
+- Network exposure requires a separate security review.
 
-## Cross-platform change policy
+## Production declaration gates
 
-A change to shared backend code must pass:
+Do not claim Windows production certification while any required gate is open:
 
-```text
-Ubuntu x64 / supported Node versions
-Windows x64 / supported Node versions
-Raspberry Pi 4 physical release gate
-```
+- final cross-platform CI is not green;
+- physical Windows 11 service install/reboot/certification is incomplete;
+- physical Windows 10 22H2 compatibility certification is incomplete;
+- NTFS locked-file, removable-media and required UNC scenarios are incomplete;
+- artifact code signing is incomplete;
+- a required tray/fullscreen shell is absent;
+- signed packaged update and rollback are absent.
 
-A Windows-specific change must not alter:
-
-- PM2 as RP4 supervisor.
-- `~/.depara` as the RP4 runtime root.
-- RP4 immutable release activation and rollback.
-- `start-depara.sh` launcher behavior.
-
-## Production blockers
-
-Do not declare Windows production-ready while any item below is open:
-
-- Windows matrix CI is not green.
-- Physical Windows 10 and Windows 11 validation is incomplete.
-- Service install, reboot, health, stop and uninstall are not proven.
-- Installer and binaries are unsigned.
-- Native packaged update with rollback is absent.
-- Tray/screensaver functionality required by the product is absent.
-- File operations on NTFS, removable media and UNC shares are unverified.
-
-## Support posture
-
-- Windows 11 x64 is the primary Windows target.
-- Windows 10 22H2 x64 is a compatibility target and must have an explicit physical certification gate.
-- Windows 32-bit is unsupported.
-- WSL is not part of the production runtime contract.
+Backend and service readiness must not be confused with completion of optional desktop-shell or updater products.
