@@ -39,8 +39,11 @@ Required jobs:
 |---|---|---|
 | lint + unit | Ubuntu and Windows | 22 and 24 |
 | smoke | Ubuntu and Windows | 22 |
+| native launcher, health, runtime directories, PowerShell and WinSW contracts | Windows | 22 |
 | dependency audit | Ubuntu | 22 |
 | Playwright E2E | Ubuntu | 22 |
+
+The native Windows runtime job must start `scripts/start-windows.js`, validate `/health` and `/api/status`, confirm isolated runtime directories and parse the PowerShell/WinSW service contracts.
 
 CI proves source portability; it does not replace physical release certification.
 
