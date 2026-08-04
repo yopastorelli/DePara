@@ -24,7 +24,6 @@ jobs:
           - 22.x
           - 24.x
     env:
-      DEPARA_DISABLE_UPDATE_SIDE_EFFECTS: 'true'
       DEPARA_DISABLE_UPDATE_SCHEDULER: 'true'
       DEPARA_DISABLE_PROCESS_HOOKS: 'true'
     steps:
@@ -74,6 +73,25 @@ jobs:
 
       - name: Smoke tests
         run: npm run test:smoke
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit high severity vulnerabilities
+        run: npm audit --audit-level=high
 
   e2e-linux:
     name: Playwright E2E / Ubuntu
