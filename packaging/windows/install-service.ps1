@@ -1,6 +1,5 @@
 [CmdletBinding()]
 param(
-    [string]$RuntimeRoot = (Join-Path $env:ProgramData 'DePara'),
     [switch]$SkipStart
 )
 
@@ -19,6 +18,7 @@ function Assert-Administrator {
 
 Assert-Administrator
 
+$runtimeRoot = Join-Path $env:ProgramData 'DePara'
 $serviceExe = Join-Path $PSScriptRoot 'DeParaService.exe'
 $serviceConfig = Join-Path $PSScriptRoot 'DeParaService.xml'
 $nodeExe = Join-Path $PSScriptRoot 'runtime\node.exe'
@@ -31,26 +31,26 @@ foreach ($requiredPath in @($serviceExe, $serviceConfig, $nodeExe, $appEntry)) {
 }
 
 $directories = @(
-    $RuntimeRoot,
-    (Join-Path $RuntimeRoot 'data'),
-    (Join-Path $RuntimeRoot 'logs'),
-    (Join-Path $RuntimeRoot 'backups'),
-    (Join-Path $RuntimeRoot 'temp'),
-    (Join-Path $RuntimeRoot 'releases'),
-    (Join-Path $RuntimeRoot 'current')
+    $runtimeRoot,
+    (Join-Path $runtimeRoot 'data'),
+    (Join-Path $runtimeRoot 'logs'),
+    (Join-Path $runtimeRoot 'backups'),
+    (Join-Path $runtimeRoot 'temp'),
+    (Join-Path $runtimeRoot 'releases'),
+    (Join-Path $runtimeRoot 'current')
 )
 
 foreach ($directory in $directories) {
     New-Item -ItemType Directory -Path $directory -Force | Out-Null
 }
 
-$configPath = Join-Path $RuntimeRoot 'config.env'
+$configPath = Join-Path $runtimeRoot 'config.env'
 if (-not (Test-Path -LiteralPath $configPath)) {
     @(
         'HOST=127.0.0.1',
         'PORT=3001',
         'NODE_ENV=production',
-        "DEPARA_RUNTIME_ROOT=$RuntimeRoot",
+        "DEPARA_RUNTIME_ROOT=$runtimeRoot",
         "DEPARA_CONFIG_ENV_PATH=$configPath",
         'DEPARA_PLATFORM_TARGET=windows',
         'DEPARA_WINDOWS_SERVICE=true',
@@ -73,5 +73,5 @@ if (-not $SkipStart) {
     }
 }
 
-Write-Host "Serviço DePara instalado. Runtime persistente: $RuntimeRoot"
+Write-Host "Serviço DePara instalado. Runtime persistente: $runtimeRoot"
 Write-Host 'Valide com: Invoke-RestMethod http://127.0.0.1:3001/health'
