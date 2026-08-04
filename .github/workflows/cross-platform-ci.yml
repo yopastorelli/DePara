@@ -2,10 +2,19 @@ name: Cross-platform CI
 
 on:
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   push:
     branches:
       - main
-      - feat/windows-native-foundation
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -14,6 +23,7 @@ jobs:
   lint-and-unit:
     name: ${{ matrix.os }} / Node ${{ matrix.node }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       matrix:
@@ -28,16 +38,23 @@ jobs:
       DEPARA_DISABLE_PROCESS_HOOKS: 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate RP4 shell contracts
+        if: runner.os == 'Linux' && matrix.node == '22.x'
+        shell: bash
+        run: |
+          bash -n start-depara.sh
+          bash -n install-raspberry.sh
 
       - name: Lint
         run: npm run lint
@@ -48,6 +65,7 @@ jobs:
   smoke:
     name: Smoke / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       matrix:
@@ -60,10 +78,10 @@ jobs:
       DEPARA_DISABLE_PROCESS_HOOKS: 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22.x
           cache: npm
@@ -77,16 +95,17 @@ jobs:
   windows-native-runtime:
     name: Native Windows runtime
     runs-on: windows-latest
+    timeout-minutes: 12
     env:
       DEPARA_DISABLE_UPDATE_SIDE_EFFECTS: 'true'
       DEPARA_DISABLE_UPDATE_SCHEDULER: 'true'
       DEPARA_DISABLE_PROCESS_HOOKS: 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22.x
           cache: npm
@@ -122,23 +141,45 @@ jobs:
           if ($serviceConfig.service.executable -notmatch 'node\.exe$') {
             throw 'WinSW não aponta para o runtime Node empacotado.'
           }
-          $hostEnv = $serviceConfig.service.env | Where-Object { $_.name -eq 'HOST' }
-          if ($null -eq $hostEnv -or $hostEnv.value -ne '127.0.0.1') {
-            throw 'WinSW HOST deve permanecer em loopback.'
+
+          $runtimeEnv = $serviceConfig.service.env | Where-Object { $_.name -eq 'DEPARA_RUNTIME_ROOT' }
+          $configEnv = $serviceConfig.service.env | Where-Object { $_.name -eq 'DEPARA_CONFIG_ENV_PATH' }
+          if ($null -eq $runtimeEnv -or $null -eq $configEnv) {
+            throw 'WinSW deve apontar para o runtime e config persistentes.'
           }
 
-      - name: Start native launcher and validate health
+          foreach ($forbiddenOverride in @('HOST', 'PORT', 'NODE_ENV', 'LOG_LEVEL', 'LOG_TO_CONSOLE')) {
+            if ($serviceConfig.service.env | Where-Object { $_.name -eq $forbiddenOverride }) {
+              throw "WinSW não deve sobrepor config.env: $forbiddenOverride"
+            }
+          }
+
+      - name: Start native launcher and validate config precedence
         shell: pwsh
         run: |
           $runtimeRoot = Join-Path $env:RUNNER_TEMP 'depara-windows-runtime'
+          $configPath = Join-Path $runtimeRoot 'config.env'
           $stdoutPath = Join-Path $env:RUNNER_TEMP 'depara-windows-stdout.log'
           $stderrPath = Join-Path $env:RUNNER_TEMP 'depara-windows-stderr.log'
 
-          $env:HOST = '127.0.0.1'
-          $env:PORT = '3210'
-          $env:NODE_ENV = 'test'
+          New-Item -ItemType Directory -Path $runtimeRoot -Force | Out-Null
+          @(
+            'HOST=127.0.0.1',
+            'PORT=3210',
+            'NODE_ENV=test',
+            "DEPARA_RUNTIME_ROOT=$runtimeRoot",
+            "DEPARA_CONFIG_ENV_PATH=$configPath",
+            'DEPARA_DISABLE_UPDATE_SCHEDULER=true',
+            'DEPARA_ALLOW_SYSTEMD_FALLBACK=false',
+            'LOG_LEVEL=warn',
+            'LOG_TO_CONSOLE=false'
+          ) | Set-Content -LiteralPath $configPath -Encoding utf8
+
+          Remove-Item Env:HOST -ErrorAction SilentlyContinue
+          Remove-Item Env:PORT -ErrorAction SilentlyContinue
+          Remove-Item Env:NODE_ENV -ErrorAction SilentlyContinue
           $env:DEPARA_RUNTIME_ROOT = $runtimeRoot
-          $env:DEPARA_CONFIG_ENV_PATH = Join-Path $runtimeRoot 'config.env'
+          $env:DEPARA_CONFIG_ENV_PATH = $configPath
 
           $nodePath = (Get-Command node).Source
           $startOptions = @{
@@ -165,10 +206,10 @@ jobs:
             if ($null -eq $health) {
               if (Test-Path $stdoutPath) { Get-Content $stdoutPath }
               if (Test-Path $stderrPath) { Get-Content $stderrPath }
-              throw 'Launcher Windows não respondeu ao health check.'
+              throw 'Launcher Windows não respeitou config.env ou não respondeu ao health check.'
             }
 
-            if ($health.status -ne 'OK') {
+            if ($health.status -ne 'OK' -or $health.environment -ne 'test') {
               throw "Health inesperado: $($health | ConvertTo-Json -Compress)"
             }
 
@@ -192,12 +233,13 @@ jobs:
   dependency-audit:
     name: Dependency audit
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22.x
           cache: npm
@@ -211,16 +253,17 @@ jobs:
   e2e-linux:
     name: Playwright E2E / Ubuntu
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       DEPARA_DISABLE_UPDATE_SIDE_EFFECTS: 'true'
       DEPARA_DISABLE_UPDATE_SCHEDULER: 'true'
       DEPARA_DISABLE_PROCESS_HOOKS: 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22.x
           cache: npm
