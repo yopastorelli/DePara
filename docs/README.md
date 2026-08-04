@@ -52,7 +52,10 @@ Maintain DePara as a local-first file automation and slideshow product with safe
 - Windows runtime defaults are defined in `src/platform/runtimeProfile.js`.
 - Windows defaults disable the RP4 auto-update scheduler until a packaged updater exists.
 - Dependency overrides patch transitive audit issues while preserving current Jest:
-  - `@istanbuljs/load-nyc-config -> js-yaml@5.0.0`
+  - `@istanbuljs/load-nyc-config -> js-yaml@5.2.2`
+  - `minimatch@10.2.5 -> brace-expansion@5.0.9`
+  - `minimatch@9.0.9 -> brace-expansion@2.1.4`
+  - `minimatch@3.1.5 -> brace-expansion@1.1.18`
   - `anymatch -> picomatch@2.3.2`
 - File operations use Node APIs only. Shell fallbacks are not allowed.
 - `DEPARA_ALLOWED_PATHS` can replace default allowed bases for file operations.
