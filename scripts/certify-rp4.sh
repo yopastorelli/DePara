@@ -57,11 +57,11 @@ PORT_VALUE="$(read_config_value PORT '3001')"
 [ "$PORT_VALUE" -ge 1 ] && [ "$PORT_VALUE" -le 65535 ] || fail "PORT fora do intervalo: $PORT_VALUE"
 
 PM2_JSON="$(pm2 jlist)"
-printf '%s' "$PM2_JSON" | node - "$PM2_APP_NAME" "$RUNTIME_ROOT/current/src/main.js" <<'NODE'
-const fs = require('fs');
+PM2_JSON="$PM2_JSON" PM2_EXPECTED_NAME="$PM2_APP_NAME" PM2_EXPECTED_ENTRY="$RUNTIME_ROOT/current/src/main.js" node - <<'NODE'
 const path = require('path');
-const [appName, expectedEntry] = process.argv.slice(2);
-const apps = JSON.parse(fs.readFileSync(0, 'utf8'));
+const apps = JSON.parse(process.env.PM2_JSON || '[]');
+const appName = process.env.PM2_EXPECTED_NAME;
+const expectedEntry = process.env.PM2_EXPECTED_ENTRY;
 const app = apps.find((item) => item.name === appName);
 
 if (!app) {
@@ -90,15 +90,19 @@ printf '%s' "$STATUS_JSON" | node -e "const fs=require('fs');const value=JSON.pa
 printf '%s' "$DIAGNOSTICS_JSON" | node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync(0,'utf8'));if(value.success!==true)process.exit(1)" \
     || fail 'diagnosticos do updater falharam'
 
-node - <<NODE
+CERT_RUNTIME_ROOT="$RUNTIME_ROOT" \
+CERT_CONFIG_PATH="$CONFIG_ENV_PATH" \
+CERT_APP_NAME="$PM2_APP_NAME" \
+CERT_BASE_URL="$BASE_URL" \
+node - <<'NODE'
 console.log(JSON.stringify({
   certification: 'RP4_PASS',
   architecture: process.arch,
   node: process.version,
-  runtimeRoot: ${RUNTIME_ROOT@Q},
-  configPath: ${CONFIG_ENV_PATH@Q},
-  app: ${PM2_APP_NAME@Q},
-  url: ${BASE_URL@Q},
+  runtimeRoot: process.env.CERT_RUNTIME_ROOT,
+  configPath: process.env.CERT_CONFIG_PATH,
+  app: process.env.CERT_APP_NAME,
+  url: process.env.CERT_BASE_URL,
   certifiedAt: new Date().toISOString()
 }, null, 2));
 NODE
