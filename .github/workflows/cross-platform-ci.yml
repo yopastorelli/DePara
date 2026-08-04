@@ -55,6 +55,7 @@ jobs:
         run: |
           bash -n start-depara.sh
           bash -n install-raspberry.sh
+          bash -n scripts/certify-rp4.sh
 
       - name: Lint
         run: npm run lint
@@ -118,7 +119,8 @@ jobs:
         run: |
           foreach ($scriptPath in @(
             'packaging/windows/install-service.ps1',
-            'packaging/windows/uninstall-service.ps1'
+            'packaging/windows/uninstall-service.ps1',
+            'packaging/windows/certify-service.ps1'
           )) {
             $tokens = $null
             $parseErrors = $null
