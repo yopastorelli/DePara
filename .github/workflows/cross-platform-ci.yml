@@ -1,0 +1,291 @@
+name: Cross-platform CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-unit:
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        node:
+          - 22.x
+          - 24.x
+    env:
+      DEPARA_DISABLE_UPDATE_SCHEDULER: 'true'
+      DEPARA_DISABLE_PROCESS_HOOKS: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate RP4 shell contracts
+        if: runner.os == 'Linux' && matrix.node == '22.x'
+        shell: bash
+        run: |
+          bash -n start-depara.sh
+          bash -n install-raspberry.sh
+          bash -n scripts/certify-rp4.sh
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+  smoke:
+    name: Smoke / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    env:
+      DEPARA_DISABLE_UPDATE_SIDE_EFFECTS: 'true'
+      DEPARA_DISABLE_UPDATE_SCHEDULER: 'true'
+      DEPARA_DISABLE_PROCESS_HOOKS: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Smoke tests
+        run: npm run test:smoke
+
+  windows-native-runtime:
+    name: Native Windows runtime
+    runs-on: windows-latest
+    timeout-minutes: 12
+    env:
+      DEPARA_DISABLE_UPDATE_SIDE_EFFECTS: 'true'
+      DEPARA_DISABLE_UPDATE_SCHEDULER: 'true'
+      DEPARA_DISABLE_PROCESS_HOOKS: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate PowerShell and WinSW contracts
+        shell: pwsh
+        run: |
+          foreach ($scriptPath in @(
+            'packaging/windows/build-package.ps1',
+            'packaging/windows/install-service.ps1',
+            'packaging/windows/uninstall-service.ps1',
+            'packaging/windows/certify-service.ps1'
+          )) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $scriptPath),
+              [ref]$tokens,
+              [ref]$parseErrors
+            ) | Out-Null
+
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | ForEach-Object { Write-Error $_.Message }
+              throw "PowerShell inválido: $scriptPath"
+            }
+          }
+
+          [xml]$serviceConfig = Get-Content 'packaging/windows/DeParaService.xml' -Raw
+          if ($serviceConfig.service.id -ne 'DePara') {
+            throw 'WinSW service id inválido.'
+          }
+          if ($serviceConfig.service.executable -notmatch 'node\.exe$') {
+            throw 'WinSW não aponta para o runtime Node empacotado.'
+          }
+
+          $runtimeEnv = $serviceConfig.service.env | Where-Object { $_.name -eq 'DEPARA_RUNTIME_ROOT' }
+          $configEnv = $serviceConfig.service.env | Where-Object { $_.name -eq 'DEPARA_CONFIG_ENV_PATH' }
+          if ($null -eq $runtimeEnv -or $null -eq $configEnv) {
+            throw 'WinSW deve apontar para o runtime e config persistentes.'
+          }
+
+          foreach ($forbiddenOverride in @('HOST', 'PORT', 'NODE_ENV', 'LOG_LEVEL', 'LOG_TO_CONSOLE')) {
+            if ($serviceConfig.service.env | Where-Object { $_.name -eq $forbiddenOverride }) {
+              throw "WinSW não deve sobrepor config.env: $forbiddenOverride"
+            }
+          }
+
+      - name: Start native service launcher and validate config isolation
+        shell: pwsh
+        run: |
+          $runtimeRoot = Join-Path $env:RUNNER_TEMP 'depara-windows-runtime'
+          $configPath = Join-Path $runtimeRoot 'config.env'
+          $stdoutPath = Join-Path $env:RUNNER_TEMP 'depara-windows-stdout.log'
+          $stderrPath = Join-Path $env:RUNNER_TEMP 'depara-windows-stderr.log'
+
+          New-Item -ItemType Directory -Path $runtimeRoot -Force | Out-Null
+          @(
+            'HOST=127.0.0.1',
+            'PORT=3210',
+            'NODE_ENV=test',
+            "DEPARA_RUNTIME_ROOT=$runtimeRoot",
+            "DEPARA_CONFIG_ENV_PATH=$configPath",
+            'DEPARA_DISABLE_UPDATE_SCHEDULER=true',
+            'DEPARA_ALLOW_SYSTEMD_FALLBACK=false',
+            'LOG_LEVEL=warn',
+            'LOG_TO_CONSOLE=false'
+          ) | Set-Content -LiteralPath $configPath -Encoding utf8
+
+          $env:DEPARA_RUNTIME_ROOT = $runtimeRoot
+          $env:DEPARA_CONFIG_ENV_PATH = $configPath
+          $env:DEPARA_WINDOWS_SERVICE = 'true'
+          $env:HOST = '0.0.0.0'
+          $env:PORT = '3999'
+          $env:NODE_ENV = 'production'
+
+          $nodePath = (Get-Command node).Source
+          $startOptions = @{
+            FilePath = $nodePath
+            ArgumentList = 'scripts/start-windows.js'
+            WorkingDirectory = $PWD
+            RedirectStandardOutput = $stdoutPath
+            RedirectStandardError = $stderrPath
+            PassThru = $true
+          }
+          $process = Start-Process @startOptions
+
+          try {
+            $health = $null
+            for ($attempt = 1; $attempt -le 30; $attempt += 1) {
+              try {
+                $health = Invoke-RestMethod 'http://127.0.0.1:3210/health' -TimeoutSec 2
+                break
+              } catch {
+                Start-Sleep -Seconds 1
+              }
+            }
+
+            if ($null -eq $health) {
+              if (Test-Path $stdoutPath) { Get-Content $stdoutPath }
+              if (Test-Path $stderrPath) { Get-Content $stderrPath }
+              throw 'Launcher Windows não isolou config.env ou não respondeu ao health check.'
+            }
+
+            if ($health.status -ne 'OK' -or $health.environment -ne 'test') {
+              throw "Health inesperado: $($health | ConvertTo-Json -Compress)"
+            }
+
+            try {
+              Invoke-RestMethod 'http://127.0.0.1:3999/health' -TimeoutSec 1 | Out-Null
+              throw 'A porta herdada 3999 não deveria estar ativa.'
+            } catch {
+              if ($_.Exception.Message -eq 'A porta herdada 3999 não deveria estar ativa.') {
+                throw
+              }
+            }
+
+            $status = Invoke-RestMethod 'http://127.0.0.1:3210/api/status' -TimeoutSec 5
+            if ($status.status -ne 'OPERATIONAL') {
+              throw "API status inesperado: $($status | ConvertTo-Json -Compress)"
+            }
+
+            foreach ($requiredDirectory in @('data', 'logs', 'backups', 'temp')) {
+              $directoryPath = Join-Path $runtimeRoot $requiredDirectory
+              if (-not (Test-Path $directoryPath -PathType Container)) {
+                throw "Diretório de runtime ausente: $directoryPath"
+              }
+            }
+          } finally {
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+            }
+          }
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit high severity vulnerabilities
+        run: npm audit --audit-level=high
+
+  e2e-linux:
+    name: Playwright E2E / Ubuntu
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DEPARA_DISABLE_UPDATE_SIDE_EFFECTS: 'true'
+      DEPARA_DISABLE_UPDATE_SCHEDULER: 'true'
+      DEPARA_DISABLE_PROCESS_HOOKS: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: npm run test:e2e

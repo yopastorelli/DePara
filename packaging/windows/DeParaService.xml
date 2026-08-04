@@ -1,0 +1,22 @@
+<service>
+  <id>DePara</id>
+  <name>DePara</name>
+  <description>DePara local-first file automation service</description>
+
+  <executable>%BASE%\runtime\node.exe</executable>
+  <arguments>"%BASE%\app\scripts\start-windows.js"</arguments>
+  <workingdirectory>%BASE%\app</workingdirectory>
+
+  <env name="DEPARA_RUNTIME_ROOT" value="%ProgramData%\DePara" />
+  <env name="DEPARA_CONFIG_ENV_PATH" value="%ProgramData%\DePara\config.env" />
+  <env name="DEPARA_PLATFORM_TARGET" value="windows" />
+  <env name="DEPARA_WINDOWS_SERVICE" value="true" />
+  <env name="DEPARA_DISABLE_UPDATE_SCHEDULER" value="true" />
+  <env name="DEPARA_ALLOW_SYSTEMD_FALLBACK" value="false" />
+
+  <logpath>%ProgramData%\DePara\logs</logpath>
+  <stoptimeout>20sec</stoptimeout>
+  <onfailure action="restart" delay="10 sec" />
+  <onfailure action="restart" delay="30 sec" />
+  <resetfailure>1 hour</resetfailure>
+</service>

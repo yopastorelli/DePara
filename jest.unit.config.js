@@ -1,0 +1,11 @@
+'use strict';
+
+const baseConfig = require('./jest.config');
+
+module.exports = {
+  ...baseConfig,
+  testPathIgnorePatterns: [
+    ...(baseConfig.testPathIgnorePatterns || []),
+    '/tests/smoke/'
+  ]
+};

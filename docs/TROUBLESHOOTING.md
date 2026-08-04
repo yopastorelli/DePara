@@ -1,208 +1,216 @@
 # TROUBLESHOOTING_CONTRACT
 
-Port note:
+## Resolve the effective port first
 
-- `3000` is the app/config default for direct local runs.
-- `3001` is the PM2/RP4 default from `ecosystem.config.js`.
-- When troubleshooting production or launcher behavior, prefer the effective port from `~/.depara/config.env` or PM2 env.
+Generic source defaults to `3000`; RP4 PM2 and Windows service default to `3001`. Persisted `config.env` is canonical for supervised operation.
 
-## Symptom: UI does not load
-
-Commands:
+RP4:
 
 ```bash
-npm run lint
-npm run test:e2e
-curl -fsS http://127.0.0.1:3000/health
-curl -fsS http://127.0.0.1:3000/api/status
+CONFIG="$HOME/.depara/config.env"
+PORT="$(grep -E '^PORT=' "$CONFIG" | tail -n 1 | cut -d '=' -f 2-)"
+PORT="${PORT:-3001}"
+echo "$PORT"
 ```
 
-Primary suspects:
+Windows service:
 
-- parser/runtime error in `src/public/app.js`
-- static route regression in `src/main.js`
-- API route failing before UI hydration
-- rate limit too low for UI bootstrap
-- wrong `HOST`/`PORT`
+```powershell
+Get-Content "$env:ProgramData\DePara\config.env"
+```
 
-## Symptom: API is offline from UI but backend health is OK
+Do not diagnose a service using a hardcoded port when the persisted config differs.
 
-Checks:
+## RP4: PM2 online but health fails
 
 ```bash
-curl -i http://127.0.0.1:3000/api/status
-curl -i http://127.0.0.1:3000/api/config
+pm2 jlist
+pm2 logs DePara --lines 100
+./scripts/certify-rp4.sh
+```
+
+Required PM2 entrypoint:
+
+```text
+~/.depara/current/src/main.js
 ```
 
 Likely causes:
 
-- `429` from rate limiter
-- frontend calling stale route
-- browser cannot reach WSL/container loopback
-- CSP regression
+- stale PM2 registration pointing to repository source;
+- `config.env` port differs from the PM2 environment;
+- active wrapper/release missing;
+- unsupported Node major;
+- runtime ownership problem.
 
-Controls:
-
-- Raise `DEPARA_READ_RATE_LIMIT`, `DEPARA_NORMAL_RATE_LIMIT` or `DEPARA_SLIDESHOW_RATE_LIMIT`.
-- Use `DEPARA_DISABLE_RATE_LIMITS=true` only for controlled diagnostics.
-
-## Symptom: file operation returns access denied
-
-Commands:
+Canonical repair:
 
 ```bash
-node -e "console.log(process.env.DEPARA_ALLOWED_PATHS)"
+cd "$HOME/DePara"
+./install-raspberry.sh
+```
+
+The installer preserves config/data, replaces the PM2 registration and fails unless health/status pass.
+
+## RP4: fresh installation uses the wrong port
+
+A clean audited install must create `PORT=3001`. Generic direct execution remains `3000`.
+
+```bash
+grep -E '^(HOST|PORT)=' "$HOME/.depara/config.env"
+pm2 env DePara | grep '^PORT:'
+```
+
+Both supervised values must agree. Do not patch `ecosystem.config.js` with another hardcoded port; edit persisted config and restart with environment refresh.
+
+## RP4: Node installation fails
+
+The installer downloads an official Node archive and verifies `SHASUMS256.txt`.
+
+Check:
+
+```bash
+uname -m
+curl -I "https://nodejs.org/dist/v${DEPARA_NODE_VERSION:-22.23.1}/"
+```
+
+Supported architecture labels are ARM64/AArch64 and ARMv7. A checksum mismatch is a hard failure and must never be bypassed.
+
+## Windows: interactive launcher ignores config.env
+
+Check:
+
+```powershell
+Get-Content "$env:LOCALAPPDATA\DePara\config.env"
+Get-ChildItem Env:HOST,Env:PORT -ErrorAction SilentlyContinue
+npm run start:windows
+```
+
+Direct execution precedence is explicit process environment, then config, then defaults. Remove an unintended explicit environment variable or update the config deliberately.
+
+## Windows: service listens on an unexpected port
+
+```powershell
+Get-Content "$env:ProgramData\DePara\config.env"
+Get-Content .\DeParaService.xml
+.\certify-service.ps1
+```
+
+The XML must not define `HOST`, `PORT`, `NODE_ENV`, `LOG_LEVEL` or `LOG_TO_CONSOLE`. Service mode reloads persisted config to isolate operation from inherited system variables.
+
+## Windows: service installs but does not become healthy
+
+`install-service.ps1` polls health and prints recent logs before failing.
+
+```powershell
+Get-Service DePara
+Get-ChildItem "$env:ProgramData\DePara\logs"
+Get-Content "$env:ProgramData\DePara\logs\*" -Tail 100
+```
+
+Likely causes:
+
+- invalid or occupied configured port;
+- bundled Node is not version 22/24;
+- incomplete package layout;
+- filesystem permissions;
+- invalid config.
+
+Reinstallation is idempotent and preserves product data.
+
+## Windows: package build fails
+
+```powershell
+.\packaging\windows\build-package.ps1 `
+  -NodeArchivePath <zip> `
+  -NodeArchiveSha256 <sha256> `
+  -WinSWPath <exe> `
+  -WinSWSha256 <sha256>
+```
+
+Hard failures include:
+
+- input SHA-256 mismatch;
+- Node ZIP without `node.exe`/`npm.cmd`;
+- Node major other than 22/24;
+- production dependency installation failure;
+- missing source directories.
+
+Never suppress a hash failure. Obtain the expected Node hash from the official release checksum manifest and verify the WinSW hash independently.
+
+## Windows: UNC share is inaccessible
+
+The standard WinSW service identity is typically LocalSystem, which usually lacks the intended remote-share identity.
+
+Check:
+
+- service logon identity;
+- share permissions;
+- NTFS permissions;
+- UNC root in `DEPARA_ALLOWED_PATHS`;
+- no mapped drive dependency.
+
+Use a deliberate service account when network shares are required.
+
+## File operation returns access denied
+
+```bash
 npm run test:smoke
 ```
 
 Check:
 
-- path is under allowed bases
-- no `../`, `..\`, `~/` fragments
-- symlink realpath does not escape allowed bases
-- parent directory exists for write targets
-- `DEPARA_ALLOWED_PATHS` did not accidentally replace needed defaults
+- intended path is beneath an allowed root;
+- traversal fragments are absent;
+- real path/reparse target does not escape the root;
+- parent exists for a new target;
+- platform delimiter is correct.
 
-Fix:
+Linux delimiter: `:`. Windows delimiter: `;`.
 
-- Add the intended base directory to `DEPARA_ALLOWED_PATHS`.
-- On Linux/macOS separate values with `:`.
-- On Windows separate values with `;`.
+## UI does not load
 
-## Symptom: slideshow lists no images
-
-Commands:
+Use the effective port:
 
 ```bash
-curl -s -X POST http://127.0.0.1:3000/api/files/list-images \
-  -H 'Content-Type: application/json' \
-  -d '{"folderPath":"/absolute/path","extensions":[".jpg",".jpeg",".png",".gif",".bmp",".webp"],"recursive":true}'
-```
-
-Check:
-
-- `folderPath` passes `validateSafePath`.
-- extensions include leading dots for `POST /list-images`.
-- images are not filtered by ignored-pattern rules.
-- symlinks outside allowed bases are intentionally skipped/blocked.
-
-## Symptom: direct image URL fails
-
-Contract:
-
-- Route is `GET /api/files/image/:imagePath`.
-- Absolute file path must be encoded as a single segment.
-
-Client expression:
-
-```js
-`/api/files/image/${encodeURIComponent(imagePath)}`
-```
-
-Failure causes:
-
-- raw slash in URL path
-- unsupported extension
-- file outside allowed bases
-- ignored filename
-
-## Symptom: config does not persist
-
-Commands:
-
-```bash
-curl -fsS http://127.0.0.1:3000/api/config
-ls -la ~/.depara/data
-```
-
-Check:
-
-- `DEPARA_DATA_DIR`
-- `DEPARA_CONFIG_FILE`
-- runtime write permissions
-- process user owns runtime root
-
-## Symptom: update is stuck or unsafe
-
-Commands:
-
-```bash
-pm2 status
-pm2 logs DePara --lines 100
-curl -fsS http://127.0.0.1:3000/api/update/auto/status
-curl -fsS http://127.0.0.1:3000/api/update/auto/diagnostics
-```
-
-Interpretation:
-
-- `runtime.supervisor.pm2.registered=false`: PM2 process contract broken.
-- `runtime.scheduler.stale=true`: scheduler/process lifecycle issue.
-- `runtime.lastFailureStage` set: start investigation at that stage.
-- health failure after activation: rollback should restore previous release.
-
-## Symptom: RP4 menu does not open app
-
-Commands:
-
-```bash
-pm2 status
-curl -fsS http://127.0.0.1:3000/health
-$HOME/DePara/start-depara.sh status
-cat ~/.local/share/applications/depara.desktop
-```
-
-Fix order:
-
-1. PM2 process healthy.
-2. `/health` OK.
-3. `start-depara.sh status` resolves expected URL.
-4. `.desktop` `Exec=` points to `start-depara.sh open`.
-
-Do not fix menu issues by making the launcher start or update the backend.
-
-## Symptom: Playwright E2E cannot start browser
-
-Commands:
-
-```bash
-npx playwright install chromium
-npx playwright install-deps chromium
+curl -fsS "http://127.0.0.1:${PORT:-3000}/health"
+curl -fsS "http://127.0.0.1:${PORT:-3000}/api/status"
 npm run test:e2e
 ```
 
-On constrained environments, install native dependencies before retrying E2E.
+Suspects:
 
-## Symptom: dependency audit fails
+- frontend parser/runtime error;
+- API failure before hydration;
+- rate-limit regression;
+- wrong port;
+- CSP/static-route regression.
 
-Commands:
+## Update is stuck or unsafe on RP4
+
+```bash
+curl -fsS "http://127.0.0.1:${PORT:-3001}/api/update/auto/status"
+curl -fsS "http://127.0.0.1:${PORT:-3001}/api/update/auto/diagnostics"
+pm2 logs DePara --lines 100
+```
+
+Windows must keep `DEPARA_DISABLE_UPDATE_SCHEDULER=true`; the RP4 updater is not a Windows recovery mechanism.
+
+## Dependency audit fails
 
 ```bash
 npm audit --audit-level=high
-npm ls js-yaml picomatch --all
+npm ls js-yaml brace-expansion picomatch --all
 ```
 
-Expected overrides in `package.json`:
+Expected targeted overrides are documented in `docs/TESTING.md`. Do not replace major-compatible `brace-expansion` overrides with one global version.
 
-- `@istanbuljs/load-nyc-config -> js-yaml@5.0.0`
-- `anymatch -> picomatch@2.3.2`
+## Physical certification fails
 
-If removing overrides, require:
+RP4 marker:
 
-```bash
-npm install
-npm audit --audit-level=high
-npm run test:unit
+```text
+RP4_CERTIFICATION_FAIL
 ```
 
-## Symptom: text encoding looks broken
-
-Command:
-
-```bash
-rg -n "Ã[ƒ‚]|â[€™€œ€]|\x{00D2}|\x{FFFD}" README.md docs src/public src/routes
-```
-
-Decision:
-
-- If source contains mojibake, fix UTF-8 source.
-- If only terminal output is mojibake, do not rewrite files.
+Windows certifier throws a terminating PowerShell error. Fix the reported machine condition and rerun the same non-destructive certification. Do not mark the platform promoted from hosted CI alone.

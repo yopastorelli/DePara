@@ -20,6 +20,7 @@ describe('bootstrap runtime release', () => {
   afterEach(async () => {
     delete process.env.DEPARA_RUNTIME_ROOT;
     delete process.env.DEPARA_CONFIG_ENV_PATH;
+    delete process.env.DEPARA_DEFAULT_PORT;
     await fsp.rm(runtimeRoot, { recursive: true, force: true });
   });
 
@@ -33,15 +34,43 @@ describe('bootstrap runtime release', () => {
     expect(wrapper).toContain('app.startServer({ registerHandlers: true })');
   });
 
-  it('creates config.env with runtime defaults when absent', async () => {
-    const createdPath = await bootstrapModule.ensureRuntimeConfigFile(runtimeRoot);
+  it('creates config.env with generic runtime defaults when absent', async () => {
+    const createdPath = await bootstrapModule.ensureRuntimeConfigFile(runtimeRoot, {
+      platform: 'linux',
+      arch: 'x64',
+      env: {}
+    });
     const content = await fsp.readFile(createdPath, 'utf8');
 
     expect(createdPath).toBe(configPath);
+    expect(content).toContain('HOST=127.0.0.1');
     expect(content).toContain('PORT=3000');
     expect(content).toContain('NODE_ENV=production');
     expect(content).toContain('LOG_LEVEL=warn');
     expect(content).toContain('LOG_TO_CONSOLE=false');
     expect(content).toContain(`DEPARA_RUNTIME_ROOT=${runtimeRoot}`);
+  });
+
+  it('creates an RP4 baseline aligned with the PM2 production port', () => {
+    const content = bootstrapModule.getRuntimeConfigEnvContent(runtimeRoot, {
+      platform: 'linux',
+      arch: 'arm64',
+      env: {}
+    });
+
+    expect(content).toContain('HOST=127.0.0.1');
+    expect(content).toContain('PORT=3001');
+    expect(content).toContain('PM2_APP_NAME=DePara');
+    expect(content).toContain('DEPARA_ALLOW_SYSTEMD_FALLBACK=false');
+  });
+
+  it('allows an explicit bootstrap port to override the platform baseline', () => {
+    const content = bootstrapModule.getRuntimeConfigEnvContent(runtimeRoot, {
+      platform: 'linux',
+      arch: 'arm64',
+      env: { DEPARA_DEFAULT_PORT: '3555' }
+    });
+
+    expect(content).toContain('PORT=3555');
   });
 });

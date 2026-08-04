@@ -303,6 +303,26 @@ function filterIgnoredFiles(files) {
  * Valida se um caminho é seguro para operações de arquivo
  * Previne acesso a diretórios não autorizados e ataques de path traversal
  */
+function normalizeComparablePath(candidatePath) {
+  const resolvedPath = path.resolve(candidatePath);
+  return process.platform === 'win32'
+    ? resolvedPath.toLowerCase()
+    : resolvedPath;
+}
+
+function canonicalizeExistingPath(candidatePath) {
+  const resolvedPath = path.resolve(candidatePath);
+
+  try {
+    const realPath = typeof fsSync.realpathSync.native === 'function'
+      ? fsSync.realpathSync.native(resolvedPath)
+      : fsSync.realpathSync(resolvedPath);
+    return normalizeComparablePath(realPath);
+  } catch {
+    return normalizeComparablePath(resolvedPath);
+  }
+}
+
 function getAllowedBasePaths() {
   const configuredPaths = (process.env.DEPARA_ALLOWED_PATHS || '')
     .split(path.delimiter)
@@ -310,18 +330,20 @@ function getAllowedBasePaths() {
     .filter(Boolean);
 
   if (configuredPaths.length > 0) {
-    return configuredPaths.map((item) => path.resolve(item));
+    return configuredPaths.map(canonicalizeExistingPath);
   }
 
   if (process.platform === 'win32') {
-    return [os.homedir(), 'C:\\', 'D:\\', 'E:\\'].map((item) => path.resolve(item));
+    return [os.homedir(), 'C:\\', 'D:\\', 'E:\\'].map(canonicalizeExistingPath);
   }
 
-  return [os.homedir(), os.tmpdir(), '/media', '/mnt'].map((item) => path.resolve(item));
+  return [os.homedir(), os.tmpdir(), '/media', '/mnt'].map(canonicalizeExistingPath);
 }
 
 function isPathWithinBase(candidatePath, basePath) {
-  const relativePath = path.relative(basePath, candidatePath);
+  const comparableCandidate = canonicalizeExistingPath(candidatePath);
+  const comparableBase = canonicalizeExistingPath(basePath);
+  const relativePath = path.relative(comparableBase, comparableCandidate);
   return relativePath === '' || (!relativePath.startsWith(`..${path.sep}`) && relativePath !== '..' && !path.isAbsolute(relativePath));
 }
 
@@ -363,7 +385,6 @@ async function validateSafePath(filePath, operation = 'read') {
   }
 
   const resolvedPath = path.resolve(filePath);
-  assertAllowedPath(resolvedPath);
 
   try {
     const realPath = await fs.realpath(resolvedPath);

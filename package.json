@@ -5,25 +5,28 @@
   "main": "src/main.js",
   "scripts": {
     "start": "node src/main.js",
-    "start:bg": "pm2 start src/main.js --name DePara",
-    "start:bg:prod": "pm2 start src/main.js --name DePara --env production",
+    "start:windows": "node scripts/start-windows.js",
+    "runtime:bootstrap": "node bootstrap-runtime-release.js",
+    "start:bg": "npm run runtime:bootstrap && pm2 start ecosystem.config.js --env production",
+    "start:bg:prod": "npm run runtime:bootstrap && pm2 start ecosystem.config.js --env production",
     "stop:bg": "pm2 stop DePara",
-    "restart:bg": "pm2 restart DePara",
+    "restart:bg": "pm2 restart DePara --update-env",
     "status": "pm2 status",
     "logs": "pm2 logs DePara",
     "dev": "node --watch src/main.js",
     "test": "npm run test:unit",
-    "test:unit": "jest --runInBand --forceExit",
+    "test:unit": "jest --config jest.unit.config.js --runInBand --forceExit",
+    "test:platform": "jest --config jest.unit.config.js --runInBand tests/unit/platform --forceExit",
     "test:smoke": "jest --runInBand tests/smoke --forceExit",
     "test:e2e": "playwright test",
-    "test:all": "npm run lint && npm run test:unit && npm run test:e2e",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --runInBand --coverage",
+    "test:all": "npm run lint && npm run test:unit && npm run test:smoke && npm run test:e2e && npm audit --audit-level=high",
+    "test:watch": "jest --config jest.unit.config.js --watch",
+    "test:coverage": "jest --config jest.unit.config.js --runInBand --coverage",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "setup": "npm install",
     "setup:bg": "npm install && npm install -g pm2",
-    "postinstall": "node -e \"console.log('✅ DePara instalado com sucesso! Use npm run start:bg para iniciar em segundo plano.')\""
+    "postinstall": "node -e \"console.log('✅ DePara instalado com sucesso. Use npm start, npm run start:windows ou o supervisor da plataforma.')\""
   },
   "keywords": [
     "file-manager",
@@ -52,7 +55,16 @@
   },
   "overrides": {
     "@istanbuljs/load-nyc-config": {
-      "js-yaml": "5.0.0"
+      "js-yaml": "5.2.2"
+    },
+    "minimatch@10.2.5": {
+      "brace-expansion": "5.0.9"
+    },
+    "minimatch@9.0.9": {
+      "brace-expansion": "2.1.4"
+    },
+    "minimatch@3.1.5": {
+      "brace-expansion": "1.1.18"
     },
     "anymatch": {
       "picomatch": "2.3.2"

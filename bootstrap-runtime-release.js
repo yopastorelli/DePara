@@ -32,14 +32,34 @@ function execCommand(command, options = {}) {
   });
 }
 
-function getRuntimeConfigEnvContent(runtimeRoot) {
-  const defaults = getDefaultRuntimeConfig({ DEPARA_RUNTIME_ROOT: runtimeRoot });
+function getBootstrapPlatformDefaults(options = {}) {
+  const platform = options.platform || process.platform;
+  const arch = options.arch || process.arch;
+  const env = options.env || process.env;
+  const isRaspberryPi = platform === 'linux' && (arch === 'arm' || arch === 'arm64');
+
+  return {
+    HOST: '127.0.0.1',
+    PORT: env.DEPARA_DEFAULT_PORT || (isRaspberryPi ? '3001' : '3000'),
+    ...(isRaspberryPi ? {
+      PM2_APP_NAME: 'DePara',
+      DEPARA_ALLOW_SYSTEMD_FALLBACK: 'false'
+    } : {})
+  };
+}
+
+function getRuntimeConfigEnvContent(runtimeRoot, options = {}) {
+  const defaults = getDefaultRuntimeConfig({
+    ...getBootstrapPlatformDefaults(options),
+    DEPARA_RUNTIME_ROOT: runtimeRoot
+  });
+
   return `${Object.entries(defaults)
     .map(([key, value]) => `${key}=${value}`)
     .join('\n')}\n`;
 }
 
-async function ensureRuntimeConfigFile(runtimeRoot) {
+async function ensureRuntimeConfigFile(runtimeRoot, options = {}) {
   const configPath = getRuntimeConfigPath();
 
   if (fs.existsSync(configPath)) {
@@ -47,7 +67,7 @@ async function ensureRuntimeConfigFile(runtimeRoot) {
   }
 
   await fsp.mkdir(path.dirname(configPath), { recursive: true });
-  await fsp.writeFile(configPath, getRuntimeConfigEnvContent(runtimeRoot), 'utf8');
+  await fsp.writeFile(configPath, getRuntimeConfigEnvContent(runtimeRoot, options), 'utf8');
   return configPath;
 }
 
@@ -159,6 +179,7 @@ if (require.main === module) {
 
 module.exports = {
   execCommand,
+  getBootstrapPlatformDefaults,
   getRuntimeConfigEnvContent,
   ensureRuntimeConfigFile,
   getCurrentWrapperContent,
