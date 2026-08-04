@@ -7,7 +7,7 @@ if (process.platform !== 'win32' && process.env.DEPARA_ALLOW_NON_WINDOWS_START !
   process.exit(1);
 }
 
-const profile = applyPlatformDefaults();
+const profile = applyPlatformDefaults({ applyNetworkDefaults: false });
 const app = require('../src/main');
 
 app.startServer({ registerHandlers: true })
