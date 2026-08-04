@@ -1,6 +1,5 @@
 [CmdletBinding()]
 param(
-    [string]$RuntimeRoot = (Join-Path $env:ProgramData 'DePara'),
     [switch]$PurgeData
 )
 
@@ -19,6 +18,7 @@ function Assert-Administrator {
 
 Assert-Administrator
 
+$runtimeRoot = Join-Path $env:ProgramData 'DePara'
 $serviceExe = Join-Path $PSScriptRoot 'DeParaService.exe'
 if (-not (Test-Path -LiteralPath $serviceExe)) {
     throw "Executável do serviço ausente: $serviceExe"
@@ -35,10 +35,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if ($PurgeData) {
-    if (Test-Path -LiteralPath $RuntimeRoot) {
-        Remove-Item -LiteralPath $RuntimeRoot -Recurse -Force
+    if (Test-Path -LiteralPath $runtimeRoot) {
+        Remove-Item -LiteralPath $runtimeRoot -Recurse -Force
     }
-    Write-Host "Serviço e dados removidos: $RuntimeRoot"
+    Write-Host "Serviço e dados removidos: $runtimeRoot"
 } else {
-    Write-Host "Serviço removido. Dados preservados em: $RuntimeRoot"
+    Write-Host "Serviço removido. Dados preservados em: $runtimeRoot"
 }
