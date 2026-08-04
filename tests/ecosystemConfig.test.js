@@ -22,7 +22,7 @@ describe('PM2 ecosystem runtime contract', () => {
 
     process.env.DEPARA_RUNTIME_ROOT = runtimeRoot;
     process.env.DEPARA_CONFIG_ENV_PATH = configPath;
-    delete process.env.PORT;
+    process.env.PORT = '9999';
   });
 
   afterEach(async () => {
@@ -34,7 +34,7 @@ describe('PM2 ecosystem runtime contract', () => {
     await fsp.rm(runtimeRoot, { recursive: true, force: true });
   });
 
-  it('uses config.env port in every PM2 environment', () => {
+  it('uses config.env port in every PM2 environment despite inherited shell values', () => {
     const ecosystem = require('../ecosystem.config');
     const app = ecosystem.apps[0];
 
