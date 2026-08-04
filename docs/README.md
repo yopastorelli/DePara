@@ -2,21 +2,25 @@
 
 DOC_FORMAT=agent_contract
 DOC_OWNER=repository
-LAST_AUDIT_SCOPE=technical_product_e2e_cross_platform_foundation
+LAST_AUDIT_SCOPE=technical_product_e2e_cross_platform_readiness
 
 ## Mission
 
-Maintain DePara as a local-first file automation and slideshow product with safe filesystem boundaries, deterministic runtime persistence, RP4-friendly operations, native Windows execution and verifiable E2E behavior.
+Maintain DePara as a local-first file automation and slideshow product with safe filesystem boundaries, deterministic runtime persistence, RP4 operations, native Windows execution and reproducible hardware certification.
 
 ## Platform contract
 
-- Raspberry Pi 4 production remains supervised by PM2.
+- RP4 production is supervised by PM2 and executes `~/.depara/current/src/main.js`.
 - Windows execution is native; WSL is not a production dependency.
-- Shared product behavior stays in Node.js/Express modules.
-- Supervisor, desktop integration, packaging and update behavior are platform adapters.
-- Windows service mode uses WinSW and `%ProgramData%\DePara`.
-- Windows interactive development uses `%LOCALAPPDATA%\DePara` unless overridden.
-- Windows packaged auto-update is not enabled until signed artifact activation and rollback are implemented.
+- Shared product behavior remains in Node.js/Express modules.
+- Supervisor, packaging, desktop integration and update behavior are platform adapters.
+- Persisted `config.env` is canonical after explicit process environment and before defaults.
+- RP4 defaults to `~/.depara` and port `3001`.
+- Windows interactive defaults to `%LOCALAPPDATA%\DePara` and port `3000`.
+- Windows service defaults to `%ProgramData%\DePara` and port `3001`.
+- Windows service supervision uses WinSW.
+- Windows packaged auto-update remains disabled until signed activation and rollback exist.
+- Production installation scripts certify Node 22 or 24 LTS.
 
 ## Agent read order
 
@@ -28,83 +32,75 @@ Maintain DePara as a local-first file automation and slideshow product with safe
 6. `docs/RP4-OPS.md`
 7. `docs/WINDOWS-OPS.md`
 8. `docs/TROUBLESHOOTING.md`
-9. Source files referenced by the target change
-10. Tests covering the target change
+9. target source files
+10. tests covering the target
 
 ## Change policy
 
-- If a public route changes, update `docs/API.md`, smoke/E2E coverage and UI callers in the same change.
-- If shared runtime behavior changes, update `docs/ARCHITECTURE.md`, `docs/INSTALLATION.md`, `docs/RP4-OPS.md`, `docs/WINDOWS-OPS.md` and environment templates.
-- If a Windows runtime behavior changes, update `docs/WINDOWS-OPS.md` and cross-platform CI coverage.
-- If an RP4 runtime behavior changes, update `docs/RP4-OPS.md` and preserve the PM2/immutable-release contract.
-- If a test setup changes, update `docs/TESTING.md`.
-- If an operational failure mode is fixed, add or update `docs/TROUBLESHOOTING.md`.
-- Keep docs in UTF-8.
-- Do not add human-oriented prose when a contract, table or command is clearer for an agent.
+- Public route changes update API docs, smoke/E2E coverage and UI callers together.
+- Shared runtime changes update architecture, installation, RP4, Windows and test contracts.
+- Windows runtime changes preserve RP4 PM2/immutable-release behavior.
+- RP4 runtime changes preserve Windows native launcher/service behavior.
+- Operational failure fixes add regression coverage and troubleshooting documentation.
+- Keep docs and source in UTF-8.
 
 ## Current hardening decisions
 
-- HTTP server binds to `HOST` with safe default `127.0.0.1`.
-- Express 5 route patterns avoid wildcard syntax incompatible with `path-to-regexp`.
-- Dev mode uses `node --watch`; `nodemon` is not a dependency.
-- PM2 is operational/global only and remains the RP4 supervisor.
-- Windows service supervision is external to the backend and uses WinSW packaging.
-- Windows runtime defaults are defined in `src/platform/runtimeProfile.js`.
-- Windows defaults disable the RP4 auto-update scheduler until a packaged updater exists.
-- Dependency overrides patch transitive audit issues while preserving current Jest:
+- Default HTTP bind is `127.0.0.1`.
+- Platform launchers do not override persisted network config.
+- PM2 consumes the effective port loaded from `config.env`.
+- RP4 clean bootstrap and launcher fallback both use `3001`.
+- Windows WinSW XML does not define `HOST`, `PORT`, `NODE_ENV` or logging overrides.
+- Windows service install/remove are idempotent.
+- Windows installation is health-gated.
+- Windows package assembly is local and checksum-gated through `packaging/windows/build-package.ps1`.
+- RP4 Node installation uses a pinned official archive and official SHA-256 manifest.
+- NTFS allowlist protection is canonicalized and has a mandatory junction escape smoke test.
+- Unit and smoke suites are separate to avoid duplicate CI work.
+- CI runs once per PR commit, cancels obsolete runs and ignores documentation-only changes.
+- Dependency overrides remain major-compatible:
   - `@istanbuljs/load-nyc-config -> js-yaml@5.2.2`
   - `minimatch@10.2.5 -> brace-expansion@5.0.9`
   - `minimatch@9.0.9 -> brace-expansion@2.1.4`
   - `minimatch@3.1.5 -> brace-expansion@1.1.18`
   - `anymatch -> picomatch@2.3.2`
-- File operations use Node APIs only. Shell fallbacks are not allowed.
-- `DEPARA_ALLOWED_PATHS` can replace default allowed bases for file operations.
-- Rate limits are configurable and can be disabled only for controlled tests with `DEPARA_DISABLE_RATE_LIMITS=true`.
-- `src/public/app.js` is normalized as UTF-8 source; do not reintroduce DOM-level mojibake monkey patches.
 
-## Required verification after modifications
+## Required verification
 
-Minimum for any source change:
+Source gate:
 
 ```bash
-npm run lint
-npm run test:unit
+npm run test:all
 ```
 
-Minimum for route, UI, file operation, dependency or runtime changes:
+Cross-platform changes require the complete GitHub Actions matrix.
+
+Physical promotion gates:
 
 ```bash
-npm run lint
-npm run test:unit
-npm run test:smoke
-npm run test:e2e
-npm audit --audit-level=high
+./scripts/certify-rp4.sh
 ```
 
-Cross-platform runtime changes additionally require:
+```powershell
+.\certify-service.ps1
+```
 
-- Linux x64 CI.
-- Windows x64 CI.
-- Physical RP4 release validation before production promotion.
-- Physical Windows 10 and Windows 11 validation before declaring Windows production-ready.
+Run each certification after installation and after a real reboot on its target machine.
 
-Expected result:
+Expected markers:
 
-- lint exit code `0`
-- unit suites pass
-- smoke suites pass
-- Playwright E2E passes
-- audit reports `found 0 vulnerabilities`
+- `RP4_PASS`
+- `WINDOWS_SERVICE_PASS`
 
-## Repository outputs that must stay untracked
+Hosted CI does not replace these physical markers.
+
+## Untracked outputs
 
 - `node_modules/`
 - `coverage/`
 - `test-results/`
 - `playwright-report/`
-- `logs/`
-- `backups/`
-- `data/`
-- `src/data/`
-- local `.env*` files
-- Windows packaged runtime binaries and unsigned installer outputs
+- runtime `logs/`, `backups/`, `data/`, `temp/`
+- `packaging/windows/dist/`
+- bundled Node/WinSW binaries
+- unsigned Windows package/installer outputs
