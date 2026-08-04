@@ -31,7 +31,7 @@ load_runtime_config() {
     fi
 
     if [ -z "${PORT_VALUE:-}" ]; then
-        PORT_VALUE="3000"
+        PORT_VALUE="3001"
     fi
 
     APP_URL="${DEPARA_APP_URL:-http://127.0.0.1:$PORT_VALUE}"
@@ -87,6 +87,8 @@ open_browser() {
 
 show_status() {
     echo "DePara RP4 status"
+    echo "Runtime root: $RUNTIME_ROOT"
+    echo "Config env: $CONFIG_ENV_PATH"
     echo "App URL: $APP_URL"
     echo "PM2 app: $PM2_APP_NAME"
     echo ""
@@ -103,7 +105,7 @@ show_status() {
     else
         echo "Health: FALHOU ($HEALTH_URL)"
         echo "Se o backend nao estiver no ar, inicie com:"
-        echo "  pm2 start ecosystem.config.js --env production"
+        echo "  npm run start:bg:prod"
         echo "  pm2 save"
     fi
 }
@@ -112,7 +114,7 @@ open_ui() {
     if ! health_check; then
         log "Backend nao esta saudavel em $HEALTH_URL."
         log "Inicie ou recupere o runtime canonicamente com:"
-        log "  pm2 start ecosystem.config.js --env production"
+        log "  npm run start:bg:prod"
         log "  pm2 save"
         exit 1
     fi
