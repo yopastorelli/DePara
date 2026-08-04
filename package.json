@@ -25,7 +25,7 @@
     "lint:fix": "eslint . --ext .js --fix",
     "setup": "npm install",
     "setup:bg": "npm install && npm install -g pm2",
-    "postinstall": "node -e \"console.log('✅ DePara instalado com sucesso! Use npm run start:bg para iniciar em segundo plano.')\""
+    "postinstall": "node -e \"console.log('✅ DePara instalado com sucesso. Use npm start, npm run start:windows ou o supervisor da plataforma.')\""
   },
   "keywords": [
     "file-manager",
@@ -54,7 +54,16 @@
   },
   "overrides": {
     "@istanbuljs/load-nyc-config": {
-      "js-yaml": "5.0.0"
+      "js-yaml": "5.2.2"
+    },
+    "minimatch@10.2.5": {
+      "brace-expansion": "5.0.9"
+    },
+    "minimatch@9.0.9": {
+      "brace-expansion": "2.1.4"
+    },
+    "minimatch@3.1.5": {
+      "brace-expansion": "1.1.18"
     },
     "anymatch": {
       "picomatch": "2.3.2"
