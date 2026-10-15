@@ -44,4 +44,12 @@ describe('bootstrap runtime release', () => {
     expect(content).toContain('LOG_TO_CONSOLE=false');
     expect(content).toContain(`DEPARA_RUNTIME_ROOT=${runtimeRoot}`);
   });
+
+  it('includes the source checkout when creating a new runtime config', async () => {
+    const sourceRoot = path.join(runtimeRoot, 'source');
+    const createdPath = await bootstrapModule.ensureRuntimeConfigFile(runtimeRoot, sourceRoot);
+    const content = await fsp.readFile(createdPath, 'utf8');
+
+    expect(content).toContain(`DEPARA_UPDATE_SOURCE_ROOT=${sourceRoot}`);
+  });
 });

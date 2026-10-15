@@ -32,14 +32,18 @@ function execCommand(command, options = {}) {
   });
 }
 
-function getRuntimeConfigEnvContent(runtimeRoot) {
-  const defaults = getDefaultRuntimeConfig({ DEPARA_RUNTIME_ROOT: runtimeRoot });
+function getRuntimeConfigEnvContent(runtimeRoot, sourceRoot = null) {
+  const overrides = { DEPARA_RUNTIME_ROOT: runtimeRoot };
+  if (sourceRoot) {
+    overrides.DEPARA_UPDATE_SOURCE_ROOT = sourceRoot;
+  }
+  const defaults = getDefaultRuntimeConfig(overrides);
   return `${Object.entries(defaults)
     .map(([key, value]) => `${key}=${value}`)
     .join('\n')}\n`;
 }
 
-async function ensureRuntimeConfigFile(runtimeRoot) {
+async function ensureRuntimeConfigFile(runtimeRoot, sourceRoot = null) {
   const configPath = getRuntimeConfigPath();
 
   if (fs.existsSync(configPath)) {
@@ -47,7 +51,7 @@ async function ensureRuntimeConfigFile(runtimeRoot) {
   }
 
   await fsp.mkdir(path.dirname(configPath), { recursive: true });
-  await fsp.writeFile(configPath, getRuntimeConfigEnvContent(runtimeRoot), 'utf8');
+  await fsp.writeFile(configPath, getRuntimeConfigEnvContent(runtimeRoot, sourceRoot), 'utf8');
   return configPath;
 }
 
@@ -113,10 +117,18 @@ async function main() {
     fsp.mkdir(path.dirname(configEnvPath), { recursive: true })
   ]);
 
-  await ensureRuntimeConfigFile(runtimeRoot);
+  await ensureRuntimeConfigFile(runtimeRoot, repoRoot);
 
   const { stdout: commit } = await execCommand('git rev-parse HEAD', { cwd: repoRoot });
   const releaseId = String(commit).trim();
+  let previousMeta = null;
+  if (fs.existsSync(currentMetaPath)) {
+    try {
+      previousMeta = JSON.parse(await fsp.readFile(currentMetaPath, 'utf8'));
+    } catch {
+      previousMeta = null;
+    }
+  }
   const releasePath = path.join(releasesDir, releaseId);
   const archivePath = path.join(releasesDir, `${releaseId}.tar`);
   const stagingPath = path.join(releasesDir, `.bootstrap-${releaseId}`);
@@ -141,8 +153,12 @@ async function main() {
     activeRelease: releaseId,
     activeCommit: releaseId,
     activePath: releasePath,
-    previousRelease: null,
-    previousCommit: null,
+    previousRelease: previousMeta?.activeRelease && previousMeta.activeRelease !== releaseId
+      ? previousMeta.activeRelease
+      : null,
+    previousCommit: previousMeta?.activeCommit && previousMeta.activeCommit !== releaseId
+      ? previousMeta.activeCommit
+      : null,
     updatedAt: new Date().toISOString()
   }, null, 2), 'utf8');
 
