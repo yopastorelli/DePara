@@ -333,6 +333,9 @@ class ImageCatalogStore {
 
     catalog.cancelled = true;
     this.catalogs.delete(catalogId);
+    if (catalog.buildPromise) {
+      await catalog.buildPromise.catch(() => {});
+    }
     try {
       await fs.rm(catalog.filePath, { force: true });
     } catch {

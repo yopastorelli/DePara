@@ -1861,9 +1861,9 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
             recursive
         });
 
-        const safePath = folderPath
-            ? await fileOperationsManager.validateSafePath(folderPath, 'read')
-            : undefined;
+        const safePath = catalogId
+            ? undefined
+            : await fileOperationsManager.validateSafePath(folderPath, 'read');
         logger.debug('List Images path validated', { safePath });
 
         let data;
