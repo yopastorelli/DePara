@@ -7,20 +7,34 @@ async function scanImagesRecursive(folderPath, options = {}) {
     maxDepth = 10,
     extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff'],
     shouldIgnore = () => false,
-    sortBy = 'name'
+    sortBy = 'name',
+    maxResults = Infinity
   } = options;
 
-  const normalizedExtensions = extensions.map((ext) => ext.startsWith('.') ? ext.toLowerCase() : `.${ext.toLowerCase()}`);
+  const normalizedExtensions = new Set(
+    extensions.map((ext) => ext.startsWith('.') ? ext.toLowerCase() : `.${ext.toLowerCase()}`)
+  );
+  const resultLimit = Number.isFinite(Number(maxResults))
+    ? Math.max(0, Number(maxResults))
+    : Infinity;
   const images = [];
 
   async function scanDirectory(currentPath, currentDepth = 0) {
-    if (currentDepth > maxDepth) {
+    if (currentDepth > maxDepth || images.length >= resultLimit) {
       return;
     }
 
     const entries = await fs.readdir(currentPath, { withFileTypes: true });
 
     for (const entry of entries) {
+      if (images.length >= resultLimit) {
+        return;
+      }
+
+      if (shouldIgnore(entry.name)) {
+        continue;
+      }
+
       const fullPath = path.join(currentPath, entry.name);
 
       if (entry.isDirectory()) {
@@ -30,12 +44,12 @@ async function scanImagesRecursive(folderPath, options = {}) {
         continue;
       }
 
-      if (!entry.isFile() || shouldIgnore(entry.name)) {
+      if (!entry.isFile()) {
         continue;
       }
 
       const extension = path.extname(entry.name).toLowerCase();
-      if (!normalizedExtensions.includes(extension)) {
+      if (!normalizedExtensions.has(extension)) {
         continue;
       }
 

@@ -74,7 +74,7 @@ describe('UpdateOrchestrator passive checks', () => {
       status: 'critical',
       currentCommit: 'old',
       targetCommit: 'old',
-      lastError: 'Circuit breaker ativado: [PM2][ERROR] Process or Namespace DePara not found',
+      lastError: 'Circuit breaker ativado: reinício manual do processo Windows necessário',
       consecutiveFailures: 3,
       rollbackPerformed: true
     });

@@ -3,14 +3,14 @@
  */
 
 const express = require('express');
-const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { exec, spawn } = require('child_process');
 const logger = require('../utils/logger');
 
 const router = express.Router();
 
-const SCREEN_SAVER_PROFILE_DIR = '/tmp/depara-screensaver-browser';
+const SCREEN_SAVER_PROFILE_DIR = path.join(os.tmpdir(), 'depara-screensaver-browser');
 const SCREEN_SAVER_ROUTE = '/?screensaver=1&dedicated=1';
 
 const dedicatedScreensaverState = {
@@ -24,21 +24,9 @@ const dedicatedScreensaverState = {
     armDueAt: null
 };
 
-function execPromise(command, options = {}) {
-    return new Promise((resolve, reject) => {
-        exec(command, options, (error, stdout, stderr) => {
-            if (error) {
-                reject(error);
-                return;
-            }
-            resolve({ stdout, stderr });
-        });
-    });
-}
-
 function commandExists(command) {
     return new Promise((resolve) => {
-        exec(`which ${command}`, (error, stdout) => {
+        exec(`where.exe ${command}`, (error, stdout) => {
             resolve(!error && Boolean(stdout.trim()));
         });
     });
@@ -49,33 +37,16 @@ function sleep(ms) {
 }
 
 function hasGraphicalSession() {
-    return Boolean(process.env.DISPLAY || process.env.WAYLAND_DISPLAY);
+    return true;
 }
 
 function buildDesktopEnv() {
-    const env = { ...process.env };
-
-    if (!env.DISPLAY) {
-        env.DISPLAY = ':0';
-    }
-
-    if (!env.XAUTHORITY) {
-        const users = [env.SUDO_USER, env.USER, 'pi'].filter(Boolean);
-        for (const user of users) {
-            const candidate = path.join('/home', user, '.Xauthority');
-            if (fs.existsSync(candidate)) {
-                env.XAUTHORITY = candidate;
-                break;
-            }
-        }
-    }
-
-    return env;
+    return { ...process.env };
 }
 
 function getBrowserCandidates(targetUrl, options = {}) {
     const kiosk = options.kiosk === true;
-    const profile = options.profileDir || '/tmp/depara-browser';
+    const profile = options.profileDir || path.join(os.tmpdir(), 'depara-browser');
     const commonChromiumArgs = [
         '--new-window',
         `--app=${targetUrl}`,
@@ -91,23 +62,23 @@ function getBrowserCandidates(targetUrl, options = {}) {
 
     return [
         {
-            binary: 'chromium-browser',
-            name: 'chromium-browser',
+            binary: 'msedge.exe',
+            name: 'Microsoft Edge',
             args: commonChromiumArgs
         },
         {
-            binary: 'chromium',
-            name: 'chromium',
+            binary: 'chrome.exe',
+            name: 'Google Chrome',
             args: commonChromiumArgs
         },
         {
-            binary: 'google-chrome',
-            name: 'google-chrome',
+            binary: 'chromium.exe',
+            name: 'Chromium',
             args: commonChromiumArgs
         },
         {
-            binary: 'firefox',
-            name: 'firefox',
+            binary: 'firefox.exe',
+            name: 'Firefox',
             args: kiosk ? ['--kiosk', targetUrl] : ['--new-window', targetUrl]
         }
     ];
@@ -126,6 +97,7 @@ function spawnDetachedBrowser(launchConfig) {
     const child = spawn(launchConfig.binary, launchConfig.args, {
         detached: true,
         stdio: 'ignore',
+        windowsHide: true,
         env: buildDesktopEnv()
     });
     child.unref();
@@ -140,60 +112,6 @@ function isProcessRunning(pid) {
     } catch {
         return false;
     }
-}
-
-async function focusScreensaverWindowByPid(pid, retries = 10, intervalMs = 400) {
-    if (!pid) return false;
-    const hasWmctrl = await commandExists('wmctrl');
-    if (!hasWmctrl) return false;
-    const hasXdotool = await commandExists('xdotool');
-
-    for (let i = 0; i < retries; i += 1) {
-        try {
-            let windowId = null;
-
-            if (hasXdotool) {
-                const xdoCmd = `bash -lc "xdotool search --onlyvisible --pid ${pid} 2>/dev/null | head -n 1"`;
-                const { stdout } = await execPromise(xdoCmd);
-                const candidate = (stdout || '').trim();
-                if (candidate) {
-                    const dec = parseInt(candidate, 10);
-                    if (!Number.isNaN(dec)) {
-                        windowId = `0x${dec.toString(16)}`;
-                    }
-                }
-            }
-
-            if (!windowId) {
-                const { stdout } = await execPromise(`bash -lc "wmctrl -lp | awk '$3==${pid} {print $1; exit}'"`);
-                const candidate = (stdout || '').trim();
-                if (candidate) {
-                    windowId = candidate;
-                }
-            }
-
-            if (windowId) {
-                const activateCmd = [
-                    `wmctrl -i -r ${windowId} -b remove,hidden >/dev/null 2>&1 || true`,
-                    `wmctrl -i -a ${windowId} >/dev/null 2>&1 || true`,
-                    `wmctrl -i -r ${windowId} -b add,above,fullscreen >/dev/null 2>&1 || true`
-                ];
-                if (hasXdotool) {
-                    activateCmd.push(`xdotool windowactivate ${windowId} >/dev/null 2>&1 || true`);
-                }
-                await execPromise(`bash -lc "${activateCmd.join('; ')}"`);
-                return true;
-            }
-        } catch {
-            // Retry below.
-        }
-
-        if (i < retries - 1) {
-            await sleep(intervalMs);
-        }
-    }
-
-    return false;
 }
 
 function clearDedicatedScreensaverState() {
@@ -217,11 +135,7 @@ async function closeDedicatedScreensaverProcess() {
         clearDedicatedScreensaverState();
     } else {
         try {
-            if (process.platform === 'win32') {
-                process.kill(dedicatedScreensaverState.pid, 'SIGTERM');
-            } else {
-                process.kill(-dedicatedScreensaverState.pid, 'SIGTERM');
-            }
+            process.kill(dedicatedScreensaverState.pid, 'SIGTERM');
         } catch {
             // Ignore and proceed with fallback.
         }
@@ -230,23 +144,13 @@ async function closeDedicatedScreensaverProcess() {
 
         if (isProcessRunning(dedicatedScreensaverState.pid)) {
             try {
-                if (process.platform === 'win32') {
-                    process.kill(dedicatedScreensaverState.pid, 'SIGKILL');
-                } else {
-                    process.kill(-dedicatedScreensaverState.pid, 'SIGKILL');
-                }
+                process.kill(dedicatedScreensaverState.pid, 'SIGKILL');
             } catch {
                 // Ignore and proceed with fallback.
             }
         }
 
         clearDedicatedScreensaverState();
-    }
-
-    try {
-        await execPromise(`pkill -f "${SCREEN_SAVER_PROFILE_DIR}"`);
-    } catch {
-        // pkill returns non-zero when nothing matched; this is expected.
     }
 }
 
@@ -257,13 +161,10 @@ async function closeDedicatedScreensaverProcess() {
 router.post('/minimize', async (req, res) => {
     try {
         logger.info('Minimizando aplicacao para system tray...');
-        const command = 'wmctrl -l | grep -E "(DePara|localhost:3000|Chromium|Chrome|Firefox)" | awk \'{print $1}\' | while read window_id; do wmctrl -i -r "$window_id" -b add,hidden,below,sticky 2>/dev/null; wmctrl -i -r "$window_id" -e 0,-1,-1,1,1 2>/dev/null; done';
-        await execPromise(command);
         dedicatedScreensaverState.trayMinimized = true;
-
         res.status(200).json({
             success: true,
-            message: 'Aplicacao minimizada para system tray',
+            message: 'Estado de tray registrado no processo Windows',
             timestamp: new Date().toISOString()
         });
     } catch (error) {
@@ -285,14 +186,11 @@ router.post('/minimize', async (req, res) => {
 router.post('/restore', async (req, res) => {
     try {
         logger.info('Restaurando aplicacao do system tray...');
-        const command = 'wmctrl -l | grep -E "(DePara|localhost:3000|Chromium|Chrome|Firefox)" | awk \'{print $1}\' | while read window_id; do wmctrl -i -r "$window_id" -b remove,hidden 2>/dev/null; wmctrl -i -a "$window_id" 2>/dev/null; done';
-        await execPromise(command);
         dedicatedScreensaverState.trayMinimized = false;
         disarmDedicatedScreensaver();
-
         res.status(200).json({
             success: true,
-            message: 'Aplicacao restaurada do system tray',
+            message: 'Estado de tray restaurado no processo Windows',
             timestamp: new Date().toISOString()
         });
     } catch (error) {
@@ -316,20 +214,9 @@ router.post('/open-dedicated', async (req, res) => {
         const port = process.env.PORT || 3000;
         const targetUrl = `http://127.0.0.1:${port}`;
 
-        if (!hasGraphicalSession() && !process.env.DISPLAY) {
-            res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Sessao grafica nao detectada',
-                    details: 'Configure DISPLAY/XAUTHORITY no ambiente do PM2.'
-                }
-            });
-            return;
-        }
-
         const launchConfig = await resolveBrowserLaunch(targetUrl, {
             kiosk: false,
-            profileDir: '/tmp/depara-browser'
+            profileDir: path.join(os.tmpdir(), 'depara-browser')
         });
 
         if (!launchConfig) {
@@ -369,8 +256,6 @@ router.post('/screensaver/open', async (req, res) => {
     try {
         disarmDedicatedScreensaver();
         if (isProcessRunning(dedicatedScreensaverState.pid)) {
-            const focused = await focusScreensaverWindowByPid(dedicatedScreensaverState.pid);
-            if (!focused) logger.warn('Nao foi possivel focar janela dedicada existente pelo PID');
             res.status(200).json({
                 success: true,
                 already_open: true,
@@ -385,17 +270,6 @@ router.post('/screensaver/open', async (req, res) => {
         }
 
         clearDedicatedScreensaverState();
-
-        if (!hasGraphicalSession() && !process.env.DISPLAY) {
-            res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Sessao grafica nao detectada',
-                    details: 'DISPLAY/WAYLAND_DISPLAY ausente. Nao foi possivel abrir janela dedicada.'
-                }
-            });
-            return;
-        }
 
         if (!dedicatedScreensaverState.trayMinimized) {
             res.status(200).json({
@@ -431,9 +305,6 @@ router.post('/screensaver/open', async (req, res) => {
         dedicatedScreensaverState.browser = launchConfig.name;
         dedicatedScreensaverState.sessionId = `ss_${Date.now()}`;
         dedicatedScreensaverState.openedAt = new Date().toISOString();
-
-        const focused = await focusScreensaverWindowByPid(dedicatedScreensaverState.pid);
-        if (!focused) logger.warn('Nao foi possivel focar janela dedicada aberta pelo PID');
 
         logger.info('Screensaver dedicado aberto', {
             sessionId: dedicatedScreensaverState.sessionId,
@@ -504,18 +375,11 @@ router.post('/screensaver/arm', async (req, res) => {
                     disarmDedicatedScreensaver();
                     return;
                 }
-                if (!hasGraphicalSession() && !process.env.DISPLAY) {
-                    logger.warn('Nao foi possivel abrir screensaver dedicado: sessao grafica ausente');
-                    disarmDedicatedScreensaver();
-                    return;
-                }
                 const child = spawnDetachedBrowser(launchConfig);
                 dedicatedScreensaverState.pid = child.pid;
                 dedicatedScreensaverState.browser = launchConfig.name;
                 dedicatedScreensaverState.sessionId = `ss_${Date.now()}`;
                 dedicatedScreensaverState.openedAt = new Date().toISOString();
-                const focused = await focusScreensaverWindowByPid(dedicatedScreensaverState.pid);
-                if (!focused) logger.warn('Nao foi possivel focar janela dedicada aberta por arm timer');
                 logger.info('Screensaver dedicado aberto por arm timer', {
                     sessionId: dedicatedScreensaverState.sessionId,
                     pid: dedicatedScreensaverState.pid
@@ -563,26 +427,11 @@ router.post('/screensaver/disarm', async (req, res) => {
 });
 
 /**
- * Maximize the active OS window (Linux/RP4 via wmctrl/xdotool).
+ * Request browser-managed maximization on Windows.
  * POST /api/tray/maximize
  */
 router.post('/maximize', async (req, res) => {
-    try {
-        if (await commandExists('wmctrl')) {
-            await execPromise('wmctrl -r :ACTIVE: -b add,maximized_vert,maximized_horz');
-            logger.info('Janela maximizada via wmctrl');
-        } else if (await commandExists('xdotool')) {
-            const winId = (await execPromise('xdotool getactivewindow')).trim();
-            if (winId) {
-                await execPromise(`xdotool windowsize ${winId} 100% 100%`);
-                logger.info('Janela maximizada via xdotool');
-            }
-        }
-        res.json({ success: true });
-    } catch (err) {
-        logger.warn('Falha ao maximizar janela', { error: err.message });
-        res.json({ success: false, error: err.message });
-    }
+    res.json({ success: true, message: 'Maximizacao gerenciada pelo navegador Windows' });
 });
 
 /**
@@ -621,7 +470,6 @@ router.post('/screensaver/close', async (req, res) => {
  */
 router.get('/status', async (req, res) => {
     try {
-        const wmctrlAvailable = await commandExists('wmctrl');
         const dedicatedActive = isProcessRunning(dedicatedScreensaverState.pid);
         if (!dedicatedActive && dedicatedScreensaverState.pid) {
             clearDedicatedScreensaverState();
@@ -630,8 +478,8 @@ router.get('/status', async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
-                wmctrlAvailable,
-                graphicalSession: hasGraphicalSession() || Boolean(process.env.DISPLAY),
+                windowControl: 'browser-managed',
+                graphicalSession: hasGraphicalSession(),
                 trayMinimized: dedicatedScreensaverState.trayMinimized,
                 screensaverDedicatedActive: dedicatedActive,
                 screensaverSessionId: dedicatedScreensaverState.sessionId,

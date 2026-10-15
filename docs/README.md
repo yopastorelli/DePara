@@ -6,7 +6,7 @@ LAST_AUDIT_SCOPE=technical_product_e2e
 
 ## Mission
 
-Maintain DePara as a local-first file automation and slideshow product with safe filesystem boundaries, deterministic runtime persistence, RP4-friendly operations and verifiable E2E behavior.
+Maintain DePara as a local-first file automation and slideshow product exclusivo para Windows, com limites seguros de filesystem, persistência determinística, baixo consumo de memória e comportamento E2E verificável.
 
 ## Agent read order
 
@@ -15,15 +15,16 @@ Maintain DePara as a local-first file automation and slideshow product with safe
 3. `docs/API.md`
 4. `docs/INSTALLATION.md`
 5. `docs/TESTING.md`
-6. `docs/RP4-OPS.md`
-7. `docs/TROUBLESHOOTING.md`
+6. `docs/WINDOWS-OPS.md`
+7. `docs/PERFORMANCE-AUDIT.md`
+8. `docs/TROUBLESHOOTING.md`
 8. Source files referenced by the target change
 9. Tests covering the target change
 
 ## Change policy
 
 - If a public route changes, update `docs/API.md`, smoke/E2E coverage and UI callers in the same change.
-- If runtime behavior changes, update `docs/ARCHITECTURE.md`, `docs/INSTALLATION.md`, `docs/RP4-OPS.md` and `env.example`.
+- If runtime behavior changes, update `docs/ARCHITECTURE.md`, `docs/INSTALLATION.md`, `docs/WINDOWS-OPS.md` and `env.example`.
 - If a test setup changes, update `docs/TESTING.md`.
 - If an operational failure mode is fixed, add or update `docs/TROUBLESHOOTING.md`.
 - Keep docs in UTF-8.
@@ -34,14 +35,17 @@ Maintain DePara as a local-first file automation and slideshow product with safe
 - HTTP server binds to `HOST` with safe default `127.0.0.1`.
 - Express 5 route patterns avoid wildcard syntax incompatible with `path-to-regexp`.
 - Dev mode uses `node --watch`; `nodemon` is not a dependency.
-- PM2 is operational/global only; it is installed with `npm run setup:bg` or manually via `npm install -g pm2`.
+- PM2, systemd and launchers Linux/Raspberry Pi are unsupported and are not part of the Windows runtime contract.
 - Dependency overrides patch transitive audit issues while preserving current Jest:
-  - `@istanbuljs/load-nyc-config -> js-yaml@5.0.0`
+  - `@istanbuljs/load-nyc-config -> js-yaml@5.4.3`
   - `anymatch -> picomatch@2.3.2`
+- The former `/api/desktop/*` Linux `.desktop` integration was removed; use the Windows browser/tray routes instead.
 - File operations use Node APIs only. Shell fallbacks are not allowed.
 - `DEPARA_ALLOWED_PATHS` can replace default allowed bases for file operations.
 - Rate limits are configurable and can be disabled only for controlled tests with `DEPARA_DISABLE_RATE_LIMITS=true`.
 - `src/public/app.js` is normalized as UTF-8 source; do not reintroduce DOM-level mojibake monkey patches.
+- Batch operations stream files with bounded concurrency; do not reintroduce full-directory materialization.
+- Image scans must support a result cap through `DEPARA_MAX_IMAGE_RESULTS` when the UI does not need the complete set.
 
 ## Required verification after modifications
 
@@ -76,6 +80,7 @@ Expected result:
 - `coverage/`
 - `test-results/`
 - `playwright-report/`
+- `performance-results/`
 - `logs/`
 - `backups/`
 - `data/`

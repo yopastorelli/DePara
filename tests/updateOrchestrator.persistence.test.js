@@ -72,7 +72,6 @@ describe('UpdateOrchestrator persistence layout', () => {
       clearInterval(orchestrator.timer);
     }
     jest.restoreAllMocks();
-    delete process.env.DEPARA_ALLOW_SYSTEMD_FALLBACK;
     delete process.env.DEPARA_RUNTIME_ROOT;
     delete process.env.DEPARA_DATA_DIR;
     delete process.env.DEPARA_RELEASES_DIR;
@@ -105,35 +104,24 @@ describe('UpdateOrchestrator persistence layout', () => {
     expect(migratedConfig.checkIntervalMinutes).toBe(15);
   });
 
-  it('fails fast when pm2 exists but the canonical process is not registered', async () => {
-    jest.spyOn(orchestrator, 'isPm2Available').mockResolvedValue(true);
-    jest.spyOn(orchestrator, 'isPm2ProcessRegistered').mockResolvedValue(false);
-    jest.spyOn(orchestrator, 'isSystemctlAvailable').mockResolvedValue(true);
-    const restartViaSystemdSpy = jest.spyOn(orchestrator, 'restartViaSystemd').mockResolvedValue(true);
+  it('declares o processo Windows como supervisor operacional', async () => {
+    const supervisor = await orchestrator.detectSupervisorStatus();
 
-    await expect(orchestrator.requestRestart()).rejects.toThrow('Processo PM2 canônico não está registrado');
-
-    expect(orchestrator.isPm2ProcessRegistered).toHaveBeenCalledWith('DePara');
-    expect(restartViaSystemdSpy).not.toHaveBeenCalled();
+    expect(supervisor.supervisor).toBe('windows-process');
+    expect(supervisor.operationallyReady).toBe(true);
   });
 
-  it('allows explicit legacy fallback to systemd when configured', async () => {
-    process.env.DEPARA_ALLOW_SYSTEMD_FALLBACK = 'true';
-    jest.spyOn(orchestrator, 'isPm2Available').mockResolvedValue(true);
-    jest.spyOn(orchestrator, 'isPm2ProcessRegistered').mockResolvedValue(false);
-    jest.spyOn(orchestrator, 'isSystemctlAvailable').mockResolvedValue(true);
-    const restartViaSystemdSpy = jest.spyOn(orchestrator, 'restartViaSystemd').mockResolvedValue(true);
-
-    await orchestrator.requestRestart();
-
-    expect(restartViaSystemdSpy).toHaveBeenCalledWith('depara.service');
+  it('exige reinicio manual no Windows em vez de chamar supervisores legados', async () => {
+    await expect(orchestrator.requestRestart()).rejects.toMatchObject({
+      stage: 'windows_restart_required'
+    });
   });
 
   it('exposes tracked worktree diagnostics in runtime status', async () => {
     orchestrator.config = orchestrator.getDefaultConfig();
     orchestrator.state = orchestrator.getDefaultState();
     jest.spyOn(orchestrator, 'detectSupervisorStatus').mockResolvedValue({
-      supervisor: 'pm2',
+      supervisor: 'windows-process',
       operationallyReady: true,
       reasons: []
     });

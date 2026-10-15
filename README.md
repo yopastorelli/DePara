@@ -6,7 +6,7 @@ CANONICAL_DOC_ENTRYPOINT=docs/README.md
 
 ## Product contract
 
-DePara is a local-first file automation and image slideshow service for Raspberry Pi 4 and desktop Linux/Windows development. The product surface is a static web UI backed by an Express API.
+DePara is a local-first file automation and image slideshow service exclusivo para Windows. O produto é uma interface web local apoiada por uma API Express.
 
 Primary jobs:
 
@@ -15,14 +15,13 @@ Primary jobs:
 - Persist and run scheduled file operations.
 - Browse folders and image assets for slideshow flows.
 - Export/import operational backup state.
-- Run immutable-release auto-update under PM2 on RP4.
+- Preparar atualizações locais com reinício manual do processo Windows.
 
 ## Runtime contract
 
 - HTTP entrypoint: `src/main.js`
 - Default host: `127.0.0.1`
 - Default app/config port: `3000`
-- Default PM2 production port in `ecosystem.config.js`: `3001`
 - UI: `http://127.0.0.1:<PORT>/ui`
 - Root metadata: `http://127.0.0.1:<PORT>/`
 - Health: `http://127.0.0.1:<PORT>/health`
@@ -40,16 +39,15 @@ Set `HOST=0.0.0.0` only when LAN exposure is intentional and the network boundar
 - Low-level file permissions/copy/move helpers: `src/utils/fileOps/*`
 - Runtime path derivation: `src/utils/runtimePaths.js`
 - Operational config loader: `src/utils/runtimeConfig.js`
-- Update orchestrator: `src/services/updateOrchestrator.js`
-- PM2 process model: `ecosystem.config.js`
-- RP4 launcher: `start-depara.sh`
+- Update orchestrator: `src/services/updateOrchestrator.js` (opcional e desativado por padrão)
+- Performance audit: `scripts/performance-audit.js`
 - AI documentation: `docs/`
 
 ## Required release gate
 
 Run all commands from repository root:
 
-```bash
+```powershell
 npm ci
 npm run lint
 npm run test:unit
@@ -62,21 +60,20 @@ Expected dependency audit state: `found 0 vulnerabilities`.
 
 ## Persistence contract
 
-- Runtime root: `DEPARA_RUNTIME_ROOT` or `~/.depara`
-- Config env file: `DEPARA_CONFIG_ENV_PATH` or `~/.depara/config.env`
-- Functional data: `DEPARA_DATA_DIR` or `~/.depara/data`
-- Active immutable release: `DEPARA_CURRENT_DIR` or `~/.depara/current`
-- Release store: `DEPARA_RELEASES_DIR` or `~/.depara/releases`
-- Logs: `DEPARA_LOG_DIR` or `~/.depara/logs`
-- Backups: `DEPARA_BACKUP_DIR` or `~/.depara/backups`
-- Temp files: `DEPARA_TEMP_DIR` or `~/.depara/temp`
+- Runtime root: `DEPARA_RUNTIME_ROOT` or `%USERPROFILE%\.depara`
+- Config env file: `DEPARA_CONFIG_ENV_PATH` or `%USERPROFILE%\.depara\config.env`
+- Functional data: `DEPARA_DATA_DIR` or `%USERPROFILE%\.depara\data`
+- Active release: `DEPARA_CURRENT_DIR` or `%USERPROFILE%\.depara\current`
+- Release store: `DEPARA_RELEASES_DIR` or `%USERPROFILE%\.depara\releases`
+- Logs: `DEPARA_LOG_DIR` or `%USERPROFILE%\.depara\logs`
+- Backups: `DEPARA_BACKUP_DIR` or `%USERPROFILE%\.depara\backups`
+- Temp files: `DEPARA_TEMP_DIR` or `%USERPROFILE%\.depara\temp`
 
 ## Non-negotiable invariants
 
-- Production RP4 supervisor is PM2.
-- `depara.service` is legacy/bootstrap-only, not the product supervisor.
-- `start-depara.sh` validates health and opens the UI; it must not install, update or replace the backend.
-- Runtime releases are immutable. Mutable state lives under `~/.depara/data`.
+- O processo Windows local é iniciado por `npm run start:windows`; PM2, systemd e launchers Linux não fazem parte do contrato.
+- O auto-update permanece desativado por padrão e exige reinício manual do processo Windows.
+- Runtime releases are immutable. Mutable state lives under `%USERPROFILE%\.depara\data`.
 - New update flows must use `/api/update/auto/*`.
 - Legacy update endpoints stay public only to return `410 Gone`.
 - Path-based file operations must pass `validateSafePath`.
@@ -91,5 +88,6 @@ Expected dependency audit state: `found 0 vulnerabilities`.
 3. [docs/API.md](docs/API.md)
 4. [docs/INSTALLATION.md](docs/INSTALLATION.md)
 5. [docs/TESTING.md](docs/TESTING.md)
-6. [docs/RP4-OPS.md](docs/RP4-OPS.md)
-7. [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+6. [docs/WINDOWS-OPS.md](docs/WINDOWS-OPS.md)
+7. [docs/PERFORMANCE-AUDIT.md](docs/PERFORMANCE-AUDIT.md)
+8. [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)

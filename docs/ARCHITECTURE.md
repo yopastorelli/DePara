@@ -3,7 +3,7 @@
 ## System shape
 
 ```text
-browser UI / Playwright
+Windows browser UI / Playwright
   -> Express app in src/main.js
     -> route modules in src/routes/*
       -> service/util modules in src/services and src/utils
@@ -23,14 +23,14 @@ browser UI / Playwright
 | Config | `src/routes/config.js`, `src/utils/configStore.js` | persisted product configuration and backup import/export |
 | Runtime paths | `src/utils/runtimePaths.js` | derive data/log/temp/release/current directories |
 | Runtime env | `src/utils/runtimeConfig.js` | load `config.env` into `process.env` without overriding explicit env |
-| Update | `src/routes/update.js`, `src/services/updateOrchestrator.js` | immutable release auto-update under PM2 |
+| Update | `src/routes/update.js`, `src/services/updateOrchestrator.js` | optional immutable release preparation with manual Windows restart |
 | Status/health | `src/routes/status.js`, `src/routes/health.js` | readiness and operational diagnostics |
-| Desktop/tray | `src/routes/tray.js`, `src/routes/desktop.js`, `start-depara.sh` | open UI windows and desktop integration |
-| Process manager | `ecosystem.config.js` | PM2 runtime definition |
+| Tray/browser | `src/routes/tray.js` | open dedicated Windows browser windows and screensaver state |
+| Audit | `scripts/performance-audit.js` | controlled latency and memory measurements |
 
 ## Startup sequence
 
-1. `loadOperationalConfig()` reads `~/.depara/config.env` unless overridden by `DEPARA_CONFIG_ENV_PATH`.
+1. `loadOperationalConfig()` reads `%USERPROFILE%\.depara\config.env` unless overridden by `DEPARA_CONFIG_ENV_PATH`.
 2. Express app is configured once.
 3. Runtime directories are created:
    - logs
@@ -40,30 +40,29 @@ browser UI / Playwright
    - data
 4. Config file is ensured.
 5. Folder manager initializes.
-6. Update orchestrator initializes.
-7. Server listens on `HOST` and `PORT`.
+6. Server listens on `HOST` and `PORT`.
+7. Update orchestrator initializes lazily only when an update route requires it.
 
 Defaults:
 
 - `HOST=127.0.0.1`
 - `PORT=3000`
-- `NODE_ENV=development` for direct `npm start`
-- production values are set by PM2 env blocks and/or `config.env`
+- `NODE_ENV=production` in the persisted runtime configuration; direct development runs may override it.
 
 ## Runtime persistence
 
 | Data | Default path |
 |---|---|
-| Runtime root | `~/.depara` |
-| Config env | `~/.depara/config.env` |
-| Product config | `~/.depara/data/depara-config.json` |
-| Scheduled operations | `~/.depara/data/scheduled-operations.json` |
-| Folders | `~/.depara/data/folders.json` |
-| Update config | `~/.depara/data/update-config.json` |
-| Update state | `~/.depara/data/update-state.json` |
-| Update history | `~/.depara/data/update-history.log` |
-| Immutable releases | `~/.depara/releases/<commit>` |
-| Active release wrapper | `~/.depara/current` |
+| Runtime root | `%USERPROFILE%\.depara` |
+| Config env | `%USERPROFILE%\.depara\config.env` |
+| Product config | `%USERPROFILE%\.depara\data\depara-config.json` |
+| Scheduled operations | `%USERPROFILE%\.depara\data\scheduled-operations.json` |
+| Folders | `%USERPROFILE%\.depara\data\folders.json` |
+| Update config | `%USERPROFILE%\.depara\data\update-config.json` |
+| Update state | `%USERPROFILE%\.depara\data\update-state.json` |
+| Update history | `%USERPROFILE%\.depara\data\update-history.log` |
+| Immutable releases | `%USERPROFILE%\.depara\releases\<commit>` |
+| Active release wrapper | `%USERPROFILE%\.depara\current` |
 
 Migration contract:
 
@@ -85,15 +84,14 @@ Validation behavior:
 - For missing targets, validates the nearest existing parent.
 - Authorizes paths against allowed base directories.
 
-Default allowed bases:
+Default allowed bases on Windows:
 
-- Linux: `os.homedir()`, `os.tmpdir()`, `/media`, `/mnt`
-- Windows: `os.homedir()`, `C:\`, `D:\`, `E:\`
+- `os.homedir()`
+- `C:\`
+- `D:\`
+- `E:\`
 
-`DEPARA_ALLOWED_PATHS` replaces defaults. Use platform delimiter:
-
-- Linux/macOS delimiter: `:`
-- Windows delimiter: `;`
+`DEPARA_ALLOWED_PATHS` replaces defaults and uses `;` as delimiter.
 
 Security invariant:
 
@@ -135,7 +133,7 @@ Legacy endpoints must remain available only to return `410 Gone` with migration 
 
 Update invariant:
 
-- The orchestrator prepares a clean immutable release, flips active release, restarts through PM2 and validates health.
+- The orchestrator prepares a clean immutable release, flips active release and validates health; restarting the Windows process is an explicit manual step.
 - On failed health validation, rollback must restore the previous release.
 
 ## Fragile zones
@@ -143,4 +141,5 @@ Update invariant:
 - `src/public/app.js`: large legacy UI file; run E2E after any edit.
 - `src/routes/fileOperations.js`: broad public API; run smoke and E2E after any edit.
 - `src/services/updateOrchestrator.js`: side-effectful update logic; use `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true` in tests.
+- `scripts/performance-audit.js`: use an isolated profile and compare reports from the same machine.
 - Express route syntax: project uses Express 5; do not reintroduce `:param(*)` or `app.use('*')`.

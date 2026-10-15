@@ -139,8 +139,8 @@ describe('Update Routes', () => {
       reason: 'not_operational',
       diagnostics: {
         supervisor: {
-          supervisor: 'unmanaged',
-          reasons: ['pm2_process_not_registered']
+          supervisor: 'windows-process',
+          reasons: ['manual_restart_required']
         }
       }
     });
@@ -148,7 +148,7 @@ describe('Update Routes', () => {
     const res = await request(app).post('/api/update/auto/trigger').expect(412);
     expect(res.body.success).toBe(false);
     expect(res.body.error.reason).toBe('not_operational');
-    expect(res.body.error.diagnostics.supervisor.supervisor).toBe('unmanaged');
+    expect(res.body.error.diagnostics.supervisor.supervisor).toBe('windows-process');
   });
 
   it('GET /api/update/auto/history should return historical entries', async () => {

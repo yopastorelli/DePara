@@ -102,7 +102,7 @@
       } else if ((release.activationState === 'rollback' || release.activationState === 'rollback_restart') && release.previous) {
         updateMessage.textContent = `Rollback automático para a release ${release.previous} em andamento.`;
       } else if (scheduler.stale) {
-        updateMessage.textContent = 'Scheduler sem ciclos recentes. Verifique PM2, restart e persistência do processo.';
+        updateMessage.textContent = 'Scheduler sem ciclos recentes. Verifique o processo Windows e a persistência.';
       } else {
         updateMessage.textContent = hasUpdates
           ? 'Há atualização disponível e ela será publicada como um novo release imutável.'

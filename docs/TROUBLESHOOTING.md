@@ -1,208 +1,110 @@
 # TROUBLESHOOTING_CONTRACT
 
-Port note:
+## Porta e processo
 
-- `3000` is the app/config default for direct local runs.
-- `3001` is the PM2/RP4 default from `ecosystem.config.js`.
-- When troubleshooting production or launcher behavior, prefer the effective port from `~/.depara/config.env` or PM2 env.
+- `3000` é a porta padrão.
+- O processo correto é iniciado por `npm run start:windows`.
+- PM2, systemd e launchers Linux não são caminhos de diagnóstico.
 
-## Symptom: UI does not load
+Verifique o processo no PowerShell:
 
-Commands:
+```powershell
+Get-Process node -ErrorAction SilentlyContinue
+Invoke-RestMethod http://127.0.0.1:3000/health
+Invoke-RestMethod http://127.0.0.1:3000/api/status
+```
 
-```bash
+## UI não carrega
+
+```powershell
 npm run lint
 npm run test:e2e
-curl -fsS http://127.0.0.1:3000/health
-curl -fsS http://127.0.0.1:3000/api/status
+Invoke-RestMethod http://127.0.0.1:3000/health
+Invoke-RestMethod http://127.0.0.1:3000/api/status
 ```
 
-Primary suspects:
+Principais suspeitos:
 
-- parser/runtime error in `src/public/app.js`
-- static route regression in `src/main.js`
-- API route failing before UI hydration
-- rate limit too low for UI bootstrap
-- wrong `HOST`/`PORT`
+- erro de parser em `src/public/app.js`;
+- regressão de rota estática em `src/main.js`;
+- API falhando antes da hidratação da UI;
+- limite de requisições baixo durante o bootstrap;
+- `HOST` ou `PORT` divergente do navegador.
 
-## Symptom: API is offline from UI but backend health is OK
+## API offline na UI, mas health está OK
 
-Checks:
-
-```bash
-curl -i http://127.0.0.1:3000/api/status
-curl -i http://127.0.0.1:3000/api/config
+```powershell
+Invoke-WebRequest http://127.0.0.1:3000/api/status -UseBasicParsing
+Invoke-WebRequest http://127.0.0.1:3000/api/config -UseBasicParsing
 ```
 
-Likely causes:
+Verifique `429` do rate limiter, rota antiga no frontend, CSP e se o navegador acessa o mesmo loopback do processo.
 
-- `429` from rate limiter
-- frontend calling stale route
-- browser cannot reach WSL/container loopback
-- CSP regression
+## Operação de arquivo retorna acesso negado
 
-Controls:
-
-- Raise `DEPARA_READ_RATE_LIMIT`, `DEPARA_NORMAL_RATE_LIMIT` or `DEPARA_SLIDESHOW_RATE_LIMIT`.
-- Use `DEPARA_DISABLE_RATE_LIMITS=true` only for controlled diagnostics.
-
-## Symptom: file operation returns access denied
-
-Commands:
-
-```bash
-node -e "console.log(process.env.DEPARA_ALLOWED_PATHS)"
+```powershell
+$env:DEPARA_ALLOWED_PATHS
 npm run test:smoke
 ```
 
-Check:
+Confirme que o caminho está em uma base permitida, não contém `../` ou `..\`, não escapa por symlink e que o pai do destino existe. No Windows, separe bases com `;`.
 
-- path is under allowed bases
-- no `../`, `..\`, `~/` fragments
-- symlink realpath does not escape allowed bases
-- parent directory exists for write targets
-- `DEPARA_ALLOWED_PATHS` did not accidentally replace needed defaults
+## Slideshow não lista imagens
 
-Fix:
-
-- Add the intended base directory to `DEPARA_ALLOWED_PATHS`.
-- On Linux/macOS separate values with `:`.
-- On Windows separate values with `;`.
-
-## Symptom: slideshow lists no images
-
-Commands:
-
-```bash
-curl -s -X POST http://127.0.0.1:3000/api/files/list-images \
-  -H 'Content-Type: application/json' \
-  -d '{"folderPath":"/absolute/path","extensions":[".jpg",".jpeg",".png",".gif",".bmp",".webp"],"recursive":true}'
+```powershell
+$body = @{ folderPath = 'C:\Dados\Imagens'; extensions = @('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'); recursive = $true } | ConvertTo-Json
+Invoke-RestMethod http://127.0.0.1:3000/api/files/list-images -Method Post -ContentType 'application/json' -Body $body
 ```
 
-Check:
+Verifique `validateSafePath`, extensões com ponto, regras de arquivos ignorados e `DEPARA_MAX_IMAGE_RESULTS`.
 
-- `folderPath` passes `validateSafePath`.
-- extensions include leading dots for `POST /list-images`.
-- images are not filtered by ignored-pattern rules.
-- symlinks outside allowed bases are intentionally skipped/blocked.
+## Memória ou lentidão
 
-## Symptom: direct image URL fails
-
-Contract:
-
-- Route is `GET /api/files/image/:imagePath`.
-- Absolute file path must be encoded as a single segment.
-
-Client expression:
-
-```js
-`/api/files/image/${encodeURIComponent(imagePath)}`
+```powershell
+npm run perf:audit -- --profile=small
+npm run perf:audit:medium
 ```
 
-Failure causes:
+Compare `durationMs`, `memoryDelta.rss` e `memoryDelta.heapUsed` entre execuções do mesmo perfil. Reduza `MAX_CONCURRENT_OPERATIONS`, defina `DEPARA_MAX_IMAGE_RESULTS` e mantenha logs HTTP desligados antes de investigar otimizações mais profundas.
 
-- raw slash in URL path
-- unsupported extension
-- file outside allowed bases
-- ignored filename
+## Configuração não persiste
 
-## Symptom: config does not persist
-
-Commands:
-
-```bash
-curl -fsS http://127.0.0.1:3000/api/config
-ls -la ~/.depara/data
+```powershell
+Invoke-RestMethod http://127.0.0.1:3000/api/config
+Get-ChildItem "$env:USERPROFILE\.depara\data"
 ```
 
-Check:
+Confirme `DEPARA_DATA_DIR`, `DEPARA_CONFIG_FILE`, permissões de escrita e se o processo usa o runtime esperado.
 
-- `DEPARA_DATA_DIR`
-- `DEPARA_CONFIG_FILE`
-- runtime write permissions
-- process user owns runtime root
+## Atualização travada ou insegura
 
-## Symptom: update is stuck or unsafe
-
-Commands:
-
-```bash
-pm2 status
-pm2 logs DePara --lines 100
-curl -fsS http://127.0.0.1:3000/api/update/auto/status
-curl -fsS http://127.0.0.1:3000/api/update/auto/diagnostics
+```powershell
+Invoke-RestMethod http://127.0.0.1:3000/api/update/auto/status
+Invoke-RestMethod http://127.0.0.1:3000/api/update/auto/diagnostics
 ```
 
-Interpretation:
+No Windows, `runtime.supervisor.supervisor` deve ser `windows-process`. `runtime.scheduler.stale=true` exige verificar a configuração do scheduler. `runtime.lastFailureStage` indica o primeiro estágio a investigar. Reinícios são manuais e não devem chamar PM2 ou systemd.
 
-- `runtime.supervisor.pm2.registered=false`: PM2 process contract broken.
-- `runtime.scheduler.stale=true`: scheduler/process lifecycle issue.
-- `runtime.lastFailureStage` set: start investigation at that stage.
-- health failure after activation: rollback should restore previous release.
+## Playwright não inicia
 
-## Symptom: RP4 menu does not open app
-
-Commands:
-
-```bash
-pm2 status
-curl -fsS http://127.0.0.1:3000/health
-$HOME/DePara/start-depara.sh status
-cat ~/.local/share/applications/depara.desktop
-```
-
-Fix order:
-
-1. PM2 process healthy.
-2. `/health` OK.
-3. `start-depara.sh status` resolves expected URL.
-4. `.desktop` `Exec=` points to `start-depara.sh open`.
-
-Do not fix menu issues by making the launcher start or update the backend.
-
-## Symptom: Playwright E2E cannot start browser
-
-Commands:
-
-```bash
+```powershell
 npx playwright install chromium
-npx playwright install-deps chromium
 npm run test:e2e
 ```
 
-On constrained environments, install native dependencies before retrying E2E.
+## Auditoria de dependências falha
 
-## Symptom: dependency audit fails
-
-Commands:
-
-```bash
+```powershell
 npm audit --audit-level=high
 npm ls js-yaml picomatch --all
 ```
 
-Expected overrides in `package.json`:
+Preserve os overrides de `package.json` até que uma nova instalação e toda a suíte confirmem a remoção segura.
 
-- `@istanbuljs/load-nyc-config -> js-yaml@5.0.0`
-- `anymatch -> picomatch@2.3.2`
+## Codificação parece quebrada
 
-If removing overrides, require:
-
-```bash
-npm install
-npm audit --audit-level=high
-npm run test:unit
-```
-
-## Symptom: text encoding looks broken
-
-Command:
-
-```bash
+```powershell
 rg -n "Ã[ƒ‚]|â[€™€œ€]|\x{00D2}|\x{FFFD}" README.md docs src/public src/routes
 ```
 
-Decision:
-
-- If source contains mojibake, fix UTF-8 source.
-- If only terminal output is mojibake, do not rewrite files.
+Se o problema estiver no source, corrija UTF-8; se estiver somente no terminal, não regrave os arquivos.

@@ -164,4 +164,42 @@ describe('FileOperationsManager scheduling', () => {
     expect(persisted).toHaveLength(1);
     expect(persisted[0].id).toBe('import_schedule');
   });
+
+  it('não sobrepõe a execução da mesma operação agendada', async () => {
+    const manager = require('../src/utils/fileOperations');
+    await manager.init();
+
+    const sourcePath = path.join(runtimeRoot, 'source.txt');
+    await fsp.writeFile(sourcePath, 'conteudo', 'utf8');
+
+    let releaseExecution;
+    const executionGate = new Promise((resolve) => {
+      releaseExecution = resolve;
+    });
+    const executeSingleSpy = jest.spyOn(manager, 'executeSingleOperation')
+      .mockImplementation(() => executionGate);
+
+    const firstExecution = manager.executeScheduledOperation(
+      'non_overlapping',
+      'copy',
+      sourcePath,
+      path.join(runtimeRoot, 'target.txt'),
+      {}
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const secondExecution = await manager.executeScheduledOperation(
+      'non_overlapping',
+      'copy',
+      sourcePath,
+      path.join(runtimeRoot, 'target.txt'),
+      {}
+    );
+
+    expect(secondExecution).toEqual({ status: 'skipped', reason: 'already-running' });
+    releaseExecution();
+    await firstExecution;
+    expect(executeSingleSpy).toHaveBeenCalledTimes(1);
+    executeSingleSpy.mockRestore();
+  });
 });

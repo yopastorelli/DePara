@@ -2,26 +2,19 @@ const express = require('express');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { exec } = require('child_process');
 
 const logger = require('../utils/logger');
 const { getAppMetadata } = require('../utils/appMetadata');
+const { getRuntimeLogsDir } = require('../utils/runtimePaths');
 
 const router = express.Router();
 const appMetadata = getAppMetadata();
 const statusCache = new Map();
+const statusInFlight = new Map();
 const STATUS_CACHE_TTL_MS = 15000;
 
-function execCommand(command) {
-  return new Promise((resolve, reject) => {
-    exec(command, { timeout: 5000 }, (error, stdout, stderr) => {
-      if (error) {
-        reject(new Error(stderr || error.message));
-        return;
-      }
-      resolve(stdout);
-    });
-  });
+function getLogFilePath() {
+  return process.env.LOG_FILE || path.join(getRuntimeLogsDir(), 'app.log');
 }
 
 async function getCachedValue(cacheKey, loader) {
@@ -31,12 +24,26 @@ async function getCachedValue(cacheKey, loader) {
     return cached.value;
   }
 
-  const value = await loader();
-  statusCache.set(cacheKey, {
-    loadedAt: now,
-    value
-  });
-  return value;
+  const running = statusInFlight.get(cacheKey);
+  if (running) {
+    return running;
+  }
+
+  const pending = Promise.resolve()
+    .then(loader)
+    .then((value) => {
+      statusCache.set(cacheKey, {
+        loadedAt: Date.now(),
+        value
+      });
+      return value;
+    })
+    .finally(() => {
+      statusInFlight.delete(cacheKey);
+    });
+
+  statusInFlight.set(cacheKey, pending);
+  return pending;
 }
 
 function getApplicationPayload() {
@@ -54,13 +61,15 @@ function getApplicationPayload() {
 }
 
 function getSystemPayload() {
+  const cpuInfo = os.cpus();
+
   return {
     hostname: os.hostname(),
     platform: os.platform(),
     type: os.type(),
     release: os.release(),
     arch: os.arch(),
-    cpuCount: os.cpus().length,
+    cpuCount: cpuInfo.length,
     loadAverage: os.loadavg(),
     totalMemory: os.totalmem(),
     freeMemory: os.freemem(),
@@ -70,12 +79,14 @@ function getSystemPayload() {
 }
 
 function getProcessMemoryPayload() {
+  const memoryUsage = process.memoryUsage();
+
   return {
-    heapUsed: process.memoryUsage().heapUsed,
-    heapTotal: process.memoryUsage().heapTotal,
-    external: process.memoryUsage().external,
-    rss: process.memoryUsage().rss,
-    arrayBuffers: process.memoryUsage().arrayBuffers
+    heapUsed: memoryUsage.heapUsed,
+    heapTotal: memoryUsage.heapTotal,
+    external: memoryUsage.external,
+    rss: memoryUsage.rss,
+    arrayBuffers: memoryUsage.arrayBuffers
   };
 }
 
@@ -119,20 +130,23 @@ router.get('/resources', async (req, res) => {
 
   try {
     const diskInfo = await getCachedValue('disk-info', getDiskInfo);
+    const cpuInfo = os.cpus();
+    const totalMemory = os.totalmem();
+    const freeMemory = os.freemem();
 
     res.status(200).json({
       timestamp: new Date().toISOString(),
       memory: {
-        total: os.totalmem(),
-        free: os.freemem(),
-        used: os.totalmem() - os.freemem(),
-        percentage: Math.round(((os.totalmem() - os.freemem()) / os.totalmem()) * 100),
+        total: totalMemory,
+        free: freeMemory,
+        used: totalMemory - freeMemory,
+        percentage: Math.round(((totalMemory - freeMemory) / totalMemory) * 100),
         process: getProcessMemoryPayload()
       },
       cpu: {
-        count: os.cpus().length,
-        model: os.cpus()[0]?.model || 'Unknown',
-        speed: os.cpus()[0]?.speed || 0,
+        count: cpuInfo.length,
+        model: cpuInfo[0]?.model || 'Unknown',
+        speed: cpuInfo[0]?.speed || 0,
         loadAverage: os.loadavg(),
         usage: process.cpuUsage()
       },
@@ -259,8 +273,8 @@ router.get('/logs', (req, res) => {
       logSystem: {
         status: 'OPERATIONAL',
         level: process.env.LOG_LEVEL || 'info',
-        file: process.env.LOG_FILE || 'logs/app.log',
-        directory: path.dirname(process.env.LOG_FILE || 'logs/app.log')
+        file: getLogFilePath(),
+        directory: path.dirname(getLogFilePath())
       },
       recentLogs: getRecentLogs(),
       logStats: {
@@ -283,7 +297,7 @@ router.get('/logs', (req, res) => {
 
 function checkLogDirectory() {
   try {
-    const logDir = path.dirname(process.env.LOG_FILE || 'logs/app.log');
+    const logDir = path.dirname(getLogFilePath());
     return {
       exists: fs.existsSync(logDir),
       writable: true,
@@ -314,7 +328,7 @@ function checkConfigFiles() {
 
 function getRecentLogs() {
   try {
-    const logFile = process.env.LOG_FILE || 'logs/app.log';
+    const logFile = getLogFilePath();
     if (!fs.existsSync(logFile)) {
       return {
         lastModified: null,
@@ -341,7 +355,7 @@ function getRecentLogs() {
 
 function getLogFileSize() {
   try {
-    const logFile = process.env.LOG_FILE || 'logs/app.log';
+    const logFile = getLogFilePath();
     return fs.existsSync(logFile) ? fs.statSync(logFile).size : 0;
   } catch {
     return 0;
@@ -350,7 +364,7 @@ function getLogFileSize() {
 
 function getLogLastModified() {
   try {
-    const logFile = process.env.LOG_FILE || 'logs/app.log';
+    const logFile = getLogFilePath();
     return fs.existsSync(logFile) ? fs.statSync(logFile).mtime : null;
   } catch {
     return null;
@@ -384,11 +398,7 @@ function generatePerformanceRecommendations() {
 
 async function getDiskInfo() {
   try {
-    if (os.platform() === 'win32') {
-      return await getWindowsDiskInfo();
-    }
-
-    return await getUnixDiskInfo();
+    return await getWindowsDiskInfo();
   } catch (error) {
     logger.error('Erro geral ao obter informacoes de disco:', { error: error.message });
     return [{
@@ -404,32 +414,37 @@ async function getDiskInfo() {
 
 async function getWindowsDiskInfo() {
   try {
-    const output = await execCommand('wmic logicaldisk get size,freespace,caption');
-    const lines = output.split('\n').filter((line) => line.trim() && !line.includes('Caption'));
-    const drives = [];
+    const configuredDrives = (process.env.DEPARA_STATUS_DRIVES || '')
+      .split(';')
+      .map((drive) => drive.trim())
+      .filter(Boolean);
+    const allowedDrives = (process.env.DEPARA_ALLOWED_PATHS || '')
+      .split(';')
+      .map((allowedPath) => allowedPath.trim().match(/^([A-Za-z]):[\\/]/)?.[1])
+      .filter(Boolean)
+      .map((drive) => `${drive}:`);
+    const systemDrive = process.env.SystemDrive || 'C:';
+    const drivesToCheck = [...new Set([systemDrive, ...configuredDrives, ...allowedDrives])]
+      .map((drive) => drive.endsWith(':') ? drive : `${drive}:`);
 
-    for (const line of lines) {
-      const parts = line.trim().split(/\s+/);
-      if (parts.length < 3) {
-        continue;
-      }
-
-      const caption = parts[0];
-      const freeSpace = parseInt(parts[1], 10) || 0;
-      const totalSize = parseInt(parts[2], 10) || 0;
-
-      if (totalSize > 0) {
-        drives.push({
-          drive: caption,
+    const drives = await Promise.all(drivesToCheck.map(async (drive) => {
+      try {
+        const stats = await fs.promises.statfs(`${drive}\\`);
+        const totalSize = stats.blocks * stats.bsize;
+        const freeSpace = stats.bavail * stats.bsize;
+        return {
+          drive,
           total: totalSize,
           free: freeSpace,
           used: totalSize - freeSpace,
-          percentage: Math.round(((totalSize - freeSpace) / totalSize) * 100)
-        });
+          percentage: totalSize > 0 ? Math.round(((totalSize - freeSpace) / totalSize) * 100) : 0
+        };
+      } catch {
+        return null;
       }
-    }
+    }));
 
-    return drives;
+    return drives.filter(Boolean);
   } catch (error) {
     logger.warn('Erro ao obter informacoes de disco no Windows:', { error: error.message });
     return [{
@@ -440,91 +455,6 @@ async function getWindowsDiskInfo() {
       percentage: 0,
       error: 'Nao foi possivel obter informacoes de disco'
     }];
-  }
-}
-
-async function getUnixDiskInfo() {
-  try {
-    const output = await execCommand('df -h');
-    const lines = output.split('\n').slice(1);
-    const drives = [];
-    const virtualFilesystems = [
-      'tmpfs', 'devtmpfs', 'overlay', 'squashfs', 'proc', 'sysfs', 'udev',
-      'cgroup', 'pstore', 'bpf', 'tracefs', 'debugfs', 'securityfs', 'mqueue',
-      'hugetlbfs', 'configfs', 'fusectl', 'binfmt_misc', 'systemd-1', 'rpc_pipefs',
-      'sunrpc', 'selinuxfs', 'autofs', 'cgroup2', 'efivarfs', 'devpts', 'none',
-      'ramfs', 'rootfs', 'shm', 'run', 'var', 'tmp', 'boot', 'efi'
-    ];
-
-    for (const line of lines) {
-      const parts = line.trim().split(/\s+/);
-      if (parts.length < 6) {
-        continue;
-      }
-
-      const filesystem = parts[0];
-      const total = parts[1];
-      const used = parts[2];
-      const available = parts[3];
-      const percentage = parseInt(parts[4], 10) || 0;
-      const mountpoint = parts[5];
-      const isVirtualFS = virtualFilesystems.some((vfs) => filesystem.includes(vfs) || mountpoint.includes(vfs));
-      const isPhysicalDisk = filesystem.startsWith('/dev/')
-        && !isVirtualFS
-        && total !== '0'
-        && total !== '0B'
-        && parseSizeToBytes(total) > 1024 * 1024 * 1024;
-
-      if (!isPhysicalDisk) {
-        continue;
-      }
-
-      drives.push({
-        drive: filesystem,
-        mountpoint,
-        total: parseSizeToBytes(total),
-        free: parseSizeToBytes(available),
-        used: parseSizeToBytes(used),
-        percentage,
-        totalFormatted: total,
-        usedFormatted: used,
-        freeFormatted: available
-      });
-    }
-
-    return drives;
-  } catch (error) {
-    logger.warn('Erro ao obter informacoes de disco no Linux:', { error: error.message });
-    return [{
-      drive: '/',
-      total: 0,
-      free: 0,
-      used: 0,
-      percentage: 0,
-      error: 'Nao foi possivel obter informacoes de disco'
-    }];
-  }
-}
-
-function parseSizeToBytes(sizeStr) {
-  if (!sizeStr) {
-    return 0;
-  }
-
-  const size = parseFloat(sizeStr);
-  const unit = sizeStr.slice(-1).toUpperCase();
-
-  switch (unit) {
-    case 'K':
-      return size * 1024;
-    case 'M':
-      return size * 1024 * 1024;
-    case 'G':
-      return size * 1024 * 1024 * 1024;
-    case 'T':
-      return size * 1024 * 1024 * 1024 * 1024;
-    default:
-      return size;
   }
 }
 

@@ -18,6 +18,7 @@ class FolderManager {
     ];
     this.folders = [];
     this.watchers = new Map();
+    this.eventTimers = new Map();
     this.initialized = false;
   }
 
@@ -115,19 +116,13 @@ class FolderManager {
   }
 
   getDefaultFolders() {
-    const userHome = process.env.HOME || process.env.USERPROFILE || '/tmp';
+    const userHome = process.env.USERPROFILE || process.env.HOME || require('os').homedir();
     const now = new Date().toISOString();
-    const paths = process.platform === 'win32'
-      ? {
-          input: path.join(userHome, 'Documents', 'Entrada'),
-          output: path.join(userHome, 'Documents', 'Saida'),
-          temp: path.join(userHome, 'Documents', 'Temp')
-        }
-      : {
-          input: path.join(userHome, 'dados', 'entrada'),
-          output: path.join(userHome, 'dados', 'saida'),
-          temp: path.join(userHome, 'dados', 'temp')
-        };
+    const paths = {
+      input: path.join(userHome, 'Documents', 'Entrada'),
+      output: path.join(userHome, 'Documents', 'Saida'),
+      temp: path.join(userHome, 'Documents', 'Temp')
+    };
 
     return [
       {
@@ -340,7 +335,7 @@ class FolderManager {
     this.folders[folderIndex] = updatedFolder;
     await this.saveFolders();
 
-    if (updatedFolder.enabled) {
+    if (this.shouldWatch(updatedFolder)) {
       await this.startWatchingFolder(updatedFolder);
     } else {
       this.stopWatchingFolder(updatedFolder);
@@ -396,22 +391,26 @@ class FolderManager {
 
   async ensureWatchableFolders() {
     for (const folder of this.folders) {
-      if (folder.enabled) {
+      if (this.shouldWatch(folder)) {
         await this.ensureFolderReady(folder);
       }
     }
   }
 
+  shouldWatch(folder) {
+    return Boolean(folder?.enabled && folder?.autoProcess && folder.path);
+  }
+
   async startWatching() {
     for (const folder of this.folders) {
-      if (folder.enabled) {
+      if (this.shouldWatch(folder)) {
         await this.startWatchingFolder(folder);
       }
     }
   }
 
   async startWatchingFolder(folder) {
-    if (!folder?.enabled || !folder.path) {
+    if (!this.shouldWatch(folder)) {
       return;
     }
 
@@ -427,7 +426,21 @@ class FolderManager {
 
       const watcher = fsSync.watch(folder.path, { persistent: false }, (eventType, filename) => {
         if (filename) {
-          this.handleFolderEvent(folder, eventType, filename);
+          const normalizedFilename = filename.toString();
+          const eventKey = `${folder.id}:${normalizedFilename}`;
+          const previousTimer = this.eventTimers.get(eventKey);
+          if (previousTimer) {
+            clearTimeout(previousTimer);
+          }
+
+          const eventTimer = setTimeout(() => {
+            this.eventTimers.delete(eventKey);
+            this.handleFolderEvent(folder, eventType, normalizedFilename);
+          }, 100);
+          if (typeof eventTimer.unref === 'function') {
+            eventTimer.unref();
+          }
+          this.eventTimers.set(eventKey, eventTimer);
         }
       });
 
@@ -446,6 +459,12 @@ class FolderManager {
 
     watcher.close();
     this.watchers.delete(folder.id);
+    for (const [eventKey, timer] of this.eventTimers) {
+      if (eventKey.startsWith(`${folder.id}:`)) {
+        clearTimeout(timer);
+        this.eventTimers.delete(eventKey);
+      }
+    }
     logger.info(`Monitoramento parado para: ${folder.name}`);
   }
 
@@ -461,6 +480,9 @@ class FolderManager {
         }
       }
     } catch (error) {
+      if (error.code === 'ENOENT') {
+        return;
+      }
       logger.error(`Erro ao processar evento de pasta ${folder.name}`, { error: error.message });
     }
   }
@@ -504,6 +526,10 @@ class FolderManager {
       watcher.close();
     }
     this.watchers.clear();
+    for (const timer of this.eventTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.eventTimers.clear();
     logger.info('Gerenciador de pastas encerrado');
   }
 }

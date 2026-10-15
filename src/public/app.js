@@ -172,6 +172,7 @@ class DeParaUI {
         this.refreshSchedulerInterval = null;
         this.refreshSchedulerIntervalMs = 30000;
         this.refreshVisibilityListenerAdded = false;
+        this.refreshInFlight = false;
         this.slideshowListenersBound = false;
         this.init();
     }
@@ -371,10 +372,16 @@ class DeParaUI {
         }
     }
     async runScheduledUiRefresh() {
-        if (document.hidden) return;
-        await this.updateApiStatus();
-        if (this.currentTab === 'dashboard') {
-            await this.refreshDashboardData();
+        if (document.hidden || this.refreshInFlight) return;
+
+        this.refreshInFlight = true;
+        try {
+            await this.updateApiStatus();
+            if (this.currentTab === 'dashboard') {
+                await this.refreshDashboardData();
+            }
+        } finally {
+            this.refreshInFlight = false;
         }
     }
 
@@ -408,20 +415,20 @@ class DeParaUI {
     async refreshDashboardData() {
         try {
             // Atualizar status do sistema
-            await this.updateSystemStatus();
+            const systemStatus = await this.updateSystemStatus();
 
             // Atualizar atividades recentes se estiver visível
             await this.loadRecentActivities();
 
-            // Atualizar contadores
-            await this.updateCounters();
-
             // Carregar operacoes agendadas para o dashboard
-            await this.loadDashboardScheduledOperations();
+            const scheduledOperations = await this.loadDashboardScheduledOperations();
+
+            // Reutilizar a resposta das operacoes agendadas no contador
+            await this.updateCounters(scheduledOperations);
 
             // Atualizar graficos apenas quando dashboard estiver ativa
             if (this.currentTab === 'dashboard') {
-                await this.updateCharts();
+                await this.updateCharts(systemStatus, scheduledOperations);
             }
 
             logger.debug('Dashboard atualizada automaticamente');
@@ -437,8 +444,10 @@ class DeParaUI {
                 ? await window.DeParaRuntimeStatus.fetchSystemResources()
                 : await (await fetch('/api/status/resources')).json();
             this.updateSystemStatusDisplay(data);
+            return data;
         } catch (error) {
             console.warn('Erro ao atualizar status do sistema:', error);
+            return null;
         }
     }
 
@@ -449,8 +458,10 @@ class DeParaUI {
                 ? await window.DeParaRuntimeStatus.fetchRecentActivities()
                 : await (await fetch('/api/files/stats')).json();
             this.updateActivitiesDisplay(data);
+            return data;
         } catch (error) {
             console.warn('Erro ao carregar atividades:', error);
+            return null;
         }
     }
 
@@ -461,8 +472,10 @@ class DeParaUI {
                 ? await window.DeParaRuntimeStatus.fetchScheduledOperations()
                 : await (await fetch('/api/files/scheduled')).json();
             this.updateDashboardScheduledOperations(data.data || []);
+            return data;
         } catch (error) {
             console.warn('Erro ao carregar operações agendadas para dashboard:', error);
+            return null;
         }
     }
 
@@ -950,15 +963,10 @@ class DeParaUI {
         if (savedPath) {
             const slideshowField = document.getElementById('slideshow-folder-path');
             if (slideshowField) {
-                // Se o caminho salvo for relativo, converter para absoluto
                 let finalPath = savedPath;
-                if (!savedPath.startsWith('/') && !savedPath.match(/^[A-Za-z]:/)) {
-                    const basePath = '/mnt/lytspot/@SYNC@/_@@PICZ & VIDEOS LYT @@_/_@LYT PicZ por ANO@_';
-                    finalPath = `${basePath}/${savedPath}`;                }
-
-                // Verificar se o caminho já contém a pasta base (evitar duplicação)
-                if (finalPath.includes('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/')) {
-                    finalPath = finalPath.replace('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/', '/_@LYT PicZ por ANO@_/');                }
+                if (!savedPath.match(/^[A-Za-z]:[\\/]/)) {
+                    finalPath = `C:\\Users\\User\\Pictures\\${savedPath.replace(/^[\\/]+/, '')}`;
+                }
 
                 slideshowField.value = finalPath;            }
         }
@@ -1051,14 +1059,18 @@ class DeParaUI {
     }
 
     // Atualizar contadores
-    async updateCounters() {
+    async updateCounters(scheduledData = null) {
         try {
-            // Contar operações ativas
-            const scheduledResponse = await fetch('/api/files/scheduled');
-            if (scheduledResponse.ok) {
-                const scheduledData = await scheduledResponse.json();
-                const activeOps = (scheduledData.data || []).filter(op => op.active !== false).length;
-                document.getElementById('active-ops').textContent = activeOps;
+            if (!scheduledData) {
+                const scheduledResponse = await fetch('/api/files/scheduled');
+                if (!scheduledResponse.ok) return;
+                scheduledData = await scheduledResponse.json();
+            }
+
+            const activeOps = (scheduledData.data || []).filter(op => op.active !== false).length;
+            const activeOpsElement = document.getElementById('active-ops');
+            if (activeOpsElement) {
+                activeOpsElement.textContent = activeOps;
             }
         } catch (error) {
             console.warn('Erro ao atualizar contadores:', error);
@@ -1179,21 +1191,32 @@ class DeParaUI {
             memory: 0,
             disk: 0
         };
-        this.updateCharts();
+        this.renderChart();
     }
 
-    async updateCharts() {
+    async updateCharts(resourcesData = null, operationsData = null) {
         try {
             // Obter dados de operações
-            const operationsResponse = await fetch('/api/files/scheduled');
-            if (operationsResponse.ok) {
-                const operationsData = await operationsResponse.json();
-                this.chartData.operations = operationsData.data.length;
+            if (!operationsData) {
+                const operationsResponse = await fetch('/api/files/scheduled');
+                if (operationsResponse.ok) {
+                    operationsData = await operationsResponse.json();
+                }
             }
+            if (operationsData) {
+                this.chartData.operations = Array.isArray(operationsData.data)
+                    ? operationsData.data.length
+                    : 0;
+            }
+
             // Usar dados reais de recursos
-            const resourcesResponse = await fetch('/api/status/resources');
-            if (resourcesResponse.ok) {
-                const resourcesData = await resourcesResponse.json();
+            if (!resourcesData) {
+                const resourcesResponse = await fetch('/api/status/resources');
+                if (resourcesResponse.ok) {
+                    resourcesData = await resourcesResponse.json();
+                }
+            }
+            if (resourcesData) {
                 this.chartData.memory = Number(resourcesData?.memory?.percentage) || 0;
                 const drives = Array.isArray(resourcesData?.disk?.drives) ? resourcesData.disk.drives : [];
                 const validDrives = drives.filter((drive) => Number(drive.total) > 0);
@@ -1561,7 +1584,6 @@ class DeParaUI {
     async refreshAllData() {
         this.clearCache(); // Limpar cache para forçar atualização
         await this.refreshDashboardData();
-        await this.updateCharts();
         await this.loadOperationsCached();
     }
 
@@ -2522,23 +2544,12 @@ class DeParaUI {
 
     // Função para obter caminhos padrão baseados na plataforma
     getDefaultPaths() {
-        // Detectar se estamos no Windows ou Linux
-        const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-
-        if (isWindows) {
-            return {
-                entrada: 'C:\\Users\\User\\Documents\\Entrada',
-                processados: 'C:\\Users\\User\\Documents\\Processados',
-                backup: 'C:\\Users\\User\\Documents\\Backup'
-            };
-        } else {
-            // Linux/Raspberry Pi - usar caminhos genéricos que serão resolvidos no backend
-            return {
-                entrada: '/home/user/Documents/Entrada',
-                processados: '/home/user/Documents/Processados',
-                backup: '/home/user/Documents/Backup'
-            };
-        }
+        return {
+            entrada: 'C:\\Users\\User\\Documents\\Entrada',
+            processados: 'C:\\Users\\User\\Documents\\Processados',
+            backup: 'C:\\Users\\User\\Documents\\Backup',
+            temporarios: 'C:\\Users\\User\\AppData\\Local\\Temp'
+        };
     }
 
     // Criar pastas padrão automaticamente
@@ -2560,6 +2571,7 @@ class DeParaUI {
 
     // Criar templates básicos
     async createDefaultTemplates() {
+        const paths = this.getDefaultPaths();
         const templates = [
             {
                 name: 'Backup Diário',
@@ -2574,7 +2586,7 @@ class DeParaUI {
                 name: 'Limpeza Semanal',
                 description: 'Remove arquivos temporários semanalmente',
                 action: 'delete',
-                source: '/tmp',
+                source: paths.temporarios,
                 target: '',
                 frequency: '1w',
                 options: { batch: true }
@@ -2656,10 +2668,8 @@ class DeParaUI {
 
     // Sistema de configuração rápida de pastas
     async createQuickFolder(type) {
-        // Obter caminhos padrão baseados na plataforma
         const paths = this.getDefaultPaths();
-        const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-        const basePath = isWindows ? 'C:\\Users\\User' : '/home/user';
+        const basePath = 'C:\\Users\\User';
 
         const folderSets = {
             documents: [
@@ -2667,16 +2677,16 @@ class DeParaUI {
                 { name: 'Documentos Processados', path: paths.processados, type: 'target', format: 'any' }
             ],
             backup: [
-                { name: 'Backup Diário', path: isWindows ? basePath + '\\Backup\\Diario' : basePath + '/Backup/Diario', type: 'target', format: 'any' },
-                { name: 'Backup Semanal', path: isWindows ? basePath + '\\Backup\\Semanal' : basePath + '/Backup/Semanal', type: 'target', format: 'any' }
+                { name: 'Backup Diário', path: basePath + '\\Backup\\Diario', type: 'target', format: 'any' },
+                { name: 'Backup Semanal', path: basePath + '\\Backup\\Semanal', type: 'target', format: 'any' }
             ],
             media: [
-                { name: 'Fotos', path: isWindows ? basePath + '\\Pictures' : basePath + '/Pictures', type: 'source', format: 'any' },
-                { name: 'Vídeos', path: isWindows ? basePath + '\\Videos' : basePath + '/Videos', type: 'source', format: 'any' }
+                { name: 'Fotos', path: basePath + '\\Pictures', type: 'source', format: 'any' },
+                { name: 'Vídeos', path: basePath + '\\Videos', type: 'source', format: 'any' }
             ],
             temp: [
-                { name: 'Processamento', path: isWindows ? basePath + '\\Temp\\Processamento' : basePath + '/Temp/Processamento', type: 'temp', format: 'any' },
-                { name: 'Lixeira', path: isWindows ? basePath + '\\Temp\\Lixeira' : basePath + '/Temp/Lixeira', type: 'trash', format: 'any' }
+                { name: 'Processamento', path: basePath + '\\Temp\\Processamento', type: 'temp', format: 'any' },
+                { name: 'Lixeira', path: basePath + '\\Temp\\Lixeira', type: 'trash', format: 'any' }
             ]
         };
 
@@ -2751,7 +2761,7 @@ class DeParaUI {
                     description: 'Backup automático diário',
                     action: 'copy',
                     sourcePath: paths.entrada.replace('/Entrada', '').replace('\\Entrada', ''),
-                    targetPath: paths.backup + (navigator.userAgent.indexOf('Windows') > -1 ? '\\Diario' : '/Diario'),
+                    targetPath: paths.backup + '\\Diario',
                     frequency: '1d',
                     options: { batch: true, backupBeforeMove: true }
                 },
@@ -2760,7 +2770,7 @@ class DeParaUI {
                     description: 'Backup completo semanal',
                     action: 'copy',
                     sourcePath: paths.entrada.replace('/Entrada', '').replace('\\Entrada', ''),
-                    targetPath: paths.backup + (navigator.userAgent.indexOf('Windows') > -1 ? '\\Semanal' : '/Semanal'),
+                    targetPath: paths.backup + '\\Semanal',
                     frequency: '1w',
                     options: { batch: true, backupBeforeMove: true }
                 }
@@ -2781,7 +2791,7 @@ class DeParaUI {
                     name: 'Limpar Temporários',
                     description: 'Remove arquivos temporários semanalmente',
                     action: 'delete',
-                    sourcePath: '/home/pi/Temp',
+                    sourcePath: paths.temporarios,
                     targetPath: '',
                     frequency: '1w',
                     options: { batch: true }
@@ -3315,8 +3325,7 @@ class DeParaUI {
     }
 
     getDefaultBrowserPath() {
-        const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-        return isWindows ? 'C:\\Users\\User' : '/home/yo';
+        return 'C:\\Users\\User';
     }
 
     getSelectionContextMeta(selectionContext) {
@@ -3720,8 +3729,8 @@ class DeParaUI {
     // Navegar e selecionar pasta para o modal de agendamento
     legacyBrowsePathForSchedule(type) {
         const currentPath = type === 'source'
-            ? document.getElementById('schedule-source').value || '/home/yo'
-            : document.getElementById('schedule-target').value || '/home/yo';
+            ? document.getElementById('schedule-source').value || this.getDefaultBrowserPath()
+            : document.getElementById('schedule-target').value || this.getDefaultBrowserPath();
         // Usar a função existente de navegação de pastas
         this.showFolderBrowser(currentPath, (selectedPath) => {
             if (type === 'source') {
@@ -4428,7 +4437,7 @@ class DeParaUI {
     slideshowConfig = {
         interval: 3,
         random: false,
-        preload: true,
+        preload: false,
         extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
         recursive: true,
         deletedFolder: '',
@@ -4436,12 +4445,14 @@ class DeParaUI {
         adjustableFolder: ''
     };
     preloadedImages = new Map();
+    slideshowLoadTimeout = null;
+    slideshowRenderToken = 0;
 
     getDefaultSlideshowConfig() {
         return {
             interval: 3,
             random: false,
-            preload: true,
+            preload: false,
             extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
             recursive: true,
             deletedFolder: '',
@@ -4643,7 +4654,7 @@ class DeParaUI {
                 this.slideshowConfig = { ...this.slideshowConfig, ...JSON.parse(saved) };            } catch (error) {
                 console.warn('⚠️ Erro ao carregar configurações do slideshow:', error);
             }
-        } else {        }
+        }
     }
 
     // Salvar configurações do slideshow no localStorage
@@ -5142,12 +5153,9 @@ class DeParaUI {
             return;
         }
 
-        if (!folderPath.startsWith('/') && !folderPath.match(/^[A-Za-z]:/)) {
-            const basePath = '/mnt/lytspot/@SYNC@/_@@PICZ & VIDEOS LYT @@_/_@LYT PicZ por ANO@_';
-            folderPath = `${basePath}/${folderPath}`;        }
-
-        if (folderPath.includes('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/')) {
-            folderPath = folderPath.replace('/_@LYT PicZ por ANO@_/_@LYT PicZ por ANO@_/', '/_@LYT PicZ por ANO@_/');        }
+        if (!folderPath.match(/^[A-Za-z]:[\\/]/)) {
+            folderPath = `C:\\Users\\User\\Pictures\\${folderPath.replace(/^[\\/]+/, '')}`;
+        }
 
         await this.persistSlideshowSelectedPath(folderPath);
         await this.persistSlideshowConfigFromModal(false);
@@ -5178,14 +5186,7 @@ class DeParaUI {
                 throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
             }
 
-            const result = await response.json();            console.debug('📊 Estrutura da resposta:', {
-                success: result.success,
-                hasData: !!result.data,
-                hasImages: !!(result.data && result.data.images),
-                imageCount: result.data?.images?.length || 0
-            });
-
-            if (!result.success) {
+            const result = await response.json();            if (!result.success) {
                 throw new Error(result.error?.message || 'Erro ao listar imagens');
             }
 
@@ -5279,13 +5280,6 @@ class DeParaUI {
         // Mostrar viewer
         const viewer = document.getElementById('slideshow-viewer');
         if (viewer) {
-            console.debug('🖥️ Estilo atual do viewer:', {
-                display: viewer.style.display,
-                visibility: viewer.style.visibility,
-                opacity: viewer.style.opacity,
-                zIndex: viewer.style.zIndex
-            });
-
             viewer.style.display = 'flex';
             // Mostrar controles estáticos quando o viewer for exibido
             const staticControls = document.getElementById('static-slideshow-controls');
@@ -5295,11 +5289,6 @@ class DeParaUI {
                 this.setupStaticButtons();
             }
 
-            console.debug('🖥️ Estilo após exibir:', {
-                display: viewer.style.display,
-                visibility: viewer.style.visibility,
-                opacity: viewer.style.opacity
-            });
         } else {
             console.error('❌ Elemento slideshow-viewer não encontrado no DOM');
             this.showToast('Erro: Elemento de visualização não encontrado', 'error');
@@ -5308,11 +5297,6 @@ class DeParaUI {
 
         this.currentSlideIndex = 0;
         this.slideshowPlaying = true;
-        console.debug('🎯 Configurações do slideshow:', {
-            currentSlideIndex: this.currentSlideIndex,
-            slideshowPlaying: this.slideshowPlaying,
-            totalImages: this.slideshowImages.length
-        });
 
         // Entrar em fullscreen automaticamente
         this.enterFullscreen(this.isDedicatedScreensaverWindow || this.screensaverState.isActive);
@@ -5394,422 +5378,89 @@ class DeParaUI {
             viewer.style.display = 'flex';        }
     }
 
-    // Atualizar exibição do slide atual
-    async updateSlideDisplay() {
-        // Verificar contexto geral antes de prosseguir
-        console.debug('🌐 Contexto geral:', {
-            documentReady: document.readyState,
-            windowLoaded: window.onload ? 'loaded' : 'not loaded',
-            slideshowPlaying: this.slideshowPlaying,
-            currentSlideIndex: this.currentSlideIndex,
-            totalImages: this.slideshowImages?.length || 0
-        });
-
-        // Garantir que os controles estáticos existam
-        if (this.slideshowImages && this.slideshowImages.length > 0) {            this.createDynamicSlideshowControls();
-        }
-
-        let imageElement = document.getElementById('slideshow-image');
+    renderSlideshowSlideFast() {
+        const images = this.slideshowImages || [];
+        const imageElement = document.getElementById('slideshow-image');
         const counterElement = document.getElementById('slideshow-counter');
         const filenameElement = document.getElementById('slideshow-filename');
         const loadingElement = document.getElementById('slideshow-loading');
         const errorElement = document.getElementById('slideshow-error');
-        const imageContainer = document.querySelector('.slideshow-image-container');
 
-        // Se não encontrar o elemento slideshow-image, tentar encontrar o slideshow-image-new
-        if (!imageElement) {
-            imageElement = document.getElementById('slideshow-image-new');
-            if (imageElement) {            }
-        }
-
-        // Verificar se o slideshow-viewer está visível
-        const viewer = document.getElementById('slideshow-viewer');
-        if (viewer) {
-            console.debug('🎬 Estado do viewer:', {
-                display: viewer.style.display,
-                visibility: viewer.style.visibility,
-                rect: viewer.getBoundingClientRect()
-            });
-        }
-
-        console.debug('🔍 Elementos encontrados:', {
-            imageElement: !!imageElement,
-            counterElement: !!counterElement,
-            filenameElement: !!filenameElement,
-            loadingElement: !!loadingElement,
-            errorElement: !!errorElement,
-            imageContainer: !!imageContainer
-        });
-
-        if (imageContainer) {
-            console.debug('📦 Container da imagem:', {
-                display: imageContainer.style.display,
-                visibility: imageContainer.style.visibility,
-                opacity: imageContainer.style.opacity,
-                position: imageContainer.style.position,
-                zIndex: imageContainer.style.zIndex
-            });
-
-            // FORÇAR ESTILOS NO CONTAINER para garantir que a imagem seja exibida
-            imageContainer.style.display = 'flex';
-            imageContainer.style.alignItems = 'center';
-            imageContainer.style.justifyContent = 'center';
-            imageContainer.style.width = '100vw';
-            imageContainer.style.height = '100vh';
-            imageContainer.style.minWidth = '800px';
-            imageContainer.style.minHeight = '600px';
-            imageContainer.style.position = 'relative';
-            imageContainer.style.zIndex = '1';
-            imageContainer.style.background = 'rgba(0, 0, 0, 0.1)';
-
-            console.debug('📦 Container após forçar estilos:', {
-                display: imageContainer.style.display,
-                visibility: imageContainer.style.visibility,
-                opacity: imageContainer.style.opacity,
-                position: imageContainer.style.position,
-                zIndex: imageContainer.style.zIndex,
-                width: imageContainer.style.width,
-                height: imageContainer.style.height,
-                minHeight: imageContainer.style.minHeight
-            });
-        }
-
-        if (!this.slideshowImages || this.slideshowImages.length === 0) {            if (loadingElement) loadingElement.style.display = 'none';
-            if (errorElement) errorElement.style.display = 'block';
+        if (!images.length || !imageElement) {
+            if (loadingElement) loadingElement.style.display = 'none';
+            if (errorElement) errorElement.style.display = images.length ? 'block' : 'none';
             if (imageElement) imageElement.style.display = 'none';
-            return;
+            return true;
         }
 
-        const currentImage = this.slideshowImages[this.currentSlideIndex];
-        // Mostrar loading
+        const currentImage = images[this.currentSlideIndex];
+        if (!currentImage) return true;
+
+        this.slideshowRenderToken = (this.slideshowRenderToken || 0) + 1;
+        const renderToken = this.slideshowRenderToken;
+        const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
+        if (this.slideshowLoadTimeout) {
+            clearTimeout(this.slideshowLoadTimeout);
+            this.slideshowLoadTimeout = null;
+        }
+
+        const loadTimeout = setTimeout(() => {
+            if (this.slideshowRenderToken !== renderToken) return;
+            this.slideshowLoadTimeout = null;
+            if (loadingElement) loadingElement.style.display = 'none';
+            imageElement.style.display = 'none';
+            if (errorElement) errorElement.style.display = 'block';
+        }, 10000);
+        this.slideshowLoadTimeout = loadTimeout;
+
+        if (counterElement) counterElement.textContent = `${this.currentSlideIndex + 1} / ${images.length}`;
+        if (filenameElement) filenameElement.textContent = currentImage.name;
         if (loadingElement) loadingElement.style.display = 'block';
         if (errorElement) errorElement.style.display = 'none';
-        if (imageElement) imageElement.style.display = 'none';
-
-        // Atualizar contador e nome do arquivo
-        if (counterElement) counterElement.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
-        if (filenameElement) filenameElement.textContent = currentImage.name;
-
-        // Atualizar caminho completo da imagem no rodapé
-        const pathElement = document.getElementById('slideshow-path');
-        if (pathElement) {
-            pathElement.textContent = currentImage.path;
-        }
-
-        // Construir URL da imagem
-        const imageUrl = `/api/files/image/${encodeURIComponent(currentImage.path)}`;
-        try {
-            // Carregar imagem diretamente
-            const img = new Image();
-
-            // Timeout para evitar loading infinito
-            const loadTimeout = setTimeout(() => {
-                console.error('⏰ Timeout ao carregar imagem:', imageUrl);
-                if (loadingElement) loadingElement.style.display = 'none';
-                if (imageElement) imageElement.style.display = 'none';
-                if (errorElement) errorElement.style.display = 'block';
-            }, 10000); // 10 segundos timeout
-
-            img.onload = () => {
-                clearTimeout(loadTimeout);
-                if (imageElement) {
-                    // SOLUÇÃO RADICAL: Criar novo elemento se o atual não funcionar
-                    let targetElement = imageElement;
-
-                    // REMOVER imagem anterior para evitar empilhamento
-                    const existingDynamicImage = document.getElementById('slideshow-image-new');
-                    if (existingDynamicImage) {
-                        existingDynamicImage.remove();                    }
-
-                    // Verificar se o elemento atual tem problemas
-                    const currentRect = imageElement.getBoundingClientRect();
-                    if (currentRect.width === 0 || currentRect.height === 0) {
-                        console.warn('⚠️ Elemento atual tem dimensões zero, criando novo elemento...');
-
-                        // Criar novo elemento de imagem
-                        const newImageElement = document.createElement('img');
-                        newImageElement.id = 'slideshow-image-new';
-                        newImageElement.className = 'slideshow-image-new';
-                        newImageElement.alt = currentImage.name;
-
-                        // Aplicar estilos diretamente no elemento (compatível com Raspberry Pi)
-                        newImageElement.style.cssText = `
-                            display: block !important;
-                            visibility: visible !important;
-                            opacity: 1 !important;
-                            position: absolute !important;
-                            top: 50% !important;
-                            left: 50% !important;
-                            transform: translate(-50%, -50%) !important;
-                            z-index: 1 !important;
-                            width: 100vw !important;
-                            height: 100vh !important;
-                            min-width: 100vw !important;
-                            min-height: 100vh !important;
-                            max-width: 100vw !important;
-                            max-height: 100vh !important;
-                            object-fit: contain !important;
-                            border: none !important;
-                            background: transparent !important;
-                            box-shadow: none !important;
-                            border-radius: 0 !important;
-                            pointer-events: none !important;
-                        `;
-
-                        // Aplicar estilos individualmente para máxima compatibilidade
-                        newImageElement.style.display = 'block';
-                        newImageElement.style.visibility = 'visible';
-                        newImageElement.style.opacity = '1';
-                        newImageElement.style.position = 'absolute';
-                        newImageElement.style.top = '50%';
-                        newImageElement.style.left = '50%';
-                        newImageElement.style.transform = 'translate(-50%, -50%)';
-                        newImageElement.style.zIndex = '1';
-                        newImageElement.style.width = '100vw';
-                        newImageElement.style.height = '100vh';
-                        newImageElement.style.minWidth = '100vw';
-                        newImageElement.style.minHeight = '100vh';
-                        newImageElement.style.maxWidth = '100vw';
-                        newImageElement.style.maxHeight = '100vh';
-                        newImageElement.style.objectFit = 'contain';
-                        newImageElement.style.border = 'none';
-                        newImageElement.style.background = 'transparent';
-                        newImageElement.style.boxShadow = 'none';
-                        newImageElement.style.borderRadius = '0';
-
-                        // Adicionar DENTRO do slideshow-viewer para manter contexto
-                        const slideshowViewer = document.getElementById('slideshow-viewer');
-                        if (slideshowViewer) {
-                            slideshowViewer.appendChild(newImageElement);
-                            // Esconder a imagem original para evitar sobreposição
-                            const originalImage = document.getElementById('slideshow-image');
-                            if (originalImage) {
-                                originalImage.style.display = 'none';                            }
-                        } else {
-                            document.body.appendChild(newImageElement);                        }
-                        targetElement = newImageElement;
-
-                        // Garantir que a imagem esteja dentro do viewer mas abaixo dos controles estáticos
-                        newImageElement.style.zIndex = '1';
-                        newImageElement.style.pointerEvents = 'none';
-
-                        // Adicionar fundo preto atrás de tudo
-                        document.body.style.background = 'black';
-                        document.body.style.overflow = 'hidden';
-                        document.body.style.cursor = 'default';
-
-                        // MANTER o slideshow-viewer visível para que os botões estáticos sejam exibidos
-                        if (slideshowViewer) {
-                            // NÃO ESCONDER! Os botões estáticos estão dentro dele                        }
-
-                        // Criar controles de navegação para a imagem dinâmica
-                        // Usar controles estáticos
-                        this.createDynamicSlideshowControls();                        console.debug('🔍 Debug Raspberry Pi - Elemento criado:', {
-                            id: newImageElement.id,
-                            tagName: newImageElement.tagName,
-                            parentNode: newImageElement.parentNode.tagName,
-                            position: newImageElement.getBoundingClientRect(),
-                            computedStyle: window.getComputedStyle(newImageElement)
-                        });
-                    }
-
-                    // Configurar o elemento
-                    targetElement.src = imageUrl;
-                    targetElement.alt = currentImage.name;
-
-                    // Se for o elemento original, aplicar estilos básicos
-                    if (targetElement === imageElement) {
-                        targetElement.style.setProperty('display', 'block', 'important');
-                        targetElement.style.setProperty('visibility', 'visible', 'important');
-                        targetElement.style.setProperty('opacity', '1', 'important');
-                        targetElement.style.setProperty('width', '90vw', 'important');
-                        targetElement.style.setProperty('height', '90vh', 'important');
-                        targetElement.style.setProperty('object-fit', 'contain', 'important');
-                        targetElement.style.setProperty('border', '3px solid #4CAF50', 'important');
-                    }
-                    // Forçar reflow para garantir que os estilos sejam aplicados
-                    targetElement.offsetHeight;
-                    targetElement.offsetWidth;
-
-                    // Forçar reflow múltiplas vezes
-                    targetElement.offsetHeight;
-                    targetElement.offsetWidth;
-                    targetElement.getBoundingClientRect();
-
-                    // Verificação final das dimensões
-                    setTimeout(() => {
-                        const finalRect = targetElement.getBoundingClientRect();
-                        console.debug('🔍 Verificação final das dimensões:', {
-                            width: finalRect.width,
-                            height: finalRect.height,
-                            visible: finalRect.width > 0 && finalRect.height > 0
-                        });
-
-                        // Debug específico para Raspberry Pi
-                        console.debug('🍓 Debug Raspberry Pi - Estado final:', {
-                            userAgent: navigator.userAgent,
-                            platform: navigator.platform,
-                            elementId: targetElement.id,
-                            elementTag: targetElement.tagName,
-                            elementSrc: targetElement.src,
-                            elementPosition: finalRect,
-                            elementStyles: {
-                                display: targetElement.style.display,
-                                position: targetElement.style.position,
-                                top: targetElement.style.top,
-                                left: targetElement.style.left,
-                                transform: targetElement.style.transform,
-                                zIndex: targetElement.style.zIndex,
-                                width: targetElement.style.width,
-                                height: targetElement.style.height,
-                                border: targetElement.style.border
-                            },
-                            computedStyles: window.getComputedStyle(targetElement),
-                            parentElement: targetElement.parentElement?.tagName,
-                            isInBody: targetElement.parentElement === document.body
-                        });
-
-                        if (finalRect.width === 0 || finalRect.height === 0) {
-                            console.error('🚨 FALHA CRÍTICA: Imagem ainda com dimensões zero após todas as correções!');
-                            console.error('🍓 Raspberry Pi - Tentando solução de emergência...');
-
-                            // Solução de emergência específica para Raspberry Pi
-                            targetElement.style.cssText = `
-                                display: block !important;
-                                visibility: visible !important;
-                                opacity: 1 !important;
-                                position: absolute !important;
-                                top: 100px !important;
-                                left: 100px !important;
-                                z-index: 99999 !important;
-                                width: 800px !important;
-                                height: 600px !important;
-                                min-width: 800px !important;
-                                min-height: 600px !important;
-                                max-width: 800px !important;
-                                max-height: 600px !important;
-                                object-fit: contain !important;
-                                border: 10px solid red !important;
-                                background: rgba(255, 0, 0, 0.3) !important;
-                                box-shadow: 0 0 50px rgba(255, 0, 0, 1) !important;
-                            `;
-
-                            // Forçar reflow
-                            targetElement.offsetHeight;
-                            targetElement.offsetWidth;                        } else {                        }
-                    }, 100);
-
-                    // Verificar contexto do documento
-                    console.debug('📄 Contexto do documento:', {
-                        readyState: document.readyState,
-                        hidden: document.hidden,
-                        visibilityState: document.visibilityState
-                    });
-
-                    // Verificar se está no viewport correto
-                    const rect = targetElement.getBoundingClientRect();
-                    const viewport = {
-                        width: window.innerWidth,
-                        height: window.innerHeight,
-                        scrollX: window.scrollX,
-                        scrollY: window.scrollY
-                    };
-
-                    console.debug('🖼️ Posição da imagem:', {
-                        top: rect.top,
-                        left: rect.left,
-                        width: rect.width,
-                        height: rect.height,
-                        visible: rect.width > 0 && rect.height > 0,
-                        inViewport: rect.top >= 0 && rect.left >= 0 &&
-                                   rect.bottom <= viewport.height &&
-                                   rect.right <= viewport.width
-                    });
-                    // Forçar renderização adicional se ainda não estiver visível
-                    if (rect.width === 0 || rect.height === 0) {
-                        console.error('🚨 CRÍTICO: Imagem ainda com dimensões zero após todas as tentativas!');
-
-                        // Último recurso: forçar com setTimeout
-                        setTimeout(() => {                            targetElement.style.setProperty('width', '400px', 'important');
-                            targetElement.style.setProperty('height', '400px', 'important');
-                            targetElement.style.setProperty('position', 'absolute', 'important');
-                            targetElement.style.setProperty('top', '50%', 'important');
-                            targetElement.style.setProperty('left', '50%', 'important');
-                            targetElement.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
-
-                            const finalRect = targetElement.getBoundingClientRect();
-                            console.debug('🖼️ Posição FINAL:', {
-                                top: finalRect.top,
-                                left: finalRect.left,
-                                width: finalRect.width,
-                                height: finalRect.height,
-                                visible: finalRect.width > 0 && finalRect.height > 0
-                            });
-                        }, 100);
-                    }
-                } else {
-                    console.error('❌ Elemento slideshow-image não encontrado!');
-                    // Tentar encontrar o elemento novamente
-                    const imageElement = document.getElementById('slideshow-image') || document.querySelector('.slideshow-image');
-                    if (imageElement) {                imageElement.src = imageUrl;
+        imageElement.style.display = 'none';
+        imageElement.onload = () => {
+            clearTimeout(loadTimeout);
+            if (this.slideshowLoadTimeout === loadTimeout) {
+                this.slideshowLoadTimeout = null;
+            }
+            if (this.slideshowRenderToken !== renderToken) return;
             imageElement.style.display = 'block';
-                        imageElement.style.visibility = 'visible';
-                        imageElement.style.opacity = '1';
-                    } else {
-                        console.error('❌ Elemento slideshow-image ainda não encontrado após segunda tentativa');
-                    }
-                }
-
-                if (loadingElement) loadingElement.style.display = 'none';
-                if (errorElement) errorElement.style.display = 'none';
-
-                // Iniciar auto-play apenas na primeira imagem carregada
-                if (this.currentSlideIndex === 0 && this.slideshowPlaying) {                    this.startAutoPlay();
-                }
-
-                // Pré-carregar próxima imagem
-                this.preloadNextImage();
-            };
-
-            img.onerror = (error) => {
-                clearTimeout(loadTimeout);
-                console.error('❌ Erro ao carregar imagem:', error);
-                console.error('❌ URL que falhou:', imageUrl);
-                if (loadingElement) loadingElement.style.display = 'none';
-                if (imageElement) imageElement.style.display = 'none';
-                if (errorElement) errorElement.style.display = 'block';
-            };            img.src = imageUrl;
-
-        } catch (error) {
-            console.error('❌ Erro ao carregar imagem:', error);
             if (loadingElement) loadingElement.style.display = 'none';
-            if (imageElement) imageElement.style.display = 'none';
+            if (errorElement) errorElement.style.display = 'none';
+            if (this.currentSlideIndex === 0 && this.slideshowPlaying) {
+                this.startAutoPlay();
+            }
+            this.preloadNextImage();
+        };
+        imageElement.onerror = () => {
+            clearTimeout(loadTimeout);
+            if (this.slideshowLoadTimeout === loadTimeout) {
+                this.slideshowLoadTimeout = null;
+            }
+            if (this.slideshowRenderToken !== renderToken) return;
+            imageElement.style.display = 'none';
+            if (loadingElement) loadingElement.style.display = 'none';
             if (errorElement) errorElement.style.display = 'block';
-        }
+        };
+        imageElement.src = imageUrl;
+        return true;
+    }
+
+    // Atualizar exibição do slide atual
+    updateSlideDisplay() {
+        this.renderSlideshowSlideFast();
     }
 
     // Próximo slide
     nextSlide() {
-        if (this.slideshowImages.length === 0) return;        console.debug('📊 Estado atual:', {
-            currentIndex: this.currentSlideIndex,
-            totalImages: this.slideshowImages.length,
-            nextIndex: (this.currentSlideIndex + 1) % this.slideshowImages.length
-        });
-
-        this.currentSlideIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
+        if (this.slideshowImages.length === 0) return;        this.currentSlideIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
         this.updateSlideDisplay();
         this.updateDynamicCounter();
     }
 
     // Slide anterior
     previousSlide() {
-        if (this.slideshowImages.length === 0) return;        console.debug('📊 Estado atual:', {
-            currentIndex: this.currentSlideIndex,
-            totalImages: this.slideshowImages.length,
-            prevIndex: this.currentSlideIndex === 0 ? this.slideshowImages.length - 1 : this.currentSlideIndex - 1
-        });
-
-        this.currentSlideIndex = this.currentSlideIndex === 0 ?
+        if (this.slideshowImages.length === 0) return;        this.currentSlideIndex = this.currentSlideIndex === 0 ?
             this.slideshowImages.length - 1 :
             this.currentSlideIndex - 1;
         this.updateSlideDisplay();
@@ -5837,12 +5488,7 @@ class DeParaUI {
         if (this.slideshowPlaying && this.slideshowImages.length > 1) {
             const intervalMs = this.slideshowConfig.interval * 1000;
             this.autoPlayInterval = setInterval(() => {                this.nextSlide();
-            }, intervalMs);        } else {
-            console.debug('⏰ Auto-play não iniciado:', {
-                slideshowPlaying: this.slideshowPlaying,
-                imageCount: this.slideshowImages.length
-            });
-        }
+            }, intervalMs);        }
     }
 
     // Parar reprodução automática
@@ -6282,6 +5928,12 @@ class DeParaUI {
     // Fechar viewer do slideshow
     closeSlideshowViewer() {
         this.stopAutoPlay();
+        if (this.slideshowLoadTimeout) {
+            clearTimeout(this.slideshowLoadTimeout);
+            this.slideshowLoadTimeout = null;
+        }
+        this.slideshowRenderToken += 1;
+        this.preloadedImages.clear();
 
         // Sair do fullscreen antes de fechar o viewer        this.exitFullscreen();
 
@@ -6949,7 +6601,7 @@ setupEventListeners() {
             autoApplyUpdates.addEventListener('change', () => this.saveAutoUpdateConfig());
         }
 
-        this.checkForUpdates();
+        // A verificação de atualização é acionada somente pelo usuário.
     }
 
     getUpdateCheckIntervalMinutes(value) {
@@ -6980,8 +6632,8 @@ setupEventListeners() {
             const updateCheckFrequency = document.getElementById('update-check-frequency');
             const autoApplyUpdates = document.getElementById('auto-apply-updates');
             const payload = {
-                enabled: autoCheckUpdates ? autoCheckUpdates.checked : true,
-                autoApply: autoApplyUpdates ? autoApplyUpdates.checked : true,
+                enabled: autoCheckUpdates ? autoCheckUpdates.checked : false,
+                autoApply: autoApplyUpdates ? autoApplyUpdates.checked : false,
                 checkIntervalMinutes: this.getUpdateCheckIntervalMinutes(
                     updateCheckFrequency ? updateCheckFrequency.value : 'daily'
                 )
@@ -7156,7 +6808,7 @@ setupEventListeners() {
             } else if ((release.activationState === 'rollback' || release.activationState === 'rollback_restart') && release.previous) {
                 updateMessage.textContent = `Rollback automático para a release ${release.previous} em andamento.`;
             } else if (scheduler.stale) {
-                updateMessage.textContent = 'Scheduler sem ciclos recentes. Verifique PM2, restart e persistência do processo.';
+                updateMessage.textContent = 'Scheduler sem ciclos recentes. Verifique o processo Windows e a persistência.';
             } else {
                 updateMessage.textContent = hasUpdates
                     ? 'Há atualização disponível e ela será publicada como um novo release imutável.'
@@ -7252,7 +6904,7 @@ setupEventListeners() {
                 throw new Error(result.error?.message || 'Falha ao iniciar ciclo');
             }
 
-            showToast('Ciclo automatico iniciado. Reinicio ocorrera automaticamente.', 'success');
+            showToast('Ciclo preparado. Reinicie manualmente o processo Windows após a conclusão.', 'success');
             setTimeout(() => this.checkForUpdates(true), 1000);
         } catch (error) {
             logger.error('Erro ao disparar ciclo de update:', error);
@@ -7271,11 +6923,10 @@ setupEventListeners() {
             const restartBtn = document.getElementById('restart-app-btn');
             if (restartBtn) {
                 restartBtn.disabled = true;
-                restartBtn.innerHTML = '<span class="material-icons">info</span> Reinício via PM2';
+                restartBtn.innerHTML = '<span class="material-icons">info</span> Reinício manual';
             }
 
-
-            showToast('No RP4, reinicie a aplicação com pm2 restart DePara.', 'info');
+            showToast('Reinicie manualmente com Ctrl+C e npm run start:windows.', 'info');
         } catch (error) {
             logger.error('Erro ao reiniciar aplicação:', error);
             showToast(error.message || 'Erro ao reiniciar aplicação', 'error');
@@ -10199,8 +9850,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Função para substituir caminhos dinâmicos baseados na plataforma
 function updateDynamicPaths() {
-    const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-    const defaultPicturesPath = isWindows ? 'C:\\Users\\User\\Pictures' : '/home/yo/Pictures';
+    const defaultPicturesPath = 'C:\\Users\\User\\Pictures';
     const slideshowInput = document.getElementById('slideshow-folder-path');
 
     if (!slideshowInput) {
@@ -10358,34 +10008,6 @@ function browseDestPath() {
         }
     }
 }
-
-// Atualizar caminhos baseados na plataforma (versão simplificada)
-function updateSimplePaths() {
-    const isWindows = navigator.userAgent.indexOf('Windows') > -1;
-    const userName = 'user'; // Valor padrão simples
-
-    const sourceInput = document.getElementById('source-path');
-    const destInput = document.getElementById('dest-path');
-
-    if (sourceInput && sourceInput.value.includes('/home/user')) {
-        sourceInput.value = isWindows ?
-            'C:\\Users\\User\\Documents\\origem' :
-            '/home/user/Documents/origem';
-    }
-
-    if (destInput && destInput.value.includes('/home/user')) {
-        destInput.value = isWindows ?
-            'C:\\Users\\User\\Documents\\destino' :
-            '/home/user/Documents/destino';
-    }
-}
-
-// Inicializar caminhos quando a página carregar
-document.addEventListener('DOMContentLoaded', function() {
-    if (window.__deparaSimplePathsInitDone) return;
-    window.__deparaSimplePathsInitDone = true;
-    updateSimplePaths();
-});
 
 // Adicionar animação CSS
 const style = document.createElement('style');

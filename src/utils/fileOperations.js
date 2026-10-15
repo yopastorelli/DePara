@@ -16,162 +16,8 @@ const {
     recordMigrationStatus,
     getMigrationStatus
 } = require('./persistenceMigration');
-const {
-    fixFilePermissions,
-    ensureWritableTarget,
-    copyOrMoveWithOptionalShellFallback
-} = require('./fileOps/permissions');
+const { copyOrMoveNative } = require('./fileOps/permissions');
 const { scanImagesRecursive } = require('./fileOps/imageScanner');
-
-/**
- * Função utilitária para corrigir permissões de arquivos/diretórios
- * Necessária para sistemas NTFS que criam arquivos como root
- * @param {string} filePath - Caminho do arquivo/diretório
- * @param {string} permissions - Permissões (padrão: 755)
- */
-async function legacyFixFilePermissions(filePath, permissions = '755') {
-    try {
-        // Executar chmod para corrigir permissões
-        await execAsync(`chmod ${permissions} "${filePath}"`);
-        logger.debug(`✅ Permissões corrigidas: ${filePath} (${permissions})`);
-        
-        // Verificar se a correção funcionou
-        const stats = await fs.stat(filePath);
-        logger.debug(`📊 Estatísticas após correção: ${JSON.stringify({
-            mode: stats.mode.toString(8),
-            uid: stats.uid,
-            gid: stats.gid
-        })}`);
-        
-    } catch (error) {
-        // Log como aviso, não como erro, pois não é crítico
-        logger.warn(`⚠️ Não foi possível corrigir permissões de ${filePath}: ${error.message}`);
-        
-        // Tentar com sudo se disponível
-        try {
-            await execAsync(`sudo chmod ${permissions} "${filePath}"`);
-            logger.info(`✅ Permissões corrigidas com sudo: ${filePath} (${permissions})`);
-        } catch (sudoError) {
-            logger.warn(`⚠️ Falha mesmo com sudo: ${sudoError.message}`);
-        }
-    }
-}
-
-/**
- * Verificar e corrigir permissões no Raspberry Pi
- * @param {string} sourcePath - Caminho de origem
- * @param {string} targetPath - Caminho de destino
- * @param {string} operation - Tipo de operação
- */
-async function legacyCheckRaspberryPiPermissions(sourcePath, targetPath, operation) {
-    try {
-        // Detectar se está rodando no Raspberry Pi
-        const isRaspberryPi = process.platform === 'linux' && 
-                             (process.arch === 'arm' || process.arch === 'arm64');
-        
-        logger.info(`🔍 DEBUG - Detecção Raspberry Pi:`, {
-            platform: process.platform,
-            arch: process.arch,
-            user: process.env.USER,
-            isRaspberryPi: isRaspberryPi
-        });
-
-        if (!isRaspberryPi) {
-            logger.debug('Não é Raspberry Pi, pulando verificação de permissões');
-            return;
-        }
-
-        logger.info(`🍓 Verificando permissões no Raspberry Pi para ${operation}`);
-        logger.info(`🔍 DEBUG - Caminhos:`, {
-            sourcePath: sourcePath,
-            targetPath: targetPath,
-            operation: operation
-        });
-
-        // Verificar permissões do arquivo de origem
-        try {
-            await fs.access(sourcePath, fs.constants.R_OK);
-            logger.info(`✅ Permissão de leitura OK: ${sourcePath}`);
-        } catch (error) {
-            logger.warn(`⚠️ Sem permissão de leitura: ${sourcePath} - ${error.message}`);
-            // Tentar corrigir permissões
-            await legacyFixFilePermissions(sourcePath, '644');
-        }
-
-        // Verificar/criar diretório de destino
-        const targetDir = path.dirname(targetPath);
-        try {
-            await fs.access(targetDir, fs.constants.W_OK);
-            logger.debug(`✅ Permissão de escrita OK: ${targetDir}`);
-        } catch (error) {
-            logger.warn(`⚠️ Sem permissão de escrita: ${targetDir}`);
-            // Criar diretório com permissões corretas
-            await fs.mkdir(targetDir, { recursive: true });
-            await legacyFixFilePermissions(targetDir, '755');
-        }
-
-        // Verificar se o usuário tem permissão sudo
-        try {
-            await execAsync('sudo -n true');
-            logger.debug('✅ Permissão sudo disponível');
-        } catch (error) {
-            logger.warn('⚠️ Sem permissão sudo - operações podem falhar');
-        }
-
-    } catch (error) {
-        logger.warn(`⚠️ Erro na verificação de permissões: ${error.message}`);
-    }
-}
-
-/**
- * Função para executar operações de arquivo com sudo quando necessário
- * @param {string} sourcePath - Caminho de origem
- * @param {string} targetPath - Caminho de destino
- * @param {string} operation - Tipo de operação (copy, move)
- */
-async function legacyExecuteFileOperationWithSudo(sourcePath, targetPath, operation) {
-    try {
-        if (operation === 'copy') {
-            // Tentar cópia normal primeiro
-            await fs.copyFile(sourcePath, targetPath);
-            logger.debug(`✅ Cópia normal bem-sucedida: ${sourcePath} -> ${targetPath}`);
-        } else if (operation === 'move') {
-            // Tentar rename primeiro
-            await fs.rename(sourcePath, targetPath);
-            logger.debug(`✅ Move normal bem-sucedido: ${sourcePath} -> ${targetPath}`);
-        }
-        
-        // Corrigir permissões após operação bem-sucedida
-        await legacyFixFilePermissions(targetPath);
-        
-    } catch (error) {
-        if (error.code === 'EPERM') {
-            logger.warn(`⚠️ EPERM detectado, tentando com sudo: ${sourcePath} -> ${targetPath}`);
-            
-            try {
-                if (operation === 'copy') {
-                    // Usar sudo cp para copiar
-                    await execAsync(`sudo cp "${sourcePath}" "${targetPath}"`);
-                    logger.info(`✅ Cópia com sudo bem-sucedida: ${sourcePath} -> ${targetPath}`);
-                } else if (operation === 'move') {
-                    // Usar sudo mv para mover
-                    await execAsync(`sudo mv "${sourcePath}" "${targetPath}"`);
-                    logger.info(`✅ Move com sudo bem-sucedido: ${sourcePath} -> ${targetPath}`);
-                }
-                
-                // Corrigir permissões após operação com sudo
-                await legacyFixFilePermissions(targetPath);
-                
-            } catch (sudoError) {
-                logger.error(`❌ Erro mesmo com sudo: ${sudoError.message}`);
-                throw new Error(`Operação falhou mesmo com sudo: ${sudoError.message}`);
-            }
-        } else {
-            // Re-throw outros erros
-            throw error;
-        }
-    }
-}
 
 // Evitar redeclarações desnecessárias
 const fsSync = require('fs');
@@ -190,10 +36,10 @@ const IGNORED_FILES = [
   'resilio-sync',
 
   // Arquivos do sistema
-  '.DS_Store',
   'Thumbs.db',
   'desktop.ini',
-  '.directory',
+  '$RECYCLE.BIN',
+  'System Volume Information',
 
   // Arquivos temporários
   '*.tmp',
@@ -211,53 +57,43 @@ const IGNORED_FILES = [
   '.gitignore',
   '.svn',
   '.hg',
+  'node_modules',
+  'build',
+  'dist',
+  '.cache',
 
   // Outros arquivos de sistema
-  '.Trash',
-  '.fseventsd',
-  '.Spotlight-V100',
-  '.Trashes',
-  '.AppleDouble',
-  '.LSOverride'
+  '$Recycle.Bin'
 ];
+
+const IGNORED_FILE_MATCHERS = IGNORED_FILES.map((pattern) => {
+  if (!pattern.includes('*')) {
+    return { exact: pattern.toLowerCase() };
+  }
+
+  const escapedPattern = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+  return { regex: new RegExp(`^${escapedPattern}$`, 'i') };
+});
 
 /**
  * Lista de pastas comuns que podem ser sugeridas para o usuário
  * Função que gera caminhos baseados na plataforma atual
  */
 const getCommonFolders = () => {
-  const userHome = process.env.HOME || process.env.USERPROFILE || '/tmp';
+  const userHome = process.env.USERPROFILE || process.env.HOME || os.homedir();
 
-  if (process.platform === 'win32') {
-    // Windows
-    return [
-      userHome,
-      path.join(userHome, 'Documents'),
-      path.join(userHome, 'Downloads'),
-      path.join(userHome, 'Pictures'),
-      path.join(userHome, 'Videos'),
-      path.join(userHome, 'Music'),
-      path.join(userHome, 'Desktop'),
-      'C:\\',
-      'D:\\',
-      path.join(userHome, 'AppData', 'Local', 'Temp')
-    ];
-  } else {
-    // Linux/Unix/Raspberry Pi
-    return [
-      userHome,
-      path.join(userHome, 'Documents'),
-      path.join(userHome, 'Downloads'),
-      path.join(userHome, 'Pictures'),
-      path.join(userHome, 'Videos'),
-      path.join(userHome, 'Music'),
-      path.join(userHome, 'Desktop'),
-      '/media',
-      '/mnt',
-      '/tmp',
-      '/var/log'
-    ];
-  }
+  return [
+    userHome,
+    path.join(userHome, 'Documents'),
+    path.join(userHome, 'Downloads'),
+    path.join(userHome, 'Pictures'),
+    path.join(userHome, 'Videos'),
+    path.join(userHome, 'Music'),
+    path.join(userHome, 'Desktop'),
+    'C:\\',
+    'D:\\',
+    path.join(userHome, 'AppData', 'Local', 'Temp')
+  ];
 };
 
 /**
@@ -270,20 +106,9 @@ function shouldIgnoreFile(fileName) {
 
   const fileNameLower = fileName.toLowerCase();
 
-  for (const pattern of IGNORED_FILES) {
-    // Verificar padrões com wildcard
-    if (pattern.includes('*')) {
-      const regexPattern = pattern
-        .replace(/\./g, '\\.')
-        .replace(/\*/g, '.*');
-      if (new RegExp(regexPattern, 'i').test(fileNameLower)) {
-        return true;
-      }
-    } else {
-      // Verificar correspondência exata
-      if (fileNameLower === pattern.toLowerCase()) {
-        return true;
-      }
+  for (const matcher of IGNORED_FILE_MATCHERS) {
+    if (matcher.exact === fileNameLower || matcher.regex?.test(fileName)) {
+      return true;
     }
   }
 
@@ -313,11 +138,7 @@ function getAllowedBasePaths() {
     return configuredPaths.map((item) => path.resolve(item));
   }
 
-  if (process.platform === 'win32') {
-    return [os.homedir(), 'C:\\', 'D:\\', 'E:\\'].map((item) => path.resolve(item));
-  }
-
-  return [os.homedir(), os.tmpdir(), '/media', '/mnt'].map((item) => path.resolve(item));
+  return [os.homedir(), 'C:\\', 'D:\\', 'E:\\'].map((item) => path.resolve(item));
 }
 
 function isPathWithinBase(candidatePath, basePath) {
@@ -420,6 +241,8 @@ class FileOperationsManager {
     constructor() {
         this.operations = new Map();
         this.schedules = new Map();
+        this.runningScheduledOperations = new Set();
+        this.progressStore = new Map();
 
         // Persistência de operações agendadas
         this.dataDir = getRuntimeDataDir();
@@ -430,10 +253,8 @@ class FileOperationsManager {
             path.join(sourceRepoRoot, 'src', 'data', 'scheduled-operations.json')
         ];
 
-        // Configurações otimizadas para Raspberry Pi
-        this.maxConcurrentOperations = process.env.MAX_CONCURRENT_OPERATIONS || 2; // Reduzido para RPi
-        this.maxRecursionDepth = process.env.MAX_RECURSION_DEPTH || 5;
-        this.streamHighWaterMark = process.env.STREAM_HIGH_WATER_MARK || 64 * 1024; // 64KB para RPi
+        this.maxConcurrentOperations = Math.max(1, Number(process.env.MAX_CONCURRENT_OPERATIONS) || 2);
+        this.maxRecursionDepth = Math.max(1, Number(process.env.MAX_RECURSION_DEPTH) || 20);
         this.backupConfig = {
             enabled: true,
             backupDir: getRuntimeBackupsDir(),
@@ -703,56 +524,7 @@ class FileOperationsManager {
      * Move arquivo com suporte a cross-device (copy + delete)
      */
     async moveFileCrossDevice(sourcePath, targetPath) {
-        try {
-            // Tentar rename primeiro (mais rápido para mesmo dispositivo)
-            await copyOrMoveWithOptionalShellFallback(sourcePath, targetPath, 'move');
-            
-            // Validar que o arquivo chegou ao destino
-            const targetStats = await fs.stat(targetPath);
-            await fs.access(targetPath, fs.constants.R_OK);
-            
-            logger.info(`✅ Arquivo movido com rename: ${sourcePath} -> ${targetPath} (${targetStats.size} bytes)`);
-        } catch (error) {
-            if (error.code === 'EXDEV') {
-                // Cross-device link not permitted - usar copy + delete
-                logger.info(`Cross-device detectado, usando copy + delete: ${sourcePath} -> ${targetPath}`);
-                
-                // Garantir que o diretório de destino existe
-                const targetDir = path.dirname(targetPath);
-                await fs.mkdir(targetDir, { recursive: true });
-                
-                // Copiar arquivo com suporte a sudo
-                await copyOrMoveWithOptionalShellFallback(sourcePath, targetPath, 'copy');
-                
-                // Verificar se a cópia foi bem-sucedida
-                const sourceStats = await fs.stat(sourcePath);
-                const targetStats = await fs.stat(targetPath);
-                
-                // Validação robusta: tamanho, existência e integridade
-                if (sourceStats.size === targetStats.size && targetStats.size > 0) {
-                    // Verificação adicional: tentar ler o arquivo de destino
-                    try {
-                        await fs.access(targetPath, fs.constants.R_OK);
-                        
-                        // Se chegou até aqui, a cópia foi bem-sucedida
-                        await fs.unlink(sourcePath);
-                        
-                        logger.info(`✅ Arquivo movido com copy + delete: ${sourcePath} -> ${targetPath} (${targetStats.size} bytes)`);
-                    } catch (accessError) {
-                        // Arquivo de destino não é legível
-                        await fs.unlink(targetPath); // Limpar arquivo corrompido
-                        throw new Error(`Arquivo de destino não é legível: ${targetPath}`);
-                    }
-                } else {
-                    // Tamanhos diferentes ou arquivo vazio - erro na cópia
-                    await fs.unlink(targetPath); // Limpar arquivo parcial
-                    throw new Error(`Erro na cópia: tamanhos diferentes (origem: ${sourceStats.size}, destino: ${targetStats.size})`);
-                }
-            } else {
-                // Outro tipo de erro
-                throw error;
-            }
-        }
+        await copyOrMoveNative(sourcePath, targetPath, 'move');
     }
 
     /**
@@ -782,9 +554,6 @@ class FileOperationsManager {
             const stats = await fs.stat(safeSourcePath);
             const isDirectory = stats.isDirectory();
             const fileSize = stats.size;
-
-            // Verificar permissões no Raspberry Pi
-            await this.checkRaspberryPiPermissions(safeSourcePath, safeTargetPath, 'move');
 
             // Criar backup se solicitado
             if (options.backupBeforeMove) {
@@ -864,6 +633,9 @@ class FileOperationsManager {
             const targetPath = path.join(targetDir, entry.name);
 
             if (entry.isDirectory()) {
+                if (shouldIgnoreFile(entry.name)) {
+                    continue;
+                }
                 // Recursão para subdiretórios
                 await this.moveDirectoryRecursive(sourcePath, targetPath, options);
             } else {
@@ -920,9 +692,6 @@ class FileOperationsManager {
             const stats = await fs.stat(safeSourcePath);
             const isDirectory = stats.isDirectory();
 
-            // Verificar permissões no Raspberry Pi
-            await this.checkRaspberryPiPermissions(safeSourcePath, safeTargetPath, 'copy');
-
             if (isDirectory && options.recursive !== false) {
                 // Operação recursiva em diretório
                 await this.copyDirectoryRecursive(safeSourcePath, safeTargetPath, options);
@@ -932,11 +701,7 @@ class FileOperationsManager {
                 const targetDir = path.dirname(safeTargetPath);
                 await fs.mkdir(targetDir, { recursive: true });
                 
-                // Corrigir permissões do diretório criado
-                await fixFilePermissions(targetDir);
-
-                await copyOrMoveWithOptionalShellFallback(safeSourcePath, safeTargetPath, 'copy');
-                await fixFilePermissions(safeTargetPath);
+                await copyOrMoveNative(safeSourcePath, safeTargetPath, 'copy');
             }
 
             // Verificar se copiou corretamente
@@ -978,9 +743,6 @@ class FileOperationsManager {
         // Garantir que o diretório de destino existe
         await fs.mkdir(targetDir, { recursive: true });
         
-        // Corrigir permissões do diretório criado
-        await fixFilePermissions(targetDir);
-
         // Ler conteúdo do diretório
         const entries = await fs.readdir(sourceDir, { withFileTypes: true });
 
@@ -989,6 +751,9 @@ class FileOperationsManager {
             const targetPath = path.join(targetDir, entry.name);
 
             if (entry.isDirectory()) {
+                if (shouldIgnoreFile(entry.name)) {
+                    continue;
+                }
                 // Recursão para subdiretórios
                 await this.copyDirectoryRecursive(sourcePath, targetPath, options);
             } else {
@@ -1007,8 +772,7 @@ class FileOperationsManager {
                     }
                 }
 
-                await copyOrMoveWithOptionalShellFallback(sourcePath, targetPath, 'copy');
-                await fixFilePermissions(targetPath);
+                await copyOrMoveNative(sourcePath, targetPath, 'copy');
                 
                 logger.info(`Arquivo copiado: ${sourcePath} -> ${targetPath}`);
             }
@@ -1093,6 +857,9 @@ class FileOperationsManager {
             const fullPath = path.join(dirPath, entry.name);
 
             if (entry.isDirectory()) {
+                if (shouldIgnoreFile(entry.name)) {
+                    continue;
+                }
                 // Recursão para subdiretórios
                 await this.deleteDirectoryRecursive(fullPath, options);
             } else {
@@ -1140,9 +907,6 @@ class FileOperationsManager {
 
             await fs.copyFile(filePath, backupPath);
             
-            // Corrigir permissões do arquivo de backup
-            await fixFilePermissions(backupPath);
-
             logger.info(`Backup criado: ${backupPath}`);
 
             // Limpar backups antigos se necessário
@@ -1240,6 +1004,12 @@ class FileOperationsManager {
      * Executa operação agendada
      */
     async executeScheduledOperation(operationId, action, sourcePath, targetPath, options) {
+        if (this.runningScheduledOperations.has(operationId)) {
+            logger.debug(`Operação agendada já está em execução: ${operationId}`);
+            return { status: 'skipped', reason: 'already-running' };
+        }
+
+        this.runningScheduledOperations.add(operationId);
         logger.info(`🚀 Iniciando execução agendada: ${operationId}`, { action, sourcePath, targetPath, options });
         
         try {
@@ -1256,9 +1026,12 @@ class FileOperationsManager {
             }
             
             logger.info(`✅ Execução agendada concluída: ${operationId}`);
+            return { status: 'completed' };
         } catch (error) {
             logger.error(`❌ Erro na execução agendada ${operationId}:`, error);
             throw error; // Re-throw para que o erro seja propagado
+        } finally {
+            this.runningScheduledOperations.delete(operationId);
         }
     }
 
@@ -1280,61 +1053,40 @@ class FileOperationsManager {
      */
     async executeBatchOperation(operationId, action, sourceDir, targetDir, options) {
         try {
-            const files = await this.getAllFiles(sourceDir, options.preserveStructure);
+            const requestedTotal = Number(options.totalFiles);
+            const totalFiles = options.countBeforeProcessing === true && Number.isFinite(requestedTotal)
+                ? Math.max(0, requestedTotal)
+                : null;
             let processed = 0;
             let errors = 0;
-            const totalFiles = files.length;
-
-            // Limitar processamento para Raspberry Pi
-            const batchSize = Math.min(this.maxConcurrentOperations, 3); // Máximo 3 operações simultâneas
-            const batches = [];
-
-            // Dividir arquivos em lotes para processamento controlado
-            for (let i = 0; i < files.length; i += batchSize) {
-                batches.push(files.slice(i, i + batchSize));
-            }
+            let skipped = 0;
+            let scanned = 0;
+            let batch = [];
+            const batchSize = this.maxConcurrentOperations;
 
             // Emitir progresso inicial
-            this.emitProgress(operationId, 0, totalFiles, 'Iniciando operação...');
+            this.emitProgress(operationId, 0, totalFiles || 0, 'Iniciando operação...');
 
-            // Processar arquivos em lotes controlados
-            for (const batch of batches) {
-                // Processar arquivos do lote em paralelo, mas limitado
-                const batchPromises = batch.map(async (filePath, indexInBatch) => {
-                    const globalIndex = processed + errors + indexInBatch;
-
+            const processBatch = async (files) => {
+                const batchResults = await Promise.all(files.map(async (filePath, indexInBatch) => {
                     try {
-                        // Emitir progresso atual
-                        const progress = Math.round(((globalIndex + 1) / totalFiles) * 100);
+                        const globalIndex = scanned + indexInBatch;
+                        const progress = totalFiles === null
+                            ? 0
+                            : Math.round(((globalIndex + 1) / totalFiles) * 100);
                         this.emitProgress(operationId, progress, totalFiles, `Processando ${path.basename(filePath)}...`);
 
-                        // Obter informações do arquivo
-                        const stats = await fs.stat(filePath);
-                        if (!stats.isFile()) {
-                            return { status: 'skipped', reason: 'not a file' };
-                        }
-
                         const fileName = path.basename(filePath);
-
-                        // Aplicar filtros se configurados
-                        logger.debug(`🔍 Aplicando filtros para: ${fileName}`, { 
-                            hasFilters: !!options.filters,
-                            filterKeys: options.filters ? Object.keys(options.filters) : []
-                        });
-                        
                         if (!this.matchesFilters(fileName, options.filters, filePath)) {
-                            logger.debug(`🚫 Arquivo rejeitado pelos filtros: ${fileName}`);
                             return { status: 'skipped', reason: 'filter mismatch' };
                         }
 
                         let targetPath;
-                        if (options.preserveStructure) {
-                            // Manter estrutura de pastas
-                            const relativePath = path.relative(sourceDir, filePath);
+                        if (action !== 'delete') {
+                            const relativePath = options.preserveStructure
+                                ? path.relative(sourceDir, filePath)
+                                : fileName;
                             targetPath = path.join(targetDir, relativePath);
-                        } else {
-                            // Achatar estrutura (todos os arquivos na raiz do destino)
-                            targetPath = path.join(targetDir, fileName);
                         }
 
                         switch (action) {
@@ -1347,38 +1099,50 @@ class FileOperationsManager {
                             case 'delete':
                                 await this.deleteFile(filePath, options);
                                 break;
+                            default:
+                                throw new Error(`Ação não suportada: ${action}`);
                         }
 
                         return { status: 'processed' };
-
                     } catch (error) {
                         logger.error(`Erro ao processar arquivo ${filePath}:`, { error: error.message });
                         return { status: 'error', error: error.message };
                     }
-                });
+                }));
 
-                // Aguardar conclusão do lote atual
-                const batchResults = await Promise.all(batchPromises);
-
-                // Contabilizar resultados
+                scanned += files.length;
                 for (const result of batchResults) {
                     if (result.status === 'processed') {
                         processed++;
                     } else if (result.status === 'error') {
                         errors++;
+                    } else {
+                        skipped++;
                     }
                 }
+            };
 
-                // Pequena pausa entre lotes para não sobrecarregar o Raspberry Pi
-                if (batches.length > 1) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
+            for await (const filePath of this.iterateFiles(sourceDir)) {
+                batch.push(filePath);
+                if (batch.length >= batchSize) {
+                    await processBatch(batch);
+                    batch = [];
                 }
             }
 
-            // Emitir progresso final
-            this.emitProgress(operationId, 100, totalFiles, `Concluído: ${processed} processados, ${errors} erros`);
+            if (batch.length > 0) {
+                await processBatch(batch);
+            }
 
-            logger.info(`Operação em lote concluída: ${processed} processados, ${errors} erros, preserveStructure: ${options.preserveStructure}`);
+            // Emitir progresso final
+            this.emitProgress(
+                operationId,
+                100,
+                totalFiles ?? scanned,
+                `Concluído: ${processed} processados, ${skipped} ignorados, ${errors} erros`
+            );
+
+            logger.info(`Operação em lote concluída: ${processed} processados, ${skipped} ignorados, ${errors} erros`);
 
         } catch (error) {
             // Emitir erro de progresso
@@ -1400,10 +1164,17 @@ class FileOperationsManager {
         };
 
         // Salvar progresso para consultas
-        if (!this.progressStore) {
-            this.progressStore = new Map();
-        }
         this.progressStore.set(operationId, progressData);
+        if (this.progressStore.size > 100) {
+            for (const [storedOperationId, storedProgress] of this.progressStore) {
+                if (storedProgress.percentage >= 100 || storedProgress.percentage < 0) {
+                    this.progressStore.delete(storedOperationId);
+                }
+                if (this.progressStore.size <= 50) {
+                    break;
+                }
+            }
+        }
         logger.debug(`Progresso ${operationId}: ${percentage}% - ${message}`);
     }
 
@@ -1427,29 +1198,42 @@ class FileOperationsManager {
         return active;
     }
 
-    /**
-     * Obtém todos os arquivos recursivamente de uma pasta
-     */
-    async getAllFiles(dirPath, preserveStructure = false) {
-        const files = [];
-
-        async function scanDirectory(currentPath) {
-            const items = await fs.readdir(currentPath);
-
-            for (const item of items) {
-                const itemPath = path.join(currentPath, item);
-                const stats = await fs.stat(itemPath);
-
-                if (stats.isDirectory()) {
-                    // Sempre escanear subdiretórios, independente de preserveStructure
-                    await scanDirectory(itemPath);
-                } else if (stats.isFile()) {
-                    files.push(itemPath);
-                }
-            }
+    async *iterateFiles(dirPath, currentDepth = 0) {
+        if (currentDepth > this.maxRecursionDepth) {
+            return;
         }
 
-        await scanDirectory(dirPath);
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+        for (const entry of entries) {
+            if (shouldIgnoreFile(entry.name)) {
+                continue;
+            }
+
+            const entryPath = path.join(dirPath, entry.name);
+            if (entry.isDirectory()) {
+                yield* this.iterateFiles(entryPath, currentDepth + 1);
+            } else if (entry.isFile()) {
+                yield entryPath;
+            }
+        }
+    }
+
+    async countFiles(dirPath) {
+        let count = 0;
+        for await (const filePath of this.iterateFiles(dirPath)) {
+            count++;
+        }
+        return count;
+    }
+
+    /**
+     * Obtém todos os arquivos recursivamente de uma pasta para consumidores legados.
+     */
+    async getAllFiles(dirPath) {
+        const files = [];
+        for await (const filePath of this.iterateFiles(dirPath)) {
+            files.push(filePath);
+        }
         return files;
     }
 
@@ -1483,16 +1267,6 @@ class FileOperationsManager {
     }
 
     /**
-     * Verificar permissões no Raspberry Pi
-     * @param {string} sourcePath - Caminho de origem
-     * @param {string} targetPath - Caminho de destino
-     * @param {string} operation - Tipo de operação
-     */
-    async checkRaspberryPiPermissions(sourcePath, targetPath, operation) {
-        return await ensureWritableTarget(sourcePath, targetPath, operation);
-    }
-
-    /**
      * Lista de arquivos/pastas que devem ser ignorados (Resilio Sync + sistema)
      */
     getIgnoredPatterns() {
@@ -1515,22 +1289,9 @@ class FileOperationsManager {
             // Arquivos de sistema gerais
             systemFiles: [
                 'Thumbs.db',       // Windows thumbnails
-                '.DS_Store',       // macOS
                 'desktop.ini',     // Windows
-                '.directory',      // Linux/KDE
-                '.Trash-*',        // Linux trash
-                '.fseventsd',      // macOS file events
-                '.Spotlight-*',    // macOS Spotlight
-                '.TemporaryItems', // macOS temp items
-                '._*',             // macOS resource forks
                 '$RECYCLE.BIN',    // Windows recycle bin
-                'System Volume Information', // Windows system
-                '.AppleDouble',    // macOS
-                '.AppleDB',        // macOS
-                '.AppleDesktop',   // macOS
-                'Network Trash Folder', // macOS
-                'Temporary Items', // macOS
-                '.apdisk'          // macOS disk images
+                'System Volume Information' // Windows system
             ],
 
             // Arquivos temporários comuns
@@ -1547,8 +1308,6 @@ class FileOperationsManager {
                 '#*#',             // Emacs auto-save
                 '*.lock',          // Lock files
                 '*.lck',           // Lock files
-                '.nfs*',           // NFS temp files
-                '4913',            // NFS temp files
                 '*.part',          // Partial downloads
                 '*.crdownload',    // Chrome downloads
                 '*.download',      // Generic downloads
@@ -1557,22 +1316,11 @@ class FileOperationsManager {
                 '*.pyc',           // Python compiled
                 '__pycache__',     // Python cache dir
                 '*.pyo',           // Python optimized
-                '*.class',         // Java compiled
-                '*.jar',           // Java archives
-                'target/',         // Maven/Gradle build
-                'build/',          // Build directories
-                'dist/',           // Distribution dirs
                 'node_modules/',   // Node.js dependencies
                 '.git/',           // Git repository
-                '.svn/',           // SVN repository
-                '.hg/',            // Mercurial repository
-                '.bzr/',           // Bazaar repository
-                'CVS/',            // CVS repository
-                '.sass-cache/',    // Sass cache
                 '.cache/',         // Generic cache
                 '*.log',           // Log files
-                '*.pid',           // Process ID files
-                '*.sock'           // Socket files
+                '*.pid'            // Process ID files
             ]
         };
     }
@@ -1750,6 +1498,7 @@ class FileOperationsManager {
             clearInterval(intervalId);
         }
         this.schedules.clear();
+        this.runningScheduledOperations.clear();
         this.operations.clear();
         logger.info('Todas as operações agendadas foram paradas');
     }
@@ -1764,6 +1513,7 @@ class FileOperationsManager {
             clearInterval(intervalId);
         }
         this.schedules.clear();
+        this.runningScheduledOperations.clear();
         this.operations.clear();
 
         for (const operation of normalizedOperations) {
@@ -1820,83 +1570,14 @@ class FileOperationsManager {
      * Lista imagens recursivamente para slideshow
      */
     async listImagesRecursive(folderPath, options = {}) {
-        const { maxDepth = 10, extensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'] } = options;
-        const images = [];
         const safeFolderPath = await validateSafePath(folderPath, 'read');
-
-        logger.info(`🖼️ Iniciando listImagesRecursive: ${safeFolderPath}`);
-        logger.info(`🔧 Opções: ${JSON.stringify(options)}`);
-
-        try {
-            const stats = await fs.stat(safeFolderPath);
-            logger.info(`📁 Pasta encontrada: ${safeFolderPath}, isDirectory: ${stats.isDirectory()}`);
-
-            if (!stats.isDirectory()) {
-                throw new Error('Caminho especificado não é uma pasta');
-            }
-
-            async function scanDirectory(currentPath, currentDepth = 0) {
-                if (currentDepth > maxDepth) return;
-
-                    logger.info(`🔍 Escaneando pasta: ${currentPath} (profundidade: ${currentDepth})`);
-
-                    try {
-                        const items = await fs.readdir(currentPath);
-                        logger.info(`📋 Itens encontrados em ${currentPath}: ${items.length} (${items.slice(0, 10).join(', ')}${items.length > 10 ? '...' : ''})`);
-
-                        for (const item of items) {
-                            const itemPath = await validateSafePath(path.join(currentPath, item), 'read');
-                            const itemStats = await fs.stat(itemPath);
-
-                        if (itemStats.isDirectory()) {
-                            // Recursivamente escanear subpastas
-                            await scanDirectory(itemPath, currentDepth + 1);
-                        } else if (itemStats.isFile()) {
-                            const ext = path.extname(item).toLowerCase().slice(1);
-                            logger.info(`📄 Arquivo encontrado: ${item} (ext: ${ext})`);
-
-                            if (extensions.includes(ext)) {
-                                logger.info(`✅ Extensão válida: ${ext}`);
-                                // Verificar se não deve ser ignorado
-                                if (!shouldIgnoreFile(item)) {
-                                    logger.info(`✅ Arquivo não ignorado: ${item}`);
-                                    images.push({
-                                        path: itemPath,
-                                        name: item,
-                                        size: itemStats.size,
-                                        modified: itemStats.mtime,
-                                        extension: ext,
-                                        relativePath: path.relative(safeFolderPath, itemPath)
-                                    });
-                                } else {
-                                    logger.warn(`🚫 Arquivo ignorado: ${item}`);
-                                }
-                            } else {
-                                logger.info(`❌ Extensão inválida: ${ext} (esperado: ${extensions.join(', ')})`);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    logger.warn(`Erro ao escanear pasta ${currentPath}:`, error.message);
-                }
-            }
-
-            await scanDirectory.call(this, safeFolderPath);
-
-            // Ordenar imagens por data de modificação (mais recentes primeiro)
-            images.sort((a, b) => b.modified.getTime() - a.modified.getTime());
-
-            logger.info(`🎯 Total de imagens encontradas: ${images.length}`);
-            if (images.length > 0) {
-                logger.info(`📸 Primeiras imagens: ${images.slice(0, 5).map(img => img.name).join(', ')}`);
-            }
-
-            return images;
-
-        } catch (error) {
-            logger.error(`Erro ao listar imagens da pasta ${safeFolderPath}:`, error);
-            throw error;
-        }
+        return scanImagesRecursive(safeFolderPath, {
+            maxDepth: options.maxDepth ?? 10,
+            extensions: options.extensions,
+            maxResults: options.maxResults,
+            sortBy: options.sortBy || 'modified-desc',
+            shouldIgnore: (entryName) => shouldIgnoreFile(entryName)
+        });
     }
 
     /**
@@ -1916,13 +1597,14 @@ fileOperationsManager.validateSafePath = validateSafePath;
 fileOperationsManager.shouldIgnoreFile = shouldIgnoreFile;
 fileOperationsManager.filterIgnoredFiles = filterIgnoredFiles;
 
-// Cleanup ao encerrar
-process.on('SIGTERM', () => {
-    fileOperationsManager.stopAllScheduledOperations();
-});
+if (process.env.DEPARA_DISABLE_PROCESS_HOOKS !== 'true') {
+    process.on('SIGTERM', () => {
+        fileOperationsManager.stopAllScheduledOperations();
+    });
 
-process.on('SIGINT', () => {
-    fileOperationsManager.stopAllScheduledOperations();
-});
+    process.on('SIGINT', () => {
+        fileOperationsManager.stopAllScheduledOperations();
+    });
+}
 
 module.exports = fileOperationsManager;

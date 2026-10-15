@@ -126,6 +126,7 @@ describe('API smoke', () => {
     await fsp.mkdir(imagesDir, { recursive: true });
     await fsp.mkdir(nestedDir, { recursive: true });
     await writePng(path.join(imagesDir, 'fixture.png'));
+    await writePng(path.join(imagesDir, 'fixture-2.png'));
 
     const foldersResponse = await request(app)
       .post('/api/files/list-folders')
@@ -142,6 +143,14 @@ describe('API smoke', () => {
 
     expect(imagesResponse.body.success).toBe(true);
     expect(imagesResponse.body.data.totalCount).toBeGreaterThan(0);
+
+    const limitedImagesResponse = await request(app)
+      .post('/api/files/list-images')
+      .send({ folderPath: imagesDir, extensions: ['.png'], recursive: true, maxResults: 1 })
+      .expect(200);
+
+    expect(limitedImagesResponse.body.data.totalCount).toBe(1);
+    expect(limitedImagesResponse.body.data.limited).toBe(true);
 
     const updateResponse = await request(app).get('/api/update/auto/status').expect(200);
     expect(updateResponse.body.success).toBe(true);

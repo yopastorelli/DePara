@@ -239,7 +239,6 @@ test.describe('DePara UI E2E', () => {
   });
 
   test('abre o slideshow com fixtures locais e permite navegar', async ({ page }) => {
-    test.skip(process.platform === 'win32', 'Viewer fullscreen do slideshow deve ser validado no RP4/Linux; o runner headless Windows nao e autoritativo.');
     const fixturePath = process.env.DEPARA_E2E_IMAGES_DIR;
 
     await page.goto('/ui');

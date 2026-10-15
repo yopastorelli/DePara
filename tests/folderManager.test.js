@@ -61,7 +61,7 @@ describe('FolderManager', () => {
             path: '/tmp/entrada',
             type: 'input',
             enabled: true,
-            autoProcess: false
+            autoProcess: true
           }
         ])),
         writeFile: jest.fn().mockResolvedValue(undefined),
@@ -74,6 +74,7 @@ describe('FolderManager', () => {
 
     await folderManager.init();
     await folderManager.init();
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
     expect(watchMock).toHaveBeenCalledTimes(1);
     expect(handleSpy).toHaveBeenCalledWith(
@@ -119,7 +120,9 @@ describe('FolderManager', () => {
     for (const folder of folders) {
       expect(fs.existsSync(folder.path)).toBe(true);
     }
-    expect(watchMock).toHaveBeenCalledTimes(folders.length);
+    expect(watchMock).toHaveBeenCalledTimes(
+      folders.filter((folder) => folder.enabled && folder.autoProcess && folder.path).length
+    );
 
     folderManager.cleanup();
     watchMock.mockRestore();

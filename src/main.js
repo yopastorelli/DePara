@@ -4,17 +4,17 @@ const morgan = require('morgan');
 const os = require('os');
 const path = require('path');
 
+const { loadOperationalConfig } = require('./utils/runtimeConfig');
+loadOperationalConfig();
+
 const logger = require('./utils/logger');
 const { getAppMetadata } = require('./utils/appMetadata');
-const { loadOperationalConfig } = require('./utils/runtimeConfig');
 const routes = require('./routes');
 const updateOrchestrator = require('./services/updateOrchestrator');
 const configStore = require('./utils/configStore');
 const folderManager = require('./config/folders');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter } = require('./middleware/rateLimiter');
-
-loadOperationalConfig();
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -83,28 +83,37 @@ function configureApp() {
 
   app.use('/api', readRateLimiter);
 
-  const maxPayload = process.env.MAX_PAYLOAD || '100mb';
+  const maxPayload = process.env.MAX_PAYLOAD || '25mb';
   app.use(express.json({ limit: maxPayload }));
   app.use(express.urlencoded({ extended: true, limit: maxPayload }));
 
-  app.use(morgan('combined', {
-    stream: {
-      write: (message) => logger.info(message.trim())
-    }
-  }));
+  const httpLoggingEnabled = process.env.DEPARA_HTTP_LOGGING === 'true'
+    || (process.env.DEPARA_HTTP_LOGGING !== 'false' && NODE_ENV !== 'production');
+
+  const infoLoggingEnabled = typeof logger.isLevelEnabled !== 'function' || logger.isLevelEnabled('info');
+
+  if (httpLoggingEnabled && infoLoggingEnabled) {
+    app.use(morgan('combined', {
+      stream: {
+        write: (message) => logger.info(message.trim())
+      }
+    }));
+  }
 
   app.use(express.static(path.join(__dirname, 'public')));
   app.use('/ui', express.static(path.join(__dirname, 'public')));
 
-  app.use((req, res, next) => {
-    logger.info(`${req.method} ${req.path} - ${req.ip}`, {
-      method: req.method,
-      path: req.path,
-      ip: req.ip,
-      userAgent: req.get('User-Agent')
+  if (process.env.DEPARA_REQUEST_METADATA_LOGGING === 'true' && infoLoggingEnabled) {
+    app.use((req, res, next) => {
+      logger.info(`${req.method} ${req.path} - ${req.ip}`, {
+        method: req.method,
+        path: req.path,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      next();
     });
-    next();
-  });
+  }
 
   app.use('/api', routes);
 
@@ -206,7 +215,6 @@ async function startServer(options = {}) {
   await initializeDirectories();
   await configStore.ensureConfigFile();
   await folderManager.init();
-  await updateOrchestrator.init();
 
   server = await new Promise((resolve, reject) => {
     const createdServer = app.listen(port, HOST, () => resolve(createdServer));

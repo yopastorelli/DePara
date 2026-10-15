@@ -151,7 +151,7 @@ State rules:
 
 | Method | Path | Input |
 |---|---|---|
-| POST | `/api/files/list-images` | JSON body: `folderPath`, optional `extensions`, `recursive` |
+| POST | `/api/files/list-images` | JSON body: `folderPath`, optional `extensions`, `recursive`, `maxResults` |
 | POST | `/api/files/list-folders` | JSON body: `path` |
 | GET | `/api/files/images/:folderPath` | `folderPath` must be percent-encoded as one URL segment |
 | GET | `/api/files/image/:imagePath` | `imagePath` must be percent-encoded as one URL segment |
@@ -159,6 +159,7 @@ State rules:
 Preferred routes for new clients:
 
 - Use `POST /api/files/list-images` for image lists.
+- Use `maxResults` or `DEPARA_MAX_IMAGE_RESULTS` when the folder can contain many images; the response reports `limited=true` when the cap is reached.
 - Use `POST /api/files/list-folders` for folder browsing.
 - Use `GET /api/files/image/:imagePath` for serving a single image.
 
@@ -190,8 +191,8 @@ Legacy blocked routes:
 Diagnostics must expose at least:
 
 - `runtime.supervisor.supervisor`
-- `runtime.supervisor.pm2.available`
-- `runtime.supervisor.pm2.registered`
+- `runtime.supervisor.operationallyReady`
+- `runtime.supervisor.reasons`
 - `runtime.scheduler.lastCycleAt`
 - `runtime.scheduler.stale`
 - `runtime.lock`
@@ -206,7 +207,7 @@ Diagnostics must expose at least:
 - `runtime.persistence.foldersMigrated`
 - `runtime.persistence.sources`
 
-## Tray and desktop
+## Tray e navegador dedicado
 
 | Method | Path |
 |---|---|
@@ -219,10 +220,6 @@ Diagnostics must expose at least:
 | POST | `/api/tray/screensaver/arm` |
 | POST | `/api/tray/screensaver/disarm` |
 | POST | `/api/tray/screensaver/close` |
-| POST | `/api/desktop/create` |
-| GET | `/api/desktop/status` |
-| PUT | `/api/desktop/update` |
-| DELETE | `/api/desktop/remove` |
 
 ## Frontend logs
 

@@ -68,8 +68,8 @@ class UpdateOrchestrator {
 
   getDefaultConfig() {
     return {
-      enabled: true,
-      autoApply: true,
+      enabled: false,
+      autoApply: false,
       checkIntervalMinutes: 60,
       healthTimeoutMs: 3000,
       healthRetries: 5,
@@ -196,7 +196,7 @@ class UpdateOrchestrator {
   normalizeConfig(config = {}) {
     const allowed = {
       enabled: Boolean(config.enabled),
-      autoApply: config.autoApply === undefined ? true : Boolean(config.autoApply),
+      autoApply: config.autoApply === undefined ? false : Boolean(config.autoApply),
       checkIntervalMinutes: Math.max(1, Number(config.checkIntervalMinutes) || 60),
       healthTimeoutMs: Math.max(500, Number(config.healthTimeoutMs) || 3000),
       healthRetries: Math.max(1, Number(config.healthRetries) || 5),
@@ -264,6 +264,7 @@ class UpdateOrchestrator {
     }
 
     if (process.env.DEPARA_DISABLE_UPDATE_SCHEDULER === 'true') return;
+    if (process.env.DEPARA_ENABLE_UPDATE_SCHEDULER !== 'true') return;
     if (!this.config.enabled) return;
     const intervalMs = Math.max(1, Number(this.config.checkIntervalMinutes) || 60) * 60 * 1000;
 
@@ -353,18 +354,6 @@ class UpdateOrchestrator {
     } catch {
       return { invalid: true, stale: true };
     }
-  }
-
-  getExpectedPm2AppName() {
-    return process.env.PM2_APP_NAME || 'DePara';
-  }
-
-  getLegacySystemdServiceName() {
-    return process.env.SYSTEMD_SERVICE_NAME || 'depara.service';
-  }
-
-  isSystemdFallbackAllowed() {
-    return process.env.DEPARA_ALLOW_SYSTEMD_FALLBACK === 'true';
   }
 
   createStageError(stage, message, extra = {}) {
@@ -489,44 +478,10 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
   }
 
   async detectSupervisorStatus() {
-    const expectedAppName = this.getExpectedPm2AppName();
-    const legacyServiceName = this.getLegacySystemdServiceName();
-    const fallbackAllowed = this.isSystemdFallbackAllowed();
-    const pm2Available = await this.isPm2Available();
-    const pm2Registered = pm2Available
-      ? await this.isPm2ProcessRegistered(expectedAppName)
-      : false;
-    const systemdAvailable = !pm2Registered
-      ? await this.isSystemctlAvailable()
-      : false;
-
-    const reasons = [];
-    if (!pm2Available) {
-      reasons.push('pm2_unavailable');
-    } else if (!pm2Registered) {
-      reasons.push('pm2_process_not_registered');
-    }
-
-    if (!pm2Registered && fallbackAllowed && !systemdAvailable) {
-      reasons.push('systemd_fallback_unavailable');
-    }
-
     return {
-      supervisor: pm2Registered
-        ? 'pm2'
-        : (fallbackAllowed && systemdAvailable ? 'systemd-fallback' : 'unmanaged'),
-      pm2: {
-        expectedAppName,
-        available: pm2Available,
-        registered: pm2Registered
-      },
-      systemd: {
-        legacyServiceName,
-        available: systemdAvailable,
-        fallbackAllowed
-      },
-      operationallyReady: pm2Registered || (fallbackAllowed && systemdAvailable),
-      reasons
+      supervisor: 'windows-process',
+      operationallyReady: true,
+      reasons: []
     };
   }
 
@@ -540,7 +495,7 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
       folderManager.getPersistenceStatus()
     ]);
     return {
-      platformTarget: 'rp4',
+      platformTarget: 'windows',
       supervisor,
       scheduler: this.getSchedulerRuntimeStatus(),
       lock: this.readLockDetails(),
@@ -606,7 +561,7 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
     const reasons = runtime.supervisor.reasons.join(', ') || 'unknown';
     throw this.createStageError(
       'supervisor_readiness',
-      `Auto-update exige processo canônico no PM2. Estado atual: ${reasons}`,
+      `Auto-update exige um processo Windows local operacional. Estado atual: ${reasons}`,
       { runtime }
     );
   }
@@ -1010,7 +965,7 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
 
     await this.setState('restarting', {
       restartRequestedAt: new Date().toISOString(),
-      lastSupervisor: 'pm2',
+      lastSupervisor: 'windows-process',
       currentCommit: release.commit,
       currentRelease: release.releaseId,
       targetRelease: release.releaseId,
@@ -1160,108 +1115,10 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
       return;
     }
 
-    const runtime = await this.detectSupervisorStatus();
-    const appName = this.getExpectedPm2AppName();
-    const systemdServiceName = this.getLegacySystemdServiceName();
-    const runId = this.state?.lastRunId || 'restart';
-    const canRecordHistory = Boolean(this.historyPath) && fsSync.existsSync(path.dirname(this.historyPath));
-
-    if (runtime.pm2.available && runtime.pm2.registered) {
-      await this.runCommandForStage(
-        `pm2 restart ${appName}`,
-        {},
-        'pm2_restart',
-        'Falha ao reiniciar processo PM2'
-      );
-      if (canRecordHistory) {
-        await this.appendHistory({
-          runId,
-          event: 'restart_dispatched',
-          supervisor: 'pm2',
-          appName
-        });
-      }
-      return;
-    }
-
-    if (runtime.systemd.fallbackAllowed && runtime.systemd.available) {
-      const restarted = await this.restartViaSystemd(systemdServiceName);
-      if (restarted) {
-        if (canRecordHistory) {
-          await this.appendHistory({
-            runId,
-            event: 'restart_dispatched',
-            supervisor: 'systemd-fallback',
-            service: systemdServiceName
-          });
-        }
-        return;
-      }
-    }
-
     throw this.createStageError(
-      'restart_supervisor',
-      `Processo PM2 canônico não está registrado como ${appName}; reinício automático abortado`,
-      { runtime }
+      'windows_restart_required',
+      'Atualizações automáticas exigem reinício manual do processo Windows'
     );
-  }
-
-  async isPm2Available() {
-    try {
-      await execCommand('pm2 -v');
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async isPm2ProcessRegistered(appName) {
-    try {
-      const { stdout } = await execCommand('pm2 jlist');
-      const processList = JSON.parse(stdout || '[]');
-      return Array.isArray(processList) && processList.some((processInfo) => {
-        return processInfo?.name === appName || processInfo?.pm2_env?.name === appName;
-      });
-    } catch (error) {
-      logger.warn('Falha ao consultar processos PM2', { error: error.message, appName });
-      return false;
-    }
-  }
-
-  async isSystemctlAvailable() {
-    try {
-      await execCommand('systemctl --version');
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async restartViaSystemd(serviceName) {
-    const service = (serviceName || '').trim();
-    if (!service) {
-      return false;
-    }
-
-    const commands = [
-      `systemctl restart ${service}`,
-      `systemctl --user restart ${service}`
-    ];
-
-    for (const command of commands) {
-      try {
-        await execCommand(command);
-        return true;
-      } catch (error) {
-        logger.warn('Falha ao reiniciar via systemd', {
-          error: error.message,
-          command,
-          service
-        });
-      }
-    }
-
-    return false;
   }
 
   scheduleProcessExit() {

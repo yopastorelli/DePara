@@ -12,7 +12,7 @@ function respondLegacyRouteRemoved(res) {
   return res.status(410).json({
     success: false,
     error: {
-      message: 'Endpoint legado de update removido. Use exclusivamente /api/update/auto/* ou PM2 no RP4.',
+      message: 'Endpoint legado de update removido. Use exclusivamente /api/update/auto/* no Windows.',
       reason: 'legacy_route_removed'
     }
   });

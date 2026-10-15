@@ -136,13 +136,17 @@ class Logger {
   }
 
   log(level, message, meta = {}) {
-    if (LOG_LEVELS[level] > this.currentLevel) {
+    if (!this.isLevelEnabled(level)) {
       return;
     }
 
     const logEntry = this.formatMessage(level, message, meta);
     this.addToBuffer(logEntry);
     this.writeToConsole(level, message, meta);
+  }
+
+  isLevelEnabled(level) {
+    return LOG_LEVELS[level] <= this.currentLevel;
   }
 
   error(message, meta = {}) {
@@ -162,6 +166,10 @@ class Logger {
   }
 
   startOperation(operation, meta = {}) {
+    if (!this.isLevelEnabled('info')) {
+      return;
+    }
+
     this.info(`Iniciando operacao: ${operation}`, {
       operation,
       startTime: new Date().toISOString(),
@@ -170,6 +178,10 @@ class Logger {
   }
 
   endOperation(operation, duration, meta = {}) {
+    if (!this.isLevelEnabled('info')) {
+      return;
+    }
+
     this.info(`Operacao concluida: ${operation}`, {
       operation,
       duration: `${duration}ms`,
@@ -194,6 +206,10 @@ class Logger {
         duration: `${duration}ms`,
         ...meta
       });
+      return;
+    }
+
+    if (!this.isLevelEnabled('debug')) {
       return;
     }
 

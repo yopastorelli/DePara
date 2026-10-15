@@ -1,112 +1,88 @@
-# Script de Instalação Automatizada para DePara (PowerShell)
-# Este script configura o ambiente e instala as dependências
+param(
+    [switch]$Production
+)
 
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "    INSTALADOR AUTOMATIZADO DEPARA" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
+$ErrorActionPreference = 'Stop'
+Set-Location -LiteralPath $PSScriptRoot
 
-Write-Host "[1/5] Verificando requisitos do sistema..." -ForegroundColor Yellow
-Write-Host ""
+Write-Host 'Instalando DePara para Windows...' -ForegroundColor Cyan
 
-# Verificar se Node.js está instalado
-try {
-    $nodeVersion = node --version 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        throw "Node.js não encontrado"
-    }
-    Write-Host "[OK] Node.js encontrado: $nodeVersion" -ForegroundColor Green
-} catch {
-    Write-Host "ERRO: Node.js não encontrado!" -ForegroundColor Red
-    Write-Host "Por favor, instale o Node.js versão 16.0.0 ou superior" -ForegroundColor Red
-    Write-Host "Download: https://nodejs.org/" -ForegroundColor Red
-    Read-Host "Pressione Enter para sair"
-    exit 1
+$nodeVersion = (& node --version 2>$null).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $nodeVersion) {
+    throw 'Node.js não encontrado. Instale Node.js 18.15.0 ou superior.'
 }
 
-# Verificar se npm está disponível
-try {
-    $npmVersion = npm --version 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        throw "npm não encontrado"
-    }
-    Write-Host "[OK] npm encontrado: $npmVersion" -ForegroundColor Green
-} catch {
-    Write-Host "ERRO: npm não encontrado!" -ForegroundColor Red
-    Write-Host "Por favor, verifique a instalação do Node.js" -ForegroundColor Red
-    Read-Host "Pressione Enter para sair"
-    exit 1
+$nodeParts = ($nodeVersion -replace '^v', '').Split('.')
+$nodeMajor = [int]$nodeParts[0]
+$nodeMinor = [int]$nodeParts[1]
+if ($nodeMajor -lt 18 -or ($nodeMajor -eq 18 -and $nodeMinor -lt 15)) {
+    throw "Node.js $nodeVersion encontrado; o mínimo é Node.js 18.15.0."
 }
 
-Write-Host ""
+$npmVersion = (& npm --version 2>$null).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $npmVersion) {
+    throw 'npm não encontrado.'
+}
 
-Write-Host "[2/5] Criando diretório de logs..." -ForegroundColor Yellow
-if (-not (Test-Path "logs")) {
-    New-Item -ItemType Directory -Path "logs" | Out-Null
-    Write-Host "[OK] Diretório de logs criado" -ForegroundColor Green
+$npmMajor = [int]($npmVersion.Split('.')[0])
+if ($npmMajor -lt 9) {
+    throw "npm $npmVersion encontrado; o mínimo é npm 9."
+}
+
+$runtimeRoot = if ($env:DEPARA_RUNTIME_ROOT) {
+    $env:DEPARA_RUNTIME_ROOT
 } else {
-    Write-Host "[OK] Diretório de logs já existe" -ForegroundColor Green
+    Join-Path $HOME '.depara'
 }
-Write-Host ""
 
-Write-Host "[3/5] Instalando dependências..." -ForegroundColor Yellow
-Write-Host ""
-try {
-    npm install
-    if ($LASTEXITCODE -ne 0) {
-        throw "Falha ao instalar dependências"
-    }
-    Write-Host "[OK] Dependências instaladas com sucesso" -ForegroundColor Green
-} catch {
-    Write-Host "ERRO: Falha ao instalar dependências!" -ForegroundColor Red
-    Read-Host "Pressione Enter para sair"
-    exit 1
-}
-Write-Host ""
-
-Write-Host "[4/5] Configurando arquivo de ambiente..." -ForegroundColor Yellow
-if (-not (Test-Path ".env")) {
-    if (Test-Path "env.example") {
-        Copy-Item "env.example" ".env"
-        Write-Host "[OK] Arquivo .env criado a partir do exemplo" -ForegroundColor Green
-    } else {
-        Write-Host "[AVISO] Arquivo env.example não encontrado" -ForegroundColor Yellow
-        Write-Host "Crie manualmente o arquivo .env se necessário" -ForegroundColor Yellow
-    }
+$configPath = if ($env:DEPARA_CONFIG_ENV_PATH) {
+    $env:DEPARA_CONFIG_ENV_PATH
 } else {
-    Write-Host "[OK] Arquivo .env já existe" -ForegroundColor Green
+    Join-Path $runtimeRoot 'config.env'
 }
-Write-Host ""
 
-Write-Host "[5/5] Verificando instalação..." -ForegroundColor Yellow
-Write-Host ""
+$runtimeDirectories = @(
+    $runtimeRoot,
+    (Join-Path $runtimeRoot 'data'),
+    (Join-Path $runtimeRoot 'logs'),
+    (Join-Path $runtimeRoot 'backups'),
+    (Join-Path $runtimeRoot 'temp'),
+    (Join-Path $runtimeRoot 'releases'),
+    (Join-Path $runtimeRoot 'current')
+)
 
-# Testar se a aplicação pode ser iniciada
-Write-Host "Testando inicialização da aplicação..." -ForegroundColor Cyan
-Start-Sleep -Seconds 3
+foreach ($directory in $runtimeDirectories) {
+    New-Item -ItemType Directory -Path $directory -Force | Out-Null
+}
 
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Green
-Write-Host "    INSTALAÇÃO CONCLUÍDA COM SUCESSO!" -ForegroundColor Green
-Write-Host "========================================" -ForegroundColor Green
-Write-Host ""
+$npmArguments = @('ci')
+if ($Production) {
+    $npmArguments += '--omit=dev'
+}
 
-Write-Host "Para iniciar a aplicação:" -ForegroundColor White
-Write-Host "  npm start" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "Instalando dependências com npm $($npmArguments -join ' ')..." -ForegroundColor Yellow
+& npm @npmArguments
+if ($LASTEXITCODE -ne 0) {
+    throw 'Falha ao instalar as dependências.'
+}
 
-Write-Host "Para modo desenvolvimento:" -ForegroundColor White
-Write-Host "  npm run dev" -ForegroundColor Cyan
-Write-Host ""
+if (-not (Test-Path -LiteralPath $configPath)) {
+    $configDirectory = Split-Path -Parent $configPath
+    New-Item -ItemType Directory -Path $configDirectory -Force | Out-Null
+    @(
+        'PORT=3000',
+        'NODE_ENV=production',
+        'MAX_PAYLOAD=25mb',
+        'LOG_LEVEL=warn',
+        'LOG_TO_CONSOLE=false',
+        'DEPARA_HTTP_LOGGING=false',
+        'DEPARA_REQUEST_METADATA_LOGGING=false',
+        "DEPARA_RUNTIME_ROOT=$runtimeRoot"
+    ) | Set-Content -LiteralPath $configPath -Encoding utf8
+}
 
-Write-Host "Para executar testes:" -ForegroundColor White
-Write-Host "  npm test" -ForegroundColor Cyan
-Write-Host ""
-
-Write-Host "Aplicação disponível em: http://localhost:3000" -ForegroundColor White
-Write-Host "Documentação da API: http://localhost:3000/api/docs" -ForegroundColor White
-Write-Host ""
-
-Write-Host "Pressione Enter para sair..." -ForegroundColor Yellow
-Read-Host
+Write-Host ''
+Write-Host 'Instalação concluída.' -ForegroundColor Green
+Write-Host "Runtime: $runtimeRoot"
+Write-Host "Configuração: $configPath"
+Write-Host 'Inicialização: npm run start:windows'

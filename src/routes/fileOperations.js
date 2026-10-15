@@ -31,48 +31,26 @@ function isPathValidationError(error) {
 
 // Lista de pastas configuradas (armazenamento em memória por enquanto)
 const getDefaultConfiguredFolders = () => {
-    const userHome = process.env.HOME || process.env.USERPROFILE || '/tmp';
+    const userHome = process.env.USERPROFILE || process.env.HOME || require('os').homedir();
 
-    if (process.platform === 'win32') {
-        return [
-            {
-                id: '1',
-                name: 'Documentos Entrada',
-                path: path.join(userHome, 'Documents', 'Entrada'),
-                type: 'source',
-                format: 'any',
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: '2',
-                name: 'Documentos Processados',
-                path: path.join(userHome, 'Documents', 'Processados'),
-                type: 'target',
-                format: 'any',
-                createdAt: new Date().toISOString()
-            }
-        ];
-    } else {
-        // Linux/Unix/Raspberry Pi
-        return [
-            {
-                id: '1',
-                name: 'Documentos Entrada',
-                path: path.join(userHome, 'Documents', 'Entrada'),
-                type: 'source',
-                format: 'any',
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: '2',
-                name: 'Documentos Processados',
-                path: path.join(userHome, 'Documents', 'Processados'),
-                type: 'target',
-                format: 'any',
-                createdAt: new Date().toISOString()
-            }
-        ];
-    }
+    return [
+        {
+            id: '1',
+            name: 'Documentos Entrada',
+            path: path.join(userHome, 'Documents', 'Entrada'),
+            type: 'source',
+            format: 'any',
+            createdAt: new Date().toISOString()
+        },
+        {
+            id: '2',
+            name: 'Documentos Processados',
+            path: path.join(userHome, 'Documents', 'Processados'),
+            type: 'target',
+            format: 'any',
+            createdAt: new Date().toISOString()
+        }
+    ];
 };
 
 let configuredFolders = getDefaultConfiguredFolders();
@@ -1527,7 +1505,11 @@ router.get('/images/:folderPath', async (req, res) => {
     try {
         // CORREÇÃO: Não adicionar barra extra, usar caminho como vem
         const folderPath = req.params.folderPath;
-        const { maxDepth = 10, extensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'] } = req.query;
+        const {
+            maxDepth = 10,
+            extensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'],
+            maxResults
+        } = req.query;
 
         logger.startOperation('List Images', {
             originalPath: req.params.folderPath,
@@ -1536,24 +1518,16 @@ router.get('/images/:folderPath', async (req, res) => {
             extensions
         });
 
-        // DEBUG: Verificar se o caminho existe
-        logger.info(`🔍 Verificando caminho da API: ${folderPath}`);
-        try {
-            const stats = await fs.stat(folderPath);
-            logger.info(`📊 Estatísticas do caminho: ${JSON.stringify({
-                isDirectory: stats.isDirectory(),
-                isFile: stats.isFile(),
-                size: stats.size,
-                mtime: stats.mtime
-            })}`);
-        } catch (pathError) {
-            logger.error(`❌ Caminho não encontrado: ${folderPath}`, pathError.message);
-        }
-
-        const images = await fileOperationsManager.listImagesRecursive(folderPath, {
+        const requestedMaxResults = maxResults ?? process.env.DEPARA_MAX_IMAGE_RESULTS;
+        const numericMaxResults = Number(requestedMaxResults);
+        const hasMaxResults = Number.isFinite(numericMaxResults) && numericMaxResults >= 0;
+        const scannedImages = await fileOperationsManager.listImagesRecursive(folderPath, {
             maxDepth: parseInt(maxDepth),
-            extensions: Array.isArray(extensions) ? extensions : extensions.split(',')
+            extensions: Array.isArray(extensions) ? extensions : extensions.split(','),
+            maxResults: hasMaxResults ? numericMaxResults + 1 : undefined
         });
+        const limited = hasMaxResults && scannedImages.length > numericMaxResults;
+        const images = limited ? scannedImages.slice(0, numericMaxResults) : scannedImages;
 
         const duration = Date.now() - startTime;
         logger.endOperation('List Images', duration, { imageCount: images.length });
@@ -1564,7 +1538,8 @@ router.get('/images/:folderPath', async (req, res) => {
                 images,
                 count: images.length,
                 folderPath,
-                extensions: Array.isArray(extensions) ? extensions : extensions.split(',')
+                extensions: Array.isArray(extensions) ? extensions : extensions.split(','),
+                limited
             },
             timestamp: new Date().toISOString()
         });
@@ -1819,7 +1794,12 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
     const startTime = Date.now();
 
     try {
-        const { folderPath, extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'], recursive = true } = req.body;
+        const {
+            folderPath,
+            extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
+            recursive = true,
+            maxResults
+        } = req.body;
 
         if (!folderPath || typeof folderPath !== 'string') {
             return res.status(400).json({
@@ -1845,12 +1825,19 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
         const safePath = await fileOperationsManager.validateSafePath(folderPath, 'read');
         logger.debug('List Images path validated', { safePath });
 
-        const images = await scanImagesRecursive(safePath, {
+        const requestedMaxResults = maxResults ?? process.env.DEPARA_MAX_IMAGE_RESULTS;
+        const numericMaxResults = Number(requestedMaxResults);
+        const hasMaxResults = Number.isFinite(numericMaxResults) && numericMaxResults >= 0;
+        const scanLimit = hasMaxResults ? numericMaxResults + 1 : requestedMaxResults;
+        const scannedImages = await scanImagesRecursive(safePath, {
             recursive,
             extensions,
+            maxResults: scanLimit,
             shouldIgnore: (entryName) => fileOperationsManager.shouldIgnoreFile(entryName),
             sortBy: 'name'
         });
+        const limited = hasMaxResults && scannedImages.length > numericMaxResults;
+        const images = limited ? scannedImages.slice(0, numericMaxResults) : scannedImages;
 
         const duration = Date.now() - startTime;
         logger.endOperation('List Images', duration, {
@@ -1865,7 +1852,7 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
                 totalCount: images.length,
                 originalCount: images.length,
                 folderPath: safePath,
-                limited: false
+                limited
             },
             timestamp: new Date().toISOString(),
             duration

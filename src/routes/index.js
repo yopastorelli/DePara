@@ -7,32 +7,36 @@ const statusRoutes = require('./status');
 const fileOperationsRoutes = require('./fileOperations');
 const trayRoutes = require('./tray');
 const updateRoutes = require('./update');
-const desktopRoutes = require('./desktop');
 const logsRoutes = require('./logs');
 const configRoutes = require('./config');
 
 const router = express.Router();
 const appMetadata = getAppMetadata();
 
-router.use((req, res, next) => {
-  const startTime = Date.now();
+const apiRequestLoggingEnabled = typeof logger.isLevelEnabled !== 'function'
+  || logger.isLevelEnabled('info');
 
-  logger.startOperation('API Request', {
-    method: req.method,
-    path: req.path,
-    ip: req.ip
-  });
+if (apiRequestLoggingEnabled) {
+  router.use((req, res, next) => {
+    const startTime = Date.now();
 
-  res.on('finish', () => {
-    logger.endOperation('API Request', Date.now() - startTime, {
+    logger.startOperation('API Request', {
       method: req.method,
       path: req.path,
-      statusCode: res.statusCode
+      ip: req.ip
     });
-  });
 
-  next();
-});
+    res.on('finish', () => {
+      logger.endOperation('API Request', Date.now() - startTime, {
+        method: req.method,
+        path: req.path,
+        statusCode: res.statusCode
+      });
+    });
+
+    next();
+  });
+}
 
 router.get('/docs', (req, res) => {
   res.json({
@@ -80,7 +84,6 @@ router.use('/status', statusRoutes);
 router.use('/files', fileOperationsRoutes);
 router.use('/tray', trayRoutes);
 router.use('/update', updateRoutes);
-router.use('/desktop', desktopRoutes);
 router.use('/logs', logsRoutes);
 router.use('/config', configRoutes);
 

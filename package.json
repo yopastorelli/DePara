@@ -5,12 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "start": "node src/main.js",
-    "start:bg": "pm2 start src/main.js --name DePara",
-    "start:bg:prod": "pm2 start src/main.js --name DePara --env production",
-    "stop:bg": "pm2 stop DePara",
-    "restart:bg": "pm2 restart DePara",
-    "status": "pm2 status",
-    "logs": "pm2 logs DePara",
+    "start:windows": "node src/main.js",
     "dev": "node --watch src/main.js",
     "test": "npm run test:unit",
     "test:unit": "jest --runInBand --forceExit",
@@ -22,15 +17,15 @@
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "setup": "npm install",
-    "setup:bg": "npm install && npm install -g pm2",
-    "postinstall": "node -e \"console.log('✅ DePara instalado com sucesso! Use npm run start:bg para iniciar em segundo plano.')\""
+    "perf:audit": "node scripts/performance-audit.js",
+    "perf:audit:medium": "node scripts/performance-audit.js --profile=medium",
+    "postinstall": "node -e \"console.log('DePara instalado com sucesso! Use npm run start:windows para iniciar.')\""
   },
   "keywords": [
     "file-manager",
     "slideshow",
     "automation",
     "backup",
-    "raspberry-pi",
     "nodejs",
     "express",
     "depara"
@@ -52,14 +47,14 @@
   },
   "overrides": {
     "@istanbuljs/load-nyc-config": {
-      "js-yaml": "5.0.0"
+      "js-yaml": "5.4.3"
     },
     "anymatch": {
       "picomatch": "2.3.2"
     }
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=18.15.0",
     "npm": ">=9.0.0"
   }
 }
