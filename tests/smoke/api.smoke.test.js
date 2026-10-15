@@ -32,6 +32,7 @@ describe('API smoke', () => {
     process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS = 'true';
     process.env.DEPARA_DISABLE_UPDATE_SCHEDULER = 'true';
     process.env.DEPARA_MAX_RSS_MB = '1024';
+    jest.spyOn(os, 'freemem').mockReturnValue(2 * 1024 * 1024 * 1024);
     app = require('../../src/main');
   });
 
@@ -54,6 +55,7 @@ describe('API smoke', () => {
     delete process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS;
     delete process.env.DEPARA_DISABLE_UPDATE_SCHEDULER;
     delete process.env.DEPARA_MAX_RSS_MB;
+    jest.restoreAllMocks();
     await fsp.rm(runtimeRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
 

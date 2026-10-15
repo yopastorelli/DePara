@@ -26,6 +26,7 @@ describe('image catalog pagination', () => {
     process.env.DEPARA_BACKUP_DIR = path.join(runtimeRoot, 'backups');
     process.env.DEPARA_IMAGE_PAGE_SIZE = '100';
     process.env.DEPARA_LOW_MEMORY_PAGE_SIZE = '50';
+    jest.spyOn(os, 'freemem').mockReturnValue(2 * 1024 * 1024 * 1024);
     process.env.DEPARA_MAX_RSS_MB = '1024';
     process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS = 'true';
     process.env.DEPARA_DISABLE_UPDATE_SCHEDULER = 'true';
@@ -47,6 +48,7 @@ describe('image catalog pagination', () => {
     delete process.env.DEPARA_MAX_RSS_MB;
     delete process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS;
     delete process.env.DEPARA_DISABLE_UPDATE_SCHEDULER;
+    jest.restoreAllMocks();
     await fsp.rm(runtimeRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
 
