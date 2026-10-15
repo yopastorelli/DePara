@@ -10,6 +10,7 @@ Medir o custo de inicialização, consultas de status e varredura de imagens no 
 npm run perf:audit -- --profile=small
 npm run perf:audit:medium
 node scripts/performance-audit.js --profile=large --output=C:\Temp\depara-audit.json
+node scripts/performance-audit.js --files=1000 --images=5005 --depth=7
 ```
 
 Perfis incluídos:
@@ -29,7 +30,7 @@ O JSON gravado em `performance-results/` contém, por cenário:
 - `durationMs`: latência da chamada;
 - `memoryBefore` e `memoryAfter`: RSS, heap, memória externa e ArrayBuffers;
 - `memoryDelta`: variação durante o cenário;
-- `list-images`: quantidade retornada e indicação de limite;
+- `list-images`: quantidade retornada, página e indicação de continuidade;
 - `status-resources-concurrent-x5`: comportamento de cinco consultas simultâneas.
 
 ## Ordem recomendada
@@ -37,8 +38,9 @@ O JSON gravado em `performance-results/` contém, por cenário:
 1. Execute o perfil `small` para confirmar que o ambiente está funcional.
 2. Execute o perfil `medium` na máquina lenta, sem outras cargas relevantes.
 3. Compare somente execuções do mesmo perfil e mesma configuração.
-4. Ajuste primeiro `MAX_CONCURRENT_OPERATIONS` e `DEPARA_MAX_IMAGE_RESULTS`.
-5. Só depois altere a implementação; repita o mesmo perfil para confirmar ganho.
+4. Valide também um catálogo com mais de 5.000 imagens, coletando páginas até o fim e conferindo ausência de duplicatas.
+5. Ajuste primeiro `MAX_CONCURRENT_OPERATIONS`, o tamanho de página e o perfil de memória.
+6. Só depois altere a implementação; repita o mesmo perfil para confirmar ganho.
 
 ## Critérios de decisão
 

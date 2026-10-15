@@ -17,7 +17,8 @@ const {
     getMigrationStatus
 } = require('./persistenceMigration');
 const { copyOrMoveNative } = require('./fileOps/permissions');
-const { scanImagesRecursive } = require('./fileOps/imageScanner');
+const { countImagesRecursive, scanImagesRecursive } = require('./fileOps/imageScanner');
+const { ImageCatalogStore } = require('./fileOps/imageCatalogStore');
 
 // Evitar redeclarações desnecessárias
 const fsSync = require('fs');
@@ -243,6 +244,7 @@ class FileOperationsManager {
         this.schedules = new Map();
         this.runningScheduledOperations = new Set();
         this.progressStore = new Map();
+        this.imageCatalogStore = new ImageCatalogStore();
 
         // Persistência de operações agendadas
         this.dataDir = getRuntimeDataDir();
@@ -253,8 +255,8 @@ class FileOperationsManager {
             path.join(sourceRepoRoot, 'src', 'data', 'scheduled-operations.json')
         ];
 
-        this.maxConcurrentOperations = Math.max(1, Number(process.env.MAX_CONCURRENT_OPERATIONS) || 2);
-        this.maxRecursionDepth = Math.max(1, Number(process.env.MAX_RECURSION_DEPTH) || 20);
+        this.maxConcurrentOperations = Math.max(1, Number(process.env.MAX_CONCURRENT_OPERATIONS) || 1);
+        this.maxRecursionDepth = Math.max(1, Number(process.env.MAX_RECURSION_DEPTH) || 10);
         this.backupConfig = {
             enabled: true,
             backupDir: getRuntimeBackupsDir(),
@@ -1580,6 +1582,38 @@ class FileOperationsManager {
         });
     }
 
+    async createImageCatalog(folderPath, options = {}) {
+        const safeFolderPath = await validateSafePath(folderPath, 'read');
+        return this.imageCatalogStore.createCatalog({
+            ...options,
+            folderPath: safeFolderPath,
+            maxDepth: options.maxDepth ?? this.maxRecursionDepth,
+            shouldIgnore: (entryName) => shouldIgnoreFile(entryName)
+        });
+    }
+
+    async getImageCatalogPage(catalogId, cursor) {
+        return this.imageCatalogStore.getPage(catalogId, cursor);
+    }
+
+    async closeImageCatalog(catalogId) {
+        return this.imageCatalogStore.closeCatalog(catalogId);
+    }
+
+    async closeImageCatalogs() {
+        return this.imageCatalogStore.closeAll();
+    }
+
+    async countImagesRecursive(folderPath, options = {}) {
+        const safeFolderPath = await validateSafePath(folderPath, 'read');
+        return countImagesRecursive(safeFolderPath, {
+            maxDepth: options.maxDepth ?? this.maxRecursionDepth,
+            recursive: options.recursive ?? true,
+            extensions: options.extensions,
+            shouldIgnore: (entryName) => shouldIgnoreFile(entryName)
+        });
+    }
+
     /**
      * Atualiza configuração de backup
      */
@@ -1600,10 +1634,12 @@ fileOperationsManager.filterIgnoredFiles = filterIgnoredFiles;
 if (process.env.DEPARA_DISABLE_PROCESS_HOOKS !== 'true') {
     process.on('SIGTERM', () => {
         fileOperationsManager.stopAllScheduledOperations();
+        fileOperationsManager.closeImageCatalogs().catch(() => {});
     });
 
     process.on('SIGINT', () => {
         fileOperationsManager.stopAllScheduledOperations();
+        fileOperationsManager.closeImageCatalogs().catch(() => {});
     });
 }
 

@@ -13,6 +13,7 @@ const routes = require('./routes');
 const updateOrchestrator = require('./services/updateOrchestrator');
 const configStore = require('./utils/configStore');
 const folderManager = require('./config/folders');
+const fileOperationsManager = require('./utils/fileOperations');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter } = require('./middleware/rateLimiter');
 
@@ -83,7 +84,7 @@ function configureApp() {
 
   app.use('/api', readRateLimiter);
 
-  const maxPayload = process.env.MAX_PAYLOAD || '25mb';
+  const maxPayload = process.env.MAX_PAYLOAD || '8mb';
   app.use(express.json({ limit: maxPayload }));
   app.use(express.urlencoded({ extended: true, limit: maxPayload }));
 
@@ -238,6 +239,10 @@ async function stopServer() {
 
   if (folderManager && typeof folderManager.cleanup === 'function') {
     folderManager.cleanup();
+  }
+
+  if (fileOperationsManager && typeof fileOperationsManager.closeImageCatalogs === 'function') {
+    await fileOperationsManager.closeImageCatalogs();
   }
 
   if (activeServer) {

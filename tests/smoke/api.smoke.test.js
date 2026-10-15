@@ -31,6 +31,7 @@ describe('API smoke', () => {
     process.env.DEPARA_BACKUP_DIR = path.join(runtimeRoot, 'backups');
     process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS = 'true';
     process.env.DEPARA_DISABLE_UPDATE_SCHEDULER = 'true';
+    process.env.DEPARA_MAX_RSS_MB = '1024';
     app = require('../../src/main');
   });
 
@@ -52,6 +53,7 @@ describe('API smoke', () => {
     delete process.env.DEPARA_ALLOWED_PATHS;
     delete process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS;
     delete process.env.DEPARA_DISABLE_UPDATE_SCHEDULER;
+    delete process.env.DEPARA_MAX_RSS_MB;
     await fsp.rm(runtimeRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
 

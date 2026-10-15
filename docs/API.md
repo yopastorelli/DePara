@@ -151,7 +151,8 @@ State rules:
 
 | Method | Path | Input |
 |---|---|---|
-| POST | `/api/files/list-images` | JSON body: `folderPath`, optional `extensions`, `recursive`, `maxResults` |
+| POST | `/api/files/list-images` | JSON body: `folderPath`, optional `extensions`, `recursive`, `pageSize`, `catalogId`, `cursor`, `countOnly`, `maxResults` |
+| DELETE | `/api/files/image-catalog/:catalogId` | encerra e remove um catálogo temporário |
 | POST | `/api/files/list-folders` | JSON body: `path` |
 | GET | `/api/files/images/:folderPath` | `folderPath` must be percent-encoded as one URL segment |
 | GET | `/api/files/image/:imagePath` | `imagePath` must be percent-encoded as one URL segment |
@@ -159,7 +160,9 @@ State rules:
 Preferred routes for new clients:
 
 - Use `POST /api/files/list-images` for image lists.
-- Use `maxResults` or `DEPARA_MAX_IMAGE_RESULTS` when the folder can contain many images; the response reports `limited=true` when the cap is reached.
+- Use the default paginated response for large folders. `data.pagination.nextCursor` continues the catalog, `totalCount` becomes exact when indexing finishes, and `DELETE /api/files/image-catalog/:catalogId` releases temporary storage.
+- Use `maxResults` or `paginate=false` only for compatibility with clients that need a bounded full response; those paths report `limited=true` when the cap is reached.
+- Use `countOnly=true` for folder validation without returning image metadata.
 - Use `POST /api/files/list-folders` for folder browsing.
 - Use `GET /api/files/image/:imagePath` for serving a single image.
 

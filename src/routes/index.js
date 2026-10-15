@@ -62,6 +62,7 @@ router.get('/docs', (req, res) => {
         POST: '/api/files/schedule',
         GET: '/api/files/scheduled',
         POST: '/api/files/list-images',
+        DELETE: '/api/files/image-catalog/:catalogId',
         POST: '/api/files/list-folders'
       },
       update: {

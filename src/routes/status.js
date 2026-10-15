@@ -6,6 +6,7 @@ const path = require('path');
 const logger = require('../utils/logger');
 const { getAppMetadata } = require('../utils/appMetadata');
 const { getRuntimeLogsDir } = require('../utils/runtimePaths');
+const { getResourceStatus } = require('../utils/resourceGuard');
 
 const router = express.Router();
 const appMetadata = getAppMetadata();
@@ -133,6 +134,7 @@ router.get('/resources', async (req, res) => {
     const cpuInfo = os.cpus();
     const totalMemory = os.totalmem();
     const freeMemory = os.freemem();
+    const resourceStatus = getResourceStatus();
 
     res.status(200).json({
       timestamp: new Date().toISOString(),
@@ -141,7 +143,8 @@ router.get('/resources', async (req, res) => {
         free: freeMemory,
         used: totalMemory - freeMemory,
         percentage: Math.round(((totalMemory - freeMemory) / totalMemory) * 100),
-        process: getProcessMemoryPayload()
+        process: getProcessMemoryPayload(),
+        pressure: resourceStatus
       },
       cpu: {
         count: cpuInfo.length,
@@ -188,10 +191,11 @@ router.get('/connectivity', (req, res) => {
           config: checkConfigFiles()
         },
         memory: {
-          status: 'OK',
+          status: getResourceStatus().state === 'normal' ? 'OK' : 'WARNING',
           details: 'Memoria disponivel',
           available: os.freemem(),
-          threshold: 100 * 1024 * 1024
+          threshold: getResourceStatus().limits.memoryCriticalMb * 1024 * 1024,
+          pressure: getResourceStatus()
         },
         process: {
           status: 'OK',
@@ -203,10 +207,12 @@ router.get('/connectivity', (req, res) => {
       summary: 'Todos os servicos estao operacionais'
     };
 
-    if (connectivity.checks.memory.available < connectivity.checks.memory.threshold) {
+    if (connectivity.checks.memory.pressure.state !== 'normal') {
       connectivity.checks.memory.status = 'WARNING';
-      connectivity.checks.memory.details = 'Memoria baixa';
-      connectivity.summary = 'Problemas detectados: memoria disponivel abaixo do limite recomendado';
+      connectivity.checks.memory.details = connectivity.checks.memory.pressure.state === 'critical'
+        ? 'Memoria criticamente baixa'
+        : 'Memoria abaixo do limite recomendado';
+      connectivity.summary = 'Problemas detectados: pressao de memoria acima do limite recomendado';
     }
 
     res.status(200).json(connectivity);
@@ -374,15 +380,15 @@ function getLogLastModified() {
 function generatePerformanceRecommendations() {
   const recommendations = [];
   const memoryUsage = process.memoryUsage();
-  const systemMemory = os.freemem();
   const loadAvg = os.loadavg();
+  const resourceStatus = getResourceStatus();
 
   if (memoryUsage.heapUsed > 100 * 1024 * 1024) {
     recommendations.push('Considerar otimizacao de memoria - heap usado alto');
   }
 
-  if (systemMemory < 200 * 1024 * 1024) {
-    recommendations.push('Memoria do sistema baixa - considerar liberar recursos');
+  if (resourceStatus.state !== 'normal') {
+    recommendations.push(`Pressao de memoria ${resourceStatus.state} - limitar novas indexacoes e pre-carregamento`);
   }
 
   if (loadAvg[0] > 2) {

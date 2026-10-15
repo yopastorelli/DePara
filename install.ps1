@@ -72,11 +72,21 @@ if (-not (Test-Path -LiteralPath $configPath)) {
     @(
         'PORT=3000',
         'NODE_ENV=production',
-        'MAX_PAYLOAD=25mb',
+        'MAX_PAYLOAD=8mb',
         'LOG_LEVEL=warn',
         'LOG_TO_CONSOLE=false',
         'DEPARA_HTTP_LOGGING=false',
         'DEPARA_REQUEST_METADATA_LOGGING=false',
+        'DEPARA_RESOURCE_PROFILE=codex-coexistence',
+        'MAX_CONCURRENT_OPERATIONS=1',
+        'MAX_RECURSION_DEPTH=10',
+        'DEPARA_IMAGE_PAGE_SIZE=250',
+        'DEPARA_LOW_MEMORY_PAGE_SIZE=100',
+        'DEPARA_MEMORY_WARN_MB=1024',
+        'DEPARA_MEMORY_CRITICAL_MB=512',
+        'DEPARA_MAX_RSS_MB=192',
+        'DEPARA_MAX_CATALOGS=2',
+        'DEPARA_SLIDESHOW_PRELOAD=false',
         "DEPARA_RUNTIME_ROOT=$runtimeRoot"
     ) | Set-Content -LiteralPath $configPath -Encoding utf8
 }

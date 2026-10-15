@@ -5,7 +5,8 @@
   "main": "src/main.js",
   "scripts": {
     "start": "node src/main.js",
-    "start:windows": "node src/main.js",
+    "start:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-windows-coexistence.ps1",
+    "start:windows:foreground": "node src/main.js",
     "dev": "node --watch src/main.js",
     "test": "npm run test:unit",
     "test:unit": "jest --runInBand --forceExit",

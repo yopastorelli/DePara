@@ -59,7 +59,7 @@ describe('configStore', () => {
 
     expect(updated.slideshowConfig.interval).toBe(9);
     expect(updated.slideshowConfig.hiddenFolder).toBe('/tmp/hidden');
-    expect(updated.slideshowConfig.preload).toBe(true);
+    expect(updated.slideshowConfig.preload).toBe(false);
     expect(updated.appSettings.environment).toBe('development');
     expect(updated.appSettings.port).toBe(3000);
   });

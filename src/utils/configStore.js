@@ -36,7 +36,7 @@ function getDefaultConfig() {
     slideshowConfig: {
       interval: 3,
       random: false,
-      preload: true,
+    preload: false,
       extensions: [...DEFAULT_SLIDESHOW_EXTENSIONS],
       recursive: true,
       deletedFolder: '',

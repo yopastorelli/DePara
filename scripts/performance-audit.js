@@ -177,6 +177,10 @@ async function run() {
     }), (result) => ({
       totalCount: result.data?.totalCount,
       limited: result.data?.limited,
+      pageSize: result.data?.pagination?.pageSize,
+      pageStatus: result.data?.pagination?.status,
+      hasMore: result.data?.pagination?.hasMore,
+      catalogTotalCount: result.data?.pagination?.totalCount,
       duration: result.duration
     }));
     measurements.push(imageMeasurement);

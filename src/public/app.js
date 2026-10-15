@@ -4447,6 +4447,20 @@ class DeParaUI {
     preloadedImages = new Map();
     slideshowLoadTimeout = null;
     slideshowRenderToken = 0;
+    slideshowCatalogId = null;
+    slideshowCatalogPage = 0;
+    slideshowCatalogPageSize = 250;
+    slideshowCatalogNextCursor = null;
+    slideshowCatalogPageCursors = [];
+    slideshowCatalogLoadedCount = 0;
+    slideshowCatalogTotalCount = null;
+    slideshowCatalogHasMore = false;
+    slideshowCatalogFolderPath = '';
+    slideshowCatalogExtensions = [];
+    slideshowCatalogRecursive = true;
+    slideshowCatalogLoading = false;
+    slideshowCatalogFirstPage = [];
+    slideshowRemovedImagePaths = new Set();
 
     getDefaultSlideshowConfig() {
         return {
@@ -5111,7 +5125,8 @@ class DeParaUI {
                 body: JSON.stringify({
                     folderPath: path,
                     extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
-                    recursive: true
+                    recursive: true,
+                    countOnly: true
                 })
             });
 
@@ -5165,59 +5180,166 @@ class DeParaUI {
     // Carregar imagens do slideshow
     async loadSlideshowImages(folderPath, extensions, recursive, interval) {
         try {            this.showToast('🔍 Procurando imagens...', 'info');
-
-            // Preparar extensões para a API
-            const formattedExtensions = extensions.map(ext => ext.startsWith('.') ? ext : '.' + ext);
-
-            // SEMPRE forçar busca recursiva para encontrar TODAS as imagens
-            const forceRecursive = true;
-            const response = await fetch('/api/files/list-images', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    folderPath,
-                    extensions: formattedExtensions,
-                    recursive: forceRecursive
-                })
-            });
-            if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-            }
-
-            const result = await response.json();            if (!result.success) {
-                throw new Error(result.error?.message || 'Erro ao listar imagens');
-            }
-
-            // Verificar se a estrutura da resposta está correta
-            if (!result.data || !result.data.images) {
-                console.error('❌ Estrutura de resposta inválida:', result);
-                throw new Error('Resposta da API não contém dados de imagens');
-            }
-
-            this.slideshowImages = result.data.images;
+            this.slideshowCatalogId = null;
+            this.slideshowCatalogPage = 0;
+            this.slideshowCatalogPageCursors = [];
+            this.slideshowCatalogNextCursor = null;
+            this.slideshowCatalogLoadedCount = 0;
+            this.slideshowCatalogTotalCount = null;
+            this.slideshowCatalogHasMore = false;
+            this.slideshowCatalogFolderPath = folderPath;
+            this.slideshowCatalogExtensions = extensions.map(ext => ext.startsWith('.') ? ext : '.' + ext);
+            this.slideshowCatalogRecursive = recursive;
+            this.slideshowCatalogFirstPage = [];
+            this.slideshowRemovedImagePaths = new Set();
             this.slideshowInterval = interval * 1000;
+
+            const data = await this.requestSlideshowPage(null);
+            this.applySlideshowPage(data, 0, 0);
             if (this.slideshowImages.length === 0) {
                 this.showToast('Nenhuma imagem encontrada na pasta', 'warning');
                 return;
             }
 
-            // Aplicar modo aleatório se configurado
             if (this.slideshowConfig.random) {
-            this.shuffleArray(this.slideshowImages);            }
+                this.shuffleArray(this.slideshowImages);
+            }
 
-            // Limpar cache de pré-carregamento
             this.preloadedImages.clear();
 
             const modeText = this.slideshowConfig.random ? ' (ordem aleatória)' : ' (ordem sequencial)';
-            this.showToast(`✅ ${this.slideshowImages.length} imagens encontradas${modeText}`, 'success');
+            const countText = this.slideshowCatalogTotalCount === null
+                ? `${this.slideshowCatalogLoadedCount}+`
+                : this.slideshowCatalogTotalCount;
+            this.showToast(`✅ ${countText} imagens encontradas${modeText}`, 'success');
             this.startSlideshowViewer();
 
         } catch (error) {
             console.error('Erro ao carregar imagens:', error);
             this.showToast('Erro ao carregar imagens: ' + error.message, 'error');
         }
+    }
+
+    async requestSlideshowPage(cursor) {
+        const body = {
+            folderPath: this.slideshowCatalogFolderPath,
+            extensions: this.slideshowCatalogExtensions,
+            recursive: this.slideshowCatalogRecursive,
+            pageSize: this.slideshowCatalogPageSize
+        };
+
+        if (this.slideshowCatalogId) {
+            body.catalogId = this.slideshowCatalogId;
+        }
+        if (cursor) {
+            body.cursor = cursor;
+        }
+
+        const response = await fetch('/api/files/list-images', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        if (!result.success || !result.data?.pagination) {
+            throw new Error(result.error?.message || 'Resposta da API não contém paginação');
+        }
+
+        return result.data;
+    }
+
+    applySlideshowPage(data, page, currentIndex = 0) {
+        const pagination = data.pagination;
+        this.slideshowImages = (Array.isArray(data.images) ? data.images : [])
+            .filter((image) => !this.slideshowRemovedImagePaths.has(image.path));
+        this.currentSlideIndex = Math.min(
+            Math.max(0, currentIndex),
+            Math.max(0, this.slideshowImages.length - 1)
+        );
+        this.slideshowCatalogId = pagination.catalogId;
+        this.slideshowCatalogPage = page;
+        this.slideshowCatalogPageSize = pagination.pageSize || this.slideshowCatalogPageSize;
+        this.slideshowCatalogLoadedCount = Math.max(
+            0,
+            (pagination.loadedCount || this.slideshowImages.length) - this.slideshowRemovedImagePaths.size
+        );
+        this.slideshowCatalogTotalCount = pagination.totalCount === null || pagination.totalCount === undefined
+            ? null
+            : Math.max(0, pagination.totalCount - this.slideshowRemovedImagePaths.size);
+        this.slideshowCatalogHasMore = Boolean(pagination.hasMore);
+        this.slideshowCatalogNextCursor = pagination.nextCursor;
+        this.slideshowCatalogPageCursors[page] = page === 0 ? null : pagination.cursor;
+        if (page === 0) {
+            this.slideshowCatalogFirstPage = [...this.slideshowImages];
+        }
+        this.preloadedImages.clear();
+    }
+
+    async loadSlideshowPage(page, cursor, currentIndex = 0) {
+        if (this.slideshowCatalogLoading) {
+            return false;
+        }
+
+        this.slideshowCatalogLoading = true;
+        try {
+            const data = await this.requestSlideshowPage(cursor);
+            this.applySlideshowPage(data, page, currentIndex);
+            this.updateSlideDisplay();
+            this.updateDynamicCounter();
+            return this.slideshowImages.length > 0;
+        } finally {
+            this.slideshowCatalogLoading = false;
+        }
+    }
+
+    async loadNextSlideshowPage() {
+        if (!this.slideshowCatalogHasMore || !this.slideshowCatalogNextCursor) {
+            return false;
+        }
+
+        return this.loadSlideshowPage(
+            this.slideshowCatalogPage + 1,
+            this.slideshowCatalogNextCursor,
+            0
+        );
+    }
+
+    async handleSlideshowImageRemoved() {
+        const removedImage = this.slideshowImages[this.currentSlideIndex];
+        if (removedImage?.path) {
+            this.slideshowRemovedImagePaths.add(removedImage.path);
+        }
+        this.slideshowImages.splice(this.currentSlideIndex, 1);
+        this.slideshowCatalogLoadedCount = Math.max(0, this.slideshowCatalogLoadedCount - 1);
+        if (this.slideshowCatalogTotalCount !== null) {
+            this.slideshowCatalogTotalCount = Math.max(0, this.slideshowCatalogTotalCount - 1);
+        }
+
+        if (this.currentSlideIndex >= this.slideshowImages.length) {
+            this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
+        }
+
+        if (this.slideshowImages.length === 0 && await this.loadNextSlideshowPage()) {
+            return true;
+        }
+
+        if (this.slideshowCatalogPage === 0) {
+            this.slideshowCatalogFirstPage = [...this.slideshowImages];
+        }
+
+        if (this.slideshowImages.length > 0) {
+            this.updateSlideDisplay();
+            this.updateDynamicCounter();
+            return true;
+        }
+
+        return false;
     }
 
     // Pré-carregar imagem
@@ -5413,7 +5535,12 @@ class DeParaUI {
         }, 10000);
         this.slideshowLoadTimeout = loadTimeout;
 
-        if (counterElement) counterElement.textContent = `${this.currentSlideIndex + 1} / ${images.length}`;
+        const currentPosition = this.slideshowCatalogPage * this.slideshowCatalogPageSize
+            + this.currentSlideIndex + 1;
+        const totalPosition = this.slideshowCatalogTotalCount === null
+            ? `${this.slideshowCatalogLoadedCount}+`
+            : this.slideshowCatalogTotalCount;
+        if (counterElement) counterElement.textContent = `${currentPosition} / ${totalPosition}`;
         if (filenameElement) filenameElement.textContent = currentImage.name;
         if (loadingElement) loadingElement.style.display = 'block';
         if (errorElement) errorElement.style.display = 'none';
@@ -5452,19 +5579,61 @@ class DeParaUI {
     }
 
     // Próximo slide
-    nextSlide() {
-        if (this.slideshowImages.length === 0) return;        this.currentSlideIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
+    async nextSlide() {
+        if (this.slideshowImages.length === 0 || this.slideshowCatalogLoading) return;
+
+        if (this.currentSlideIndex < this.slideshowImages.length - 1) {
+            this.currentSlideIndex += 1;
+            this.updateSlideDisplay();
+            this.updateDynamicCounter();
+            return;
+        }
+
+        if (await this.loadNextSlideshowPage()) {
+            return;
+        }
+
+        if (this.slideshowCatalogPage > 0 && this.slideshowCatalogFirstPage.length > 0) {
+            this.applySlideshowPage({
+                images: this.slideshowCatalogFirstPage,
+                pagination: {
+                    catalogId: this.slideshowCatalogId,
+                    pageSize: this.slideshowCatalogPageSize,
+                    loadedCount: this.slideshowCatalogLoadedCount,
+                    totalCount: this.slideshowCatalogTotalCount,
+                    hasMore: this.slideshowCatalogFirstPage.length < this.slideshowCatalogTotalCount,
+                    cursor: null,
+                    nextCursor: this.slideshowCatalogPageCursors[1] || null
+                }
+            }, 0, 0);
+            this.updateSlideDisplay();
+            this.updateDynamicCounter();
+            return;
+        }
+
+        this.currentSlideIndex = 0;
         this.updateSlideDisplay();
         this.updateDynamicCounter();
     }
 
     // Slide anterior
-    previousSlide() {
-        if (this.slideshowImages.length === 0) return;        this.currentSlideIndex = this.currentSlideIndex === 0 ?
-            this.slideshowImages.length - 1 :
-            this.currentSlideIndex - 1;
-        this.updateSlideDisplay();
-        this.updateDynamicCounter();
+    async previousSlide() {
+        if (this.slideshowImages.length === 0 || this.slideshowCatalogLoading) return;
+
+        if (this.currentSlideIndex > 0) {
+            this.currentSlideIndex -= 1;
+            this.updateSlideDisplay();
+            this.updateDynamicCounter();
+            return;
+        }
+
+        if (this.slideshowCatalogPage > 0) {
+            await this.loadSlideshowPage(
+                this.slideshowCatalogPage - 1,
+                this.slideshowCatalogPageCursors[this.slideshowCatalogPage - 1],
+                this.slideshowCatalogPageSize - 1
+            );
+        }
     }
 
     // Alternar play/pause
@@ -5485,9 +5654,12 @@ class DeParaUI {
     startAutoPlay() {
         this.stopAutoPlay(); // Parar qualquer intervalo existente
 
-        if (this.slideshowPlaying && this.slideshowImages.length > 1) {
+        if (this.slideshowPlaying && (this.slideshowImages.length > 1 || this.slideshowCatalogHasMore)) {
             const intervalMs = this.slideshowConfig.interval * 1000;
-            this.autoPlayInterval = setInterval(() => {                this.nextSlide();
+            this.autoPlayInterval = setInterval(() => {
+                this.nextSlide().catch((error) => {
+                    console.warn('Erro ao avançar slideshow:', error);
+                });
             }, intervalMs);        }
     }
 
@@ -5603,9 +5775,14 @@ class DeParaUI {
     updateStaticCounter() {
         const counter = document.getElementById('static-counter');
         const filename = document.getElementById('static-filename');
+        const currentPosition = this.slideshowCatalogPage * this.slideshowCatalogPageSize
+            + this.currentSlideIndex + 1;
+        const totalPosition = this.slideshowCatalogTotalCount === null
+            ? `${this.slideshowCatalogLoadedCount}+`
+            : this.slideshowCatalogTotalCount;
 
         if (counter && this.slideshowImages) {
-            counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+            counter.textContent = `${currentPosition} / ${totalPosition}`;
         }
 
         if (filename && this.slideshowImages && this.slideshowImages[this.currentSlideIndex]) {
@@ -5622,9 +5799,14 @@ class DeParaUI {
         // Fallback para botões dinâmicos se existirem
         const counter = document.getElementById('dynamic-slideshow-counter');
         const filename = document.getElementById('dynamic-slideshow-filename');
+        const currentPosition = this.slideshowCatalogPage * this.slideshowCatalogPageSize
+            + this.currentSlideIndex + 1;
+        const totalPosition = this.slideshowCatalogTotalCount === null
+            ? `${this.slideshowCatalogLoadedCount}+`
+            : this.slideshowCatalogTotalCount;
 
         if (counter && this.slideshowImages) {
-            counter.textContent = `${this.currentSlideIndex + 1} / ${this.slideshowImages.length}`;
+            counter.textContent = `${currentPosition} / ${totalPosition}`;
         }
 
         if (filename && this.slideshowImages && this.slideshowImages[this.currentSlideIndex]) {
@@ -5685,20 +5867,9 @@ class DeParaUI {
             }
 
             if (response.ok) {
-                const result = await response.json();
-                // Remover imagem da lista atual
-                this.slideshowImages.splice(this.currentSlideIndex, 1);
-
-                // Ajustar índice se necessário
-                if (this.currentSlideIndex >= this.slideshowImages.length) {
-                    this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
-                }
-
-                // Atualizar exibição
-                if (this.slideshowImages.length > 0) {
-                    this.updateSlideDisplay();
-                    this.updateDynamicCounter();
-                } else {
+                await response.json();
+                const hasRemainingImages = await this.handleSlideshowImageRemoved();
+                if (!hasRemainingImages) {
                     this.showToast('Todas as imagens foram apagadas', 'info');
                     this.closeSlideshowViewer();
                 }
@@ -5765,20 +5936,9 @@ class DeParaUI {
             }
 
             if (response.ok) {
-                const result = await response.json();
-                // Remover imagem da lista atual
-                this.slideshowImages.splice(this.currentSlideIndex, 1);
-
-                // Ajustar índice se necessário
-                if (this.currentSlideIndex >= this.slideshowImages.length) {
-                    this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
-                }
-
-                // Atualizar exibição
-                if (this.slideshowImages.length > 0) {
-                    this.updateSlideDisplay();
-                    this.updateDynamicCounter();
-                } else {
+                await response.json();
+                const hasRemainingImages = await this.handleSlideshowImageRemoved();
+                if (!hasRemainingImages) {
                     this.showToast('Todas as imagens foram ocultadas', 'info');
                     this.closeSlideshowViewer();
                 }
@@ -5830,20 +5990,9 @@ class DeParaUI {
                 body: JSON.stringify(requestData)
             });
             if (response.ok) {
-                const result = await response.json();
-                // Remover imagem da lista atual
-                this.slideshowImages.splice(this.currentSlideIndex, 1);
-
-                // Ajustar índice se necessário
-                if (this.currentSlideIndex >= this.slideshowImages.length) {
-                    this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
-                }
-
-                // Atualizar exibição
-                if (this.slideshowImages.length > 0) {
-                    this.updateSlideDisplay();
-                    this.updateDynamicCounter();
-                } else {
+                await response.json();
+                const hasRemainingImages = await this.handleSlideshowImageRemoved();
+                if (!hasRemainingImages) {
                     this.showToast('Todas as imagens foram favoritadas', 'info');
                     this.closeSlideshowViewer();
                 }
@@ -5896,20 +6045,9 @@ class DeParaUI {
                 body: JSON.stringify(requestData)
             });
             if (response.ok) {
-                const result = await response.json();
-                // Remover imagem da lista atual
-                this.slideshowImages.splice(this.currentSlideIndex, 1);
-
-                // Ajustar índice se necessário
-                if (this.currentSlideIndex >= this.slideshowImages.length) {
-                    this.currentSlideIndex = Math.max(0, this.slideshowImages.length - 1);
-                }
-
-                // Atualizar exibição
-                if (this.slideshowImages.length > 0) {
-                    this.updateSlideDisplay();
-                    this.updateDynamicCounter();
-                } else {
+                await response.json();
+                const hasRemainingImages = await this.handleSlideshowImageRemoved();
+                if (!hasRemainingImages) {
                     this.showToast('Todas as imagens foram ajustadas', 'info');
                     this.closeSlideshowViewer();
                 }
@@ -5927,6 +6065,7 @@ class DeParaUI {
 
     // Fechar viewer do slideshow
     closeSlideshowViewer() {
+        const catalogId = this.slideshowCatalogId;
         this.stopAutoPlay();
         if (this.slideshowLoadTimeout) {
             clearTimeout(this.slideshowLoadTimeout);
@@ -5934,6 +6073,20 @@ class DeParaUI {
         }
         this.slideshowRenderToken += 1;
         this.preloadedImages.clear();
+        this.slideshowCatalogId = null;
+        this.slideshowCatalogPage = 0;
+        this.slideshowCatalogNextCursor = null;
+        this.slideshowCatalogPageCursors = [];
+        this.slideshowCatalogLoadedCount = 0;
+        this.slideshowCatalogTotalCount = null;
+        this.slideshowCatalogHasMore = false;
+        this.slideshowCatalogFolderPath = '';
+        this.slideshowCatalogExtensions = [];
+        this.slideshowCatalogFirstPage = [];
+        this.slideshowRemovedImagePaths = new Set();
+        if (catalogId) {
+            fetch(`/api/files/image-catalog/${encodeURIComponent(catalogId)}`, { method: 'DELETE' }).catch(() => {});
+        }
 
         // Sair do fullscreen antes de fechar o viewer        this.exitFullscreen();
 

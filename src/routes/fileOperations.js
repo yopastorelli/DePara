@@ -17,9 +17,36 @@ const logger = require('../utils/logger');
 const { normalRateLimiter, strictRateLimiter, slideshowRateLimiter } = require('../middleware/rateLimiter');
 const { sanitizeString, sanitizeFilePath, sanitizeIdentifier, ValidationError } = require('../utils/inputSanitizer');
 const { scanImagesRecursive } = require('../utils/fileOps/imageScanner');
+const { getResourceStatus } = require('../utils/resourceGuard');
 
 function isPathValidationError(error) {
     return /^(Acesso negado|Caminho inválido|Caminho contém|Nenhum diretório pai)/.test(error.message || '');
+}
+
+function getImageRouteErrorStatus(error) {
+    if (isPathValidationError(error)) {
+        return 400;
+    }
+    if (Number.isInteger(error.statusCode)) {
+        return error.statusCode;
+    }
+    return 500;
+}
+
+function sendImageRouteError(res, error, fallbackMessage = 'Erro interno do servidor') {
+    if (error.retryAfterSeconds) {
+        res.set('Retry-After', String(error.retryAfterSeconds));
+    }
+
+    return res.status(getImageRouteErrorStatus(error)).json({
+        success: false,
+        error: {
+            code: error.code,
+            message: error.statusCode ? error.message : fallbackMessage,
+            details: error.statusCode ? undefined : error.message,
+            status: error.status
+        }
+    });
 }
 
 /**
@@ -1503,6 +1530,16 @@ router.post('/check-ignore', async (req, res) => {
 router.get('/images/:folderPath', async (req, res) => {
     const startTime = Date.now();
     try {
+        const resourceStatus = getResourceStatus();
+        if (!resourceStatus.canStartWork) {
+            const error = new Error('Memória disponível insuficiente para listar imagens');
+            error.code = 'RESOURCE_CONSTRAINED';
+            error.statusCode = 503;
+            error.retryAfterSeconds = 15;
+            error.status = resourceStatus;
+            return sendImageRouteError(res, error);
+        }
+
         // CORREÇÃO: Não adicionar barra extra, usar caminho como vem
         const folderPath = req.params.folderPath;
         const {
@@ -1546,12 +1583,7 @@ router.get('/images/:folderPath', async (req, res) => {
 
     } catch (error) {
         logger.operationError('List Images', error);
-        res.status(isPathValidationError(error) ? 400 : 500).json({
-            error: {
-                message: 'Erro ao listar imagens',
-                details: error.message
-            }
-        });
+        sendImageRouteError(res, error, 'Erro ao listar imagens');
     }
 });
 
@@ -1798,10 +1830,15 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
             folderPath,
             extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
             recursive = true,
-            maxResults
+            maxResults,
+            pageSize,
+            catalogId,
+            cursor,
+            countOnly = false,
+            paginate = true
         } = req.body;
 
-        if (!folderPath || typeof folderPath !== 'string') {
+        if (!catalogId && (!folderPath || typeof folderPath !== 'string')) {
             return res.status(400).json({
                 error: {
                     message: 'Parâmetro folderPath é obrigatório e deve ser uma string',
@@ -1813,7 +1850,9 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
         logger.startOperation('List Images', {
             folderPath,
             extensions,
-            recursive
+            recursive,
+            catalogId,
+            pageSize
         });
 
         logger.debug('List Images request', {
@@ -1822,51 +1861,112 @@ router.post('/list-images', slideshowRateLimiter, async (req, res) => {
             recursive
         });
 
-        const safePath = await fileOperationsManager.validateSafePath(folderPath, 'read');
+        const safePath = folderPath
+            ? await fileOperationsManager.validateSafePath(folderPath, 'read')
+            : undefined;
         logger.debug('List Images path validated', { safePath });
 
-        const requestedMaxResults = maxResults ?? process.env.DEPARA_MAX_IMAGE_RESULTS;
-        const numericMaxResults = Number(requestedMaxResults);
-        const hasMaxResults = Number.isFinite(numericMaxResults) && numericMaxResults >= 0;
-        const scanLimit = hasMaxResults ? numericMaxResults + 1 : requestedMaxResults;
-        const scannedImages = await scanImagesRecursive(safePath, {
-            recursive,
-            extensions,
-            maxResults: scanLimit,
-            shouldIgnore: (entryName) => fileOperationsManager.shouldIgnoreFile(entryName),
-            sortBy: 'name'
-        });
-        const limited = hasMaxResults && scannedImages.length > numericMaxResults;
-        const images = limited ? scannedImages.slice(0, numericMaxResults) : scannedImages;
+        let data;
+        const hasExplicitMaxResults = maxResults !== undefined && maxResults !== null;
+        const numericMaxResults = Number(maxResults);
+        const hasMaxResults = hasExplicitMaxResults
+            && Number.isFinite(numericMaxResults)
+            && numericMaxResults >= 0;
 
-        const duration = Date.now() - startTime;
-        logger.endOperation('List Images', duration, {
-            imageCount: images.length,
-            folderPath: safePath
-        });
-
-        return res.json({
-            success: true,
-            data: {
+        if (countOnly) {
+            const totalCount = await fileOperationsManager.countImagesRecursive(safePath, {
+                recursive,
+                extensions
+            });
+            data = {
+                images: [],
+                totalCount,
+                originalCount: totalCount,
+                folderPath: safePath,
+                limited: false,
+                pagination: {
+                    status: 'ready',
+                    page: 0,
+                    pageSize: 0,
+                    loadedCount: totalCount,
+                    totalCount,
+                    hasMore: false,
+                    catalogId: null,
+                    cursor: null,
+                    nextCursor: null
+                }
+            };
+        } else if (hasMaxResults || paginate === false) {
+            const requestedMaxResults = hasMaxResults
+                ? numericMaxResults
+                : process.env.DEPARA_MAX_IMAGE_RESULTS;
+            const numericScanLimit = Number(requestedMaxResults);
+            const scanLimit = Number.isFinite(numericScanLimit)
+                ? numericScanLimit + 1
+                : requestedMaxResults;
+            const scannedImages = await scanImagesRecursive(safePath, {
+                recursive,
+                extensions,
+                maxResults: scanLimit,
+                shouldIgnore: (entryName) => fileOperationsManager.shouldIgnoreFile(entryName),
+                sortBy: 'name'
+            });
+            const limited = Number.isFinite(numericScanLimit) && scannedImages.length > numericScanLimit;
+            const images = limited ? scannedImages.slice(0, numericScanLimit) : scannedImages;
+            data = {
                 images,
                 totalCount: images.length,
                 originalCount: images.length,
                 folderPath: safePath,
-                limited
-            },
+                limited,
+                pagination: null
+            };
+        } else {
+            const page = catalogId
+                ? await fileOperationsManager.getImageCatalogPage(catalogId, cursor)
+                : await fileOperationsManager.createImageCatalog(safePath, {
+                    recursive,
+                    extensions,
+                    pageSize
+                });
+            const totalCount = page.totalCount ?? page.loadedCount;
+            data = {
+                images: page.images,
+                totalCount,
+                originalCount: totalCount,
+                folderPath: safePath,
+                limited: false,
+                pagination: page
+            };
+        }
+
+        const duration = Date.now() - startTime;
+        logger.endOperation('List Images', duration, {
+            imageCount: data.images.length,
+            folderPath: safePath,
+            totalCount: data.totalCount
+        });
+
+        return res.json({
+            success: true,
+            data,
             timestamp: new Date().toISOString(),
             duration
         });
 
     } catch (error) {
-        const duration = Date.now() - startTime;
         logger.operationError('List Images', error);
-        res.status(isPathValidationError(error) ? 400 : 500).json({
-            error: {
-                message: 'Erro interno do servidor',
-                details: error.message
-            }
-        });
+        sendImageRouteError(res, error);
+    }
+});
+
+router.delete('/image-catalog/:catalogId', slideshowRateLimiter, async (req, res) => {
+    try {
+        const closed = await fileOperationsManager.closeImageCatalog(req.params.catalogId);
+        return res.json({ success: true, data: { closed } });
+    } catch (error) {
+        logger.operationError('Close Image Catalog', error);
+        return sendImageRouteError(res, error, 'Erro ao encerrar catálogo de imagens');
     }
 });
 
