@@ -101,7 +101,8 @@ class UpdateOrchestrator {
       activationState: 'idle',
       rollbackPerformed: false,
       consecutiveFailures: 0,
-      restartRequestedAt: null
+      restartRequestedAt: null,
+      disabledByCircuitBreaker: false
     };
   }
 
@@ -664,6 +665,10 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
       ...filtered
     });
 
+    if (Object.prototype.hasOwnProperty.call(filtered, 'enabled')) {
+      this.state.disabledByCircuitBreaker = false;
+    }
+
     await this.saveConfig();
     this.setupScheduler();
     await this.appendHistory({
@@ -805,9 +810,11 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
         consecutiveFailures: 0
       }, 'check_result');
 
-      if (clearDisabledOnClean && !this.config.enabled) {
+      if (clearDisabledOnClean && !this.config.enabled && this.state.disabledByCircuitBreaker) {
         this.config.enabled = true;
+        this.state.disabledByCircuitBreaker = false;
         await this.saveConfig();
+        await this.saveState();
         await this.appendHistory({
           event: 'circuit_breaker_cleared',
           reason: 'passive_clean_check'
@@ -1095,7 +1102,8 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
     await this.setState(status, {
       lastError: message,
       lastFailureStage: failureStage,
-      consecutiveFailures: nextConsecutiveFailures
+      consecutiveFailures: nextConsecutiveFailures,
+      disabledByCircuitBreaker: nextConsecutiveFailures >= this.config.maxConsecutiveFailures
     }, 'cycle_failed');
 
     await this.appendHistory({

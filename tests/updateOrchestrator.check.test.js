@@ -25,20 +25,7 @@ async function cleanupDir(dirPath) {
 describe('UpdateOrchestrator passive checks', () => {
   let tempDir;
 
-  beforeEach(() => {
-    jest.resetModules();
-    tempDir = createTempDir();
-    process.env.DEPARA_RUNTIME_ROOT = tempDir;
-    process.env.DEPARA_DATA_DIR = tempDir;
-  });
-
-  afterEach(async () => {
-    delete process.env.DEPARA_RUNTIME_ROOT;
-    delete process.env.DEPARA_DATA_DIR;
-    await cleanupDir(tempDir);
-  });
-
-  it('clears stale failure state and re-enables updates when a passive check finds no pending updates', async () => {
+  function mockCleanGit() {
     jest.doMock('child_process', () => ({
       exec: jest.fn((command, options, callback) => {
         if (typeof options === 'function') {
@@ -68,6 +55,23 @@ describe('UpdateOrchestrator passive checks', () => {
         callback(new Error(`Unexpected command: ${command}`), '', `Unexpected command: ${command}`);
       })
     }));
+  }
+
+  beforeEach(() => {
+    jest.resetModules();
+    tempDir = createTempDir();
+    process.env.DEPARA_RUNTIME_ROOT = tempDir;
+    process.env.DEPARA_DATA_DIR = tempDir;
+  });
+
+  afterEach(async () => {
+    delete process.env.DEPARA_RUNTIME_ROOT;
+    delete process.env.DEPARA_DATA_DIR;
+    await cleanupDir(tempDir);
+  });
+
+  it('clears stale failure state and re-enables updates when a passive check finds no pending updates', async () => {
+    mockCleanGit();
 
     const orchestrator = require('../src/services/updateOrchestrator');
     orchestrator.state = orchestrator.normalizeState({
@@ -76,7 +80,8 @@ describe('UpdateOrchestrator passive checks', () => {
       targetCommit: 'old',
       lastError: 'Circuit breaker ativado: reinício manual do processo Windows necessário',
       consecutiveFailures: 3,
-      rollbackPerformed: true
+      rollbackPerformed: true,
+      disabledByCircuitBreaker: true
     });
     orchestrator.config = {
       ...orchestrator.getDefaultConfig(),
@@ -94,6 +99,30 @@ describe('UpdateOrchestrator passive checks', () => {
     expect(orchestrator.state.lastError).toBeNull();
     expect(orchestrator.state.consecutiveFailures).toBe(0);
     expect(orchestrator.state.rollbackPerformed).toBe(false);
+    expect(orchestrator.state.disabledByCircuitBreaker).toBe(false);
     expect(orchestrator.config.enabled).toBe(true);
+  });
+
+  it('preserves an explicit update disablement after a clean passive check', async () => {
+    mockCleanGit();
+
+    const orchestrator = require('../src/services/updateOrchestrator');
+    orchestrator.state = orchestrator.normalizeState({
+      status: 'idle',
+      disabledByCircuitBreaker: false
+    });
+    orchestrator.config = {
+      ...orchestrator.getDefaultConfig(),
+      enabled: false
+    };
+    orchestrator.isInitialized = true;
+
+    await orchestrator.checkForUpdatesInternal({
+      passive: true,
+      clearDisabledOnClean: true
+    });
+
+    expect(orchestrator.config.enabled).toBe(false);
+    expect(orchestrator.state.disabledByCircuitBreaker).toBe(false);
   });
 });
