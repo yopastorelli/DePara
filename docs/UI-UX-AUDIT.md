@@ -44,7 +44,7 @@ Matriz de viewport: `1366 × 768`, `1024 × 600`, `800 × 600`, `640 × 360`, `3
 
 As asserções verificam limites da foto e dos controles, ausência de overflow no visualizador e nas cinco abas principais, teclado, foco, hover, pausa, fechamento, cursor, suspensão do screensaver, fonte local, ausência de requisições externas e inicialização com monitoramento pendente. O fullscreen nativo e o fallback CSS são exercitados separadamente.
 
-A barra deve permanecer com até 64 pixels de altura em janelas de pelo menos 800 pixels de largura e não pode existir rodapé no visualizador. Em janelas menores, a altura se adapta para não cortar informações. Também são verificados presets, reidratação de valores acima de 60 segundos e intervalo personalizado. Um relógio controlado comprova que, com intervalo de 300 segundos, não há avanço em 299.999 ms e a próxima foto aparece ao completar 300.000 ms, sem fazer a suíte aguardar cinco minutos reais.
+A barra deve permanecer com até 52 pixels de altura em janelas de pelo menos 800 pixels de largura e não pode existir rodapé no visualizador. Em janelas menores, a altura se adapta para não cortar informações. Também são verificados presets, reidratação de valores acima de 60 segundos e intervalo personalizado. Um relógio controlado comprova que, com intervalo de 300 segundos, não há avanço em 299.999 ms e a próxima foto aparece ao completar 300.000 ms, sem fazer a suíte aguardar cinco minutos reais.
 
 Capturas sintéticas ficam em `test-results/`, fora do Git, e devem ser inspecionadas visualmente. Testes verdes não substituem recarregar a UI e validar o release ativo na porta de produção.
 

@@ -162,7 +162,7 @@ for (const viewport of [
     await expect(page.locator('#slideshow-keyboard-hint')).toBeVisible();
     if (viewport.width >= 800) {
       const headerBox = await page.locator('.slideshow-header').boundingBox();
-      expect(headerBox.height).toBeLessThanOrEqual(64);
+      expect(headerBox.height).toBeLessThanOrEqual(52);
     }
     for (let photoIndex = 0; photoIndex < 3; photoIndex += 1) {
       await expect(page.locator('#slideshow-image')).toBeVisible();

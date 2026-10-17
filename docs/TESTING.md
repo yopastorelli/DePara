@@ -79,7 +79,7 @@ A UI deve funcionar sem requisições externas e sem aguardar o monitoramento de
 
 O Playwright usa um único worker: as suítes compartilham a API isolada de testes e não podem disputar sua configuração. Isso também contém o consumo de RAM durante a validação.
 
-A barra única do slideshow deve ter até 64 pixels em janelas com largura de pelo menos 800 pixels e preservar atalhos e botões em janelas pequenas, adaptando a altura. Testes de intervalo cobrem a persistência até 300 segundos, presets, valor personalizado e avanço somente ao completar cinco minutos com relógio controlado. Não substitua essa verificação por uma espera real de cinco minutos.
+A barra única do slideshow deve ter até 52 pixels em janelas com largura de pelo menos 800 pixels e preservar atalhos e botões em janelas pequenas, adaptando a altura. Testes de intervalo cobrem a persistência até 300 segundos, presets, valor personalizado e avanço somente ao completar cinco minutos com relógio controlado. Não substitua essa verificação por uma espera real de cinco minutos.
 
 Mantenha também a regressão que inicia um navegador com cache legado de 3 segundos e servidor já configurado em 10 segundos. Abrir ou recarregar a página não pode promover esse cache por cima da configuração canônica.
 

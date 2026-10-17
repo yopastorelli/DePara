@@ -942,6 +942,44 @@ body {
     padding: 8px;
 }
 
+@media (min-width: 800px) {
+    .slideshow-viewer .slideshow-header {
+        gap: 8px;
+        padding: 2px 8px;
+    }
+
+    .slideshow-viewer .slideshow-info {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+    }
+
+    #slideshow-counter {
+        font-size: 14px;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    #slideshow-filename {
+        min-width: 0;
+        flex: 1 1 auto;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    .slideshow-viewer .slideshow-keyboard-hint {
+        flex: 0 1 auto;
+        font-size: 10px;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .slideshow-viewer .slideshow-toolbar,
+    .slideshow-viewer .slideshow-organization-controls {
+        gap: 4px;
+    }
+}
+
 .slideshow-interval-controls {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 90px;
