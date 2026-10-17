@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 async function openSlideshow(page, options = {}) {
+  if (options.clock) await page.clock.install();
   await page.route(/https:\/\/fonts\.(?:googleapis|gstatic)\.com\//, route => route.abort());
   if (options.fallback) {
     await page.addInitScript(() => {
@@ -11,7 +12,7 @@ async function openSlideshow(page, options = {}) {
     data: {
       config: {
         slideshowSelectedPath: process.env.DEPARA_E2E_LAYOUT_IMAGES_DIR,
-        slideshowConfig: { interval: 60, recursive: false, extensions: ['.png'], preload: false, random: false },
+        slideshowConfig: { interval: options.interval ?? 60, recursive: false, extensions: ['.png'], preload: false, random: false },
         screensaverConfig: { enabled: false }
       }
     }
@@ -24,6 +25,7 @@ async function openSlideshow(page, options = {}) {
     await onboarding.waitFor({ state: 'hidden' });
   }
   await page.locator('.action-slideshow-card').click();
+  if (options.start === false) return;
   await page.locator('.slideshow-start-btn').click();
   await expect(page.locator('#slideshow-viewer')).toBeVisible({ timeout: 15000 });
   await expect(page.locator('#slideshow-image')).toBeVisible({ timeout: 15000 });
@@ -73,11 +75,11 @@ test('setas, pausa, foco e fechamento funcionam sem erros', async ({ page }) => 
   await page.keyboard.press('Space');
   await expect(page.locator('#static-play-pause-btn')).toHaveAccessibleName('Pausar slideshow (Espaço)');
   await page.keyboard.press('Tab');
-  await expect(page.locator('#static-play-pause-btn')).toBeFocused();
+  await expect(page.locator('#static-favorite-btn')).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(page.locator('#slideshow-viewer button:not(:disabled)').last()).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(page.locator('#static-play-pause-btn')).toBeFocused();
+  await expect(page.locator('#static-favorite-btn')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(viewer).toBeHidden();
   await expect(page.locator('.action-slideshow-card')).toBeFocused();
@@ -153,6 +155,14 @@ for (const viewport of [
   test(`fotos inteiras e controles acessíveis em ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await openSlideshow(page, { fallback: true });
+    await expect(page.locator('.slideshow-footer')).toHaveCount(0);
+    await expect(page.locator('.slideshow-header #static-slideshow-controls')).toBeVisible();
+    await expect(page.locator('.slideshow-header #static-close-btn')).toBeVisible();
+    await expect(page.locator('#slideshow-keyboard-hint')).toBeVisible();
+    if (viewport.width >= 800) {
+      const headerBox = await page.locator('.slideshow-header').boundingBox();
+      expect(headerBox.height).toBeLessThanOrEqual(64);
+    }
     for (let photoIndex = 0; photoIndex < 3; photoIndex += 1) {
       await expect(page.locator('#slideshow-image')).toBeVisible();
       await expectImageInsideViewport(page);
@@ -226,4 +236,42 @@ test('fullscreen não aceita solicitações concorrentes', async ({ page }) => {
   await expect(page.locator('#slideshow-viewer')).toBeHidden();
   await page.evaluate(() => window.finishFullscreenRequest());
   await expect.poll(() => page.evaluate(() => window.deParaUI.slideshowFullscreenPending)).toBe(false);
+});
+
+test('intervalos escalonados até cinco minutos persistem e aceitam valor personalizado', async ({ page }) => {
+  await openSlideshow(page, { interval: 10, start: false });
+  const interval = page.locator('#slideshow-interval');
+  const preset = page.getByRole('combobox', { name: 'Intervalos sugeridos' });
+  await expect(interval).toHaveValue('10');
+  for (const seconds of [15, 30, 60, 90, 120, 180, 240, 300]) {
+    await preset.selectOption(String(seconds));
+    await expect(interval).toHaveValue(String(seconds));
+  }
+  await page.locator('.slideshow-save-btn').click();
+  await expect.poll(async () => (await (await page.request.get('/api/config')).json()).config.slideshowConfig.interval).toBe(300);
+  await page.locator('.slideshow-close-btn').click();
+  await page.locator('.action-slideshow-card').click();
+  await expect(interval).toHaveValue('300');
+  await expect(preset).toHaveValue('300');
+  await interval.fill('75');
+  await interval.press('Tab');
+  await expect(preset).toHaveValue('');
+  await page.locator('.slideshow-save-btn').click();
+  await expect.poll(async () => (await (await page.request.get('/api/config')).json()).config.slideshowConfig.interval).toBe(75);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('#splash-screen').waitFor({ state: 'hidden', timeout: 15000 });
+  await page.locator('.action-slideshow-card').click();
+  await expect(interval).toHaveValue('75');
+  await expect(preset).toHaveValue('');
+});
+
+test('intervalo de cinco minutos só troca a foto ao completar 300 segundos', async ({ page }) => {
+  await openSlideshow(page, { interval: 300, clock: true, fallback: true });
+  await page.keyboard.press('Space');
+  await page.clock.pauseAt(new Date(Date.now() + 60000));
+  await page.keyboard.press('Space');
+  await page.clock.fastForward(299999);
+  await expect(page.locator('#slideshow-filename')).toHaveText('01-retrato.png');
+  await page.clock.fastForward(1);
+  await expect(page.locator('#slideshow-filename')).toHaveText('02-paisagem.png');
 });

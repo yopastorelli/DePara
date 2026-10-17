@@ -1296,8 +1296,24 @@
                 <div class="slideshow-settings">
                     <div class="setting-row">
                         <label for="slideshow-interval">Intervalo (segundos):</label>
-                        <input type="number" id="slideshow-interval" value="3" min="1" max="60">
-                        <small class="form-help">Tempo entre transições automáticas (1-60 segundos)</small>
+                        <div class="slideshow-interval-controls">
+                            <select id="slideshow-interval-preset" aria-label="Intervalos sugeridos">
+                                <option value="">Personalizado</option>
+                                <option value="5">5 segundos</option>
+                                <option value="10" selected>10 segundos</option>
+                                <option value="15">15 segundos</option>
+                                <option value="30">30 segundos</option>
+                                <option value="45">45 segundos</option>
+                                <option value="60">1 minuto</option>
+                                <option value="90">1 minuto e 30 segundos</option>
+                                <option value="120">2 minutos</option>
+                                <option value="180">3 minutos</option>
+                                <option value="240">4 minutos</option>
+                                <option value="300">5 minutos</option>
+                            </select>
+                            <input type="number" id="slideshow-interval" value="10" min="1" max="300" step="1" aria-describedby="slideshow-interval-help">
+                        </div>
+                        <small id="slideshow-interval-help" class="form-help">Escolha uma opção ou digite de 1 a 300 segundos (5 minutos).</small>
                     </div>
 
                     <div class="setting-row">
@@ -1399,11 +1415,18 @@
             <div class="slideshow-info">
                 <span id="slideshow-counter">1 / 0</span>
                 <span id="slideshow-filename">Nenhuma imagem</span>
+                <p id="slideshow-keyboard-hint" class="slideshow-keyboard-hint">← → navegar · Espaço pausar · Esc fechar</p>
+            </div>
+            <div id="static-slideshow-controls" class="slideshow-organization-controls" role="group" aria-label="Organizar foto e fechar">
+                <button id="static-favorite-btn" class="slideshow-button" type="button" title="Mover foto para Favoritas (F)">Favoritar</button>
+                <button id="static-hide-btn" class="slideshow-button" type="button" title="Mover foto para a pasta de ocultas (O)">Ocultar</button>
+                <button id="static-adjust-btn" class="slideshow-button" type="button" title="Mover foto para a pasta de ajustes (A)">Ajustar</button>
+                <button id="static-delete-btn" class="slideshow-button slideshow-danger" type="button" title="Mover foto para a pasta de excluídas (D)">Excluir</button>
+                <button id="static-close-btn" class="slideshow-button slideshow-icon-button slideshow-danger" type="button" aria-label="Fechar slideshow (Esc)" title="Fechar slideshow (Esc)"><span aria-hidden="true">×</span></button>
             </div>
             <div class="slideshow-toolbar" role="group" aria-label="Reprodução">
                 <button id="static-play-pause-btn" class="slideshow-button slideshow-icon-button" type="button" aria-label="Pausar slideshow (Espaço)" title="Pausar slideshow (Espaço)"><span aria-hidden="true">Ⅱ</span></button>
                 <button id="static-fullscreen-btn" class="slideshow-button slideshow-icon-button" type="button" aria-label="Entrar em tela cheia (F11)" title="Entrar em tela cheia (F11)"><span aria-hidden="true">⛶</span></button>
-                <button id="static-close-btn" class="slideshow-button slideshow-icon-button slideshow-danger" type="button" aria-label="Fechar slideshow (Esc)" title="Fechar slideshow (Esc)"><span aria-hidden="true">×</span></button>
             </div>
         </div>
         <div class="slideshow-content">
@@ -1420,15 +1443,6 @@
                 </div>
             </div>
             <button id="static-next-btn" class="slideshow-button slideshow-navigation" type="button" aria-label="Próxima foto (→)" title="Próxima foto (→)"><span aria-hidden="true">›</span></button>
-        </div>
-        <div id="static-slideshow-controls" class="slideshow-footer">
-            <div class="slideshow-organization-controls" role="group" aria-label="Organizar foto">
-                <button id="static-favorite-btn" class="slideshow-button" type="button" title="Mover foto para Favoritas (F)">Favoritar</button>
-                <button id="static-hide-btn" class="slideshow-button" type="button" title="Mover foto para a pasta de ocultas (O)">Ocultar</button>
-                <button id="static-adjust-btn" class="slideshow-button" type="button" title="Mover foto para a pasta de ajustes (A)">Ajustar</button>
-                <button id="static-delete-btn" class="slideshow-button slideshow-danger" type="button" title="Mover foto para a pasta de excluídas (D)">Excluir</button>
-            </div>
-            <p id="slideshow-keyboard-hint" class="slideshow-keyboard-hint">← → navegar · Espaço pausar · Esc fechar</p>
         </div>
     </div>
 

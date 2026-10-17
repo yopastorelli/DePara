@@ -19,7 +19,7 @@ AUDIT_PLATFORM=Windows_Chromium
 
 ## Contrato implementado
 
-- O visualizador ocupa a área disponível da janela, com cabeçalho e rodapé fora da área da foto. O centro tem `min-height: 0`, `min-width: 0` e dimensões limitadas; a imagem usa `object-fit: contain`, sem recorte ou distorção. Barras vazias são esperadas quando a proporção da foto difere da tela.
+- O visualizador ocupa a área disponível da janela, com uma única barra superior fora da área da foto, sem rodapé. Contador, nome de arquivo e atalhos ficam à esquerda; organização e fechamento no centro; pausa e fullscreen à direita. Em telas estreitas, a mesma barra quebra em duas linhas para manter os alvos de 44 pixels. O centro da foto tem `min-height: 0`, `min-width: 0` e dimensões limitadas; a imagem usa `object-fit: contain`, sem recorte ou distorção. Barras vazias são esperadas quando a proporção da foto difere da tela.
 - Um único conjunto de regras CSS controla o layout, inclusive quando o fullscreen nativo é recusado. O fullscreen nativo tem como alvo somente `#slideshow-viewer`, não o documento inteiro.
 - Transições de fullscreen são serializadas. O botão aguarda a transição terminar; fechar o visualizador durante uma entrada pendente também provoca a saída quando a entrada termina.
 - Navegação visível por botões de pelo menos `44 × 44` pixels; controles sem mudança de posição ou escala no hover. Nome de arquivo longo é truncado visualmente e preservado em `title`.
@@ -31,6 +31,7 @@ AUDIT_PLATFORM=Windows_Chromium
 - Gráficos se ajustam ao cartão, legendas quebram linha, e listas preenchidas de pastas, agendamentos e backups acomodam caminhos longos e seus botões. A busca deixa de impor largura mínima maior que a janela.
 - Material Icons é um ativo local versionado com licença e hash em `src/public/fonts/README.md`. Texto usa fonte do Windows/sistema; não há dependência de Google Fonts para a UI funcionar.
 - Monitoramento inicial continua pelo scheduler existente, sem uma segunda atualização bloqueante durante o splash.
+- Intervalo padrão de 10 segundos, com opções de 5, 10, 15, 30, 45, 60, 90, 120, 180, 240 e 300 segundos, além de valor personalizado no intervalo de 1–300 segundos. O mesmo limite vale no formulário, normalização da UI, API e arquivo persistente. Valores existentes não são sobrescritos automaticamente.
 
 ## Regressões obrigatórias
 
@@ -42,13 +43,15 @@ Matriz de viewport: `1366 × 768`, `1024 × 600`, `800 × 600`, `640 × 360`, `3
 
 As asserções verificam limites da foto e dos controles, ausência de overflow no visualizador e nas cinco abas principais, teclado, foco, hover, pausa, fechamento, cursor, suspensão do screensaver, fonte local, ausência de requisições externas e inicialização com monitoramento pendente. O fullscreen nativo e o fallback CSS são exercitados separadamente.
 
+A barra deve permanecer com até 64 pixels de altura em desktop e não pode existir rodapé no visualizador. Também são verificados presets, reidratação de valores acima de 60 segundos e intervalo personalizado. Um relógio controlado comprova que, com intervalo de 300 segundos, não há avanço em 299.999 ms e a próxima foto aparece ao completar 300.000 ms, sem fazer a suíte aguardar cinco minutos reais.
+
 Capturas sintéticas ficam em `test-results/`, fora do Git, e devem ser inspecionadas visualmente. Testes verdes não substituem recarregar a UI e validar o release ativo na porta de produção.
 
 ## Evidência de validação — 2026-10-17
 
 - Lint: PASS.
-- Jest: 14 suítes e 64 testes aprovados; smoke separado com 8 testes aprovados.
-- Playwright: 18 testes aprovados com um worker, incluindo os 13 cenários deste relatório e os cinco fluxos existentes da aplicação. A última execução levou aproximadamente 2,4 minutos.
+- Jest: 14 suítes e 65 testes aprovados; smoke separado com 8 testes aprovados.
+- Playwright: 20 testes aprovados com um worker, incluindo os 15 cenários deste relatório e os cinco fluxos existentes da aplicação. A última execução levou aproximadamente 2,7 minutos.
 - `npm audit --audit-level=high`: nenhuma vulnerabilidade reportada.
 - Parser PowerShell: scripts de instalação e operação aprovados.
 - Capturas de slideshow em desktop e janela estreita inspecionadas; as duas faixas nas bordas da imagem de teste permanecem visíveis, sem recorte.

@@ -3962,7 +3962,7 @@ class DeParaUI {
     slideshowInterval = null;
     slideshowPlaying = false;
     slideshowConfig = {
-        interval: 3,
+        interval: 10,
         random: false,
         preload: false,
         extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
@@ -3991,7 +3991,7 @@ class DeParaUI {
 
     getDefaultSlideshowConfig() {
         return {
-            interval: 3,
+            interval: 10,
             random: false,
             preload: false,
             extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
@@ -4029,7 +4029,7 @@ class DeParaUI {
             : [];
 
         return {
-            interval: Math.max(1, Math.min(60, Number(config.interval) || defaults.interval)),
+            interval: Math.max(1, Math.min(300, Number(config.interval) || defaults.interval)),
             random: config.random === undefined ? defaults.random : Boolean(config.random),
             preload: config.preload === undefined ? defaults.preload : Boolean(config.preload),
             extensions: normalizedExtensions.length > 0 ? normalizedExtensions : [...defaults.extensions],
@@ -4175,7 +4175,7 @@ class DeParaUI {
 
     // Aplicar configurações do modal para o objeto de configuração
     applySlideshowConfigFromModal() {
-        const interval = parseInt(document.getElementById('slideshow-interval').value) || 3;
+        const interval = Number(document.getElementById('slideshow-interval').value) || this.getDefaultSlideshowConfig().interval;
         const random = document.getElementById('slideshow-random').checked;
         const preload = document.getElementById('slideshow-preload').checked;
         const recursive = document.getElementById('slideshow-recursive').checked;
@@ -4195,7 +4195,7 @@ class DeParaUI {
         const hiddenFolder = hiddenField ? hiddenField.value.trim() : '';
         const adjustableFolder = adjustableField ? adjustableField.value.trim() : '';
         this.slideshowConfig = {
-            interval: Math.max(1, Math.min(60, interval)),
+            interval: Math.max(1, Math.min(300, interval)),
             random,
             preload,
             extensions: extensions.length > 0 ? extensions : ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
@@ -4218,6 +4218,7 @@ class DeParaUI {
 
     applySlideshowConfigToModal() {
         document.getElementById('slideshow-interval').value = this.slideshowConfig.interval;
+        this.syncSlideshowIntervalPreset();
         document.getElementById('slideshow-random').checked = this.slideshowConfig.random;
         document.getElementById('slideshow-preload').checked = this.slideshowConfig.preload;
         document.getElementById('slideshow-recursive').checked = this.slideshowConfig.recursive;
@@ -4331,7 +4332,14 @@ class DeParaUI {
     }
 
 
-    // Adicionar event listeners para slideshow
+    syncSlideshowIntervalPreset() {
+        const interval = document.getElementById('slideshow-interval');
+        const preset = document.getElementById('slideshow-interval-preset');
+        if (!interval || !preset) return;
+        const value = String(Number(interval.value));
+        preset.value = Array.from(preset.options).some(option => option.value === value) ? value : '';
+    }
+
     addSlideshowEventListeners() {
         if (this.slideshowListenersBound) {
             return;
@@ -4362,6 +4370,12 @@ class DeParaUI {
         bindOnce('.slideshow-browse-adjustable-btn', () => this.browseAdjustableFolder());
         bindOnce('.close-slideshow-config-btn', () => this.closeSlideshowModal());
         bindOnce('.slideshow-close-btn', () => this.closeSlideshowModal());
+        bindInputOnce('#slideshow-interval-preset', (event) => {
+            if (event.target.value) {
+                document.getElementById('slideshow-interval').value = event.target.value;
+            }
+        });
+        bindInputOnce('#slideshow-interval', () => this.syncSlideshowIntervalPreset());
         bindInputOnce('#slideshow-folder-path', async (event) => {
             const nextPath = event.target?.value?.trim() || '';
             if (nextPath) {

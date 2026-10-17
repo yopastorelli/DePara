@@ -75,7 +75,7 @@ describe('API smoke', () => {
       .send({
         config: {
           slideshowSelectedPath: 'C:/fixtures/slideshow',
-          slideshowConfig: { interval: 5, extensions: ['.png'] }
+          slideshowConfig: { interval: 300, extensions: ['.png'] }
         }
       })
       .expect(200);
@@ -84,7 +84,7 @@ describe('API smoke', () => {
 
     const persisted = await request(app).get('/api/config').expect(200);
     expect(persisted.body.config.slideshowSelectedPath).toBe('C:/fixtures/slideshow');
-    expect(persisted.body.config.slideshowConfig.interval).toBe(5);
+    expect(persisted.body.config.slideshowConfig.interval).toBe(300);
   });
 
   it('executa copy, move e delete em arquivos temporarios', async () => {

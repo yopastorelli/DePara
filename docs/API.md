@@ -48,6 +48,8 @@ Default access is loopback-only: `http://127.0.0.1:3000`. The API has no user au
 | GET | `/api/config/export` | export versioned operational backup |
 | POST | `/api/config/import` | replace covered operational state from backup |
 
+`slideshowConfig.interval` is measured in seconds, with a default of `10` and a supported range of `1`–`300` (five minutes). Values greater than 60 must survive normalization, persistence and reload. Existing configured intervals are preserved unless explicitly changed. The browser controls playback; this is not a Windows scheduled task.
+
 Exported backup includes:
 
 - `version`

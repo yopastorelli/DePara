@@ -34,9 +34,9 @@ function getDefaultConfig() {
   return {
     version: DEFAULT_CONFIG_VERSION,
     slideshowConfig: {
-      interval: 3,
+      interval: 10,
       random: false,
-    preload: false,
+      preload: false,
       extensions: [...DEFAULT_SLIDESHOW_EXTENSIONS],
       recursive: true,
       deletedFolder: '',
@@ -72,7 +72,7 @@ function uniqueExtensions(extensions) {
 function normalizeSlideshowConfig(slideshowConfig = {}) {
   const defaults = getDefaultConfig().slideshowConfig;
   return {
-    interval: Math.max(1, Math.min(60, Number(slideshowConfig.interval) || defaults.interval)),
+    interval: Math.max(1, Math.min(300, Number(slideshowConfig.interval) || defaults.interval)),
     random: slideshowConfig.random === undefined ? defaults.random : Boolean(slideshowConfig.random),
     preload: slideshowConfig.preload === undefined ? defaults.preload : Boolean(slideshowConfig.preload),
     extensions: uniqueExtensions(slideshowConfig.extensions).length > 0

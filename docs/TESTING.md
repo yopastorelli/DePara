@@ -79,6 +79,8 @@ A UI deve funcionar sem requisições externas e sem aguardar o monitoramento de
 
 O Playwright usa um único worker: as suítes compartilham a API isolada de testes e não podem disputar sua configuração. Isso também contém o consumo de RAM durante a validação.
 
+A barra única do slideshow deve ter até 64 pixels no desktop e preservar atalhos e botões em janelas pequenas. Testes de intervalo cobrem a persistência até 300 segundos, presets, valor personalizado e avanço somente ao completar cinco minutos com relógio controlado. Não substitua essa verificação por uma espera real de cinco minutos.
+
 Ao mexer no CSS, inspecione também as capturas sintéticas em `test-results/`. O procedimento e as causas corrigidas estão em `docs/UI-UX-AUDIT.md`.
 
 ## Auditoria de dependências

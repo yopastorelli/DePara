@@ -38,7 +38,7 @@ describe('configStore', () => {
   it('creates the config file with defaults', async () => {
     const config = await configStore.ensureConfigFile();
 
-    expect(config.slideshowConfig.interval).toBe(3);
+    expect(config.slideshowConfig.interval).toBe(10);
     expect(config.screensaverConfig.enabled).toBe(true);
     expect(config.appSettings.port).toBe(3000);
     expect(fs.existsSync(process.env.DEPARA_CONFIG_FILE)).toBe(true);
@@ -70,6 +70,15 @@ describe('configStore', () => {
     const updated = await configStore.setConfigValue('slideshowSelectedPath', '/photos');
 
     expect(updated.slideshowSelectedPath).toBe('/photos');
+  });
+
+  it('persists slideshow intervals up to five minutes and enforces bounds', async () => {
+    for (const [requested, expected] of [[1, 1], [60, 60], [90, 90], [120, 120], [180, 180], [240, 240], [300, 300], [500, 300], [-5, 1]]) {
+      await configStore.updateConfig({ slideshowConfig: { interval: requested } });
+      const persisted = JSON.parse(await fsp.readFile(process.env.DEPARA_CONFIG_FILE, 'utf8'));
+      expect(persisted.slideshowConfig.interval).toBe(expected);
+      expect((await configStore.getConfig()).slideshowConfig.interval).toBe(expected);
+    }
   });
 
   it('falls back to defaults when the config file is corrupted', async () => {
