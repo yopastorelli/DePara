@@ -1,5 +1,8 @@
 # Contrato de testes
 
+DOC_AUDIENCE=AI_development_agents
+PLATFORM_CONTRACT=Windows_only
+
 ## Gates canônicos
 
 Execute na raiz do repositório, em PowerShell:
@@ -35,7 +38,7 @@ O timeout padrão do Jest é `30s` para tolerar I/O lento sem esconder travament
 | `npm run test:coverage` | cobertura Jest |
 | `npm run test:watch` | desenvolvimento interativo |
 
-Instale o navegador uma vez por máquina:
+Para preparar o ambiente E2E, o agente instala o navegador uma vez por máquina:
 
 ```powershell
 npx playwright install chromium

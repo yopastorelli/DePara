@@ -1,5 +1,8 @@
 # Material Icons local
 
+DOC_AUDIENCE=AI_development_agents
+ASSET_CONTRACT=local_font_only
+
 Arquivo: `MaterialIcons-Regular.woff2`, 128.352 bytes.
 
 Origem: Google Fonts, Material Icons v145, baixado em 2026-10-17.

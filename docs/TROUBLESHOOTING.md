@@ -1,5 +1,8 @@
 # TROUBLESHOOTING_CONTRACT
 
+DOC_AUDIENCE=AI_development_agents
+PLATFORM_CONTRACT=Windows_only
+
 ## Porta e processo
 
 - `3000` é a porta padrão.
@@ -30,7 +33,13 @@ npm run doctor:windows
 
 O instalador precisa de Git for Windows e `tar` porque o release imutável é criado por `git archive` e extraído antes da inicialização.
 
-Se `doctor-windows.ps1` indicar release ausente, execute `npm run deploy:windows` e reinicie com `npm run stop:windows; npm run start:windows`.
+Se `doctor-windows.ps1` indicar release ausente, execute:
+
+```powershell
+npm run deploy:windows
+npm run stop:windows
+npm run start:windows
+```
 
 ## Instâncias duplicadas ou porta ocupada
 

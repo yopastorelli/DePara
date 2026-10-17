@@ -1,12 +1,12 @@
 # DePara
 
-AI_DOCUMENTATION_TARGET=agents
-HUMAN_ONBOARDING_TARGET=docs/INSTALLATION.md
-CANONICAL_DOC_ENTRYPOINT=docs/README.md
+DOC_AUDIENCE=AI_development_agents
+CANONICAL_DOC_ENTRYPOINT=AGENTS.md
+DETAILED_DOC_ENTRYPOINT=docs/README.md
 
 DePara é uma aplicação local-first de automação de arquivos e slideshow, exclusiva para Windows. A interface web local é servida por uma API Express e usa o filesystem da máquina somente dentro das regras de segurança do projeto.
 
-## Instalação em máquina nova
+## Instalação reproduzível em máquina nova
 
 Requisitos: Windows 10/11 x64, Node.js `>=18.15.0`, npm `>=9.0.0`, Git for Windows e `tar` no `PATH`.
 
@@ -18,7 +18,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 npm run doctor:windows
 ```
 
-Abra `http://127.0.0.1:3000/ui` ou use `DePara` na Área de Trabalho ou no Menu Iniciar. O atalho inicia o serviço local se necessário e abre a UI no navegador padrão do Windows. O processo é local, oculto, separado do Codex e configurado para coexistir com pouca memória.
+Após o diagnóstico com código `0`, a UI está disponível em `http://127.0.0.1:3000/ui`. Os atalhos `DePara` da Área de Trabalho e do Menu Iniciar iniciam o serviço local se necessário e abrem a UI no navegador padrão do Windows. O processo é local, oculto, separado do Codex e configurado para coexistir com pouca memória.
 
 ## Desenvolvimento e release
 
@@ -52,6 +52,6 @@ npm run doctor:windows
 
 O host padrão é `127.0.0.1`. Não defina `HOST=0.0.0.0` sem uma decisão explícita de rede e firewall. O auto-update fica desativado por padrão e exige reinício manual.
 
-## Documentação para agentes
+## Documentação normativa para agentes
 
-Leia `docs/README.md` primeiro. Ele define limites, ordem de leitura, procedimento de alteração, gates de validação, instalação, configuração e exclusões de legado. Os contratos específicos ficam em `docs/AUDIT-REPORT.md`, `docs/ARCHITECTURE.md`, `docs/API.md`, `docs/INSTALLATION.md`, `docs/TESTING.md`, `docs/WINDOWS-OPS.md`, `docs/PERFORMANCE-AUDIT.md` e `docs/TROUBLESHOOTING.md`.
+Leia `AGENTS.md` primeiro. Depois leia `docs/README.md`, que define limites, ordem de leitura, procedimento de alteração, gates de validação, instalação, configuração e exclusões de legado. Os contratos específicos ficam em `docs/AUDIT-REPORT.md`, `docs/ARCHITECTURE.md`, `docs/API.md`, `docs/INSTALLATION.md`, `docs/TESTING.md`, `docs/WINDOWS-OPS.md`, `docs/PERFORMANCE-AUDIT.md` e `docs/TROUBLESHOOTING.md`. Estes arquivos são instruções para agentes de desenvolvimento, não um manual operacional alternativo.

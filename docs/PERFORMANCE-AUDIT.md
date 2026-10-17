@@ -1,5 +1,10 @@
 # PERFORMANCE_AUDIT_CONTRACT
 
+AUDIT_DATE=2026-10-17
+VALIDATED_APPLICATION_COMMIT=265bec2
+AUDIT_PLATFORM=Windows_x64
+DOC_AUDIENCE=AI_development_agents
+
 ## Objetivo
 
 Medir o custo de inicialização, consultas de status e varredura de imagens no mesmo Windows que executará o DePara. O auditor cria uma base temporária, não usa os dados reais e remove o conjunto ao terminar.
@@ -49,9 +54,9 @@ O JSON gravado em `performance-results/` contém, por cenário:
 - Uma medição isolada não certifica a máquina-alvo. Registre pelo menos três execuções por configuração e use mediana.
 - O auditor atual mede o ambiente local; não substitui validação na máquina lenta definitiva.
 
-## Baseline registrado
+## Baseline histórico
 
-Na máquina Windows usada para a auditoria do projeto, com Intel i5-3317U, 4 threads lógicas e aproximadamente 8 GB de RAM, o DePara em coexistência com o Codex apresentou aproximadamente:
+O snapshot de 2026-10-14, mantido apenas para comparação histórica, registrou em uma máquina Windows com Intel i5-3317U, 4 threads lógicas e aproximadamente 8 GB de RAM:
 
 - RSS ocioso entre `54` e `60 MB`;
 - prioridade de processo `BelowNormal`;
@@ -60,3 +65,16 @@ Na máquina Windows usada para a auditoria do projeto, com Intel i5-3317U, 4 thr
 - catálogo de imagens em disco, com preload desligado.
 
 Esse baseline é evidência local, não uma garantia para outra máquina. Registre host, commit, perfil, pressão de memória e configuração junto de cada nova medição.
+
+## Medição atual registrada
+
+Em 2026-10-17, no checkout `C:\DePara`, com Node.js `v24.19.0`, o auditor foi executado contra o release de aplicação `265bec2`, usando dados sintéticos e o perfil de coexistência:
+
+| Perfil | Health | Recursos | Concorrente x5 | Listagem | RSS final |
+|---|---:|---:|---:|---:|---:|
+| `small` (100 arquivos, 50 imagens) | 368,60 ms | 42,16 ms | 112,71 ms | 346,95 ms | 74,8 MiB |
+| `medium` (1.000 arquivos, 250 imagens) | 97,12 ms | 26,02 ms | 78,25 ms | 159,22 ms | 76,8 MiB |
+
+O perfil `medium` terminou ainda construindo o catálogo (`pageStatus=building`) e indicou continuidade (`hasMore=true`), sem carregar todas as imagens em memória. O cenário `small` terminou com `pageStatus=ready`, 50 imagens e `hasMore=false`. Os resultados são evidência do host desta execução, não uma promessa para outra máquina.
+
+Antes de alterar concorrência, paginação ou preload em uma máquina nova, execute pelo menos os dois perfis, repita cada um três vezes e registre a memória livre e a carga simultânea do Codex.

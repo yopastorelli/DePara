@@ -3,7 +3,8 @@
 DOC_FORMAT=agent_contract
 DOC_AUDIENCE=AI_development_agents
 PLATFORM_CONTRACT=Windows_only
-CANONICAL_ENTRYPOINT=docs/README.md
+CANONICAL_ENTRYPOINT=AGENTS.md
+DOCUMENTATION_ENTRYPOINT=docs/README.md
 LAST_AUDIT_SCOPE=full_application_installation_runtime_documentation
 LAST_AUDIT_DATE=2026-10-17
 
@@ -11,7 +12,7 @@ LAST_AUDIT_DATE=2026-10-17
 
 Manter o DePara como uma aplicação local-first para Windows, com automação de arquivos, slideshow de imagens, persistência determinística, limites explícitos de filesystem, baixo consumo de memória e execução verificável.
 
-Este diretório é a fonte normativa para agentes. Não introduza instruções genéricas de Python, Linux, Raspberry Pi, Docker, PM2 ou systemd: nenhuma delas pertence ao produto.
+Este diretório contém os contratos detalhados para agentes. `AGENTS.md` é a entrada normativa na raiz; este arquivo é a entrada detalhada da documentação. Não introduza instruções genéricas de Python, Linux, Raspberry Pi, Docker, PM2 ou systemd: nenhuma delas pertence ao produto.
 
 ## Limites obrigatórios
 
@@ -27,17 +28,18 @@ Este diretório é a fonte normativa para agentes. Não introduza instruções g
 
 ## Ordem de leitura do agente
 
-1. `README.md`
-2. `docs/README.md`
-3. `docs/AUDIT-REPORT.md`
-4. `docs/ARCHITECTURE.md`
-5. `docs/API.md`
-6. `docs/INSTALLATION.md`
-7. `docs/TESTING.md`
-8. `docs/WINDOWS-OPS.md`
-9. `docs/PERFORMANCE-AUDIT.md`
-10. `docs/TROUBLESHOOTING.md`
-11. Os arquivos-fonte e testes diretamente relacionados à alteração.
+1. `AGENTS.md`
+2. `README.md`
+3. `docs/README.md`
+4. `docs/AUDIT-REPORT.md`
+5. `docs/ARCHITECTURE.md`
+6. `docs/API.md`
+7. `docs/INSTALLATION.md`
+8. `docs/TESTING.md`
+9. `docs/WINDOWS-OPS.md`
+10. `docs/PERFORMANCE-AUDIT.md`
+11. `docs/TROUBLESHOOTING.md`
+12. Os arquivos-fonte e testes diretamente relacionados à alteração.
 
 Para alterações da interface, leia também `docs/UI-UX-AUDIT.md`; esse contrato inclui layout de imagens grandes, foco, teclado, cursor, fullscreen e funcionamento sem fontes externas.
 
@@ -90,9 +92,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 npm run doctor:windows
 ```
 
-O instalador valida Node/npm/Git/tar, executa `npm ci`, cria o runtime, prepara o release imutável, cria o atalho quando solicitado, inicia o processo oculto e valida o health check.
+O instalador valida Node/npm/Git/tar, executa `npm ci`, cria o runtime, prepara o release imutável, cria os atalhos da Área de Trabalho e do Menu Iniciar quando solicitado, inicia o processo oculto e valida o health check.
 
-Sem instalação de produção, use `.\install.ps1 -CreateShortcut -Start`. O `install.bat` é apenas um wrapper para o mesmo instalador PowerShell.
+Sem instalação de produção, use `.\install.ps1 -CreateShortcut -Start`.
 
 ## Operação canônica
 

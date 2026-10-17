@@ -1,5 +1,8 @@
 # ARCHITECTURE_CONTRACT
 
+DOC_AUDIENCE=AI_development_agents
+PLATFORM_CONTRACT=Windows_only
+
 ## System shape
 
 ```text

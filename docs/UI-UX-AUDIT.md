@@ -1,8 +1,9 @@
 # Auditoria de UI e UX — slideshow e responsividade
 
 AUDIT_DATE=2026-10-17
-AUDIT_BASE_COMMIT=19e8356
+AUDIT_BASE_COMMIT=265bec2
 AUDIT_PLATFORM=Windows_Chromium
+DOC_AUDIENCE=AI_development_agents
 
 ## Falhas reproduzidas
 

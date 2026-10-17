@@ -1,5 +1,8 @@
 # Contrato operacional Windows
 
+DOC_AUDIENCE=AI_development_agents
+PLATFORM_CONTRACT=Windows_only
+
 ## Processo e limites
 
 - Plataforma: Windows 10/11 x64.

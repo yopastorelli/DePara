@@ -1,4 +1,7 @@
-# Contrato de instalação Windows
+# Contrato de instalação Windows para agentes de IA
+
+DOC_AUDIENCE=AI_development_agents
+CANONICAL_INSTALLER=install.ps1
 
 ## Pré-requisitos
 
@@ -37,19 +40,13 @@ O instalador executa, nesta ordem:
 
 O script não sobrescreve configuração, dados, backups ou releases já existentes.
 
-Equivalente pelo Prompt de Comando:
-
-```bat
-install.bat -Production -CreateShortcut -Start
-```
-
-`install.bat` delega todo o trabalho ao `install.ps1`; não existe uma segunda lógica de instalação.
+Não há um segundo procedimento de instalação documentado. Use o PowerShell e `install.ps1` para manter a execução determinística entre máquinas.
 
 ## Modos de instalação
 
 | Comando | Uso |
 |---|---|
-| `.\install.ps1 -Production -CreateShortcut -Start` | máquina de uso: instala, publica, cria atalho e inicia |
+| `.\install.ps1 -Production -CreateShortcut -Start` | produção local: instala, publica, cria atalhos e inicia |
 | `.\install.ps1 -Production` | somente runtime de produção |
 | `.\install.ps1 -CreateShortcut -Start` | desenvolvimento com dependências de desenvolvimento |
 | `npm ci` | reinstalação determinística no checkout |
@@ -59,7 +56,7 @@ install.bat -Production -CreateShortcut -Start
 
 ## Primeiro acesso e configuração
 
-Ao clicar em `DePara` na Área de Trabalho ou no Menu Iniciar, o launcher inicia o processo local se necessário e abre a UI com `Start-Process` para respeitar o navegador padrão do Windows. Nesta máquina, o navegador padrão registrado para HTTP e HTTPS é o Microsoft Edge. A fixação adicional na barra de tarefas depende do Shell do Windows e não é automatizada pelo instalador para esse launcher local; quando a opção for oferecida pela edição do Windows, use o menu contextual do atalho.
+A execução de `DePara.lnk` na Área de Trabalho ou no Menu Iniciar chama o launcher, inicia o processo local se necessário e abre a UI com `Start-Process`, respeitando o navegador padrão registrado no Windows de destino. O tutorial não assume Edge, Chrome ou outro navegador específico. A fixação adicional na barra de tarefas depende do Shell do Windows e não é automatizada pelo instalador para esse launcher local; quando a opção for oferecida pela edição do Windows, use o menu contextual do atalho.
 
 URLs padrão:
 
@@ -86,7 +83,7 @@ $body = @{
     config = @{
         slideshowSelectedPath = 'C:\Users\<usuario>\Pictures'
         slideshowConfig = @{
-            interval = 3
+            interval = 10
             preload = $false
             recursive = $true
         }

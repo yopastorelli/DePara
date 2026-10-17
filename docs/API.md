@@ -1,5 +1,8 @@
 # API_CONTRACT
 
+DOC_AUDIENCE=AI_development_agents
+PLATFORM_CONTRACT=Windows_only
+
 BASE_URL=http://<HOST>:<PORT>
 API_PREFIX=/api
 UI_PATH=/ui
