@@ -1,75 +1,73 @@
-# WINDOWS_OPERATIONS_CONTRACT
+# Contrato operacional Windows
 
-## Runtime
+## Processo e limites
 
-- Plataforma suportada: Windows.
-- Processo: launcher PowerShell independente, iniciado por `npm run start:windows`.
+- Plataforma: Windows 10/11 x64.
+- Processo oficial: `scripts/start-windows-coexistence.ps1`.
 - Host padrão: `127.0.0.1`.
 - Porta padrão: `3000`.
-- Runtime persistente: `%USERPROFILE%\.depara`.
-- O launcher cria um processo separado do Codex, oculto e com prioridade `BelowNormal`; não há supervisor PM2 ou systemd no contrato.
+- Runtime: `%USERPROFILE%\.depara` ou `DEPARA_RUNTIME_ROOT`.
+- O launcher usa processo separado, prioridade `BelowNormal`, heap Node limitada, concorrência `1` e logs silenciosos.
+- O launcher não usa PM2, systemd, WSL, Raspberry Pi ou supervisor Linux.
 
-## Inicialização e parada
+## Comandos oficiais
 
 ```powershell
-Set-Location C:\DePara
 npm run start:windows
+npm run stop:windows
+npm run doctor:windows
+npm run shortcut:windows
 ```
 
-Para parar, use `Ctrl+C` no terminal do processo. O encerramento limpa watchers, timers e o servidor HTTP.
+O início é idempotente. O encerramento procura somente processos Node cujo comando aponta para o runtime ou para o `src/main.js` deste checkout; não encerra outros processos Node.
 
-## Verificação operacional
+Não use `Ctrl+C` como procedimento principal: o launcher roda oculto e separado do terminal. Use `npm run stop:windows` ou `scripts/stop-windows-coexistence.ps1`.
+
+## Health e diagnóstico
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:3000/health
 Invoke-RestMethod http://127.0.0.1:3000/api/status
 Invoke-RestMethod http://127.0.0.1:3000/api/status/resources
+npm run doctor:windows
 ```
 
-O retorno de `/api/status` deve informar `platformTarget=windows` e `supervisor.supervisor=windows-process`.
+O diagnóstico exige:
 
-## Atualizações
+- configuração persistente existente;
+- release ativo existente;
+- no máximo uma instância do processo;
+- health `OK` quando `-RequireRunning` está ativo.
 
-- `DEPARA_ENABLE_UPDATE_SCHEDULER` fica desligado por padrão.
-- A inicialização do servidor não carrega o orquestrador de atualização; ele é inicializado somente quando uma rota de update é usada.
-- O Windows não tenta chamar PM2, systemd ou comandos Linux.
-- Quando um fluxo exigir reinício, o processo retorna `windows_restart_required`; revise o estado e reinicie manualmente.
-- Não ative o scheduler em uma máquina lenta sem antes executar a auditoria de performance.
+## Release e atualização
 
-## Limites para máquina lenta
+```powershell
+npm run deploy:windows
+npm run stop:windows
+npm run start:windows
+npm run doctor:windows
+```
 
-| Variável | Recomendação inicial | Efeito |
-|---|---:|---|
-| `MAX_CONCURRENT_OPERATIONS` | `1` | limita cópias/movimentações simultâneas |
-| `MAX_RECURSION_DEPTH` | `10` | impede varreduras profundas acidentais |
-| `DEPARA_IMAGE_PAGE_SIZE` | `250` | tamanho máximo normal de uma página do catálogo |
-| `DEPARA_LOW_MEMORY_PAGE_SIZE` | `100` | reduz a página sob pressão de memória |
-| `DEPARA_MEMORY_WARN_MB` | `1024` | entra em modo de contenção abaixo deste nível |
-| `DEPARA_MEMORY_CRITICAL_MB` | `512` | recusa novas indexações abaixo deste nível |
-| `DEPARA_MAX_RSS_MB` | `192` | recusa novas indexações se o RSS do DePara exceder o limite |
-| `DEPARA_MAX_CATALOGS` | `2` | limita catálogos temporários simultâneos |
-| `DEPARA_SLIDESHOW_PRELOAD` | `false` | não mantém imagem adicional em memória por padrão |
-| `DEPARA_MAX_IMAGE_RESULTS` | `1000` | limita somente rotas legadas sem paginação |
-| `LOG_LEVEL` | `warn` | reduz formatação e escrita de logs |
-| `LOG_TO_CONSOLE` | `false` | evita saída contínua no terminal |
-| `DEPARA_HTTP_LOGGING` | `false` | evita uma linha de log por requisição |
+`bootstrap-runtime-release.js` grava releases imutáveis por commit em `%USERPROFILE%\.depara\releases` e aponta `%USERPROFILE%\.depara\current` para o release ativo. O processo em execução não deve ser considerado atualizado sem conferir `current/release.json` e `/health`.
 
-O slideshow usa catálogo temporário em disco e páginas sob demanda. O navegador mantém
-somente a página corrente, e o catálogo é removido ao fechar o viewer ou após o TTL.
-O endpoint `/api/status/resources` informa o estado `normal`, `warning` ou `critical`,
-além dos limites efetivos.
+O auto-update é opt-in e o scheduler fica desativado por padrão. O Windows não deve chamar PM2, systemd ou comandos Linux. Rotas antigas de update respondem `410 Gone`.
 
-## Convivência com o Codex
+## Recursos e coexistência com o Codex
 
-- O DePara não deve ser iniciado como processo filho persistente do terminal do Codex; use o launcher oficial.
-- O launcher aplica `BelowNormal`, `--max-old-space-size=128`, uma operação simultânea e logs silenciosos.
-- Em estado `warning`, novas páginas usam 100 itens e o pré-carregamento permanece desativado.
-- Em estado `critical`, novas indexações retornam `503`; o slideshow já aberto continua com a página atual.
-- O limite de 192 MB é um guard operacional para novas indexações, não uma garantia de consumo máximo do processo.
+| Estado | Comportamento |
+|---|---|
+| `normal` | usa a página normal configurada |
+| `warning` | reduz a página para `DEPARA_LOW_MEMORY_PAGE_SIZE` e mantém preload desligado |
+| `critical` | recusa novas indexações com `503`; não apaga o catálogo já aberto |
 
-## Backup e rollback
+O endpoint `/api/status/resources` é a fonte de verdade para pressão de memória. O limite de `DEPARA_MAX_RSS_MB` é um guard para iniciar novas indexações, não uma garantia de RSS máximo absoluto.
 
-- Dados mutáveis ficam em `%USERPROFILE%\.depara\data`.
-- Backups ficam em `%USERPROFILE%\.depara\backups`.
-- Antes de alterar limites ou ativar recursos opcionais, copie o diretório de runtime.
-- Não use `git clean`, `git reset --hard` ou exclusões recursivas para resolver problemas operacionais.
+Em máquina compartilhada com Codex, preserve `MAX_CONCURRENT_OPERATIONS=1`, `DEPARA_MAX_CATALOGS=2`, `DEPARA_SLIDESHOW_PRELOAD=false`, `LOG_LEVEL=warn` e `DEPARA_HTTP_LOGGING=false`.
+
+## Backup e reversibilidade
+
+- Dados mutáveis: `%USERPROFILE%\.depara\data`.
+- Backups: `%USERPROFILE%\.depara\backups`.
+- Releases anteriores: `%USERPROFILE%\.depara\releases`.
+- Antes de alterar limites, exporte a configuração operacional e copie o runtime.
+- Não use `git clean`, `git reset --hard` ou exclusões recursivas para resolver falhas.

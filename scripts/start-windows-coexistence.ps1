@@ -5,11 +5,41 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$runtimeRoot = Join-Path $HOME '.depara'
+$defaultRuntimeRoot = if ($env:DEPARA_RUNTIME_ROOT) {
+    $env:DEPARA_RUNTIME_ROOT
+} else {
+    Join-Path $HOME '.depara'
+}
+$defaultConfigPath = if ($env:DEPARA_CONFIG_ENV_PATH) {
+    $env:DEPARA_CONFIG_ENV_PATH
+} else {
+    Join-Path $defaultRuntimeRoot 'config.env'
+}
+
+if (Test-Path -LiteralPath $defaultConfigPath) {
+    foreach ($line in Get-Content -LiteralPath $defaultConfigPath -ErrorAction SilentlyContinue) {
+        if ($line -match '^\s*DEPARA_RUNTIME_ROOT\s*=\s*(.+?)\s*$' -and -not $env:DEPARA_RUNTIME_ROOT) {
+            $env:DEPARA_RUNTIME_ROOT = $matches[1].Trim()
+        }
+    }
+}
+
+$runtimeRoot = if ($env:DEPARA_RUNTIME_ROOT) { $env:DEPARA_RUNTIME_ROOT } else { $defaultRuntimeRoot }
 $currentEntry = Join-Path $runtimeRoot 'current\src\main.js'
 $sourceEntry = Join-Path $PSScriptRoot '..\src\main.js'
 $entryPoint = if (Test-Path -LiteralPath $currentEntry) { $currentEntry } else { (Resolve-Path -LiteralPath $sourceEntry).Path }
 $node = (Get-Command node -ErrorAction Stop).Path
+$entryCandidates = @($entryPoint, $currentEntry, (Resolve-Path -LiteralPath $sourceEntry).Path) | Where-Object { $_ } | Select-Object -Unique
+
+$existingProcesses = @(Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction SilentlyContinue | Where-Object {
+    $commandLine = $_.CommandLine
+    $commandLine -and ($entryCandidates | Where-Object { $commandLine -like "*$_*" })
+})
+
+if ($existingProcesses.Count -gt 0) {
+    Write-Output "DePara já está em execução. PID(s)=$($existingProcesses.ProcessId -join ',')"
+    exit 0
+}
 
 $env:NODE_ENV = 'production'
 $env:DEPARA_RESOURCE_PROFILE = 'codex-coexistence'

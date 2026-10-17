@@ -1,8 +1,11 @@
-# TESTING_CONTRACT
+# Contrato de testes
 
-## Canonical gates
+## Gates canônicos
 
-```bash
+Execute na raiz do repositório, em PowerShell:
+
+```powershell
+npm ci
 npm run lint
 npm run test:unit
 npm run test:smoke
@@ -10,124 +13,96 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
-Expected audit output:
+Resultado obrigatório: lint com código `0`, todas as suítes aprovadas e `npm audit --audit-level=high` sem vulnerabilidades reportadas.
 
-```text
-found 0 vulnerabilities
+Em hardware muito lento, use somente para validação local:
+
+```powershell
+npm run test:unit -- --testTimeout=60000
 ```
 
-## Test scripts
+O timeout padrão do Jest é `30s` para tolerar I/O lento sem esconder travamentos. O timeout do Playwright é `60s` por teste e `120s` para iniciar o servidor E2E.
 
-| Script | Scope |
+## Scripts
+
+| Script | Escopo |
 |---|---|
-| `npm test` | alias for unit tests |
-| `npm run test:unit` | Jest backend/unit contracts |
-| `npm run test:smoke` | Jest API smoke contracts and controlled file operations |
-| `npm run test:e2e` | Playwright browser E2E against real UI/API flow |
-| `npm run test:all` | lint + unit + E2E |
-| `npm run test:coverage` | Jest coverage |
-| `npm run test:watch` | local Jest watch |
+| `npm test` | alias de `test:unit` |
+| `npm run test:unit` | contratos unitários e de backend |
+| `npm run test:smoke` | rotas e operações controladas |
+| `npm run test:e2e` | UI/API real em navegador Playwright |
+| `npm run test:all` | lint + unit + smoke + E2E |
+| `npm run test:coverage` | cobertura Jest |
+| `npm run test:watch` | desenvolvimento interativo |
 
-## Browser dependencies
+Instale o navegador uma vez por máquina:
 
-Install Playwright browser once per machine/runtime:
-
-```bash
+```powershell
 npx playwright install chromium
 ```
 
-Install native Chromium dependencies when the OS image lacks them:
+## Isolamento obrigatório
 
-```bash
-npx playwright install-deps chromium
-```
+Testes devem usar diretórios temporários próprios para:
 
-Known environment note:
+- `DEPARA_RUNTIME_ROOT`;
+- `DEPARA_DATA_DIR`;
+- `DEPARA_CONFIG_FILE`;
+- `DEPARA_BACKUP_DIR`;
+- `DEPARA_TEMP_DIR`;
+- `LOG_FILE`.
 
-- On WSL/localhost scenarios, browser verification must be trusted to Playwright if the Codex in-app browser cannot reach WSL loopback.
+Testes de update devem definir `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true` e `DEPARA_DISABLE_UPDATE_SCHEDULER=true`. Testes que verificam paginação ou pressão de recursos devem controlar a memória simulada em vez de depender da memória livre do computador.
 
-## Isolation rules
+Nenhum teste pode usar `%USERPROFILE%\.depara`, pastas reais do usuário, porta de produção `3000` ou o banco de dados de outra execução.
 
-Tests must set isolated paths for:
+## Cobertura mínima
 
-- `DEPARA_RUNTIME_ROOT`
-- `DEPARA_DATA_DIR`
-- `DEPARA_CONFIG_FILE`
-- `DEPARA_BACKUP_DIR`
-- `LOG_FILE`
+O conjunto deve cobrir:
 
-Tests that touch update must set:
+- health, status, recursos e conectividade;
+- persistência e import/export de configuração;
+- copy, move, delete e proteção de caminhos;
+- pastas, workflows e agendamentos;
+- paginação de imagens, catálogo temporário e `countOnly`;
+- proteção contra traversal e symlink;
+- update sem side effects destrutivos;
+- UI, hidratação, slideshow e serving de imagens;
+- bootstrap do release imutável;
+- ausência de duplicação e perda em catálogos grandes.
 
-```bash
-DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true
-DEPARA_DISABLE_UPDATE_SCHEDULER=true
-```
+## UI, slideshow e responsividade
 
-Tests that need deterministic limiter behavior may set:
+`tests/e2e/slideshow.ux.spec.js` usa PNGs grandes em retrato, paisagem e panorama, não apenas imagens de um pixel. Cobre seis viewports de `320 × 480` a `1366 × 768`, teclado, foco, hover estável, pausa, cursor, ausência de overflow nas abas principais, fullscreen nativo e fallback.
 
-```bash
-DEPARA_DISABLE_RATE_LIMITS=true
-```
+A UI deve funcionar sem requisições externas e sem aguardar o monitoramento de recursos. A fonte de ícones local deve carregar com sucesso. O teste mantém uma requisição de monitoramento pendente para garantir que ela não prenda a inicialização.
 
-## E2E product story
+O Playwright usa um único worker: as suítes compartilham a API isolada de testes e não podem disputar sua configuração. Isso também contém o consumo de RAM durante a validação.
 
-Playwright must verify at least:
+Ao mexer no CSS, inspecione também as capturas sintéticas em `test-results/`. O procedimento e as causas corrigidas estão em `docs/UI-UX-AUDIT.md`.
 
-- UI loads without parser/runtime console errors.
-- API status is reachable from the UI.
-- Configuration can be saved and rehydrated.
-- File operation flow can use controlled fixture paths.
-- Slideshow can list fixture images and serve image assets.
+## Auditoria de dependências
 
-## Smoke coverage requirements
-
-Smoke tests must cover:
-
-- `/health` and `/api/status`
-- config persistence
-- copy/move/delete with temp files
-- folder listing
-- image listing
-- scheduled operation create/edit/pause/execute
-- backup export/import
-- auto-update status with destructive side effects disabled
-- invalid input returning actionable errors
-- path security for unsafe traversal/symlink cases
-
-## Dependency audit policy
-
-Use:
-
-```bash
+```powershell
 npm audit --audit-level=high
+npm ls js-yaml picomatch --all
 ```
 
-Current lockfile is expected to have zero vulnerabilities because `package.json` includes targeted overrides:
+Os overrides de `package.json` são intencionais:
 
-- `@istanbuljs/load-nyc-config -> js-yaml@5.0.0`
-- `anymatch -> picomatch@2.3.2`
+- `@istanbuljs/load-nyc-config -> js-yaml@5.4.3`;
+- `anymatch -> picomatch@2.3.2`.
 
-Do not remove these overrides unless the upstream dependency tree no longer needs them and `npm audit --audit-level=high` still reports zero vulnerabilities.
+Não remova overrides sem reproduzir a instalação pelo lockfile, executar toda a suíte e confirmar a auditoria.
 
-## Text/encoding verification
+## Artefatos
 
-Command:
+Não versione `node_modules/`, `coverage/`, `test-results/`, `playwright-report/`, `performance-results/`, logs, backups, dados persistentes ou arquivos `.env*`.
 
-```bash
+## Codificação
+
+```powershell
 rg -n "Ã[ƒ‚]|â[€™€œ€]|\x{00D2}|\x{FFFD}" README.md docs src/public src/routes
 ```
 
-Interpretation:
-
-- If only terminal rendering is wrong, do not rewrite files.
-- If source files contain mojibake, fix UTF-8 content and rerun lint/E2E.
-- Do not mask mojibake by overriding `innerHTML` or `textContent`; fix source encoding.
-
-## Generated artifact policy
-
-Do not commit:
-
-- `test-results/`
-- `playwright-report/`
-- `coverage/`
-- runtime `logs/`, `backups/`, `data/`
+Corrija mojibake no source; não esconda o problema com monkey patches de DOM.

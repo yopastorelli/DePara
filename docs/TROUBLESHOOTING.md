@@ -12,7 +12,36 @@ Verifique o processo no PowerShell:
 Get-Process node -ErrorAction SilentlyContinue
 Invoke-RestMethod http://127.0.0.1:3000/health
 Invoke-RestMethod http://127.0.0.1:3000/api/status
+npm run doctor:windows
 ```
+
+Para iniciar, use `npm run start:windows`. Para encerrar a instância oculta, use `npm run stop:windows`; `Ctrl+C` não é o procedimento correto para esse launcher.
+
+## Instalação ou release ausente
+
+```powershell
+git --version
+tar --version
+node --version
+npm --version
+.\install.ps1 -Production -CreateShortcut -Start
+npm run doctor:windows
+```
+
+O instalador precisa de Git for Windows e `tar` porque o release imutável é criado por `git archive` e extraído antes da inicialização.
+
+Se `doctor-windows.ps1` indicar release ausente, execute `npm run deploy:windows` e reinicie com `npm run stop:windows; npm run start:windows`.
+
+## Instâncias duplicadas ou porta ocupada
+
+```powershell
+npm run doctor:windows
+npm run stop:windows
+npm run start:windows
+Invoke-RestMethod http://127.0.0.1:3000/health
+```
+
+O launcher oficial é idempotente e procura somente comandos Node do DePara. Não encerre processos Node do Codex, Playwright ou outras aplicações.
 
 ## UI não carrega
 
@@ -67,6 +96,14 @@ npm run perf:audit:medium
 
 Compare `durationMs`, `memoryDelta.rss` e `memoryDelta.heapUsed` entre execuções do mesmo perfil. Reduza `MAX_CONCURRENT_OPERATIONS`, defina `DEPARA_MAX_IMAGE_RESULTS` e mantenha logs HTTP desligados antes de investigar otimizações mais profundas.
 
+Consulte primeiro:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:3000/api/status/resources
+```
+
+Em `warning`, a paginação é reduzida. Em `critical`, novas indexações retornam `503` para proteger a máquina; isso não significa que o processo tenha falhado.
+
 ## Configuração não persiste
 
 ```powershell
@@ -91,6 +128,15 @@ No Windows, `runtime.supervisor.supervisor` deve ser `windows-process`. `runtime
 npx playwright install chromium
 npm run test:e2e
 ```
+
+## Foto cortada, cursor oculto ou teclado sem resposta
+
+- Confira o release ativo e recarregue a página depois de atualizar; uma aba aberta anteriormente pode continuar executando JavaScript e CSS antigos.
+- No visualizador, use `←`/`→`, `Espaço`, `F11` e `Esc`. A primeira foto não tem anterior, e o botão correspondente fica desabilitado. Campos de texto e combinações com Ctrl/Alt/Meta não devem ser capturados pelo slideshow.
+- A foto deve aparecer inteira, com barras vazias quando necessário. Não troque `object-fit: contain` por `cover` nem remova os limites de altura do centro do visualizador.
+- O cursor não deve ser ocultado durante slideshow manual. O timer de inatividade fica suspenso até fechar o visualizador.
+- O botão de fullscreen fica temporariamente desabilitado durante uma transição. Se o navegador recusar fullscreen nativo, o slideshow continua preenchendo a janela sem recortar a foto.
+- Reproduza os testes de `docs/UI-UX-AUDIT.md` antes de adicionar novas regras ou estilos inline para contornar um problema visual.
 
 ## Auditoria de dependências falha
 

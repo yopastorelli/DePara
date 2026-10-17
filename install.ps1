@@ -1,5 +1,7 @@
 param(
-    [switch]$Production
+    [switch]$Production,
+    [switch]$CreateShortcut,
+    [switch]$Start
 )
 
 $ErrorActionPreference = 'Stop'
@@ -27,6 +29,15 @@ if ($LASTEXITCODE -ne 0 -or -not $npmVersion) {
 $npmMajor = [int]($npmVersion.Split('.')[0])
 if ($npmMajor -lt 9) {
     throw "npm $npmVersion encontrado; o mínimo é npm 9."
+}
+
+$gitVersion = (& git --version 2>$null).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $gitVersion) {
+    throw 'Git não encontrado. O instalador usa Git para preparar o release imutável do runtime.'
+}
+
+if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
+    throw 'tar não encontrado. Instale o Git for Windows ou disponibilize tar no PATH.'
 }
 
 $runtimeRoot = if ($env:DEPARA_RUNTIME_ROOT) {
@@ -70,6 +81,7 @@ if (-not (Test-Path -LiteralPath $configPath)) {
     $configDirectory = Split-Path -Parent $configPath
     New-Item -ItemType Directory -Path $configDirectory -Force | Out-Null
     @(
+        'HOST=127.0.0.1',
         'PORT=3000',
         'NODE_ENV=production',
         'MAX_PAYLOAD=8mb',
@@ -91,8 +103,38 @@ if (-not (Test-Path -LiteralPath $configPath)) {
     ) | Set-Content -LiteralPath $configPath -Encoding utf8
 }
 
+Write-Host 'Preparando release imutável do runtime...' -ForegroundColor Yellow
+& node (Join-Path $PSScriptRoot 'bootstrap-runtime-release.js')
+if ($LASTEXITCODE -ne 0) {
+    throw 'Falha ao preparar o release imutável do runtime.'
+}
+
+if ($CreateShortcut) {
+    Write-Host 'Criando atalho do Windows...' -ForegroundColor Yellow
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'scripts\install-shortcut.ps1')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Falha ao criar o atalho do Windows.'
+    }
+}
+
+if ($Start) {
+    Write-Host 'Iniciando o DePara...' -ForegroundColor Yellow
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'scripts\start-windows-coexistence.ps1')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Falha ao iniciar o DePara.'
+    }
+    Start-Sleep -Seconds 2
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'scripts\doctor-windows.ps1') -RequireRunning
+    if ($LASTEXITCODE -ne 0) {
+        throw 'O DePara não passou no diagnóstico pós-inicialização.'
+    }
+}
+
 Write-Host ''
 Write-Host 'Instalação concluída.' -ForegroundColor Green
 Write-Host "Runtime: $runtimeRoot"
 Write-Host "Configuração: $configPath"
 Write-Host 'Inicialização: npm run start:windows'
+if ($CreateShortcut) {
+    Write-Host 'Atalho: criado na Área de Trabalho'
+}

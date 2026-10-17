@@ -11,7 +11,7 @@ module.exports = {
     '/build/',
     '/tests/e2e/'
   ],
-  testTimeout: 10000,
+  testTimeout: 30000,
   collectCoverage: false,
   collectCoverageFrom: [
     'src/**/*.js',

@@ -4,12 +4,15 @@ BASE_URL=http://<HOST>:<PORT>
 API_PREFIX=/api
 UI_PATH=/ui
 
+Default access is loopback-only: `http://127.0.0.1:3000`. The API has no user authentication layer; do not bind it to a LAN address without an independently reviewed network boundary.
+
 ## Response conventions
 
 - Success payloads use `success: true` where route modules implement it.
 - Error payloads use `error.message` and may include `error.details`, `error.field`, `error.statusCode`.
 - Path validation failures must return `400` where request input is invalid.
 - Rate limit failures return `429` and include `retryAfter` plus `X-RateLimit-*` headers.
+- Resource pressure can reject new image catalog work with `503` and `error.code=RESOURCE_CONSTRAINED`.
 - Removed legacy update routes return `410`.
 
 ## Root and health
@@ -154,7 +157,7 @@ State rules:
 | POST | `/api/files/list-images` | JSON body: `folderPath`, optional `extensions`, `recursive`, `pageSize`, `catalogId`, `cursor`, `countOnly`, `maxResults` |
 | DELETE | `/api/files/image-catalog/:catalogId` | encerra e remove um catálogo temporário |
 | POST | `/api/files/list-folders` | JSON body: `path` |
-| GET | `/api/files/images/:folderPath` | `folderPath` must be percent-encoded as one URL segment |
+| GET | `/api/files/images/:folderPath` | compatibility route; `folderPath` must be percent-encoded as one URL segment and the result is capped |
 | GET | `/api/files/image/:imagePath` | `imagePath` must be percent-encoded as one URL segment |
 
 Preferred routes for new clients:
@@ -165,6 +168,8 @@ Preferred routes for new clients:
 - Use `countOnly=true` for folder validation without returning image metadata.
 - Use `POST /api/files/list-folders` for folder browsing.
 - Use `GET /api/files/image/:imagePath` for serving a single image.
+
+The compatibility route `GET /api/files/images/:folderPath` is not a replacement for the paginated catalog. New clients must use `POST /api/files/list-images` and close the returned catalog when finished.
 
 Compatibility rule:
 

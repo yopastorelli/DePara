@@ -1,51 +1,26 @@
 # DePara
 
 AI_DOCUMENTATION_TARGET=agents
-HUMAN_ONBOARDING_TARGET=false
+HUMAN_ONBOARDING_TARGET=docs/INSTALLATION.md
 CANONICAL_DOC_ENTRYPOINT=docs/README.md
 
-## Product contract
+DePara é uma aplicação local-first de automação de arquivos e slideshow, exclusiva para Windows. A interface web local é servida por uma API Express e usa o filesystem da máquina somente dentro das regras de segurança do projeto.
 
-DePara is a local-first file automation and image slideshow service exclusivo para Windows. O produto é uma interface web local apoiada por uma API Express.
+## Instalação em máquina nova
 
-Primary jobs:
+Requisitos: Windows 10/11 x64, Node.js `>=18.15.0`, npm `>=9.0.0`, Git for Windows e `tar` no `PATH`.
 
-- Configure folders and slideshow state.
-- Execute copy, move and delete file operations.
-- Persist and run scheduled file operations.
-- Browse folders and image assets for slideshow flows.
-- Export/import operational backup state.
-- Preparar atualizações locais com reinício manual do processo Windows.
+```powershell
+git clone https://github.com/yopastorelli/DePara.git C:\DePara
+Set-Location C:\DePara
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\install.ps1 -Production -CreateShortcut -Start
+npm run doctor:windows
+```
 
-## Runtime contract
+Abra `http://127.0.0.1:3000/ui` ou use o atalho `DePara.lnk` criado na Área de Trabalho. O processo é local, oculto, separado do Codex e configurado para coexistir com pouca memória.
 
-- HTTP entrypoint: `src/main.js`
-- Default host: `127.0.0.1`
-- Default app/config port: `3000`
-- UI: `http://127.0.0.1:<PORT>/ui`
-- Root metadata: `http://127.0.0.1:<PORT>/`
-- Health: `http://127.0.0.1:<PORT>/health`
-- API health: `http://127.0.0.1:<PORT>/api/health`
-- API docs endpoint: `http://127.0.0.1:<PORT>/api/docs`
-
-Set `HOST=0.0.0.0` only when LAN exposure is intentional and the network boundary is controlled.
-
-## Source of truth
-
-- App metadata, scripts, dependency overrides: `package.json`
-- Express setup and route mounting: `src/main.js`
-- Public route modules: `src/routes/*`
-- File operation engine: `src/utils/fileOperations.js`
-- Low-level file permissions/copy/move helpers: `src/utils/fileOps/*`
-- Runtime path derivation: `src/utils/runtimePaths.js`
-- Operational config loader: `src/utils/runtimeConfig.js`
-- Update orchestrator: `src/services/updateOrchestrator.js` (opcional e desativado por padrão)
-- Performance audit: `scripts/performance-audit.js`
-- AI documentation: `docs/`
-
-## Required release gate
-
-Run all commands from repository root:
+## Desenvolvimento e release
 
 ```powershell
 npm ci
@@ -56,38 +31,27 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
-Expected dependency audit state: `found 0 vulnerabilities`.
+Para publicar o commit validado no runtime Windows:
 
-## Persistence contract
+```powershell
+npm run deploy:windows
+npm run stop:windows
+npm run start:windows
+npm run doctor:windows
+```
 
-- Runtime root: `DEPARA_RUNTIME_ROOT` or `%USERPROFILE%\.depara`
-- Config env file: `DEPARA_CONFIG_ENV_PATH` or `%USERPROFILE%\.depara\config.env`
-- Functional data: `DEPARA_DATA_DIR` or `%USERPROFILE%\.depara\data`
-- Active release: `DEPARA_CURRENT_DIR` or `%USERPROFILE%\.depara\current`
-- Release store: `DEPARA_RELEASES_DIR` or `%USERPROFILE%\.depara\releases`
-- Logs: `DEPARA_LOG_DIR` or `%USERPROFILE%\.depara\logs`
-- Backups: `DEPARA_BACKUP_DIR` or `%USERPROFILE%\.depara\backups`
-- Temp files: `DEPARA_TEMP_DIR` or `%USERPROFILE%\.depara\temp`
+## Contrato operacional
 
-## Non-negotiable invariants
+- UI: `http://127.0.0.1:3000/ui`
+- Health: `http://127.0.0.1:3000/health`
+- API: `http://127.0.0.1:3000/api`
+- Documentação da API: `http://127.0.0.1:3000/api/docs`
+- Runtime mutável: `%USERPROFILE%\.depara`
+- Configuração de ambiente: `%USERPROFILE%\.depara\config.env`
+- Release ativo: `%USERPROFILE%\.depara\current`
 
-- O processo Windows local é iniciado por `npm run start:windows`; PM2, systemd e launchers Linux não fazem parte do contrato.
-- O auto-update permanece desativado por padrão e exige reinício manual do processo Windows.
-- Runtime releases are immutable. Mutable state lives under `%USERPROFILE%\.depara\data`.
-- New update flows must use `/api/update/auto/*`.
-- Legacy update endpoints stay public only to return `410 Gone`.
-- Path-based file operations must pass `validateSafePath`.
-- Shell fallbacks for file copy/move/chmod are disallowed.
-- Tests must isolate runtime, data, logs, backups and temp directories.
-- Generated E2E artifacts must not be committed.
+O host padrão é `127.0.0.1`. Não defina `HOST=0.0.0.0` sem uma decisão explícita de rede e firewall. O auto-update fica desativado por padrão e exige reinício manual.
 
-## Documentation read order
+## Documentação para agentes
 
-1. [docs/README.md](docs/README.md)
-2. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-3. [docs/API.md](docs/API.md)
-4. [docs/INSTALLATION.md](docs/INSTALLATION.md)
-5. [docs/TESTING.md](docs/TESTING.md)
-6. [docs/WINDOWS-OPS.md](docs/WINDOWS-OPS.md)
-7. [docs/PERFORMANCE-AUDIT.md](docs/PERFORMANCE-AUDIT.md)
-8. [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+Leia `docs/README.md` primeiro. Ele define limites, ordem de leitura, procedimento de alteração, gates de validação, instalação, configuração e exclusões de legado. Os contratos específicos ficam em `docs/AUDIT-REPORT.md`, `docs/ARCHITECTURE.md`, `docs/API.md`, `docs/INSTALLATION.md`, `docs/TESTING.md`, `docs/WINDOWS-OPS.md`, `docs/PERFORMANCE-AUDIT.md` e `docs/TROUBLESHOOTING.md`.

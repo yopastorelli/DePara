@@ -4,6 +4,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 const DEFAULT_RUNTIME_CONFIG = Object.freeze({
+  HOST: '127.0.0.1',
   PORT: '3000',
   NODE_ENV: 'production',
   LOG_LEVEL: 'warn',

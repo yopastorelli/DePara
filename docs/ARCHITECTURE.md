@@ -30,18 +30,20 @@ Windows browser UI / Playwright
 
 ## Startup sequence
 
-1. `loadOperationalConfig()` reads `%USERPROFILE%\.depara\config.env` unless overridden by `DEPARA_CONFIG_ENV_PATH`.
-2. Express app is configured once.
-3. Runtime directories are created:
+1. `scripts/start-windows-coexistence.ps1` loads the Windows runtime configuration and refuses to create a duplicate DePara process.
+2. `%USERPROFILE%\.depara\current\src\main.js` loads `release.json` and resolves the immutable release selected by `bootstrap-runtime-release.js`.
+3. `loadOperationalConfig()` reads `%USERPROFILE%\.depara\config.env` unless overridden by `DEPARA_CONFIG_ENV_PATH`.
+4. Express app is configured once.
+5. Runtime directories are created:
    - logs
    - backups
    - temp
    - runtime public uploads/downloads
    - data
-4. Config file is ensured.
-5. Folder manager initializes.
-6. Server listens on `HOST` and `PORT`.
-7. Update orchestrator initializes lazily only when an update route requires it.
+6. Config file is ensured.
+7. Folder manager initializes.
+8. Server listens on `HOST` and `PORT`.
+9. Update orchestrator initializes lazily only when an update route requires it.
 
 Defaults:
 
@@ -66,8 +68,8 @@ Defaults:
 
 Migration contract:
 
-- On first runtime initialization, legacy data from repository `data/` or `src/data/` may be migrated to runtime data.
-- After migration, runtime data is canonical.
+- On first runtime initialization, legacy data from repository `data/` or `src/data/` may be copied once to runtime data.
+- After migration, runtime data is canonical and new code must not write to legacy locations.
 - Release directories must not own mutable product state.
 
 ## Filesystem safety
@@ -138,7 +140,7 @@ Update invariant:
 
 ## Fragile zones
 
-- `src/public/app.js`: large legacy UI file; run E2E after any edit.
+- `src/public/app.js`: large UI surface with compatibility-only helpers; run E2E after any edit and do not add new legacy paths.
 - `src/routes/fileOperations.js`: broad public API; run smoke and E2E after any edit.
 - `src/services/updateOrchestrator.js`: side-effectful update logic; use `DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=true` in tests.
 - `scripts/performance-audit.js`: use an isolated profile and compare reports from the same machine.

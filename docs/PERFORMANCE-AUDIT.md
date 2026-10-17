@@ -48,3 +48,15 @@ O JSON gravado em `performance-results/` contém, por cenário:
 - RSS alto com heap estável aponta para buffers, respostas ou recursos nativos; heap alto aponta para objetos JavaScript retidos.
 - Uma medição isolada não certifica a máquina-alvo. Registre pelo menos três execuções por configuração e use mediana.
 - O auditor atual mede o ambiente local; não substitui validação na máquina lenta definitiva.
+
+## Baseline registrado
+
+Na máquina Windows usada para a auditoria do projeto, com Intel i5-3317U, 4 threads lógicas e aproximadamente 8 GB de RAM, o DePara em coexistência com o Codex apresentou aproximadamente:
+
+- RSS ocioso entre `54` e `60 MB`;
+- prioridade de processo `BelowNormal`;
+- uma única instância do servidor;
+- consultas concorrentes de status concluídas em aproximadamente `327 ms` para 20 requisições;
+- catálogo de imagens em disco, com preload desligado.
+
+Esse baseline é evidência local, não uma garantia para outra máquina. Registre host, commit, perfil, pressão de memória e configuração junto de cada nova medição.

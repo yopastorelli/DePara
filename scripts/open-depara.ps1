@@ -1,11 +1,34 @@
 [CmdletBinding()]
 param(
-    [string]$Url = 'http://127.0.0.1:3000/ui'
+    [string]$Url = '',
+    [int]$Port = 0
 )
 
 $ErrorActionPreference = 'Stop'
 
-$healthUrl = 'http://127.0.0.1:3000/health'
+$defaultRuntimeRoot = if ($env:DEPARA_RUNTIME_ROOT) {
+    $env:DEPARA_RUNTIME_ROOT
+} else {
+    Join-Path $HOME '.depara'
+}
+$configPath = if ($env:DEPARA_CONFIG_ENV_PATH) {
+    $env:DEPARA_CONFIG_ENV_PATH
+} else {
+    Join-Path $defaultRuntimeRoot 'config.env'
+}
+$configuredPort = $Port
+
+if (Test-Path -LiteralPath $configPath) {
+    foreach ($line in Get-Content -LiteralPath $configPath -ErrorAction SilentlyContinue) {
+        if ($line -match '^\s*PORT\s*=\s*(\d+)\s*$' -and $configuredPort -eq 0) {
+            $configuredPort = [int]$matches[1]
+        }
+    }
+}
+
+$portToUse = if ($configuredPort -gt 0) { $configuredPort } else { 3000 }
+$healthUrl = "http://127.0.0.1:$portToUse/health"
+$targetUrl = if ($Url) { $Url } else { "http://127.0.0.1:$portToUse/ui" }
 $launcher = Join-Path $PSScriptRoot 'start-windows-coexistence.ps1'
 
 function Test-DeParaReady {
@@ -38,4 +61,4 @@ if (-not $ready) {
     throw 'O DePara não respondeu ao health check em até 15 segundos.'
 }
 
-Start-Process -FilePath $Url
+Start-Process -FilePath $targetUrl

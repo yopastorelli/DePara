@@ -1,64 +1,70 @@
-# AGENT_CONTEXT DePara
+# DePara — contrato para agentes de desenvolvimento com IA
 
 DOC_FORMAT=agent_contract
-DOC_OWNER=repository
-LAST_AUDIT_SCOPE=technical_product_e2e
+DOC_AUDIENCE=AI_development_agents
+PLATFORM_CONTRACT=Windows_only
+CANONICAL_ENTRYPOINT=docs/README.md
+LAST_AUDIT_SCOPE=full_application_installation_runtime_documentation
+LAST_AUDIT_DATE=2026-10-17
 
-## Mission
+## Missão
 
-Maintain DePara as a local-first file automation and slideshow product exclusivo para Windows, com limites seguros de filesystem, persistência determinística, baixo consumo de memória e comportamento E2E verificável.
+Manter o DePara como uma aplicação local-first para Windows, com automação de arquivos, slideshow de imagens, persistência determinística, limites explícitos de filesystem, baixo consumo de memória e execução verificável.
 
-## Agent read order
+Este diretório é a fonte normativa para agentes. Não introduza instruções genéricas de Python, Linux, Raspberry Pi, Docker, PM2 ou systemd: nenhuma delas pertence ao produto.
+
+## Limites obrigatórios
+
+- Plataforma suportada: Windows 10/11 x64.
+- Runtime: Node.js `>=18.15.0`, npm `>=9.0.0`, Git for Windows e `tar` disponível no `PATH`.
+- Rede: `HOST=127.0.0.1` por padrão; não habilite LAN sem uma decisão explícita de rede.
+- Processo: use o launcher `npm run start:windows`; ele é independente do terminal/Codex.
+- Atualizações: release imutável, reinício manual e scheduler desativado por padrão.
+- Memória: preserve `MAX_CONCURRENT_OPERATIONS=1`, paginação, catálogo em disco e `DEPARA_SLIDESHOW_PRELOAD=false` no perfil de coexistência.
+- Segurança: todo caminho recebido de usuário passa por `validateSafePath`; não use shell para copiar, mover, apagar ou alterar permissões.
+- Dados mutáveis pertencem ao runtime `%USERPROFILE%\.depara`, nunca ao release ou ao repositório.
+- Não registre, imprima, versione ou peça credenciais, tokens, chaves ou conteúdo privado.
+
+## Ordem de leitura do agente
 
 1. `README.md`
-2. `docs/ARCHITECTURE.md`
-3. `docs/API.md`
-4. `docs/INSTALLATION.md`
-5. `docs/TESTING.md`
-6. `docs/WINDOWS-OPS.md`
-7. `docs/PERFORMANCE-AUDIT.md`
-8. `docs/TROUBLESHOOTING.md`
-8. Source files referenced by the target change
-9. Tests covering the target change
+2. `docs/README.md`
+3. `docs/AUDIT-REPORT.md`
+4. `docs/ARCHITECTURE.md`
+5. `docs/API.md`
+6. `docs/INSTALLATION.md`
+7. `docs/TESTING.md`
+8. `docs/WINDOWS-OPS.md`
+9. `docs/PERFORMANCE-AUDIT.md`
+10. `docs/TROUBLESHOOTING.md`
+11. Os arquivos-fonte e testes diretamente relacionados à alteração.
 
-## Change policy
+Para alterações da interface, leia também `docs/UI-UX-AUDIT.md`; esse contrato inclui layout de imagens grandes, foco, teclado, cursor, fullscreen e funcionamento sem fontes externas.
 
-- If a public route changes, update `docs/API.md`, smoke/E2E coverage and UI callers in the same change.
-- If runtime behavior changes, update `docs/ARCHITECTURE.md`, `docs/INSTALLATION.md`, `docs/WINDOWS-OPS.md` and `env.example`.
-- If a test setup changes, update `docs/TESTING.md`.
-- If an operational failure mode is fixed, add or update `docs/TROUBLESHOOTING.md`.
-- Keep docs in UTF-8.
-- Do not add human-oriented prose when a contract, table or command is clearer for an agent.
+## Protocolo de execução do agente
 
-## Current hardening decisions
+### Antes de alterar
 
-- HTTP server binds to `HOST` with safe default `127.0.0.1`.
-- Express 5 route patterns avoid wildcard syntax incompatible with `path-to-regexp`.
-- Dev mode uses `node --watch`; `nodemon` is not a dependency.
-- PM2, systemd and launchers Linux/Raspberry Pi are unsupported and are not part of the Windows runtime contract.
-- Dependency overrides patch transitive audit issues while preserving current Jest:
-  - `@istanbuljs/load-nyc-config -> js-yaml@5.4.3`
-  - `anymatch -> picomatch@2.3.2`
-- The former `/api/desktop/*` Linux `.desktop` integration was removed; use the Windows browser/tray routes instead.
-- File operations use Node APIs only. Shell fallbacks are not allowed.
-- `DEPARA_ALLOWED_PATHS` can replace default allowed bases for file operations.
-- Rate limits are configurable and can be disabled only for controlled tests with `DEPARA_DISABLE_RATE_LIMITS=true`.
-- `src/public/app.js` is normalized as UTF-8 source; do not reintroduce DOM-level mojibake monkey patches.
-- Batch operations stream files with bounded concurrency; do not reintroduce full-directory materialization.
-- Image scans must support a result cap through `DEPARA_MAX_IMAGE_RESULTS` when the UI does not need the complete set.
-
-## Required verification after modifications
-
-Minimum for any source change:
-
-```bash
-npm run lint
-npm run test:unit
+```powershell
+git status --short --branch
+git remote -v
+git log --oneline -5
 ```
 
-Minimum for route, UI, file operation, dependency or runtime changes:
+Leia as instruções aplicáveis, preserve alterações locais e não use `git reset --hard`, `git clean`, sobrescrita de arquivos ou stash automático como atalho.
 
-```bash
+### Ao alterar
+
+- Corrija a causa raiz e mantenha o escopo mínimo.
+- Se uma rota mudar, atualize `docs/API.md`, testes de smoke/E2E e os chamadores da UI.
+- Se o runtime mudar, atualize `docs/INSTALLATION.md`, `docs/WINDOWS-OPS.md`, `docs/ARCHITECTURE.md` e `env.example`.
+- Se o teste ou o procedimento de instalação mudar, atualize `docs/TESTING.md`.
+- Remova documentação obsoleta em vez de mantê-la como segunda fonte de verdade.
+- Não reintroduza endpoints, launchers ou código de compatibilidade removidos.
+
+### Depois de alterar
+
+```powershell
 npm run lint
 npm run test:unit
 npm run test:smoke
@@ -66,23 +72,76 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
-Expected result:
+Para uma máquina muito lenta, o Jest aceita uma margem maior sem mudar o produto:
 
-- lint exit code `0`
-- unit suites pass
-- smoke suites pass
-- Playwright E2E passes
-- audit reports `found 0 vulnerabilities`
+```powershell
+npm run test:unit -- --testTimeout=60000
+```
 
-## Repository outputs that must stay untracked
+O resultado esperado é lint com código `0`, todos os testes aprovados e auditoria sem vulnerabilidades de nível alto.
 
-- `node_modules/`
-- `coverage/`
-- `test-results/`
-- `playwright-report/`
-- `performance-results/`
-- `logs/`
-- `backups/`
-- `data/`
-- `src/data/`
-- local `.env*` files
+## Instalação canônica em outra máquina
+
+```powershell
+git clone https://github.com/yopastorelli/DePara.git C:\DePara
+Set-Location C:\DePara
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\install.ps1 -Production -CreateShortcut -Start
+npm run doctor:windows
+```
+
+O instalador valida Node/npm/Git/tar, executa `npm ci`, cria o runtime, prepara o release imutável, cria o atalho quando solicitado, inicia o processo oculto e valida o health check.
+
+Sem instalação de produção, use `.\install.ps1 -CreateShortcut -Start`. O `install.bat` é apenas um wrapper para o mesmo instalador PowerShell.
+
+## Operação canônica
+
+```powershell
+npm run start:windows
+npm run doctor:windows
+npm run stop:windows
+npm run deploy:windows
+npm run shortcut:windows
+```
+
+URLs padrão:
+
+- UI: `http://127.0.0.1:3000/ui`
+- Health: `http://127.0.0.1:3000/health`
+- Status: `http://127.0.0.1:3000/api/status`
+- Recursos: `http://127.0.0.1:3000/api/status/resources`
+- Catálogo da API: `http://127.0.0.1:3000/api/docs`
+
+## Configuração mínima
+
+O arquivo persistente é `%USERPROFILE%\.depara\config.env`. O instalador não substitui um arquivo existente. Para reduzir o escopo de arquivos, prefira bases explícitas:
+
+```powershell
+$env:DEPARA_ALLOWED_PATHS = 'C:\Users\<usuario>\Pictures;C:\Dados'
+```
+
+A configuração funcional de slideshow fica em `%USERPROFILE%\.depara\data\depara-config.json` e pode ser alterada pela UI ou por `POST /api/config`. Não copie o runtime inteiro para outro computador sem revisar caminhos, permissões e dados pessoais.
+
+## Gates de release
+
+Um release só está pronto quando:
+
+1. `git status` está limpo e a revisão está identificada.
+2. `npm ci` foi executado a partir do lockfile.
+3. Lint, unit, smoke, E2E e auditoria de dependências passaram.
+4. `node bootstrap-runtime-release.js` aponta o runtime para o commit validado.
+5. Existe exatamente uma instância do processo Windows.
+6. `/health`, `/api/status` e `/api/status/resources` respondem.
+7. O atalho, se solicitado, aponta para `scripts/open-depara.ps1`.
+8. Nenhum dado mutável, log, backup, resultado de teste ou credencial foi commitado.
+
+## Compatibilidade removida
+
+- Linux, macOS, Raspberry Pi, PM2, systemd e integrações `.desktop` estão fora do contrato.
+- As rotas de update antigas existem somente para responder `410 Gone`; novos clientes usam exclusivamente `/api/update/auto/*`.
+- Rotas antigas de listagem de imagens existem somente como compatibilidade limitada; novos clientes usam `POST /api/files/list-images` com paginação.
+- Não adicione novos usos para superfícies legadas. Migrações de dados existentes são somente de leitura/cópia para o runtime canônico e devem ser removidas quando não houver consumidores.
+
+## Saídas que nunca entram no Git
+
+`node_modules/`, `coverage/`, `test-results/`, `playwright-report/`, `performance-results/`, `logs/`, `backups/`, `data/`, `src/data/`, `temp/`, `.env*` e o runtime `%USERPROFILE%\.depara`.

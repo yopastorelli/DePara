@@ -4,147 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DePara - Gerenciador de Arquivos e Operações</title>
-    
+
     <!-- Favicon e Manifest -->
     <link rel="icon" type="image/x-icon" href="/favicon/favicon.ico">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
     <link rel="manifest" href="/favicon/site.webmanifest">
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
-    <!-- Fallback para Material Icons -->
-    <style>
-        /* Fallback para ícones Material Icons */
-        .material-icons {
-            font-family: 'Material Icons', 'Arial', sans-serif;
-            font-weight: normal;
-            font-style: normal;
-            font-size: 24px;
-            line-height: 1;
-            letter-spacing: normal;
-            text-transform: none;
-            display: inline-block;
-            white-space: nowrap;
-            word-wrap: normal;
-            direction: ltr;
-            -webkit-font-feature-settings: 'liga';
-            -webkit-font-smoothing: antialiased;
-        }
-        
-        /* Fallback para quando Material Icons não carregam */
-        .material-icons[data-fallback]:before {
-            content: attr(data-fallback);
-            font-family: Arial, sans-serif;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        
-        /* Esconder texto original quando fallback está ativo */
-        .material-icons[data-fallback] {
-            font-size: 0;
-        }
-        
-        .material-icons[data-fallback]:before {
-            font-size: 18px;
-        }
-        
-        /* CSS CONSOLIDADO para botões estáticos do slideshow */
-        .slideshow-viewer #static-slideshow-controls button {
-            font-family: Arial, sans-serif !important;
-            font-size: 14px !important;
-            color: white !important;
-            background: rgba(0,0,0,0.8) !important;
-            border: none !important;
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            z-index: 999999 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            text-align: center !important;
-            white-space: nowrap !important;
-            opacity: 0.3 !important;
-            transition: all 0.3s ease !important;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        
-        .slideshow-viewer:hover #static-slideshow-controls button {
-            opacity: 1 !important;
-        }
-        
-        .slideshow-viewer #static-slideshow-controls button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-            background: rgba(0,0,0,0.9) !important;
-        }
-        
-        /* CONTADOR E FILENAME SEMPRE VISÍVEIS */
-        .slideshow-viewer #static-slideshow-controls #static-counter,
-        .slideshow-viewer #static-slideshow-controls #static-filename {
-            opacity: 1 !important;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        /* DESABILITAR Material Icons */
-        .slideshow-viewer #static-slideshow-controls .material-icons,
-        .slideshow-viewer #static-slideshow-controls button .material-icons {
-            display: none !important;
-        }
-        
-        /* Estilos melhorados para os botões do slideshow */
-        .slideshow-viewer #static-slideshow-controls button {
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            border: 2px solid transparent;
-        }
-        
-        .slideshow-viewer #static-slideshow-controls button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            border-color: rgba(255,255,255,0.3);
-        }
-        
-        .slideshow-viewer #static-slideshow-controls button:active {
-            transform: scale(0.95);
-        }
-        
-        /* Botão de sair do fullscreen - cor especial */
-        #static-exit-fullscreen-btn {
-            background: rgba(52, 144, 220, 0.9) !important;
-        }
-        
-        #static-exit-fullscreen-btn:hover {
-            background: rgba(52, 144, 220, 1) !important;
-            border-color: rgba(255,255,255,0.5) !important;
-        }
-        
-        /* Botão de fechar aplicação - cor vermelha */
-        #static-close-app-btn {
-            background: rgba(220, 53, 69, 0.9) !important;
-        }
-        
-        #static-close-app-btn:hover {
-            background: rgba(220, 53, 69, 1) !important;
-            border-color: rgba(255,255,255,0.5) !important;
-        }
-        
-        /* Botão de favoritar - cor amarela */
-        #static-favorite-btn {
-            background: rgba(255, 193, 7, 0.9) !important;
-        }
-        
-        #static-favorite-btn:hover {
-            background: rgba(255, 193, 7, 1) !important;
-            border-color: rgba(255,255,255,0.5) !important;
-        }
-    </style>
-    
+
+    <link rel="preload" href="fonts/MaterialIcons-Regular.woff2" as="font" type="font/woff2" crossorigin>
+
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -174,7 +43,7 @@
             <span class="material-icons" style="font-size: 18px;">fullscreen_exit</span>
             Sair Tela Cheia
         </button>
-        
+
         <!-- Botão fechar aplicação -->
         <button id="dashboard-close-app-btn" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(220,53,69,0.9); color: white; border: 1px solid rgba(255,255,255,0.3); font-size: 18px; font-weight: bold; cursor: pointer; pointer-events: auto; transition: all 0.2s ease;" title="Fechar aplicação (Alt+F4)" onmouseover="this.style.background='rgba(220,53,69,1)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(220,53,69,0.9)'; this.style.transform='scale(1)'">×</button>
     </div>
@@ -206,7 +75,7 @@
                     <span class="material-icons">settings</span>
                     Configurações
                 </button>
-                
+
                 <!-- Botão de fullscreen no header -->
                 <button id="header-fullscreen-btn" class="nav-btn" title="Alternar tela cheia (F11)" style="margin-left: 20px; background: rgba(52,144,220,0.1); border: 1px solid rgba(52,144,220,0.3);">
                     <span class="material-icons">fullscreen</span>
@@ -231,7 +100,7 @@
                 <h2>Bem-vindo ao DePara! 🎉</h2>
                 <p>Vamos configurar seu primeiro fluxo de trabalho em 4 passos simples</p>
             </div>
-            
+
             <div class="onboarding-steps">
                 <div class="step active" data-step="1">
                     <div class="step-number">1</div>
@@ -243,7 +112,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="step" data-step="2">
                     <div class="step-number">2</div>
                     <div class="step-content">
@@ -254,7 +123,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="step" data-step="3">
                     <div class="step-number">3</div>
                     <div class="step-content">
@@ -265,7 +134,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="step" data-step="4">
                     <div class="step-number">4</div>
                     <div class="step-content">
@@ -277,7 +146,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="onboarding-actions">
                 <button class="btn btn-secondary onboarding-close-btn">❌ Fechar Tutorial</button>
                 <button class="btn btn-outline onboarding-skip-btn">⏭️ Pular Tutorial</button>
@@ -601,11 +470,11 @@
                 <!-- Quick Actions -->
                 <div class="fileops-actions">
                     <div class="action-cards">
-                        <div class="action-card action-slideshow-card">
+                        <button class="action-card action-slideshow-card" type="button">
                             <span class="material-icons">slideshow</span>
                             <h3>Slideshow</h3>
                             <p>Visualize imagens em slideshow</p>
-                        </div>
+                        </button>
                     </div>
                 </div>
 
@@ -779,7 +648,7 @@
                     <span class="material-icons">close</span>
                 </button>
             </div>
-            
+
             <div class="modal-body">
                 <!-- Etapa 1: Configuração Básica -->
                 <div class="wizard-step active" data-step="1">
@@ -787,29 +656,29 @@
                         <span class="material-icons">workflow</span>
                         Configuração Básica
                     </h4>
-                    
+
                     <div class="form-group">
                         <label>Nome do Fluxo</label>
-                        <input type="text" id="workflow-name" placeholder="Ex: Processamento de Dados CSV" 
+                        <input type="text" id="workflow-name" placeholder="Ex: Processamento de Dados CSV"
                                class="validate-name-input" required>
                         <small class="form-help">Nome descritivo para identificar o fluxo</small>
                         <div class="validation-message" id="name-validation"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Descrição</label>
                         <textarea id="workflow-description" placeholder="Descreva o que este fluxo faz..." rows="3"></textarea>
                         <small class="form-help">Descrição opcional do fluxo de trabalho</small>
                     </div>
                 </div>
-                
+
                 <!-- Etapa 2: Pastas de Origem e Destino -->
                 <div class="wizard-step" data-step="2">
                     <h4 class="step-title">
                         <span class="material-icons">folder_shared</span>
                         Pastas de Origem e Destino
                     </h4>
-                    
+
                     <div class="form-group">
                         <label>Pasta de Origem</label>
                         <select id="source-folder" class="source-folder-select" required>
@@ -818,7 +687,7 @@
                         </select>
                         <small class="form-help" id="source-folder-help">Pasta onde os arquivos estão localizados</small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Pasta de Destino</label>
                         <select id="target-folder" class="target-folder-select" required>
@@ -827,7 +696,7 @@
                         </select>
                         <small class="form-help" id="target-folder-help">Pasta para onde os arquivos serão enviados</small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Ação com Arquivos</label>
                         <select id="file-action" class="file-action-select" required>
@@ -838,14 +707,14 @@
                         <small class="form-help" id="action-help">O que fazer com os arquivos originais</small>
                     </div>
                 </div>
-                
+
                 <!-- Etapa 3: Frequência e Agendamento -->
                 <div class="wizard-step" data-step="3">
                     <h4 class="step-title">
                         <span class="material-icons">schedule</span>
                         Frequência e Agendamento
                     </h4>
-                    
+
                     <div class="form-group">
                         <label>Frequência de Execução</label>
                         <select id="execution-frequency" class="execution-frequency-select" required>
@@ -864,7 +733,7 @@
                         </select>
                         <small class="form-help">Com que frequência executar o fluxo</small>
                     </div>
-                    
+
                     <div class="form-group" id="cron-group" style="display: none;">
                         <label>Expressão Cron Personalizada</label>
                         <input type="text" id="cron-expression" placeholder="*/5 * * * * (a cada 5 minutos)">
@@ -874,14 +743,14 @@
                         </small>
                     </div>
                 </div>
-                
+
                 <!-- Etapa 4: Filtros e Transformações -->
                 <div class="wizard-step" data-step="4">
                     <h4 class="step-title">
                         <span class="material-icons">filter_list</span>
                         Filtros e Transformações
                     </h4>
-                    
+
                     <div class="form-group">
                         <label>Tipo de Filtro</label>
                         <select id="filter-type" class="filter-type-select" required>
@@ -894,25 +763,25 @@
                         </select>
                         <small class="form-help">Quais arquivos devem ser processados</small>
                     </div>
-                    
+
                     <div class="form-group" id="extension-filter" style="display: none;">
                         <label>Extensões Permitidas</label>
                         <input type="text" id="allowed-extensions" placeholder="csv,json,xml (separadas por vírgula)">
                         <small class="form-help">Liste as extensões que devem ser processadas</small>
                     </div>
-                    
+
                     <div class="form-group" id="size-filter" style="display: none;">
                         <label>Tamanho Mínimo (MB)</label>
                         <input type="number" id="min-size" placeholder="0" min="0" step="0.1">
                         <small class="form-help">Arquivos menores que este valor serão ignorados</small>
                     </div>
-                    
+
                     <div class="form-group" id="age-filter" style="display: none;">
                         <label>Idade Mínima (horas)</label>
                         <input type="number" id="min-age" placeholder="0" min="0" step="0.1">
                         <small class="form-help">Arquivos mais novos que este valor serão ignorados</small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Transformações</label>
                         <div class="checkbox-group">
@@ -936,14 +805,14 @@
                         <small class="form-help">Transformações que serão aplicadas aos dados</small>
                     </div>
                 </div>
-                
+
                 <!-- Etapa 5: Limpeza e Manutenção -->
                 <div class="wizard-step" data-step="5">
                     <h4 class="step-title">
                         <span class="material-icons">cleaning_services</span>
                         Limpeza e Manutenção
                     </h4>
-                    
+
                     <div class="form-group">
                         <label>Limpeza Automática</label>
                         <div class="checkbox-group">
@@ -954,7 +823,7 @@
                         </div>
                         <small class="form-help">Mover arquivos antigos para lixeira automaticamente</small>
                     </div>
-                    
+
                     <div id="cleanup-options" style="display: none;">
                         <div class="form-group">
                             <label>Frequência de Limpeza</label>
@@ -966,13 +835,13 @@
                             </select>
                             <small class="form-help">Com que frequência executar a limpeza</small>
                         </div>
-                        
+
                         <div class="form-group">
                             <label>Idade Máxima dos Arquivos (dias)</label>
                             <input type="number" id="max-file-age" placeholder="30" min="1" value="30">
                             <small class="form-help">Arquivos mais antigos que este valor serão movidos para lixeira</small>
                         </div>
-                        
+
                         <div class="form-group">
                             <label>Pasta de Lixeira</label>
                             <select id="trash-folder">
@@ -981,14 +850,14 @@
                             </select>
                             <small class="form-help">Onde mover os arquivos antigos</small>
                         </div>
-                        
+
                         <div class="form-group" id="custom-trash" style="display: none;">
                             <label>Caminho da Pasta de Lixeira</label>
                             <input type="text" id="custom-trash-path" placeholder="C:\\Users\\Nicole\\Lixeira">
                             <small class="form-help">Caminho completo para a pasta de lixeira personalizada</small>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Opções de Processamento</label>
                         <div class="checkbox-group">
@@ -1008,21 +877,21 @@
                         <small class="form-help">Ações adicionais durante o processamento</small>
                     </div>
                 </div>
-                
+
                 <!-- Etapa 6: Resumo e Confirmação -->
                 <div class="wizard-step" data-step="6">
                     <h4 class="step-title">
                         <span class="material-icons">preview</span>
                         Resumo e Confirmação
                     </h4>
-                    
+
                     <div class="form-group">
                         <label>Resumo do Fluxo de Trabalho</label>
                         <div id="workflow-summary" class="workflow-summary">
                             <!-- Resumo será preenchido dinamicamente -->
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Status do Fluxo</label>
                         <select id="workflow-status">
@@ -1034,7 +903,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Navegação do Wizard -->
             <div class="modal-footer">
                 <div class="wizard-navigation">
@@ -1042,7 +911,7 @@
                         <span class="material-icons">arrow_back</span>
                         Anterior
                     </button>
-                    
+
                     <div class="step-indicators">
                         <span class="step-dot active" data-step="1"></span>
                         <span class="step-dot" data-step="2"></span>
@@ -1051,18 +920,18 @@
                         <span class="step-dot" data-step="5"></span>
                         <span class="step-dot" data-step="6"></span>
                     </div>
-                    
+
                     <button class="btn btn-primary" id="next-step">
                         Próximo
                         <span class="material-icons">arrow_forward</span>
                     </button>
-                    
+
                     <button class="btn btn-success" id="save-step" style="display: none;">
                         <span class="material-icons">save</span>
                         Salvar Fluxo
                     </button>
                 </div>
-                
+
                 <button class="btn btn-secondary cancel-workflow-btn">Cancelar</button>
             </div>
         </div>
@@ -1077,20 +946,20 @@
                     <span class="material-icons">close</span>
                 </button>
             </div>
-            
+
             <div class="modal-body">
                 <div class="form-group">
                     <label>Nome da Pasta</label>
                     <input type="text" id="folder-name" placeholder="Ex: Dados_Entrada" required>
                     <small class="form-help">Nome descritivo para identificar a pasta</small>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Caminho da Pasta</label>
                             <input type="text" id="folder-path" placeholder="C:\\Users\\Nicole\\Documents\\Entrada" required>
                     <small class="form-help">Caminho completo onde a pasta está localizada</small>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label>Tipo de Pasta</label>
@@ -1102,7 +971,7 @@
                         </select>
                         <small class="form-help" id="folder-type-help">Função da pasta no sistema</small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Formato de Arquivo</label>
                         <select id="folder-format">
@@ -1116,14 +985,14 @@
                         <small class="form-help">Formato dos arquivos que serão processados</small>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Descrição</label>
                     <textarea id="folder-description" placeholder="Descreva o propósito desta pasta..." rows="3"></textarea>
                     <small class="form-help">Descrição opcional da pasta</small>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button class="btn btn-secondary cancel-folder-manager-btn">Cancelar</button>
                 <button class="btn btn-primary save-folder-btn">Salvar Pasta</button>
@@ -1290,7 +1159,7 @@
                 <div class="form-group">
                     <label>Filtros de Arquivos (opcional)</label>
                     <input type="text" id="schedule-filters" placeholder="*.jpg,*.png,*.pdf">
-                    
+
                     <!-- Botões de filtros rápidos -->
                     <div class="filter-buttons" style="margin-top: 8px;">
                         <button type="button" class="filter-btn" data-filter="*.jpg,*.png,*.gif,*.bmp">🖼️ Imagens</button>
@@ -1301,7 +1170,7 @@
                         <button type="button" class="filter-btn" data-filter="!*.tmp,!*.log,!*.bak">🚫 Excluir Temp</button>
                         <button type="button" class="filter-btn" data-filter="">🗂️ Todos</button>
                     </div>
-                    
+
                     <small class="form-help">
                         <strong>Exemplos:</strong><br>
                         • <code>*.jpg,*.png</code> - Apenas imagens<br>
@@ -1469,7 +1338,7 @@
                 <!-- Configurações de Pastas de Organização -->
                 <div class="slideshow-organization-settings">
                     <h4>Pastas de Organização</h4>
-                    
+
                     <div class="setting-row">
                         <label for="slideshow-deleted-folder">Pasta de Fotos Excluídas:</label>
                         <div class="input-group">
@@ -1520,62 +1389,46 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary slideshow-close-btn" type="button">Cancelar</button>
                 <button class="btn btn-primary slideshow-save-btn" type="button">Salvar Alteracoes</button>
-                <button class="btn btn-primary slideshow-start-btn" type="button" onclick="return window.startSlideshow ? window.startSlideshow() : false;">Iniciar Slideshow</button>
+                <button class="btn btn-primary slideshow-start-btn" type="button">Iniciar Slideshow</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Exibição do Slideshow -->
-    <div id="slideshow-viewer" class="slideshow-viewer" style="display: none;">
+    <div id="slideshow-viewer" class="slideshow-viewer" role="dialog" aria-modal="true" aria-label="Visualizador de fotos" aria-describedby="slideshow-keyboard-hint" tabindex="-1" style="display: none;">
         <div class="slideshow-header">
             <div class="slideshow-info">
                 <span id="slideshow-counter">1 / 0</span>
                 <span id="slideshow-filename">Nenhuma imagem</span>
             </div>
-            <!-- Controles dinâmicos serão criados via JavaScript -->
-        </div>
-
-        <div class="slideshow-content">
-            <div class="slideshow-image-container">
-                <img id="slideshow-image" src="" alt="Slideshow" style="display: none;">
-                <div id="slideshow-loading" class="slideshow-loading">
-                    <div class="spinner"></div>
-                    <p>Carregando imagens...</p>
-                </div>
-                <div id="slideshow-error" class="slideshow-error" style="display: none;">
-                    <span class="material-icons">error</span>
-                    <p>Erro ao carregar imagem</p>
-                </div>
+            <div class="slideshow-toolbar" role="group" aria-label="Reprodução">
+                <button id="static-play-pause-btn" class="slideshow-button slideshow-icon-button" type="button" aria-label="Pausar slideshow (Espaço)" title="Pausar slideshow (Espaço)"><span aria-hidden="true">Ⅱ</span></button>
+                <button id="static-fullscreen-btn" class="slideshow-button slideshow-icon-button" type="button" aria-label="Entrar em tela cheia (F11)" title="Entrar em tela cheia (F11)"><span aria-hidden="true">⛶</span></button>
+                <button id="static-close-btn" class="slideshow-button slideshow-icon-button slideshow-danger" type="button" aria-label="Fechar slideshow (Esc)" title="Fechar slideshow (Esc)"><span aria-hidden="true">×</span></button>
             </div>
         </div>
-
-        
-        <!-- Rodapé removido - usando apenas texto centralizado -->
-        
-        <!-- BOTÕES ESTÁTICOS DENTRO DO SLIDESHOW-VIEWER -->
-        <div id="static-slideshow-controls" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999999; pointer-events: none;">
-            <!-- Botão anterior -->
-            <button id="static-prev-btn" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;">&lt;</button>
-            
-            <!-- Botão próximo -->
-            <button id="static-next-btn" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;">&gt;</button>
-            
-            <!-- Botão fechar -->
-            <button id="static-close-btn" style="position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;">X</button>
-            
-            <!-- Botão apagar -->
-            <button id="static-delete-btn" style="position: absolute; top: 20px; right: 70px; width: 40px; height: 40px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;">DEL</button>
-            
-            <!-- Botão ocultar -->
-            <button id="static-hide-btn" style="position: absolute; top: 20px; right: 120px; width: 40px; height: 40px; border-radius: 50%; background: rgba(0,0,0,0.8); color: white; border: none; font-size: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999;">HID</button>
-            
-            
-            <!-- Botão favoritar -->
-            <button id="static-favorite-btn" style="position: absolute; top: 20px; right: 170px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,193,7,0.9); color: white; border: none; font-size: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999; display: block;" title="Favoritar foto">FAV</button>
-            
-            <!-- Botão ajustar -->
-            <button id="static-adjust-btn" style="position: absolute; top: 20px; right: 220px; width: 40px; height: 40px; border-radius: 50%; background: rgba(76,175,80,0.9); color: white; border: none; font-size: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 999999; display: block;" title="Mover para pasta de ajustes">AJUST</button>
-            
+        <div class="slideshow-content">
+            <button id="static-prev-btn" class="slideshow-button slideshow-navigation" type="button" aria-label="Foto anterior (←)" title="Foto anterior (←)"><span aria-hidden="true">‹</span></button>
+            <div class="slideshow-image-container">
+                <img id="slideshow-image" alt="Foto do slideshow" draggable="false" style="display: none;">
+                <div id="slideshow-loading" class="slideshow-loading" role="status">
+                    <div class="spinner" aria-hidden="true"></div>
+                    <p>Carregando imagem...</p>
+                </div>
+                <div id="slideshow-error" class="slideshow-error" role="alert" style="display: none;">
+                    <p>Não foi possível carregar esta foto.</p>
+                    <p>Use as setas para escolher outra imagem.</p>
+                </div>
+            </div>
+            <button id="static-next-btn" class="slideshow-button slideshow-navigation" type="button" aria-label="Próxima foto (→)" title="Próxima foto (→)"><span aria-hidden="true">›</span></button>
+        </div>
+        <div id="static-slideshow-controls" class="slideshow-footer">
+            <div class="slideshow-organization-controls" role="group" aria-label="Organizar foto">
+                <button id="static-favorite-btn" class="slideshow-button" type="button" title="Mover foto para Favoritas (F)">Favoritar</button>
+                <button id="static-hide-btn" class="slideshow-button" type="button" title="Mover foto para a pasta de ocultas (O)">Ocultar</button>
+                <button id="static-adjust-btn" class="slideshow-button" type="button" title="Mover foto para a pasta de ajustes (A)">Ajustar</button>
+                <button id="static-delete-btn" class="slideshow-button slideshow-danger" type="button" title="Mover foto para a pasta de excluídas (D)">Excluir</button>
+            </div>
+            <p id="slideshow-keyboard-hint" class="slideshow-keyboard-hint">← → navegar · Espaço pausar · Esc fechar</p>
         </div>
     </div>
 
@@ -1585,44 +1438,6 @@
     <script src="modules/runtime-status.js"></script>
     <script src="modules/update-runtime-ui.js"></script>
     <script src="app.js"></script>
-    
-    <!-- Script para detectar carregamento de fontes Material Icons -->
-    <script>
-        // Detectar se Material Icons carregaram
-        document.addEventListener('DOMContentLoaded', function() {
-            // Aguardar um pouco para as fontes carregarem
-            setTimeout(function() {
-                const testIcon = document.createElement('span');
-                testIcon.className = 'material-icons';
-                testIcon.textContent = 'folder_open';
-                testIcon.style.position = 'absolute';
-                testIcon.style.left = '-9999px';
-                testIcon.style.fontSize = '24px';
-                document.body.appendChild(testIcon);
-                
-                const computedStyle = window.getComputedStyle(testIcon);
-                const fontFamily = computedStyle.getPropertyValue('font-family');
-                
-                // Se a fonte não carregou, aplicar fallbacks
-                if (!fontFamily.includes('Material Icons') || fontFamily.includes('Arial')) {                    
-                    // Aplicar fallbacks apenas aos ícones de configuração (não slideshow)
-                    const configIcons = document.querySelectorAll('.slideshow-organization-settings .material-icons[data-fallback]');
-                    configIcons.forEach(icon => {
-                        icon.style.fontSize = '0';
-                        icon.style.fontFamily = 'Arial, sans-serif';                    });
-                } else {                    
-                    // Remover fallbacks se Material Icons carregaram
-                    const icons = document.querySelectorAll('.material-icons[data-fallback]');
-                    icons.forEach(icon => {
-                        icon.style.fontSize = '';
-                        icon.style.fontFamily = '';
-                    });
-                }
-                
-                // Sistema simplificado - sem proteção complexa                
-                document.body.removeChild(testIcon);
-            }, 2000);
-        });
-    </script>
+
 </body>
 </html>
