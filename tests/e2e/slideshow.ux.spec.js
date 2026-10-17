@@ -12,7 +12,8 @@ async function openSlideshow(page, options = {}) {
     data: {
       config: {
         slideshowSelectedPath: process.env.DEPARA_E2E_LAYOUT_IMAGES_DIR,
-        slideshowConfig: { interval: options.interval ?? 60, recursive: false, extensions: ['.png'], preload: false, random: false },
+        slideshowConfig: { interval: options.interval ?? 60, recursive: false, extensions: ['.png'], preload: false, random: false,
+          ...options.slideshowConfig },
         screensaverConfig: { enabled: false }
       }
     }
@@ -274,4 +275,17 @@ test('intervalo de cinco minutos só troca a foto ao completar 300 segundos', as
   await expect(page.locator('#slideshow-filename')).toHaveText('01-retrato.png');
   await page.clock.fastForward(1);
   await expect(page.locator('#slideshow-filename')).toHaveText('02-paisagem.png');
+});
+
+test('configuração do servidor prevalece sobre cache legado de três segundos', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('slideshowConfig', JSON.stringify({ interval: 3 })));
+  await openSlideshow(page, { interval: 10, start: false,
+    slideshowConfig: { recursive: true, extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'] } });
+  await expect(page.locator('#slideshow-interval')).toHaveValue('10');
+  await expect(page.locator('#slideshow-interval-preset')).toHaveValue('10');
+  await expect.poll(async () => (await (await page.request.get('/api/config')).json()).config.slideshowConfig.interval).toBe(10);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('#splash-screen').waitFor({ state: 'hidden', timeout: 15000 });
+  await page.locator('.action-slideshow-card').click();
+  await expect(page.locator('#slideshow-interval')).toHaveValue('10');
 });

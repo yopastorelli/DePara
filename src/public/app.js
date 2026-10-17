@@ -4110,6 +4110,9 @@ class DeParaUI {
     }
 
     async migrateLegacyFunctionalConfig(serverConfig = {}) {
+        if (typeof serverConfig.slideshowSelectedPath === 'string' && serverConfig.slideshowSelectedPath.trim()) {
+            return serverConfig;
+        }
         const patch = {};
 
         try {
