@@ -132,7 +132,7 @@ Um release só está pronto quando:
 4. `node bootstrap-runtime-release.js` aponta o runtime para o commit validado.
 5. Existe exatamente uma instância do processo Windows.
 6. `/health`, `/api/status` e `/api/status/resources` respondem.
-7. O atalho, se solicitado, aponta para `scripts/open-depara.ps1`.
+7. Os atalhos da Área de Trabalho e do Menu Iniciar, se solicitados, apontam para `scripts/open-depara.ps1` e abrem a UI no navegador padrão do Windows.
 8. Nenhum dado mutável, log, backup, resultado de teste ou credencial foi commitado.
 
 ## Compatibilidade removida

@@ -18,7 +18,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 npm run doctor:windows
 ```
 
-Abra `http://127.0.0.1:3000/ui` ou use o atalho `DePara.lnk` criado na Área de Trabalho. O processo é local, oculto, separado do Codex e configurado para coexistir com pouca memória.
+Abra `http://127.0.0.1:3000/ui` ou use `DePara` na Área de Trabalho ou no Menu Iniciar. O atalho inicia o serviço local se necessário e abre a UI no navegador padrão do Windows. O processo é local, oculto, separado do Codex e configurado para coexistir com pouca memória.
 
 ## Desenvolvimento e release
 

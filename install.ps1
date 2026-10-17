@@ -136,5 +136,5 @@ Write-Host "Runtime: $runtimeRoot"
 Write-Host "Configuração: $configPath"
 Write-Host 'Inicialização: npm run start:windows'
 if ($CreateShortcut) {
-    Write-Host 'Atalho: criado na Área de Trabalho'
+    Write-Host 'Atalhos: criados na Área de Trabalho e no Menu Iniciar'
 }

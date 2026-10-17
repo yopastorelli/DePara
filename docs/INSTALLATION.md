@@ -32,7 +32,7 @@ O instalador executa, nesta ordem:
 3. executa `npm ci` ou `npm ci --omit=dev` com `-Production`;
 4. cria `%USERPROFILE%\.depara\config.env` somente se ele não existir;
 5. executa `bootstrap-runtime-release.js` para criar o release imutável do commit atual;
-6. cria o atalho quando `-CreateShortcut` é informado;
+6. cria atalhos na Área de Trabalho e no Menu Iniciar quando `-CreateShortcut` é informado;
 7. inicia e diagnostica o processo quando `-Start` é informado.
 
 O script não sobrescreve configuração, dados, backups ou releases já existentes.
@@ -54,10 +54,12 @@ install.bat -Production -CreateShortcut -Start
 | `.\install.ps1 -CreateShortcut -Start` | desenvolvimento com dependências de desenvolvimento |
 | `npm ci` | reinstalação determinística no checkout |
 | `npm run deploy:windows` | prepara o release do commit atual |
-| `npm run shortcut:windows` | cria ou atualiza `DePara.lnk` |
+| `npm run shortcut:windows` | cria ou atualiza `DePara.lnk` na Área de Trabalho e no Menu Iniciar |
 | `npm run doctor:windows` | valida processo, release e health |
 
 ## Primeiro acesso e configuração
+
+Ao clicar em `DePara` na Área de Trabalho ou no Menu Iniciar, o launcher inicia o processo local se necessário e abre a UI com `Start-Process` para respeitar o navegador padrão do Windows. Nesta máquina, o navegador padrão registrado para HTTP e HTTPS é o Microsoft Edge. A fixação adicional na barra de tarefas depende do Shell do Windows e não é automatizada pelo instalador para esse launcher local; quando a opção for oferecida pela edição do Windows, use o menu contextual do atalho.
 
 URLs padrão:
 
