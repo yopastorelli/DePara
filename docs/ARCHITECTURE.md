@@ -21,7 +21,7 @@ Windows browser UI / Playwright
 | HTTP app | `src/main.js` | configure middleware, static UI, API routes, health, startup/shutdown |
 | UI | `src/public/index.html`, `src/public/app.js`, `src/public/modules/*`, `src/public/styles.css` | local browser product surface |
 | API router | `src/routes/index.js` | mount route modules and expose `/api/docs` |
-| File operations | `src/routes/fileOperations.js`, `src/utils/fileOperations.js` | folders, workflows, execute, schedule, slideshow file browsing |
+| File operations | `src/routes/fileOperations.js`, `src/utils/fileOperations.js` | folders, execute, schedule, slideshow file browsing; workflows only for compatibility |
 | Transaction engine | `src/utils/fileOps/transactionalOperations.js`, `src/utils/atomicStore.js` | journal, atomic publication, interruption reconciliation, quarantine and recovery |
 | File primitives | `src/utils/fileOps/*` | Node-only transactional mutation, image scan and catalog helpers |
 | Config | `src/routes/config.js`, `src/utils/configStore.js` | persisted product configuration and backup import/export |
@@ -31,6 +31,10 @@ Windows browser UI / Playwright
 | Status/health | `src/routes/status.js`, `src/routes/health.js` | readiness and operational diagnostics |
 | Tray/browser | `src/routes/tray.js` | open dedicated Windows browser windows and screensaver state |
 | Audit | `scripts/performance-audit.js` | controlled latency and memory measurements |
+
+## Canonical product surface
+
+The visible UI has five tabs: `dashboard`, `fileops`, `scheduled`, `backups` and `settings`. `fileops` owns one operation draft and is the only entry point for immediate file mutations or opening a schedule from that draft. Workflows, templates, conversion and drag-and-drop remain compatibility-only backend/helpers and are not startup dependencies or new UI entry points.
 
 ## Startup sequence
 
@@ -47,8 +51,9 @@ Windows browser UI / Playwright
 6. Config file is ensured.
 7. File-operation manager creates its journal/quarantine roots, reconciles unfinished work and reloads schedules.
 8. Folder manager initializes.
-9. Server listens on `HOST` and `PORT`.
-10. Update orchestrator initializes lazily only when an update route requires it.
+9. Pending operational-config imports are reconciled from `data\config-import-journal.json`; an interrupted `prepared`/`applying` import restores its previous snapshot before serving requests.
+10. Server listens on `HOST` and `PORT`.
+11. Update orchestrator initializes lazily only when an update route requires it.
 
 Defaults:
 
@@ -67,6 +72,8 @@ Defaults:
 | Folders | `%USERPROFILE%\.depara\data\folders.json` |
 | Workflows | `%USERPROFILE%\.depara\data\workflows.json` |
 | File-operation journals | `%USERPROFILE%\.depara\data\file-operations\<operationId>` |
+| Operational-config import journal | `%USERPROFILE%\.depara\data\config-import-journal.json` |
+| Recoverable quarantine | `%USERPROFILE%\.depara\quarantine\<operationId>` |
 | Delete/overwrite quarantine | `%USERPROFILE%\.depara\quarantine\<operationId>` |
 | Update config | `%USERPROFILE%\.depara\data\update-config.json` |
 | Update state | `%USERPROFILE%\.depara\data\update-state.json` |
@@ -120,6 +127,8 @@ The mutation path is intentionally sequential (`MAX_CONCURRENT_OPERATIONS=1`) an
 6. Append per-item progress and update counts after each committed/skipped/conflicted item.
 
 The state and JSON configuration files use a temporary file plus a previous-version file. On startup, unfinished journals are marked `interrupted`, recorded partial files are removed, and completed journal events are not repeated. Never delete a journal or quarantine directory as a “cleanup” step; use the recovery API and a reviewed retention policy.
+
+Operational configuration import follows a separate product-level journal. It records the previous complete backup before applying the incoming payload. A failure rolls back in-process; a restart seeing `prepared` or `applying` restores the previous snapshot and records `rolled_back`. The journal is retained as audit evidence.
 
 ## Rate limits
 

@@ -116,8 +116,8 @@ describe('FileOperationsManager scheduling', () => {
           name: 'Legado',
           frequency: '30s',
           action: 'copy',
-          sourcePath: '/tmp/source',
-          targetPath: '/tmp/target',
+          sourcePath: path.join(runtimeRoot, 'source'),
+          targetPath: path.join(runtimeRoot, 'target'),
           active: true,
           options: {}
         }
@@ -163,6 +163,44 @@ describe('FileOperationsManager scheduling', () => {
     const persisted = JSON.parse(await fsp.readFile(path.join(runtimeRoot, 'data', 'scheduled-operations.json'), 'utf8'));
     expect(persisted).toHaveLength(1);
     expect(persisted[0].id).toBe('import_schedule');
+  });
+
+  it('rejeita frequências inválidas sem aplicar fallback silencioso', async () => {
+    const manager = require('../src/utils/fileOperations');
+    await manager.init();
+
+    expect(() => manager.validateFrequency('0s')).toThrow(/Frequência inválida/);
+    expect(() => manager.parseFrequency('realtime')).toThrow(/Frequência inválida/);
+  });
+
+  it('mantém agendamento persistido inválido pausado e identificável', async () => {
+    const dataDir = path.join(runtimeRoot, 'data');
+    await fsp.mkdir(dataDir, { recursive: true });
+    await fsp.writeFile(path.join(dataDir, 'scheduled-operations.json'), JSON.stringify([
+      {
+        id: 'invalid_persisted_schedule',
+        config: {
+          name: 'Legado inválido',
+          frequency: 'realtime',
+          action: 'copy',
+          sourcePath: '/tmp/source',
+          targetPath: '/tmp/target',
+          active: true,
+          options: {}
+        }
+      }
+    ]), 'utf8');
+
+    const manager = require('../src/utils/fileOperations');
+    await manager.init();
+
+    const operation = manager.getScheduledOperation('invalid_persisted_schedule');
+    expect(operation).toEqual(expect.objectContaining({
+      active: false,
+      invalid: true
+    }));
+    expect(operation.validationError).toMatch(/Frequência inválida/);
+    expect(manager.schedules.has('invalid_persisted_schedule')).toBe(false);
   });
 
   it('não sobrepõe a execução da mesma operação agendada', async () => {

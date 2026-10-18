@@ -149,7 +149,6 @@ const logger = new Logger();
 class DeParaUI {
     constructor() {
         this.currentTab = 'dashboard';
-        this.workflows = [];
         this.folders = [];
         this.settings = {};
         this.currentWorkflowStep = 1;
@@ -210,10 +209,6 @@ class DeParaUI {
             await this.loadFolders();
             logger.success('Pastas carregadas');
 
-            // Carregar workflows
-            await this.loadWorkflows();
-            logger.success('Workflows carregados');
-
             // Iniciar scheduler unificado de monitoramento/status/dashboard
             this.startUnifiedRefreshScheduler();
             logger.success('Scheduler unificado iniciado');
@@ -232,10 +227,6 @@ class DeParaUI {
             this.updateApiStatus();
             logger.success('Status da API sincronizado');
 
-            // Inicializar gráficos
-            this.initializeCharts();
-            logger.success('Gráficos inicializados');
-
             // Configurar atalhos de teclado
             this.setupKeyboardShortcuts();
             logger.success('Atalhos de teclado configurados');
@@ -246,10 +237,6 @@ class DeParaUI {
             if (this.isDedicatedScreensaverWindow) {
                 this.enableDedicatedScreensaverUI();
             }
-
-            // Configurar controles de fullscreen do dashboard
-            this.setupDashboardFullscreenControls();
-            logger.success('Controles de fullscreen do dashboard configurados');
 
             // Mostrar onboarding se necessário
             if (!this.isDedicatedScreensaverWindow && !localStorage.getItem('depara-onboarding-completed')) {
@@ -280,10 +267,8 @@ class DeParaUI {
                     'cache',
                     'settings',
                     'folders',
-                    'workflows',
                     'monitoring',
                     'apiConnection',
-                    'charts',
                     'shortcuts',
                     'dashboard',
                     'validation'
@@ -416,21 +401,13 @@ class DeParaUI {
     async refreshDashboardData() {
         try {
             // Atualizar status do sistema
-            const systemStatus = await this.updateSystemStatus();
-
-            // Atualizar atividades recentes se estiver visível
-            await this.loadRecentActivities();
+            await this.updateSystemStatus();
 
             // Carregar operacoes agendadas para o dashboard
             const scheduledOperations = await this.loadDashboardScheduledOperations();
 
             // Reutilizar a resposta das operacoes agendadas no contador
             await this.updateCounters(scheduledOperations);
-
-            // Atualizar graficos apenas quando dashboard estiver ativa
-            if (this.currentTab === 'dashboard') {
-                await this.updateCharts(systemStatus, scheduledOperations);
-            }
 
             logger.debug('Dashboard atualizada automaticamente');
         } catch (error) {
@@ -2385,9 +2362,7 @@ class DeParaUI {
     }
 
     startOnboarding() {
-        document.getElementById('onboarding-overlay').style.display = 'none';
-        localStorage.setItem('depara-onboarding-completed', 'true');
-        this.openWorkflowConfig();
+        this.quickSetup();
     }
 
     closeOnboarding() {
@@ -2396,37 +2371,13 @@ class DeParaUI {
         this.showToast('Tutorial fechado! Use o botão de ajuda se precisar de orientações.', 'info');
     }
 
-    // Configuração rápida e automática
-    async quickSetup() {
-        document.getElementById('onboarding-overlay').style.display = 'none';
+    quickSetup() {
+        const overlay = document.getElementById('onboarding-overlay');
+        if (overlay) overlay.style.display = 'none';
         localStorage.setItem('depara-onboarding-completed', 'true');
-
-        // Mostrar confirmação antes de criar pastas automaticamente
-        const confirmed = await this.showQuickSetupConfirmation();
-
-        if (!confirmed) {
-            this.showToast('Configuração cancelada. Você pode configurar manualmente.', 'info');
-            return;
-        }
-
-        this.showToast('[init] Criando pastas e templates...', 'info');
-
-        try {
-            // Criar pastas padrão automaticamente
-            await this.createDefaultFolders();
-
-            // Configurar templates básicos
-            await this.createDefaultTemplates();
-
-            this.showToast('✅ Configuração automática concluída!', 'success');
-
-            // Mostrar modal de pastas configuradas
-            this.showQuickSetupResults();
-
-        } catch (error) {
-            console.error('Erro na configuração rápida:', error);
-            this.showToast('❌ Erro na configuração automática. Configure manualmente.', 'error');
-        }
+        this.switchTab('fileops');
+        this.showToast('Escolha a pasta de origem e a ação para começar.', 'info');
+        document.querySelector('.select-folder-btn')?.focus();
     }
 
     // Mostrar confirmação antes da configuração automática
@@ -2812,11 +2763,9 @@ class DeParaUI {
         try {
             // Carregar pastas do servidor
             await this.loadFolders();
-            await this.loadWorkflows();
 
             // Atualizar interface
             this.updateFoldersDisplay();
-            this.updateWorkflowsDisplay();
 
             this.showToast('✅ Lista de pastas atualizada!', 'success');
         } catch (error) {
@@ -2835,7 +2784,7 @@ class DeParaUI {
                 <div class="empty-state">
                     <span class="material-icons">folder_open</span>
                     <p>Nenhuma pasta configurada</p>
-                    <small>Use a configuração rápida acima ou crie manualmente</small>
+                    <small>Use &quot;Gerenciar Pastas&quot; acima ou configure manualmente</small>
                 </div>
             `;
         } else {
@@ -2972,6 +2921,14 @@ class DeParaUI {
         this.addButtonListener('.import-operational-config-btn', () => {
             if (typeof importOperationalConfig === 'function') importOperationalConfig();
         });
+        this.addButtonListener('.load-recovery-btn', () => loadRecoveryEntries());
+
+        document.addEventListener('click', (event) => {
+            const restoreButton = event.target.closest('.restore-recovery-btn');
+            if (restoreButton) {
+                restoreRecoveryEntry(restoreButton.getAttribute('data-entry-id'));
+            }
+        });
 
         // Botões de configurações
         this.addButtonListener('.show-ignored-btn', () => window.showIgnoredPatterns());
@@ -3018,6 +2975,11 @@ class DeParaUI {
 
         // Botões de operações agendadas (event delegation)
         document.addEventListener('click', (e) => {
+            const cancelFileButton = e.target.closest('.cancel-file-operation-btn');
+            if (cancelFileButton) {
+                cancelFileOperation(cancelFileButton.getAttribute('data-operation-id'));
+                return;
+            }
             if (e.target.closest('.schedule-btn')) {
                 if (typeof window.showScheduleModal === 'function') {
                     this.configureOperation();
@@ -3885,11 +3847,14 @@ class DeParaUI {
             return;
         }
 
+        const operationId = `ui_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        let operationTimer = null;
         try {
             this.isExecutingOperation = true;
             this.updateOperationDraft({ mode: 'execute' });
 
             const { sourcePath, operation, targetPath, options } = validation.draft;
+            operationTimer = startOperationProgressPolling(operationId);
             const response = await fetch('/api/files/execute', {
                 method: 'POST',
                 headers: {
@@ -3902,7 +3867,8 @@ class DeParaUI {
                     options: {
                         ...(options || {}),
                         batch: true,
-                        preserveStructure: true
+                        preserveStructure: true,
+                        operationId
                     }
                 })
             });
@@ -3917,6 +3883,7 @@ class DeParaUI {
             console.error('Erro ao executar operação:', error);
             this.showToast('Erro ao executar operação', 'error');
         } finally {
+            stopOperationProgressPolling(operationTimer);
             this.isExecutingOperation = false;
             this.refreshFileOpsState();
         }
@@ -7074,7 +7041,7 @@ setupEventListeners() {
                 <div class="empty-state">
                     <span class="material-icons">folder_open</span>
                     <p>Nenhuma pasta configurada</p>
-                    <small>Use a configuração rápida acima ou crie manualmente</small>
+                    <small>Use &quot;Gerenciar Pastas&quot; acima ou configure manualmente</small>
                 </div>
             `;
             this.isRenderingFolders = false;
@@ -7297,9 +7264,6 @@ setupEventListeners() {
         switch (tabName) {
             case 'dashboard':
                 this.updateDashboard();
-                break;
-            case 'workflows':
-                this.loadWorkflows();
                 break;
             case 'folders':
                 // Não recarregar pastas se já foram carregadas na inicialização
@@ -8252,8 +8216,72 @@ async function loadProgress() {
     }
 }
 
-function renderProgress(operations) {
+const operationPollingTimers = new Map();
+
+function escapeMarkup(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function stopOperationProgressPolling(timer) {
+    if (!timer) return;
+    clearInterval(timer);
+    for (const [operationId, activeTimer] of operationPollingTimers.entries()) {
+        if (activeTimer === timer) {
+            operationPollingTimers.delete(operationId);
+            break;
+        }
+    }
+}
+
+function startOperationProgressPolling(operationId) {
+    const poll = async () => {
+        try {
+            const response = await fetch(`/api/files/operations/${encodeURIComponent(operationId)}`);
+            if (response.status === 404 || !response.ok) return;
+            const result = await response.json();
+            if (!result.success || !result.data) return;
+
+            renderProgress([result.data]);
+            if (['completed', 'partial', 'conflict', 'cancelled', 'interrupted'].includes(result.data.status)) {
+                stopOperationProgressPolling(operationPollingTimers.get(operationId));
+            }
+        } catch {
+            return;
+        }
+    };
+
+    const timer = setInterval(poll, 1000);
+    operationPollingTimers.set(operationId, timer);
+    poll();
+    return timer;
+}
+
+async function cancelFileOperation(operationId) {
+    if (!operationId) return;
+    try {
+        const response = await fetch(`/api/files/operations/${encodeURIComponent(operationId)}/cancel`, {
+            method: 'POST'
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Não foi possível cancelar a operação');
+        }
+        showToast('Cancelamento solicitado. O item atual será concluído com segurança.', 'info');
+    } catch (error) {
+        showToast(error.message || 'Não foi possível cancelar a operação', 'error');
+    }
+}
+
+function renderProgress(operations = []) {
     const container = document.getElementById('progress-list');
+    if (!container) return;
+
+    operations = Array.isArray(operations) ? operations : [operations];
 
     if (operations.length === 0) {
         container.innerHTML = '<p class="empty-state">Nenhuma operação em andamento</p>';
@@ -8261,23 +8289,26 @@ function renderProgress(operations) {
     }
 
     container.innerHTML = operations.map(op => {
-        const isError = op.percentage < 0;
-        const isCompleted = op.percentage === 100;
+        const percentage = Math.max(0, Math.min(100, Number(op.percentage) || 0));
+        const isError = ['partial', 'conflict'].includes(op.status) || op.percentage < 0;
+        const isCompleted = ['completed', 'cancelled', 'interrupted'].includes(op.status) || percentage === 100;
         const progressClass = isError ? 'progress-error' :
                              isCompleted ? 'progress-completed' : '';
+        const canCancel = !isCompleted && !isError && op.status !== 'cancelling';
 
         return `
             <div class="progress-item ${progressClass}">
                 <div class="progress-header">
-                    <span class="progress-title">${op.operationId}</span>
+                    <span class="progress-title">${escapeMarkup(op.operationId)}</span>
                     <span class="progress-percentage">
-                        ${isError ? 'Erro' : isCompleted ? 'Concluído' : `${op.percentage}%`}
+                        ${isError ? 'Pendências' : isCompleted ? (op.status === 'cancelled' ? 'Cancelada' : 'Concluída') : `${percentage}%`}
                     </span>
                 </div>
                 <div class="progress-bar-container">
-                    <div class="progress-bar" style="width: ${Math.max(0, op.percentage)}%"></div>
+                    <div class="progress-bar" style="width: ${percentage}%"></div>
                 </div>
-                <div class="progress-message">${op.message}</div>
+                <div class="progress-message">${escapeMarkup(op.message)}</div>
+                ${canCancel ? `<button type="button" class="btn btn-sm btn-warning cancel-file-operation-btn" data-operation-id="${escapeMarkup(op.operationId)}">Cancelar com segurança</button>` : ''}
             </div>
         `;
     }).join('');
@@ -8631,36 +8662,61 @@ function renderBackups(backups) {
     `).join('');
 }
 
+async function loadRecoveryEntries() {
+    const container = document.getElementById('recovery-list');
+    if (!container) return;
+
+    try {
+        const response = await fetch('/api/files/recovery');
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Falha ao carregar a recuperação');
+        }
+        renderRecoveryEntries(result.data || []);
+    } catch (error) {
+        container.innerHTML = `<div class="empty-state">${escapeMarkup(error.message || 'Falha ao carregar a recuperação')}</div>`;
+    }
+}
+
+function renderRecoveryEntries(entries = []) {
+    const container = document.getElementById('recovery-list');
+    if (!container) return;
+
+    if (!entries.length) {
+        container.innerHTML = '<div class="empty-state">Nenhum item aguardando recuperação.</div>';
+        return;
+    }
+
+    container.innerHTML = entries.map((entry) => `
+        <div class="recovery-item">
+            <div>
+                <strong>${escapeMarkup(entry.relativePath || entry.originalPath)}</strong>
+                <small>Origem: ${escapeMarkup(entry.originalPath)} · ${Number(entry.size || 0).toLocaleString('pt-BR')} bytes</small>
+            </div>
+            <button class="btn btn-sm btn-secondary restore-recovery-btn" type="button" data-entry-id="${escapeMarkup(entry.entryId)}">Restaurar</button>
+        </div>
+    `).join('');
+}
+
+async function restoreRecoveryEntry(entryId) {
+    if (!entryId || !window.confirm('Restaurar este item no caminho original?')) return;
+
+    try {
+        const response = await fetch(`/api/files/recovery/${encodeURIComponent(entryId)}/restore`, { method: 'POST' });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Não foi possível restaurar o item');
+        }
+        showToast('Item restaurado com sucesso.', 'success');
+        await loadRecoveryEntries();
+    } catch (error) {
+        showToast(error.message || 'Não foi possível restaurar o item', 'error');
+    }
+}
+
 // Initialize File Operations Tab
 function initFileOperationsTab() {
-    // Load data when tab is activated
-    const fileopsTab = document.getElementById('fileops');
-
-    // Create a mutation observer to detect when tab becomes active
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                if (fileopsTab.classList.contains('active')) {
-                    // Usar carregamento seguro com controle de debouncing
-                    if (typeof loadTemplates === 'function') safeLoadData('templates', loadTemplates);
-                    if (typeof loadScheduledOperations === 'function') safeLoadData('scheduledOperations', loadScheduledOperations);
-                    if (typeof loadBackups === 'function') safeLoadData('backups', loadBackups);
-                }
-            }
-        });
-    });
-
-    observer.observe(fileopsTab, {
-        attributes: true,
-        attributeFilter: ['class']
-    });
-
-    // Load initial data (com controle de debouncing)
-    setTimeout(() => {
-        if (typeof loadTemplates === 'function') safeLoadData('templates', loadTemplates);
-        if (typeof loadScheduledOperations === 'function') safeLoadData('scheduledOperations', loadScheduledOperations);
-        if (typeof loadBackups === 'function') safeLoadData('backups', loadBackups);
-    }, 100);
+    return undefined;
 }
 
 // Initialize Scheduled Operations Tab with Progress
@@ -8698,28 +8754,13 @@ function initScheduledOperationsTab() {
         attributeFilter: ['class']
     });
 
-    // Load initial data (com controle)
-    setTimeout(() => {
-        safeLoadData('scheduledOperations', loadScheduledOperations);
-        loadProgress();
-    }, 100);
 }
 
 // System Notifications
 let notificationsEnabled = false;
 
 async function initNotifications() {
-    // Check if notifications are supported
-    if ('Notification' in window) {
-        // Check current permission
-        if (Notification.permission === 'granted') {
-            notificationsEnabled = true;
-        } else if (Notification.permission !== 'denied') {
-            // Request permission
-            const permission = await Notification.requestPermission();
-            notificationsEnabled = permission === 'granted';
-        }
-    }
+    notificationsEnabled = 'Notification' in window && Notification.permission === 'granted';
 
     // Store preference
     localStorage.setItem('notificationsEnabled', notificationsEnabled);
@@ -8755,7 +8796,7 @@ function showSystemNotification(title, body, icon = '/icon-192x192.png') {
 }
 
 // Enhanced Toast notifications helper
-function showToast(message, type = 'info', showSystemNotification = false) {
+function showToast(message, type = 'info', allowSystemNotification = false) {
     const container = document.getElementById('toast-container');
 
     const toast = document.createElement('div');
@@ -8768,10 +8809,10 @@ function showToast(message, type = 'info', showSystemNotification = false) {
     container.appendChild(toast);
 
     // Show system notification for important messages
-    if (showSystemNotification && (type === 'success' || type === 'error')) {
+    if (allowSystemNotification && (type === 'success' || type === 'error')) {
         const title = type === 'success' ? 'Operação Concluída' : 'Erro na Operação';
-        if (typeof showSystemNotification === 'function') {
-            showSystemNotification(title, message);
+        if (typeof window.showSystemNotification === 'function') {
+            window.showSystemNotification(title, message);
         }
     }
 
@@ -9252,7 +9293,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Initialize tabs
     initFileOperationsTab();
     initScheduledOperationsTab();
-    initDragAndDrop();
 
     // Load backup config when backups tab is activated
     const backupsTab = document.getElementById('backups');
@@ -9263,6 +9303,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (backupsTab.classList.contains('active')) {
                         loadBackupConfig();
                         loadBackups();
+                        loadRecoveryEntries();
                     }
                 }
             });

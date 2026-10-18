@@ -15,6 +15,7 @@ const updateOrchestrator = require('./services/updateOrchestrator');
 const configStore = require('./utils/configStore');
 const folderManager = require('./config/folders');
 const fileOperationsManager = require('./utils/fileOperations');
+const { recoverPendingOperationalImport } = require('./utils/operationalBackup');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter } = require('./middleware/rateLimiter');
 const { writeJsonAtomic } = require('./utils/atomicStore');
@@ -248,6 +249,7 @@ async function startServer(options = {}) {
   await configStore.ensureConfigFile();
   await fileOperationsManager.init();
   await folderManager.init();
+  await recoverPendingOperationalImport();
 
   server = await new Promise((resolve, reject) => {
     const createdServer = app.listen(port, HOST, () => resolve(createdServer));

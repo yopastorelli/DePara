@@ -66,8 +66,9 @@ Exported backup includes:
 Import rules:
 
 - Validate version and minimum shape before write.
-- Replace covered state atomically at product-contract level.
+- Replace covered state through the operational import journal. The server writes `prepared`, then `applying`, applies the payload, and records `committed`; a failure or restart restores the previous complete snapshot and records `rolled_back`.
 - Preserve runtime paths outside exported data.
+- The journal is `%USERPROFILE%\.depara\data\config-import-journal.json`; do not delete it manually during recovery.
 
 ## File operation routes
 
@@ -80,7 +81,7 @@ Import rules:
 | PUT | `/api/files/folders/:id` |
 | DELETE | `/api/files/folders/:id` |
 
-### Workflows
+### Workflows (compatibility only)
 
 | Method | Path |
 |---|---|
@@ -93,7 +94,7 @@ Import rules:
 
 | Method | Path | Required fields |
 |---|---|---|
-| POST | `/api/files/execute` | `action`, `sourcePath`; `targetPath` for `copy` and `move` |
+| POST | `/api/files/execute` | `action`, `sourcePath`; `targetPath` for `copy` and `move`; optional `options.operationId` |
 
 Supported actions:
 
@@ -111,6 +112,8 @@ Path rules:
 - Delete moves files to the runtime quarantine instead of unlinking them. The operation is reversible through the recovery routes.
 
 Operation results contain `operationId`, `status`, `counts`, `message` and `recoverable`. `success=true` is reserved for `status=completed`; a conflict or partial batch is not reported as success.
+
+The UI sends a stable `options.operationId` so progress can be polled while the request is running. Clients must render `counts` and `status`, and may request cancellation through the durable operation route.
 
 Supported durable statuses are:
 
@@ -139,6 +142,8 @@ Create requirements:
 - `action`
 - `sourcePath`
 - `targetPath` when `action` is `copy` or `move`
+
+`frequency` accepts only positive values such as `30s`, `5m`, `1h`, `1d`, `1w` or `1M`, plus `manual` and `on-startup`. Zero, empty and legacy aliases such as `realtime` return `400`; they are never silently converted to a default interval.
 
 State rules:
 
@@ -174,7 +179,7 @@ The journal is stored under `%USERPROFILE%\.depara\data\file-operations`. A rest
 | GET | `/api/files/ignored-patterns` |
 | POST | `/api/files/check-ignore` |
 
-### Templates
+### Templates (compatibility only)
 
 | Method | Path |
 |---|---|
@@ -182,6 +187,8 @@ The journal is stored under `%USERPROFILE%\.depara\data\file-operations`. A rest
 | GET | `/api/files/templates/categories` |
 | GET | `/api/files/templates/:category/:name` |
 | POST | `/api/files/templates/:category/:name/apply` |
+
+These routes are not part of the canonical product journey. Do not add new UI dependencies on them; use the operation draft and scheduled-operation routes instead.
 
 ### Slideshow and filesystem browsing
 

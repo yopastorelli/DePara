@@ -1,9 +1,15 @@
 # Auditoria de UI e UX — slideshow e responsividade
 
-AUDIT_DATE=2026-10-17
-AUDIT_BASE_COMMIT=265bec2
+AUDIT_DATE=2026-10-18
+AUDIT_BASE_COMMIT=working-tree-after-product-audit
 AUDIT_PLATFORM=Windows_Chromium
 DOC_AUDIENCE=AI_development_agents
+
+## Decisão de produto
+
+O agente deve tratar a UI como uma jornada desktop local, não como um painel genérico. O Dashboard mostra apenas saúde e o acesso ao slideshow; operações têm um único draft; agendamentos concentram o ciclo de vida; backup e recuperação concentram retenção e restauração. Workflows, templates, conversão, mapeamento e drag-and-drop não devem voltar à interface sem uma decisão de produto e uma medição de custo.
+
+O cabeçalho principal usa perfil compacto para reduzir pintura e preservar área útil. O slideshow mantém uma barra única no topo, com controles de foto, reprodução e fechamento no mesmo contexto. A barra pode quebrar em telas estreitas, mas não pode deslocar a área da imagem nem cortar a foto.
 
 ## Falhas reproduzidas
 
@@ -29,9 +35,11 @@ DOC_AUDIENCE=AI_development_agents
 - O início possui um único handler, proteção contra reentrada e feedback de carregamento. O caminho deve ser absoluto do Windows ou UNC, e a opção de incluir subpastas é respeitada.
 - Slideshow manual suspende o timer de inatividade e mantém o cursor. Fechar libera a imagem, timers e catálogo, restaurando o comportamento normal do protetor de tela.
 - Cabeçalho deixa de ser fixo em telas estreitas ou baixas; formulários, notificações e configuração do slideshow respeitam a largura disponível.
-- Gráficos se ajustam ao cartão, legendas quebram linha, e listas preenchidas de pastas, agendamentos e backups acomodam caminhos longos e seus botões. A busca deixa de impor largura mínima maior que a janela.
+- O Dashboard não carrega gráficos nem atividade histórica no bootstrap. Listas de pastas, agendamentos, backups e recuperação acomodam caminhos longos e seus botões. A busca deixa de impor largura mínima maior que a janela.
 - Material Icons é um ativo local versionado com licença e hash em `src/public/fonts/README.md`. Texto usa fonte do Windows/sistema; não há dependência de Google Fonts para a UI funcionar.
 - Monitoramento inicial continua pelo scheduler existente, sem uma segunda atualização bloqueante durante o splash.
+- O bootstrap não pede permissão de notificação, não carrega templates/workflows e não inicia polling de agendamentos enquanto a aba correspondente estiver oculta.
+- A importação de configuração é apresentada como operação recuperável: o usuário recebe feedback de sucesso/erro e pode consultar a quarentena sem apagar journals manualmente.
 - Intervalo padrão de 10 segundos, com opções de 5, 10, 15, 30, 45, 60, 90, 120, 180, 240 e 300 segundos, além de valor personalizado no intervalo de 1–300 segundos. O mesmo limite vale no formulário, normalização da UI, API e arquivo persistente. Valores existentes não são sobrescritos automaticamente.
 - Quando a pasta de imagens já está configurada no servidor, esse estado é autoritativo: um cache legado do navegador não pode sobrescrevê-lo, mesmo que o intervalo salvo seja igual ao novo padrão. A promoção de cache legado fica limitada à instalação ainda sem pasta configurada. Isso impede que o cache antigo de 3 segundos desfaça uma alteração para 10 segundos.
 
@@ -49,16 +57,16 @@ A barra deve permanecer com até 52 pixels de altura em janelas de pelo menos 80
 
 Capturas sintéticas ficam em `test-results/`, fora do Git, e devem ser inspecionadas visualmente. Testes verdes não substituem recarregar a UI e validar o release ativo na porta de produção.
 
-## Evidência de validação — 2026-10-17
+## Evidência de validação — 2026-10-18
 
 - Lint: PASS.
-- Jest: 14 suítes e 65 testes aprovados; smoke separado com 8 testes aprovados.
-- Playwright: 21 testes aprovados com um worker, incluindo os 16 cenários deste relatório e os cinco fluxos existentes da aplicação. A última execução levou aproximadamente 2,8 minutos.
+- Jest: 15 suítes e 78 testes aprovados; smoke separado com 8 testes aprovados.
+- Playwright: 21 testes aprovados com um worker, incluindo os 16 cenários deste relatório e os cinco fluxos existentes da aplicação. A última execução levou aproximadamente 3,2 minutos.
 - `npm audit --audit-level=high`: nenhuma vulnerabilidade reportada.
 - Parser PowerShell: scripts de instalação e operação aprovados.
 - Capturas de slideshow em desktop e janela estreita inspecionadas; as duas faixas nas bordas da imagem de teste permanecem visíveis, sem recorte.
 
-Este registro comprova a validação local do código. A ativação do release e a publicação no remoto são verificações separadas, conforme `docs/WINDOWS-OPS.md`.
+Este registro comprova a validação local do código. A ativação do release e a certificação da máquina de destino são verificações separadas, conforme `docs/WINDOWS-OPS.md`.
 
 ## Limites da evidência
 

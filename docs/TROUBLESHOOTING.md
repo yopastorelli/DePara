@@ -122,6 +122,15 @@ Get-ChildItem "$env:USERPROFILE\.depara\data"
 
 Confirme `DEPARA_DATA_DIR`, `DEPARA_CONFIG_FILE`, permissões de escrita e se o processo usa o runtime esperado.
 
+Se a importação de backup foi interrompida, não apague `config-import-journal.json`. Reinicie pelo launcher oficial e leia o estado do arquivo:
+
+```powershell
+Get-Content "$env:USERPROFILE\.depara\data\config-import-journal.json"
+npm run doctor:windows
+```
+
+Estados `prepared` ou `applying` são revertidos para o snapshot anterior no próximo início; `rolled_back` é a confirmação do rollback. Um estado `committed` indica que a importação terminou e não deve ser reaplicada automaticamente.
+
 ## Operação de arquivo interrompida ou parcial
 
 ```powershell
@@ -165,6 +174,8 @@ npm run test:e2e
 - O cursor não deve ser ocultado durante slideshow manual. O timer de inatividade fica suspenso até fechar o visualizador.
 - O botão de fullscreen fica temporariamente desabilitado durante uma transição. Se o navegador recusar fullscreen nativo, o slideshow continua preenchendo a janela sem recortar a foto.
 - Reproduza os testes de `docs/UI-UX-AUDIT.md` antes de adicionar novas regras ou estilos inline para contornar um problema visual.
+
+O acesso ao slideshow fica no Dashboard. Se ele não aparecer, confirme que a aba ativa é `dashboard` e que o release servido contém `action-slideshow-card`; não restaure cartões antigos de workflow/template para “corrigir” a navegação.
 
 ## Auditoria de dependências falha
 

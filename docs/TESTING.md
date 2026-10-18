@@ -75,11 +75,20 @@ O conjunto deve cobrir:
 - bootstrap do release imutável;
 - ausência de duplicação e perda em catálogos grandes.
 
+Regressões adicionadas ao contrato de produto:
+
+- `fileOperations.schedule.test.js` rejeita `0s`/aliases inválidos e mantém um agendamento persistido inválido pausado, com o motivo visível para correção;
+- `api.smoke.test.js` verifica que `/api/docs` não perde as duas rotas `POST` de listagem e que a API responde `400` para frequência inválida;
+- `config.routes.test.js` simula reinício durante importação operacional e confirma rollback pelo `config-import-journal.json`;
+- E2E confirma que o cartão único de slideshow fica no Dashboard, que fileops usa um único draft e que a UI não depende de workflow/template para iniciar.
+
 ## UI, slideshow e responsividade
 
 `tests/e2e/slideshow.ux.spec.js` usa PNGs grandes em retrato, paisagem e panorama, não apenas imagens de um pixel. Cobre seis viewports de `320 × 480` a `1366 × 768`, teclado, foco, hover estável, pausa, cursor, ausência de overflow nas abas principais, fullscreen nativo e fallback.
 
 A UI deve funcionar sem requisições externas e sem aguardar o monitoramento de recursos. A fonte de ícones local deve carregar com sucesso. O teste mantém uma requisição de monitoramento pendente para garantir que ela não prenda a inicialização.
+
+O bootstrap não deve abrir prompt de notificação, fazer polling da aba de agendamentos oculta ou iniciar carregamento de templates/gráficos. Uma regressão nesses comportamentos deve ser tratada como custo de inicialização, não como detalhe visual.
 
 `tests/fileSafety.test.js` é a regressão mínima de segurança de mutações. Ela deve permanecer isolada em um runtime temporário e provar, no mínimo, que uma falha de destino não apaga a origem, que exclusão de diretório não tenta tratar a pasta como arquivo, que cópias não deixam `.depara-partial-*` e que uma exclusão concluída ainda oferece restauração.
 

@@ -233,4 +233,36 @@ describe('Config Routes', () => {
     expect(response.body.success).toBe(false);
     expect(response.body.error).toMatch(/Versao de backup nao suportada/i);
   });
+
+  it('reverte importação operacional interrompida a partir do journal', async () => {
+    const operationalBackup = require('../src/utils/operationalBackup');
+    const previousConfig = {
+      slideshowSelectedPath: path.join(runtimeRoot, 'original-images'),
+      slideshowConfig: { interval: 45 }
+    };
+
+    await request(app).post('/api/config').send({ config: previousConfig }).expect(200);
+    const previous = await operationalBackup.exportOperationalBackup();
+    const journalPath = operationalBackup.getImportJournalPath();
+    await fsp.mkdir(path.dirname(journalPath), { recursive: true });
+    await fsp.writeFile(journalPath, JSON.stringify({
+      version: 1,
+      transactionId: 'interrupted-import-test',
+      status: 'applying',
+      previous,
+      payload: { ...previous, config: { ...previous.config, slideshowSelectedPath: '/interrupted' } }
+    }), 'utf8');
+
+    const result = await operationalBackup.recoverPendingOperationalImport();
+    expect(result).toEqual(expect.objectContaining({
+      recovered: true,
+      status: 'rolled_back'
+    }));
+
+    const restored = await request(app).get('/api/config').expect(200);
+    expect(restored.body.config.slideshowSelectedPath).toBe(previousConfig.slideshowSelectedPath);
+    const journal = JSON.parse(await fsp.readFile(journalPath, 'utf8'));
+    expect(journal.status).toBe('rolled_back');
+    expect(journal.recovery).toBe('startup-rollback');
+  });
 });

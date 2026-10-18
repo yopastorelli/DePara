@@ -72,6 +72,7 @@ Em máquina compartilhada com Codex, preserve `MAX_CONCURRENT_OPERATIONS=1`, `DE
 - Dados mutáveis: `%USERPROFILE%\.depara\data`.
 - Backups: `%USERPROFILE%\.depara\backups`.
 - Journal: `%USERPROFILE%\.depara\data\file-operations\<operationId>`.
+- Journal de importação operacional: `%USERPROFILE%\.depara\data\config-import-journal.json`.
 - Quarentena: `%USERPROFILE%\.depara\quarantine\<operationId>`.
 - Releases anteriores: `%USERPROFILE%\.depara\releases`.
 - Antes de alterar limites, exporte a configuração operacional e copie o runtime.
@@ -79,7 +80,7 @@ Em máquina compartilhada com Codex, preserve `MAX_CONCURRENT_OPERATIONS=1`, `DE
 
 ## Operações interrompidas e recuperação
 
-O encerramento gracioso primeiro impede novas operações e aguarda até 30 segundos as operações ativas. Se houver uma interrupção abrupta, o próximo início reconcilia os journals e retoma operações elegíveis; não remova os arquivos de `data\file-operations` nem de `quarantine`.
+O encerramento gracioso primeiro impede novas operações e aguarda até 30 segundos as operações ativas. Se houver uma interrupção abrupta, o próximo início reconcilia os journals, reverte uma importação operacional em estado `prepared` ou `applying` e retoma operações elegíveis; não remova os arquivos de `data\file-operations`, `data\config-import-journal.json` nem de `quarantine`.
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:3000/api/files/recovery

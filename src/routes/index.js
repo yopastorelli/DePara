@@ -73,10 +73,12 @@ router.get('/docs', (req, res) => {
         GET_RECOVERY: '/api/files/recovery',
         POST_RESTORE_RECOVERY: '/api/files/recovery/:entryId/restore',
         POST_SCHEDULE: '/api/files/schedule',
+        PUT_SCHEDULE: '/api/files/schedule/:operationId',
+        DELETE_SCHEDULE: '/api/files/schedule/:operationId',
         GET_SCHEDULED: '/api/files/scheduled',
-        POST: '/api/files/list-images',
-        DELETE: '/api/files/image-catalog/:catalogId',
-        POST: '/api/files/list-folders'
+        POST_LIST_IMAGES: '/api/files/list-images',
+        POST_LIST_FOLDERS: '/api/files/list-folders',
+        DELETE_IMAGE_CATALOG: '/api/files/image-catalog/:catalogId'
       },
       update: {
         GET: '/api/update/auto/status',

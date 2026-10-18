@@ -2001,6 +2001,144 @@ body.slideshow-active-fullscreen #dashboard-fullscreen-controls {
     }
 }
 
+.header {
+    backdrop-filter: none;
+    min-height: 42px;
+}
+
+.header-content {
+    min-height: 42px;
+    padding: 0 12px;
+    gap: 6px;
+}
+
+.logo {
+    height: 34px;
+}
+
+.logo-image {
+    max-width: 150px;
+}
+
+.nav {
+    gap: 4px;
+    margin-left: 8px;
+}
+
+.nav-btn {
+    gap: 5px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.nav-btn:hover,
+.card:hover {
+    transform: none;
+}
+
+.nav-btn .material-icons {
+    font-size: 17px;
+}
+
+.header-actions {
+    margin-left: 6px;
+}
+
+.help-btn {
+    padding: 6px;
+    transition: background-color 120ms ease;
+}
+
+.tab-content {
+    animation: none;
+}
+
+.card {
+    backdrop-filter: none;
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: none;
+}
+
+.recovery-panel {
+    margin: 24px 0;
+    padding: 18px;
+    background: #fff;
+    border: 1px solid #e1e5e9;
+    border-radius: 12px;
+}
+
+.section-header,
+.recovery-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.recovery-item {
+    padding: 12px 0;
+    border-top: 1px solid #eef0f2;
+}
+
+.recovery-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.recovery-info small {
+    overflow-wrap: anywhere;
+    color: #667085;
+}
+
+.progress-item .cancel-file-operation-btn {
+    margin-top: 10px;
+}
+
+.progress-bar::after {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .header-content {
+        align-items: flex-start;
+        padding: 6px 10px;
+        box-sizing: border-box;
+    }
+
+    .nav {
+        order: 3;
+        flex-basis: 100%;
+        width: 100%;
+        justify-content: flex-start;
+        margin-left: 0;
+        overflow: visible;
+        flex-wrap: wrap;
+        padding-bottom: 2px;
+    }
+
+    .nav-btn {
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+        white-space: normal;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .header *,
+    .card *,
+    .progress-bar {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
 @media (max-width: 480px) {
     .form-actions .btn {
         width: 100%;

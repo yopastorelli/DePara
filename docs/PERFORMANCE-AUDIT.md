@@ -1,7 +1,7 @@
 # PERFORMANCE_AUDIT_CONTRACT
 
-AUDIT_DATE=2026-10-17
-VALIDATED_APPLICATION_COMMIT=265bec2
+AUDIT_DATE=2026-10-18
+VALIDATED_APPLICATION_COMMIT=working-tree-after-product-audit
 AUDIT_PLATFORM=Windows_x64
 DOC_AUDIENCE=AI_development_agents
 
@@ -68,13 +68,13 @@ Esse baseline é evidência local, não uma garantia para outra máquina. Regist
 
 ## Medição atual registrada
 
-Em 2026-10-17, no checkout `C:\DePara`, com Node.js `v24.19.0`, o auditor foi executado contra o release de aplicação `265bec2`, usando dados sintéticos e o perfil de coexistência:
+Em 2026-10-18, no checkout `C:\DePara`, com Node.js `v24.19.0`, o auditor foi executado contra o working tree após a auditoria de produto, usando dados sintéticos e o perfil de coexistência:
 
 | Perfil | Health | Recursos | Concorrente x5 | Listagem | RSS final |
 |---|---:|---:|---:|---:|---:|
-| `small` (100 arquivos, 50 imagens) | 368,60 ms | 42,16 ms | 112,71 ms | 346,95 ms | 74,8 MiB |
-| `medium` (1.000 arquivos, 250 imagens) | 97,12 ms | 26,02 ms | 78,25 ms | 159,22 ms | 76,8 MiB |
+| `small` (100 arquivos, 50 imagens) | 210,22 ms | 23,01 ms | 69,51 ms | 100,48 ms | 75,4 MiB |
+| `medium` (1.000 arquivos, 250 imagens) | 94,92 ms | 24,34 ms | 75,20 ms | 204,18 ms | 78,8 MiB |
 
-O perfil `medium` terminou ainda construindo o catálogo (`pageStatus=building`) e indicou continuidade (`hasMore=true`), sem carregar todas as imagens em memória. O cenário `small` terminou com `pageStatus=ready`, 50 imagens e `hasMore=false`. Os resultados são evidência do host desta execução, não uma promessa para outra máquina.
+Os dois perfis terminaram com `pageStatus=ready`, sem continuidade (`hasMore=false`), e sem carregar imagens inteiras do catálogo em memória. Os resultados são evidência do host desta execução, não uma promessa para outra máquina.
 
 Antes de alterar concorrência, paginação ou preload em uma máquina nova, execute pelo menos os dois perfis, repita cada um três vezes e registre a memória livre e a carga simultânea do Codex.

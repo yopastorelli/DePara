@@ -141,8 +141,9 @@ Não aumente concorrência, página ou preload para compensar lentidão antes de
 |---|---|
 | Ambiente | `%USERPROFILE%\.depara\config.env` |
 | Configuração funcional | `%USERPROFILE%\.depara\data\depara-config.json` |
-| Pastas, agendamentos e workflows | `%USERPROFILE%\.depara\data` |
+| Pastas e agendamentos; workflows de compatibilidade | `%USERPROFILE%\.depara\data` |
 | Journals de operações | `%USERPROFILE%\.depara\data\file-operations` |
+| Journal de importação operacional | `%USERPROFILE%\.depara\data\config-import-journal.json` |
 | Quarentena restaurável | `%USERPROFILE%\.depara\quarantine` |
 | Logs | `%USERPROFILE%\.depara\logs` |
 | Backups | `%USERPROFILE%\.depara\backups` |

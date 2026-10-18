@@ -5,14 +5,36 @@ AUDIT_PLATFORM=Windows_only
 DOC_AUDIENCE=AI_development_agents
 AUDIT_SCOPE=application_code_runtime_installation_documentation_memory_security
 AUDIT_SCOPE_EXTENSION=file_mutation_integrity_interruption_recovery
-AUDIT_STATUS=working_tree_validation
+AUDIT_STATUS=validated_for_publication
 AUDIT_VALIDATED_APPLICATION_REVISION=working-tree-after-tests
 
 ## Escopo
 
 A auditoria cobre código do servidor e da UI, persistência, rotas, migrações, scripts de instalação e execução, runtime imutável, coexistência com o Codex, documentação, dependências, testes, segurança de filesystem e perfil de memória.
 
-Esta rodada valida o working tree após as alterações de segurança; ainda não há commit novo. O release ativo precisa ser conferido separadamente por `current/release.json` e `npm run doctor:windows`.
+Esta rodada valida a revisão do código no checkout após as alterações de segurança. A ativação do release precisa ser conferida separadamente por `current/release.json` e `npm run doctor:windows`.
+
+## Resultado da auditoria de produto
+
+O produto fica reduzido a cinco superfícies explícitas e sem sobreposição:
+
+1. `Dashboard`: saúde do runtime e acesso ao slideshow;
+2. `Operações de Arquivos`: um único draft para origem, ação, destino, execução imediata ou agendamento;
+3. `Operações Agendadas`: lista, busca, pausa, edição, duplicação, execução e progresso;
+4. `Backup e Recuperação`: backup operacional, importação transacional e quarentena restaurável;
+5. `Configurações`: configuração do runtime e do screensaver.
+
+Workflows, templates, conversão, mapeamento, drag-and-drop e ações de operação duplicadas não fazem parte da nova jornada visível. Rotas e helpers de compatibilidade ainda existentes são limites para dados/clientes antigos; agentes não devem criar novos consumidores deles.
+
+Critérios funcionais aplicados:
+
+- nenhum arquivo é criado por onboarding ou configuração rápida;
+- uma operação de arquivo não inicia enquanto o draft estiver incompleto;
+- `copy`, `move` e `delete` usam o journal transacional, mostram progresso e permitem cancelamento cooperativo;
+- `delete` e substituição permanecem em quarentena até restauração ou limpeza explicitamente auditada;
+- frequência inválida é rejeitada com `400`, sem fallback para um minuto;
+- importação operacional grava `prepared`/`applying`/`committed` no journal e reverte o snapshot anterior após falha ou reinício interrompido;
+- a UI não solicita permissão de notificação nem carrega templates, gráficos ou catálogos no bootstrap.
 
 ## Decisões aplicadas
 
@@ -21,7 +43,7 @@ Esta rodada valida o working tree após as alterações de segurança; ainda nã
 - `install.ps1` é o único instalador documentado. Ele executa `npm ci` ou `npm ci --omit=dev`, preserva configuração existente, prepara o release imutável, cria os atalhos da Área de Trabalho e do Menu Iniciar quando solicitado e pode iniciar o processo oculto.
 - O launcher Windows é idempotente e não cria uma segunda instância do DePara; `stop`, `doctor`, `shortcut` e `deploy` têm comandos próprios.
 - O servidor permanece em `127.0.0.1`, com concorrência unitária, preload desligado, paginação adaptativa, catálogo em disco, logs HTTP desligados e contenção por pressão de memória.
-- Métodos de UI duplicados e executores sem referências foram removidos. A persistência do quick setup chama `saveFolderToServer`.
+- A superfície visível da UI não usa métodos duplicados de workflow/template/conversão; helpers de compatibilidade permanecem isolados para não quebrar dados antigos. O onboarding não cria pastas, templates ou arquivos.
 - Migrações antigas só promovem dados para o runtime canônico; código novo não grava em locais legados.
 - `copy`, `move` e `delete` usam journal durável, publicação atômica, limite de concorrência unitária e reconciliação no próximo início.
 - Destinos não são sobrescritos sem `options.overwrite=true`; exclusões e destinos substituídos entram em quarentena restaurável.
@@ -36,16 +58,16 @@ Esta rodada valida o working tree após as alterações de segurança; ainda nã
 |---|---|---|
 | Sintaxe | PASS | `node --check` para UI, servidor e bootstrap; parser PowerShell para scripts de instalação e operação |
 | Lint | PASS | `npm run lint` |
-| Unitários | PASS | 15 suítes, 75 testes; `npm run test:unit` |
+| Unitários | PASS | 15 suítes, 78 testes; `npm run test:unit` |
 | Segurança de arquivos | PASS | 9 cenários em `tests/fileSafety.test.js`: atomicidade, conflito, overwrite protegido, restauração, diretório, lote parcial, `recursive=false`, concorrência e retomada |
 | Smoke | PASS | 1 suíte, 8 testes; `npm run test:smoke -- --testTimeout=60000` |
 | E2E | PASS | 21 testes Playwright com um worker; `npm run test:e2e` |
 | Encerramento | PASS | startup isolado, token local e shutdown gracioso autenticado; sem tocar no processo produtivo |
 | Agregado | PASS | `npm run test:all` |
 | Dependências | PASS | `npm audit --audit-level=high`: 0 vulnerabilidades |
-| Performance small | PASS | health 223,52 ms; recursos 21,56 ms; concorrente x5 71,45 ms; RSS final 76,2 MiB |
-| Performance medium | PASS | health 94,36 ms; recursos 24,12 ms; concorrente x5 70,87 ms; RSS final 78,7 MiB |
-| Runtime local | GATE SEPARADO | o working tree não foi publicado; conferir `current/release.json` e `npm run doctor:windows` após deploy |
+| Performance small | PASS | health 210,22 ms; recursos 23,01 ms; concorrente x5 69,51 ms; RSS final 75,4 MiB |
+| Performance medium | PASS | health 94,92 ms; recursos 24,34 ms; concorrente x5 75,20 ms; RSS final 78,8 MiB |
+| Runtime local | GATE SEPARADO | o release local não foi ativado nesta auditoria; conferir `current/release.json` e `npm run doctor:windows` após deploy |
 | Launcher | GATE SEPARADO | não reiniciado nesta rodada para preservar o processo DePara existente |
 | Atalhos | GATE SEPARADO | não reescritos nesta rodada; validar após publicação do release |
 | Dependências de navegador | PASS | Chromium instalado para a suíte E2E; não é requisito do runtime de produção |
@@ -66,7 +88,7 @@ Os pré-requisitos são Node.js `>=18.15.0`, npm `>=9.0.0`, Git for Windows e `t
 
 ## Avaliação de memória e coexistência
 
-O perfil `codex-coexistence` é adequado para a máquina auditada: o processo usa heap Node limitada a 128 MiB, prioridade `BelowNormal`, uma operação por vez, preload desligado, páginas menores sob pressão e bloqueio de novas indexações em estado crítico. Na medição atual, o RSS final foi 76,2 MiB no perfil `small` e 78,7 MiB no perfil `medium`.
+O perfil `codex-coexistence` é adequado para a máquina auditada: o processo usa heap Node limitada a 128 MiB, prioridade `BelowNormal`, uma operação por vez, preload desligado, páginas menores sob pressão e bloqueio de novas indexações em estado crítico. Na medição atual, o RSS final foi 75,4 MiB no perfil `small` e 78,8 MiB no perfil `medium`.
 
 RSS do processo Node não inclui a memória do navegador, nem buffers gráficos ou a memória dos processos do Codex. A imagem original também pode exigir aproximadamente `48,8 MiB` somente em pixels RGBA para uma foto de `3096 × 4128`. Portanto, esses números comprovam o comportamento do servidor nesta máquina, mas não garantem conforto em qualquer hardware.
 
@@ -93,4 +115,4 @@ Um agente só pode declarar uma instalação pronta quando:
 7. nenhuma operação concluída deixar arquivo `.depara-partial-*` ou transformar conflito em sucesso;
 8. nenhum dado mutável, log, backup, resultado de teste, credencial ou foto pessoal estiver no Git.
 
-Teste verde no checkout não substitui diagnóstico do runtime. Publicação no remoto, ativação do release e validação na máquina de destino são gates separados.
+Teste verde no checkout não substitui diagnóstico do runtime. A ativação do release e a validação na máquina de destino são gates separados; um push remoto não certifica o runtime local.

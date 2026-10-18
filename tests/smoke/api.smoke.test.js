@@ -62,11 +62,14 @@ describe('API smoke', () => {
   it('health e status respondem com versao e status operacional', async () => {
     const health = await request(app).get('/health').expect(200);
     const status = await request(app).get('/api/status').expect(200);
+    const docs = await request(app).get('/api/docs').expect(200);
 
     expect(health.body.status).toBe('OK');
     expect(typeof health.body.version).toBe('string');
     expect(status.body.status).toBe('OPERATIONAL');
     expect(status.body.application.version).toBe(health.body.version);
+    expect(docs.body.endpoints.files.POST_LIST_IMAGES).toBe('/api/files/list-images');
+    expect(docs.body.endpoints.files.POST_LIST_FOLDERS).toBe('/api/files/list-folders');
   });
 
   it('config persiste e reidrata o caminho do slideshow', async () => {
@@ -254,6 +257,19 @@ describe('API smoke', () => {
       .expect(400);
 
     expect(invalidCreate.body.error.field).toBe('targetPath');
+
+    const invalidFrequency = await request(app)
+      .post('/api/files/schedule')
+      .send({
+        name: 'Frequência inválida',
+        frequency: '0s',
+        action: 'copy',
+        sourcePath: path.join(sourceDir, 'fixture.txt'),
+        targetPath: copiedFile
+      })
+      .expect(400);
+
+    expect(invalidFrequency.body.error.field).toBe('frequency');
 
     const listAfterCreate = await request(app).get('/api/files/scheduled').expect(200);
     const createdOperation = listAfterCreate.body.data.find((operation) => operation.id === 'smoke_schedule_copy');

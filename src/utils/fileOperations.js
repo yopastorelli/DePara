@@ -360,9 +360,22 @@ class FileOperationsManager {
             for (const operation of savedOperations) {
                 const { id, config } = operation;
                 const normalizedConfig = this.normalizeScheduledOperationConfig(config);
-
-                this.operations.set(id, normalizedConfig);
-                this.armScheduledOperation(id, normalizedConfig);
+                try {
+                    const validatedConfig = this.validateScheduledOperationConfig(normalizedConfig);
+                    this.operations.set(id, validatedConfig);
+                    this.armScheduledOperation(id, validatedConfig);
+                } catch (error) {
+                    const pausedConfig = {
+                        ...normalizedConfig,
+                        active: false,
+                        invalid: true,
+                        validationError: error.message
+                    };
+                    this.operations.set(id, pausedConfig);
+                    logger.warn(`Operação agendada inválida mantida pausada: ${id}`, {
+                        reason: error.message
+                    });
+                }
             }
             
             logger.info(`✅ ${savedOperations.length} operações agendadas carregadas e reagendadas`);
@@ -466,6 +479,8 @@ class FileOperationsManager {
         if (!name || !frequency || !action || !sourcePath) {
             throw new Error('Parâmetros obrigatórios ausentes: name, frequency, action, sourcePath');
         }
+
+        this.validateFrequency(frequency);
 
         const normalizedAction = action.toLowerCase();
         const supportedActions = ['move', 'copy', 'delete'];
@@ -1067,17 +1082,16 @@ class FileOperationsManager {
      * Converte frequência para milissegundos
      */
     parseFrequency(frequency) {
-        // Frequências especiais
+        this.validateFrequency(frequency);
+
         if (frequency === 'on-startup') {
             return 0; // Executar apenas uma vez na inicialização
         }
         if (frequency === 'manual') {
             return -1; // Não agendar automaticamente
         }
-        
-        // Frequências com regex
+
         const match = frequency.match(/^(\d+)([smhdwM])$/);
-        if (!match) return 60000; // padrão 1 minuto
 
         const value = parseInt(match[1]);
         const unit = match[2];
@@ -1089,8 +1103,15 @@ class FileOperationsManager {
             case 'd': return value * 24 * 60 * 60 * 1000; // dias
             case 'w': return value * 7 * 24 * 60 * 60 * 1000; // semanas
             case 'M': return value * 30 * 24 * 60 * 60 * 1000; // meses (aproximado)
-            default: return 60000;
+            default: throw new Error(`Frequência inválida: ${frequency}`);
         }
+    }
+
+    validateFrequency(frequency) {
+        if (typeof frequency !== 'string' || !/^(?:[1-9]\d*[smhdwM]|manual|on-startup)$/.test(frequency)) {
+            throw new Error('Frequência inválida. Use formatos como 30s, 5m, 1h, 1d, 1w, 1M, manual ou on-startup');
+        }
+        return frequency;
     }
 
     /**

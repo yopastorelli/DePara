@@ -124,6 +124,12 @@ $env:DEPARA_ALLOWED_PATHS = 'C:\Users\<usuario>\Pictures;C:\Dados'
 
 A configuração funcional de slideshow fica em `%USERPROFILE%\.depara\data\depara-config.json` e pode ser alterada pela UI ou por `POST /api/config`. Não copie o runtime inteiro para outro computador sem revisar caminhos, permissões e dados pessoais.
 
+## Contrato de produto
+
+O fluxo visível é deliberadamente pequeno: Dashboard/Slideshow, um draft de Operações de Arquivos, Operações Agendadas, Backup e Recuperação e Configurações. O bootstrap não cria pastas, não pede permissão de notificação e não carrega workflows, templates ou gráficos. Ações de arquivo sempre exibem o resumo do draft e usam o journal transacional; exclusões/substituições aparecem na quarentena restaurável.
+
+Importações operacionais usam `%USERPROFILE%\.depara\data\config-import-journal.json` para rollback in-process ou no próximo início. Agentes devem consultar esse journal e as rotas de recuperação antes de considerar uma interrupção resolvida.
+
 ## Gates de release
 
 Um release só está pronto quando:

@@ -348,6 +348,17 @@ router.post('/schedule', normalRateLimiter, async (req, res) => {
             });
         }
 
+        try {
+            fileOperationsManager.validateFrequency(frequency);
+        } catch (validationError) {
+            return res.status(400).json({
+                error: {
+                    message: validationError.message,
+                    field: 'frequency'
+                }
+            });
+        }
+
         const normalizedAction = action.toLowerCase();
         if ((normalizedAction === 'move' || normalizedAction === 'copy') && !targetPath) {
             return res.status(400).json({
@@ -387,7 +398,7 @@ router.post('/schedule', normalRateLimiter, async (req, res) => {
 
     } catch (error) {
         logger.operationError('File Operation Schedule', error);
-        res.status(500).json({
+        res.status(error.message?.startsWith('Frequência inválida') ? 400 : 500).json({
             error: {
                 message: 'Erro ao agendar operação',
                 details: error.message
@@ -462,13 +473,10 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
                     allowedChars: 'a-zA-Z0-9\\-'
                 });
 
-                const validFrequencyPattern = /^(\d+[smhdwM]|manual|on-startup)$/;
-                if (!validFrequencyPattern.test(sanitizedFrequency)) {
-                    throw new ValidationError(
-                        'Frequência inválida. Use formatos como 30s, 5m, 1h, 1d, 1w, 1M, manual ou on-startup',
-                        'frequency',
-                        sanitizedFrequency
-                    );
+                try {
+                    fileOperationsManager.validateFrequency(sanitizedFrequency);
+                } catch (frequencyError) {
+                    throw new ValidationError(frequencyError.message, 'frequency', sanitizedFrequency);
                 }
             }
 
@@ -581,7 +589,8 @@ router.put('/schedule/:operationId', strictRateLimiter, async (req, res) => {
 
         if (error.message.includes('Parâmetros obrigatórios ausentes') ||
             error.message.includes('Ação não suportada') ||
-            error.message.includes('targetPath é obrigatório')) {
+            error.message.includes('targetPath é obrigatório') ||
+            error.message.includes('Frequência inválida')) {
             return res.status(400).json({
                 error: {
                     message: 'Configuração inválida',

@@ -1,11 +1,19 @@
+const fs = require('fs').promises;
+const path = require('path');
 const logger = require('./logger');
 const configStore = require('./configStore');
 const fileOperationsManager = require('./fileOperations');
 const folderManager = require('../config/folders');
 const workflowStore = require('./workflowStore');
-const { getRuntimeRoot } = require('./runtimePaths');
+const { getRuntimeDataDir, getRuntimeRoot } = require('./runtimePaths');
+const { readJsonWithRecovery, writeJsonAtomic } = require('./atomicStore');
 
 const OPERATIONAL_BACKUP_VERSION = 1;
+const IMPORT_JOURNAL_VERSION = 1;
+
+function getImportJournalPath() {
+  return path.join(getRuntimeDataDir(), 'config-import-journal.json');
+}
 
 function validateBackupPayload(payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -47,36 +55,120 @@ async function exportOperationalBackup() {
   };
 }
 
+async function applyOperationalPayload(payload) {
+  await folderManager.init();
+  await workflowStore.init();
+
+  const config = await configStore.replaceConfig(payload.config);
+  const scheduledOperations = await fileOperationsManager.replaceScheduledOperations(payload.scheduledOperations);
+  const folders = await folderManager.importFolders(payload.folders);
+  const workflows = await workflowStore.replace(payload.workflows || []);
+
+  return { config, scheduledOperations, folders, workflows };
+}
+
+async function writeImportJournal(journal) {
+  await writeJsonAtomic(getImportJournalPath(), {
+    version: IMPORT_JOURNAL_VERSION,
+    ...journal,
+    updatedAt: new Date().toISOString()
+  });
+}
+
+async function recoverPendingOperationalImport() {
+  const journalPath = getImportJournalPath();
+  const journal = await readJsonWithRecovery(journalPath, null);
+  if (!journal || !['prepared', 'applying'].includes(journal.status)) {
+    return { recovered: false, status: journal?.status || null };
+  }
+
+  validateBackupPayload(journal.previous);
+  try {
+    await applyOperationalPayload(journal.previous);
+    await writeImportJournal({
+      ...journal,
+      status: 'rolled_back',
+      recovery: 'startup-rollback',
+      recoveredAt: new Date().toISOString()
+    });
+    logger.warn('Importação operacional interrompida foi revertida na inicialização', {
+      transactionId: journal.transactionId
+    });
+    return { recovered: true, status: 'rolled_back', transactionId: journal.transactionId };
+  } catch (error) {
+    logger.error('Falha ao reverter importação operacional interrompida', {
+      transactionId: journal.transactionId,
+      error: error.message
+    });
+    throw error;
+  }
+}
+
 async function importOperationalBackup(payload) {
   validateBackupPayload(payload);
 
   await folderManager.init();
   await workflowStore.init();
   const previous = await exportOperationalBackup();
+  const transactionId = `config_import_${Date.now()}_${process.pid}`;
 
-  let config;
-  let scheduledOperations;
-  let folders;
-  let workflows;
+  await fs.mkdir(getRuntimeDataDir(), { recursive: true });
+  await writeImportJournal({
+    transactionId,
+    status: 'prepared',
+    startedAt: new Date().toISOString(),
+    previous,
+    payload
+  });
+  await writeImportJournal({
+    transactionId,
+    status: 'applying',
+    startedAt: new Date().toISOString(),
+    previous,
+    payload
+  });
+
+  let applied;
   try {
-    config = await configStore.replaceConfig(payload.config);
-    scheduledOperations = await fileOperationsManager.replaceScheduledOperations(payload.scheduledOperations);
-    folders = await folderManager.importFolders(payload.folders);
-    workflows = await workflowStore.replace(payload.workflows || []);
+    applied = await applyOperationalPayload(payload);
   } catch (error) {
-    await configStore.replaceConfig(previous.config).catch(() => {});
-    await fileOperationsManager.replaceScheduledOperations(previous.scheduledOperations).catch(() => {});
-    await folderManager.importFolders(previous.folders).catch(() => {});
-    await workflowStore.replace(previous.workflows || []).catch(() => {});
+    try {
+      await applyOperationalPayload(previous);
+      await writeImportJournal({
+        transactionId,
+        status: 'rolled_back',
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        previous,
+        payload,
+        recovery: 'in-process-rollback'
+      });
+    } catch (rollbackError) {
+      logger.error('Falha no rollback da importação operacional', {
+        transactionId,
+        error: rollbackError.message
+      });
+    }
     throw error;
   }
 
+  const { config, scheduledOperations, folders, workflows } = applied;
   const summary = {
     configRestored: true,
     scheduledOperationsRestored: scheduledOperations.length,
     foldersRestored: folders.length,
     workflowsRestored: workflows.length
   };
+
+  await writeImportJournal({
+    transactionId,
+    status: 'committed',
+    startedAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    previous,
+    payload,
+    summary
+  });
 
   logger.info('Backup operacional importado', {
     version: payload.version,
@@ -99,5 +191,7 @@ module.exports = {
   OPERATIONAL_BACKUP_VERSION,
   exportOperationalBackup,
   importOperationalBackup,
-  validateBackupPayload
+  validateBackupPayload,
+  getImportJournalPath,
+  recoverPendingOperationalImport
 };
