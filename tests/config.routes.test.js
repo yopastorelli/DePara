@@ -104,6 +104,22 @@ describe('Config Routes', () => {
     expect(persisted.slideshowConfig.deletedFolder).toBe('/photos/deleted');
   });
 
+  it('serializa atualizações concorrentes sem perder blocos diferentes', async () => {
+    await Promise.all([
+      request(app)
+        .post('/api/config')
+        .send({ config: { slideshowConfig: { interval: 300 } } }),
+      request(app)
+        .post('/api/config')
+        .send({ config: { screensaverConfig: { idleMinutes: 15 } } })
+    ]);
+
+    const response = await request(app).get('/api/config').expect(200);
+
+    expect(response.body.config.slideshowConfig.interval).toBe(300);
+    expect(response.body.config.screensaverConfig.idleMinutes).toBe(15);
+  });
+
   it('GET /api/config/export returns a versioned operational backup', async () => {
     const fileOperationsManager = require('../src/utils/fileOperations');
     const folderManager = require('../src/config/folders');

@@ -3,6 +3,7 @@ const fsSync = require('fs');
 const path = require('path');
 
 const logger = require('../utils/logger');
+const { readJsonWithRecovery, writeJsonAtomic } = require('../utils/atomicStore');
 const { getRuntimeDataDir, getSourceRepoRoot } = require('../utils/runtimePaths');
 const {
   recordMigrationStatus,
@@ -77,8 +78,10 @@ class FolderManager {
     }
 
     try {
-      const data = await fs.readFile(this.configFile, 'utf8');
-      const parsed = JSON.parse(data);
+      const parsed = await readJsonWithRecovery(this.configFile, null);
+      if (!Array.isArray(parsed)) {
+        throw new Error('Persistência de pastas deve ser um array');
+      }
       this.folders = this.normalizeFolders(parsed);
       logger.info(`${this.folders.length} pastas carregadas`);
     } catch (error) {
@@ -250,7 +253,7 @@ class FolderManager {
 
   async saveFolders() {
     await this.ensureDataDirectory();
-    await fs.writeFile(this.configFile, JSON.stringify(this.folders, null, 2), 'utf8');
+    await writeJsonAtomic(this.configFile, this.folders);
     logger.info('Configuracao de pastas salva com sucesso');
   }
 
@@ -476,6 +479,10 @@ class FolderManager {
       if (stats.isFile()) {
         logger.info(`Arquivo detectado em ${folder.name}: ${filename} (${eventType})`);
         if (folder.autoProcess && folder.type === 'input') {
+            if (!await this.isFileStable(filePath)) {
+              logger.info(`Arquivo ainda está sendo gravado; processamento adiado: ${filename}`);
+              return;
+            }
           await this.processFile(folder, filePath, filename);
         }
       }
@@ -489,6 +496,43 @@ class FolderManager {
 
   async processFile(folder, filePath, filename) {
     logger.info(`Processando arquivo: ${filename} em ${folder.name}`, { filePath });
+  }
+
+  async isFileStable(filePath, checks = 2, delayMs = 250) {
+    let previous = null;
+    let stableChecks = 0;
+    for (let attempt = 0; attempt < checks; attempt += 1) {
+      let current;
+      try {
+        current = await fs.stat(filePath);
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          return false;
+        }
+        throw error;
+      }
+
+      if (!current.isFile()) {
+        return false;
+      }
+
+      const fingerprint = `${current.size}:${current.mtimeMs}`;
+      if (previous === fingerprint) {
+        stableChecks += 1;
+      } else {
+        stableChecks = 1;
+      }
+      previous = fingerprint;
+
+      if (stableChecks >= checks) {
+        return true;
+      }
+      if (attempt < checks - 1) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+
+    return stableChecks >= checks;
   }
 
   getFolders() {

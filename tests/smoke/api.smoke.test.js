@@ -115,12 +115,23 @@ describe('API smoke', () => {
     expect(fs.existsSync(copiedFile)).toBe(false);
     expect(fs.existsSync(movedFile)).toBe(true);
 
-    await request(app)
+    const deleteResponse = await request(app)
       .post('/api/files/execute')
       .send({ action: 'delete', sourcePath: movedFile })
       .expect(200);
 
     expect(fs.existsSync(movedFile)).toBe(false);
+    expect(deleteResponse.body.data.recoveryAvailable).toBe(true);
+
+    const recoveryResponse = await request(app).get('/api/files/recovery').expect(200);
+    const recoveryEntry = recoveryResponse.body.data.find((entry) => entry.originalPath === movedFile);
+    expect(recoveryEntry).toBeTruthy();
+
+    await request(app)
+      .post(`/api/files/recovery/${recoveryEntry.entryId}/restore`)
+      .expect(200);
+
+    expect(fs.existsSync(movedFile)).toBe(true);
   });
 
   it('lista pastas, imagens e status do auto-update sem side effects destrutivos', async () => {

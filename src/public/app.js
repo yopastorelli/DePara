@@ -5426,6 +5426,29 @@ class DeParaUI {
         }
     }
 
+    getFileNameFromPath(filePath) {
+        const normalizedPath = String(filePath || '');
+        return normalizedPath.split(/[\\/]/).pop() || normalizedPath;
+    }
+
+    getParentPathAndSeparator(filePath) {
+        const normalizedPath = String(filePath || '');
+        const separatorIndex = Math.max(normalizedPath.lastIndexOf('\\'), normalizedPath.lastIndexOf('/'));
+        if (separatorIndex < 0) {
+            return { parentPath: '', separator: '\\' };
+        }
+        return {
+            parentPath: normalizedPath.slice(0, separatorIndex),
+            separator: normalizedPath[separatorIndex]
+        };
+    }
+
+    joinFilePath(parentPath, fileName, separator = null) {
+        const basePath = String(parentPath || '').replace(/[\\/]+$/, '');
+        const pathSeparator = separator || (basePath.includes('\\') ? '\\' : '/');
+        return `${basePath}${pathSeparator}${String(fileName || '').replace(/^[\\/]+/, '')}`;
+    }
+
     // Apagar imagem atual (mover para pasta de excluídas)
     async deleteCurrentImage() {
         if (!this.slideshowImages || this.slideshowImages.length === 0) {
@@ -5448,8 +5471,8 @@ class DeParaUI {
             // Verificar se pasta de destino existe, se não, criar
             // Pasta de destino já configurada - prosseguir diretamente
             // Debug: Log dos dados sendo enviados
-            const fileName = currentImage.name || currentImage.path.split('/').pop();
-            const targetPath = `${this.slideshowConfig.deletedFolder}/${fileName}`;
+            const fileName = currentImage.name || this.getFileNameFromPath(currentImage.path);
+            const targetPath = this.joinFilePath(this.slideshowConfig.deletedFolder, fileName);
 
             const requestData = {
                 action: 'move',
@@ -5521,8 +5544,8 @@ class DeParaUI {
             // Verificar se pasta de destino existe, se não, criar
             // Pasta de destino já configurada - prosseguir diretamente
             // Debug: Log dos dados sendo enviados
-            const fileName = currentImage.name || currentImage.path.split('/').pop();
-            const targetPath = `${this.slideshowConfig.hiddenFolder}/${fileName}`;
+            const fileName = currentImage.name || this.getFileNameFromPath(currentImage.path);
+            const targetPath = this.joinFilePath(this.slideshowConfig.hiddenFolder, fileName);
 
             const requestData = {
                 action: 'move',
@@ -5588,14 +5611,13 @@ class DeParaUI {
 
         try {
             // Extrair diretório pai da imagem atual
-            const pathParts = currentImage.path.split('/');
-            const fileName = pathParts.pop(); // Nome do arquivo
-            const currentDir = pathParts.join('/'); // Diretório atual da imagem
-            const parentFolderName = pathParts[pathParts.length - 1] || 'Fotos';
+            const { parentPath: currentDir, separator } = this.getParentPathAndSeparator(currentImage.path);
+            const fileName = currentImage.name || this.getFileNameFromPath(currentImage.path);
+            const parentFolderName = this.getFileNameFromPath(currentDir) || 'Fotos';
             // Criar subdiretório "Favoritas + Nome da pasta pai" DENTRO da pasta atual
             const favoritesSubDir = `Favoritas ${parentFolderName}`;
-            const targetDir = `${currentDir}/${favoritesSubDir}`;
-            const targetPath = `${targetDir}/${fileName}`;
+            const targetDir = this.joinFilePath(currentDir, favoritesSubDir, separator);
+            const targetPath = this.joinFilePath(targetDir, fileName, separator);
 
             const requestData = {
                 action: 'move',
@@ -5650,11 +5672,10 @@ class DeParaUI {
 
         try {
             // Extrair nome do arquivo
-            const pathParts = currentImage.path.split('/');
-            const fileName = pathParts.pop();
+            const fileName = currentImage.name || this.getFileNameFromPath(currentImage.path);
 
             // Usar pasta configurada
-            const targetPath = `${this.slideshowConfig.adjustableFolder}/${fileName}`;
+            const targetPath = this.joinFilePath(this.slideshowConfig.adjustableFolder, fileName);
 
             const requestData = {
                 action: 'move',

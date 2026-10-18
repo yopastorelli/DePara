@@ -122,6 +122,25 @@ Get-ChildItem "$env:USERPROFILE\.depara\data"
 
 Confirme `DEPARA_DATA_DIR`, `DEPARA_CONFIG_FILE`, permissões de escrita e se o processo usa o runtime esperado.
 
+## Operação de arquivo interrompida ou parcial
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:3000/api/files/recovery
+Invoke-RestMethod http://127.0.0.1:3000/api/files/operations/<operationId>
+```
+
+- `conflict`: o destino já existia; confirme o arquivo original e decida entre manter, restaurar ou repetir com `options.overwrite=true`.
+- `partial`: pelo menos um item falhou; não repita cegamente o lote. Leia `counts` e o journal para identificar os itens.
+- `interrupted`: o processo foi encerrado durante a operação; aguarde a reconciliação automática após o próximo início.
+- `cancelled`: o cancelamento é cooperativo; confirme o estado final antes de mover ou remover manualmente qualquer arquivo.
+- Não apague `data\file-operations` nem `quarantine` para “destravar” a aplicação. Esses diretórios são a evidência e a possibilidade de recuperação.
+
+Para restaurar um item de exclusão ou overwrite, use somente a rota autenticada pelo contrato local e confirme previamente que o caminho original não foi recriado:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:3000/api/files/recovery/<entryId>/restore -Method Post
+```
+
 ## Atualização travada ou insegura
 
 ```powershell

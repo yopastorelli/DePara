@@ -22,7 +22,8 @@ Windows browser UI / Playwright
 | UI | `src/public/index.html`, `src/public/app.js`, `src/public/modules/*`, `src/public/styles.css` | local browser product surface |
 | API router | `src/routes/index.js` | mount route modules and expose `/api/docs` |
 | File operations | `src/routes/fileOperations.js`, `src/utils/fileOperations.js` | folders, workflows, execute, schedule, slideshow file browsing |
-| File primitives | `src/utils/fileOps/*` | Node-only copy/move/permissions/image scan helpers |
+| Transaction engine | `src/utils/fileOps/transactionalOperations.js`, `src/utils/atomicStore.js` | journal, atomic publication, interruption reconciliation, quarantine and recovery |
+| File primitives | `src/utils/fileOps/*` | Node-only transactional mutation, image scan and catalog helpers |
 | Config | `src/routes/config.js`, `src/utils/configStore.js` | persisted product configuration and backup import/export |
 | Runtime paths | `src/utils/runtimePaths.js` | derive data/log/temp/release/current directories |
 | Runtime env | `src/utils/runtimeConfig.js` | load `config.env` into `process.env` without overriding explicit env |
@@ -44,9 +45,10 @@ Windows browser UI / Playwright
    - runtime public uploads/downloads
    - data
 6. Config file is ensured.
-7. Folder manager initializes.
-8. Server listens on `HOST` and `PORT`.
-9. Update orchestrator initializes lazily only when an update route requires it.
+7. File-operation manager creates its journal/quarantine roots, reconciles unfinished work and reloads schedules.
+8. Folder manager initializes.
+9. Server listens on `HOST` and `PORT`.
+10. Update orchestrator initializes lazily only when an update route requires it.
 
 Defaults:
 
@@ -63,6 +65,9 @@ Defaults:
 | Product config | `%USERPROFILE%\.depara\data\depara-config.json` |
 | Scheduled operations | `%USERPROFILE%\.depara\data\scheduled-operations.json` |
 | Folders | `%USERPROFILE%\.depara\data\folders.json` |
+| Workflows | `%USERPROFILE%\.depara\data\workflows.json` |
+| File-operation journals | `%USERPROFILE%\.depara\data\file-operations\<operationId>` |
+| Delete/overwrite quarantine | `%USERPROFILE%\.depara\quarantine\<operationId>` |
 | Update config | `%USERPROFILE%\.depara\data\update-config.json` |
 | Update state | `%USERPROFILE%\.depara\data\update-state.json` |
 | Update history | `%USERPROFILE%\.depara\data\update-history.log` |
@@ -102,6 +107,19 @@ Security invariant:
 
 - No route or utility may trust a user-provided filesystem path without `validateSafePath`.
 - Shell execution for `chmod`, `cp`, `mv` or similar file operations is disallowed.
+
+## Transaction and interruption model
+
+The mutation path is intentionally sequential (`MAX_CONCURRENT_OPERATIONS=1`) and follows this order:
+
+1. Validate source, destination, path relationship and symlink boundary.
+2. Create a state file and append a manifest without loading the whole directory into memory.
+3. For copy, stream to a unique partial file, flush it, verify size and publish with rename.
+4. For move, use rename on the same volume; otherwise use the verified copy path and remove the source only after publication.
+5. For delete or overwrite, register a recovery entry and move the original into runtime quarantine.
+6. Append per-item progress and update counts after each committed/skipped/conflicted item.
+
+The state and JSON configuration files use a temporary file plus a previous-version file. On startup, unfinished journals are marked `interrupted`, recorded partial files are removed, and completed journal events are not repeated. Never delete a journal or quarantine directory as a “cleanup” step; use the recovery API and a reviewed retention policy.
 
 ## Rate limits
 

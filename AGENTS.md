@@ -19,6 +19,8 @@ O agente deve tratar `AGENTS.md` e `docs/README.md` como contratos normativos. T
 - Use `scripts/start-windows-coexistence.ps1`, nunca `npm start`, `start-server.bat` ou um processo Node manual para validar a instalação de produção.
 - Preserve `MAX_CONCURRENT_OPERATIONS=1`, `DEPARA_RESOURCE_PROFILE=codex-coexistence`, `DEPARA_SLIDESHOW_PRELOAD=false`, logs HTTP desligados e prioridade `BelowNormal`.
 - Considere `%USERPROFILE%\.depara` como estado mutável. Não escreva dados, logs, backups ou configuração funcional no release imutável ou no Git.
+- Operações `copy`, `move` e `delete` devem usar o journal transacional; não faça `copyFile`, `rename`, `unlink` ou `rm` direto em caminhos recebidos da API.
+- Não sobrescreva destinos por padrão. Exclusões devem ir para `%USERPROFILE%\.depara\quarantine` e permanecer restauráveis até uma limpeza explícita e auditada.
 - Não imprima, solicite, versione ou copie credenciais, tokens, chaves, fotos pessoais ou logs sensíveis.
 - Não execute `git reset --hard`, `git clean`, sobrescrita ampla ou stash automático para resolver divergências. Preserve o trabalho local.
 - Não declare a instalação pronta apenas porque um teste passou: confirme a revisão, o release ativo, uma única instância e os endpoints de saúde.
@@ -79,6 +81,8 @@ O equivalente agregado é `npm run test:all`; use um único worker conforme a co
 - Configuração funcional: `%USERPROFILE%\.depara\data\depara-config.json`.
 - Releases: `%USERPROFILE%\.depara\releases`.
 - Release ativo: `%USERPROFILE%\.depara\current`.
+- Journals: `%USERPROFILE%\.depara\data\file-operations\<operationId>`.
+- Quarentena recuperável: `%USERPROFILE%\.depara\quarantine\<operationId>`.
 - UI: `http://127.0.0.1:3000/ui`.
 - Health: `http://127.0.0.1:3000/health`.
 
@@ -114,6 +118,8 @@ npm run doctor:windows
 ```
 
 Para erros de UI, recarregue o navegador depois de confirmar o release. Para pressão de memória, consulte `/api/status/resources` e execute `npm run perf:audit -- --profile=small` antes de alterar concorrência, paginação ou preload.
+
+Para uma operação interrompida, não apague o journal nem a quarentena. Consulte `GET /api/files/operations/:operationId` e `GET /api/files/recovery`; o próximo início reconciliará temporários e retomará o journal quando for seguro.
 
 ## Documentação complementar
 

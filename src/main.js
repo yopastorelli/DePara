@@ -1,6 +1,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const crypto = require('crypto');
 const os = require('os');
 const path = require('path');
 
@@ -16,6 +17,7 @@ const folderManager = require('./config/folders');
 const fileOperationsManager = require('./utils/fileOperations');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter } = require('./middleware/rateLimiter');
+const { writeJsonAtomic } = require('./utils/atomicStore');
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -26,6 +28,9 @@ const app = express();
 
 let server = null;
 let processHandlersRegistered = false;
+let shutdownPromise = null;
+let shutdownRequest = null;
+let shutdownToken = null;
 
 function getRepoRoot() {
   return path.resolve(__dirname, '..');
@@ -56,6 +61,14 @@ async function initializeDirectories() {
   for (const directory of directories) {
     await fs.mkdir(directory, { recursive: true });
   }
+
+  shutdownToken = crypto.randomBytes(32).toString('hex');
+  await writeJsonAtomic(path.join(getRuntimeRoot(), 'control', 'shutdown.json'), {
+    pid: process.pid,
+    port: Number(PORT),
+    token: shutdownToken,
+    createdAt: new Date().toISOString()
+  });
 }
 
 function configureApp() {
@@ -118,6 +131,19 @@ function configureApp() {
 
   app.use('/api', routes);
 
+  app.post('/internal/shutdown', (req, res) => {
+    const suppliedToken = req.get('X-DePara-Shutdown-Token') || '';
+    if (!shutdownToken || suppliedToken !== shutdownToken) {
+      return res.status(401).json({ success: false, error: 'Não autorizado' });
+    }
+
+    res.status(202).json({ success: true, status: 'shutting_down' });
+    if (typeof shutdownRequest === 'function') {
+      setImmediate(() => shutdownRequest());
+    }
+    return undefined;
+  });
+
   app.get('/health', (req, res) => {
     res.status(200).json({
       status: 'OK',
@@ -170,12 +196,17 @@ function registerProcessHandlers() {
   }
 
   const shutdownAndExit = async (exitCode) => {
+    if (!shutdownPromise) {
+      shutdownPromise = stopServer();
+    }
     try {
-      await stopServer();
+      await shutdownPromise;
     } finally {
       process.exit(exitCode);
     }
   };
+
+  shutdownRequest = () => shutdownAndExit(0);
 
   process.on('uncaughtException', (error) => {
     logger.error('Erro nao capturado:', { error: error.message, stack: error.stack });
@@ -215,6 +246,7 @@ async function startServer(options = {}) {
 
   await initializeDirectories();
   await configStore.ensureConfigFile();
+  await fileOperationsManager.init();
   await folderManager.init();
 
   server = await new Promise((resolve, reject) => {
@@ -232,6 +264,10 @@ async function startServer(options = {}) {
 async function stopServer() {
   const activeServer = server;
   server = null;
+
+  if (fileOperationsManager && typeof fileOperationsManager.beginShutdown === 'function') {
+    await fileOperationsManager.beginShutdown(30000);
+  }
 
   if (typeof updateOrchestrator.shutdown === 'function') {
     await updateOrchestrator.shutdown();

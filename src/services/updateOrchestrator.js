@@ -4,6 +4,7 @@ const path = require('path');
 const http = require('http');
 const { exec } = require('child_process');
 const logger = require('../utils/logger');
+const { readJsonWithRecovery, writeJsonAtomic } = require('../utils/atomicStore');
 const configStore = require('../utils/configStore');
 const fileOperationsManager = require('../utils/fileOperations');
 const folderManager = require('../config/folders');
@@ -188,7 +189,12 @@ class UpdateOrchestrator {
           continue;
         }
 
-        await fs.copyFile(legacyPath, targetPath);
+        if (fileName.endsWith('.json')) {
+          const legacyData = JSON.parse(await fs.readFile(legacyPath, 'utf8'));
+          await writeJsonAtomic(targetPath, legacyData);
+        } else {
+          await fs.copyFile(legacyPath, targetPath);
+        }
         break;
       }
     }
@@ -222,24 +228,23 @@ class UpdateOrchestrator {
       await fs.writeFile(filePath, '', 'utf8');
       return;
     }
-    await fs.writeFile(filePath, JSON.stringify(defaultData, null, 2), 'utf8');
+    await writeJsonAtomic(filePath, defaultData);
   }
 
   async readJson(filePath, fallback) {
     try {
-      const content = await fs.readFile(filePath, 'utf8');
-      return JSON.parse(content);
+      return await readJsonWithRecovery(filePath, fallback);
     } catch {
       return fallback;
     }
   }
 
   async saveConfig() {
-    await fs.writeFile(this.configPath, JSON.stringify(this.config, null, 2), 'utf8');
+    await writeJsonAtomic(this.configPath, this.config);
   }
 
   async saveState() {
-    await fs.writeFile(this.statePath, JSON.stringify(this.state, null, 2), 'utf8');
+    await writeJsonAtomic(this.statePath, this.state);
   }
 
   async appendHistory(entry) {
@@ -420,14 +425,14 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
     }
 
     if (!fsSync.existsSync(this.currentReleaseMetaPath)) {
-      await fs.writeFile(this.currentReleaseMetaPath, JSON.stringify({
+      await writeJsonAtomic(this.currentReleaseMetaPath, {
         activeRelease: null,
         activeCommit: null,
         activePath: null,
         previousRelease: null,
         previousCommit: null,
         updatedAt: null
-      }, null, 2), 'utf8');
+      });
     }
   }
 
@@ -445,7 +450,7 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
 
   async writeCurrentReleaseMeta(meta) {
     await this.ensureCurrentReleaseWrapper();
-    await fs.writeFile(this.currentReleaseMetaPath, JSON.stringify(meta, null, 2), 'utf8');
+    await writeJsonAtomic(this.currentReleaseMetaPath, meta);
   }
 
   async reconcileReleaseState() {

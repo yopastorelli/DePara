@@ -141,10 +141,14 @@ Não aumente concorrência, página ou preload para compensar lentidão antes de
 |---|---|
 | Ambiente | `%USERPROFILE%\.depara\config.env` |
 | Configuração funcional | `%USERPROFILE%\.depara\data\depara-config.json` |
-| Pastas e agendamentos | `%USERPROFILE%\.depara\data` |
+| Pastas, agendamentos e workflows | `%USERPROFILE%\.depara\data` |
+| Journals de operações | `%USERPROFILE%\.depara\data\file-operations` |
+| Quarentena restaurável | `%USERPROFILE%\.depara\quarantine` |
 | Logs | `%USERPROFILE%\.depara\logs` |
 | Backups | `%USERPROFILE%\.depara\backups` |
 | Releases | `%USERPROFILE%\.depara\releases` |
 | Release ativo | `%USERPROFILE%\.depara\current` |
 
 Para migrar para outra máquina, exporte a configuração operacional pela UI ou por `GET /api/config/export`, revise os caminhos e importe depois da instalação. Não copie tokens, logs ou dados pessoais sem necessidade.
+
+Exclusões e substituições intencionais não removem imediatamente o conteúdo: o DePara move os arquivos para a quarentena e registra a operação no journal. Antes de limpar esse estado, liste `GET /api/files/recovery` e confirme que nenhuma restauração é necessária.

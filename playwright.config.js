@@ -117,6 +117,9 @@ module.exports = defineConfig({
       DEPARA_LOG_DIR: logsDir,
       DEPARA_BACKUP_DIR: backupDir,
       DEPARA_TEMP_DIR: tempDir,
+      DEPARA_MEMORY_WARN_MB: '256',
+      DEPARA_MEMORY_CRITICAL_MB: '128',
+      DEPARA_MAX_RSS_MB: '1024',
       DEPARA_DISABLE_UPDATE_SIDE_EFFECTS: 'true',
       DEPARA_DISABLE_UPDATE_SCHEDULER: 'true'
     }

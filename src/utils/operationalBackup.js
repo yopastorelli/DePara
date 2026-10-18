@@ -2,6 +2,7 @@ const logger = require('./logger');
 const configStore = require('./configStore');
 const fileOperationsManager = require('./fileOperations');
 const folderManager = require('../config/folders');
+const workflowStore = require('./workflowStore');
 const { getRuntimeRoot } = require('./runtimePaths');
 
 const OPERATIONAL_BACKUP_VERSION = 1;
@@ -26,10 +27,14 @@ function validateBackupPayload(payload) {
   if (!Array.isArray(payload.folders)) {
     throw new Error('folders deve ser um array');
   }
+  if (payload.workflows !== undefined && !Array.isArray(payload.workflows)) {
+    throw new Error('workflows deve ser um array');
+  }
 }
 
 async function exportOperationalBackup() {
   await folderManager.init();
+  await workflowStore.init();
 
   return {
     version: OPERATIONAL_BACKUP_VERSION,
@@ -37,7 +42,8 @@ async function exportOperationalBackup() {
     sourceRuntime: getRuntimeRoot(),
     config: await configStore.getConfig(),
     scheduledOperations: await fileOperationsManager.exportScheduledOperations(),
-    folders: await folderManager.exportFolders()
+    folders: await folderManager.exportFolders(),
+    workflows: await workflowStore.list()
   };
 }
 
@@ -45,15 +51,31 @@ async function importOperationalBackup(payload) {
   validateBackupPayload(payload);
 
   await folderManager.init();
+  await workflowStore.init();
+  const previous = await exportOperationalBackup();
 
-  const config = await configStore.replaceConfig(payload.config);
-  const scheduledOperations = await fileOperationsManager.replaceScheduledOperations(payload.scheduledOperations);
-  const folders = await folderManager.importFolders(payload.folders);
+  let config;
+  let scheduledOperations;
+  let folders;
+  let workflows;
+  try {
+    config = await configStore.replaceConfig(payload.config);
+    scheduledOperations = await fileOperationsManager.replaceScheduledOperations(payload.scheduledOperations);
+    folders = await folderManager.importFolders(payload.folders);
+    workflows = await workflowStore.replace(payload.workflows || []);
+  } catch (error) {
+    await configStore.replaceConfig(previous.config).catch(() => {});
+    await fileOperationsManager.replaceScheduledOperations(previous.scheduledOperations).catch(() => {});
+    await folderManager.importFolders(previous.folders).catch(() => {});
+    await workflowStore.replace(previous.workflows || []).catch(() => {});
+    throw error;
+  }
 
   const summary = {
     configRestored: true,
     scheduledOperationsRestored: scheduledOperations.length,
-    foldersRestored: folders.length
+    foldersRestored: folders.length,
+    workflowsRestored: workflows.length
   };
 
   logger.info('Backup operacional importado', {
@@ -68,7 +90,8 @@ async function importOperationalBackup(payload) {
     summary,
     config,
     scheduledOperations,
-    folders
+    folders,
+    workflows
   };
 }
 

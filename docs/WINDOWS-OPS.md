@@ -22,7 +22,7 @@ npm run doctor:windows
 npm run shortcut:windows
 ```
 
-O início é idempotente. O encerramento procura somente processos Node cujo comando aponta para o runtime ou para o `src/main.js` deste checkout; não encerra outros processos Node.
+O início é idempotente. O encerramento procura somente processos Node cujo comando aponta para o runtime ou para o `src/main.js` deste checkout; não encerra outros processos Node. Antes do último recurso forçado, `stop-windows-coexistence.ps1` envia um pedido autenticado ao endpoint local de encerramento.
 
 Não use `Ctrl+C` como procedimento principal: o launcher roda oculto e separado do terminal. Use `npm run stop:windows` ou `scripts/stop-windows-coexistence.ps1`.
 
@@ -71,6 +71,25 @@ Em máquina compartilhada com Codex, preserve `MAX_CONCURRENT_OPERATIONS=1`, `DE
 
 - Dados mutáveis: `%USERPROFILE%\.depara\data`.
 - Backups: `%USERPROFILE%\.depara\backups`.
+- Journal: `%USERPROFILE%\.depara\data\file-operations\<operationId>`.
+- Quarentena: `%USERPROFILE%\.depara\quarantine\<operationId>`.
 - Releases anteriores: `%USERPROFILE%\.depara\releases`.
 - Antes de alterar limites, exporte a configuração operacional e copie o runtime.
 - Não use `git clean`, `git reset --hard` ou exclusões recursivas para resolver falhas.
+
+## Operações interrompidas e recuperação
+
+O encerramento gracioso primeiro impede novas operações e aguarda até 30 segundos as operações ativas. Se houver uma interrupção abrupta, o próximo início reconcilia os journals e retoma operações elegíveis; não remova os arquivos de `data\file-operations` nem de `quarantine`.
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:3000/api/files/recovery
+Invoke-RestMethod http://127.0.0.1:3000/api/files/operations/<operationId>
+```
+
+Restaure somente uma entrada identificada e confirme que o caminho original está livre:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:3000/api/files/recovery/<entryId>/restore -Method Post
+```
+
+Destinos existentes não são substituídos por padrão. Para uma substituição intencional, o chamador deve informar `options.overwrite=true`; o destino anterior fica na quarentena até ser restaurado ou tratado por uma política de retenção revisada.

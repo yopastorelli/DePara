@@ -5,8 +5,8 @@ DOC_AUDIENCE=AI_development_agents
 PLATFORM_CONTRACT=Windows_only
 CANONICAL_ENTRYPOINT=AGENTS.md
 DOCUMENTATION_ENTRYPOINT=docs/README.md
-LAST_AUDIT_SCOPE=full_application_installation_runtime_documentation
-LAST_AUDIT_DATE=2026-10-17
+LAST_AUDIT_SCOPE=full_application_installation_runtime_documentation_file_integrity_recovery
+LAST_AUDIT_DATE=2026-10-18
 
 ## Missão
 

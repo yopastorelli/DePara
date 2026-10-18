@@ -7,6 +7,9 @@ const {
   recordMigrationStatus,
   getMigrationStatus
 } = require('./persistenceMigration');
+const { readJsonWithRecovery, writeJsonAtomic } = require('./atomicStore');
+
+let configMutationQueue = Promise.resolve();
 
 const DEFAULT_CONFIG_VERSION = 1;
 const DEFAULT_SLIDESHOW_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
@@ -128,19 +131,16 @@ async function ensureDirectory() {
 }
 
 async function writeConfigAtomic(config) {
-  const filePath = getConfigPath();
-  const tempPath = `${filePath}.tmp`;
   await ensureDirectory();
-  await fs.writeFile(tempPath, JSON.stringify(normalizeConfig(config), null, 2), 'utf8');
-  try {
-    await fs.rename(tempPath, filePath);
-  } catch (error) {
-    if (error.code !== 'EEXIST' && error.code !== 'EPERM') {
-      throw error;
-    }
-    await fs.rm(filePath, { force: true });
-    await fs.rename(tempPath, filePath);
-  }
+  return writeJsonAtomic(getConfigPath(), config, { normalize: normalizeConfig });
+}
+
+function enqueueConfigMutation(mutation) {
+  const queuedMutation = configMutationQueue
+    .catch(() => {})
+    .then(mutation);
+  configMutationQueue = queuedMutation.catch(() => {});
+  return queuedMutation;
 }
 
 async function migrateLegacyConfigIfNeeded() {
@@ -163,7 +163,8 @@ async function migrateLegacyConfigIfNeeded() {
     }
 
     await ensureDirectory();
-    await fs.copyFile(legacyPath, targetPath);
+    const legacyConfig = JSON.parse(await fs.readFile(legacyPath, 'utf8'));
+    await writeConfigAtomic(legacyConfig);
     await recordMigrationStatus('config', {
       migrated: true,
       source: legacyPath,
@@ -185,22 +186,14 @@ async function migrateLegacyConfigIfNeeded() {
 
 async function readRawConfig() {
   await migrateLegacyConfigIfNeeded();
-  try {
-    const data = await fs.readFile(getConfigPath(), 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      logger.warn('Configuração da aplicação ausente; usando defaults', {
-        path: getConfigPath()
-      });
-      return getDefaultConfig();
-    }
-    logger.warn('Configuração da aplicação inválida; usando defaults', {
-      path: getConfigPath(),
-      error: error.message
+  const config = await readJsonWithRecovery(getConfigPath(), null);
+  if (config === null) {
+    logger.warn('Configuração da aplicação ausente; usando defaults', {
+      path: getConfigPath()
     });
     return getDefaultConfig();
   }
+  return config;
 }
 
 async function getConfig() {
@@ -212,9 +205,11 @@ async function getConfig() {
 }
 
 async function saveConfig(nextConfig) {
-  const normalized = normalizeConfig(nextConfig);
-  await writeConfigAtomic(normalized);
-  return normalized;
+  return enqueueConfigMutation(async () => {
+    const normalized = normalizeConfig(nextConfig);
+    await writeConfigAtomic(normalized);
+    return normalized;
+  });
 }
 
 async function replaceConfig(nextConfig = {}) {
@@ -222,39 +217,47 @@ async function replaceConfig(nextConfig = {}) {
 }
 
 async function updateConfig(partialConfig = {}) {
-  const current = await getConfig();
-  const merged = {
-    ...current,
-    ...partialConfig,
-    slideshowConfig: partialConfig.slideshowConfig
-      ? { ...current.slideshowConfig, ...partialConfig.slideshowConfig }
-      : current.slideshowConfig,
-    screensaverConfig: partialConfig.screensaverConfig
-      ? { ...current.screensaverConfig, ...partialConfig.screensaverConfig }
-      : current.screensaverConfig,
-    appSettings: partialConfig.appSettings
-      ? { ...current.appSettings, ...partialConfig.appSettings }
-      : current.appSettings
-  };
+  return enqueueConfigMutation(async () => {
+    const current = await getConfig();
+    const merged = {
+      ...current,
+      ...partialConfig,
+      slideshowConfig: partialConfig.slideshowConfig
+        ? { ...current.slideshowConfig, ...partialConfig.slideshowConfig }
+        : current.slideshowConfig,
+      screensaverConfig: partialConfig.screensaverConfig
+        ? { ...current.screensaverConfig, ...partialConfig.screensaverConfig }
+        : current.screensaverConfig,
+      appSettings: partialConfig.appSettings
+        ? { ...current.appSettings, ...partialConfig.appSettings }
+        : current.appSettings
+    };
 
-  return saveConfig(merged);
+    const normalized = normalizeConfig(merged);
+    await writeConfigAtomic(normalized);
+    return normalized;
+  });
 }
 
 async function setConfigValue(key, value) {
-  const current = await getConfig();
-  const next = { ...current };
+  return enqueueConfigMutation(async () => {
+    const current = await getConfig();
+    const next = { ...current };
 
-  if (key === 'slideshowConfig') {
-    next.slideshowConfig = { ...current.slideshowConfig, ...(value || {}) };
-  } else if (key === 'screensaverConfig') {
-    next.screensaverConfig = { ...current.screensaverConfig, ...(value || {}) };
-  } else if (key === 'appSettings') {
-    next.appSettings = { ...current.appSettings, ...(value || {}) };
-  } else {
-    next[key] = value;
-  }
+    if (key === 'slideshowConfig') {
+      next.slideshowConfig = { ...current.slideshowConfig, ...(value || {}) };
+    } else if (key === 'screensaverConfig') {
+      next.screensaverConfig = { ...current.screensaverConfig, ...(value || {}) };
+    } else if (key === 'appSettings') {
+      next.appSettings = { ...current.appSettings, ...(value || {}) };
+    } else {
+      next[key] = value;
+    }
 
-  return saveConfig(next);
+    const normalized = normalizeConfig(next);
+    await writeConfigAtomic(normalized);
+    return normalized;
+  });
 }
 
 async function ensureConfigFile() {

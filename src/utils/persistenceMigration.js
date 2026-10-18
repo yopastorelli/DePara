@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
 const { getRuntimeDataDir } = require('./runtimePaths');
+const { readJsonWithRecovery, writeJsonAtomic } = require('./atomicStore');
 
 function getPersistenceMigrationMarkerPath() {
   return path.join(getRuntimeDataDir(), 'persistence-migration.json');
@@ -32,21 +33,17 @@ function getDefaultMarker() {
 
 async function readMarker() {
   const markerPath = getPersistenceMigrationMarkerPath();
-  try {
-    const data = await fs.readFile(markerPath, 'utf8');
-    return {
-      ...getDefaultMarker(),
-      ...JSON.parse(data || '{}')
-    };
-  } catch {
-    return getDefaultMarker();
-  }
+  const stored = await readJsonWithRecovery(markerPath, {});
+  return {
+    ...getDefaultMarker(),
+    ...stored
+  };
 }
 
 async function writeMarker(marker) {
   const markerPath = getPersistenceMigrationMarkerPath();
   await fs.mkdir(path.dirname(markerPath), { recursive: true });
-  await fs.writeFile(markerPath, JSON.stringify(marker, null, 2), 'utf8');
+  await writeJsonAtomic(markerPath, marker);
 }
 
 async function recordMigrationStatus(key, patch) {

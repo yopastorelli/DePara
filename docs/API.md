@@ -61,6 +61,7 @@ Exported backup includes:
 - `config`
 - `scheduledOperations`
 - `folders`
+- `workflows`
 
 Import rules:
 
@@ -104,7 +105,21 @@ Path rules:
 
 - `sourcePath` and `targetPath` must pass `validateSafePath`.
 - Delete validates read/existence before removal.
-- Cross-device move fallback uses Node `copyFile` plus `unlink`, not shell commands.
+- Cross-device move fallback uses a verified temporary copy followed by `unlink`, not shell commands.
+- Destinations are not overwritten unless `options.overwrite=true`; an existing destination returns a conflict without modifying either side.
+- Copy publishes through a unique `.depara-partial-*` file and a rename only after the source size and destination size are checked.
+- Delete moves files to the runtime quarantine instead of unlinking them. The operation is reversible through the recovery routes.
+
+Operation results contain `operationId`, `status`, `counts`, `message` and `recoverable`. `success=true` is reserved for `status=completed`; a conflict or partial batch is not reported as success.
+
+Supported durable statuses are:
+
+- `preparing` and `running`: journal is being executed;
+- `interrupted`: startup reconciliation found an unfinished operation;
+- `completed`: all eligible items committed;
+- `partial`: at least one item failed;
+- `conflict`: at least one destination was protected;
+- `cancelled`: cancellation stopped before remaining items were committed.
 
 ### Schedule
 
@@ -130,6 +145,19 @@ State rules:
 - `active=false` pauses without deleting.
 - `active=true` reactivates.
 - `frequency=manual` persists without arming a timer.
+
+### Journal, cancellation and recovery
+
+| Method | Path | Contract |
+|---|---|---|
+| GET | `/api/files/operations/:operationId` | read durable state and counts |
+| POST | `/api/files/operations/:operationId/cancel` | request safe cancellation; returns `202` |
+| GET | `/api/files/recovery` | list non-restored quarantine entries |
+| POST | `/api/files/recovery/:entryId/restore` | restore one entry; returns `409` if original path is occupied |
+
+The journal is stored under `%USERPROFILE%\.depara\data\file-operations`. A restart removes only recorded temporary files, marks unfinished work as interrupted and resumes it using the same operation id. A recovery entry is written before a destructive rename, so a crash between quarantine and journal completion does not make the payload undiscoverable.
+
+`POST /api/files/batch` returns `207` for `partial`, `409` for `conflict`/`cancelled`/`interrupted`, and `200` only for a fully completed batch. Clients must inspect `data.status` and `data.counts`, not only the HTTP transport result.
 
 ### File utilities
 

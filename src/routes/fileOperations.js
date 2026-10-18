@@ -12,6 +12,8 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
 const fileOperationsManager = require('../utils/fileOperations');
+const folderManager = require('../config/folders');
+const workflowStore = require('../utils/workflowStore');
 const fileTemplates = require('../utils/fileTemplates');
 const logger = require('../utils/logger');
 const { normalRateLimiter, strictRateLimiter, slideshowRateLimiter } = require('../middleware/rateLimiter');
@@ -20,7 +22,16 @@ const { scanImagesRecursive } = require('../utils/fileOps/imageScanner');
 const { getResourceStatus } = require('../utils/resourceGuard');
 
 function isPathValidationError(error) {
-    return /^(Acesso negado|Caminho inválido|Caminho contém|Nenhum diretório pai)/.test(error.message || '');
+    return ['PATH_OVERLAP', 'TARGET_CONFLICT', 'RECURSIVE_REQUIRED'].includes(error.code)
+        || /^(Acesso negado|Caminho inválido|Caminho contém|Nenhum diretório pai)/.test(error.message || '');
+}
+
+function getFileOperationResultStatus(result) {
+    if (!result || result.status === 'completed') return 200;
+    if (result.status === 'conflict') return 409;
+    if (result.status === 'partial') return 207;
+    if (result.status === 'interrupted' || result.status === 'cancelled') return 409;
+    return 500;
 }
 
 function getImageRouteErrorStatus(error) {
@@ -56,408 +67,115 @@ function sendImageRouteError(res, error, fallbackMessage = 'Erro interno do serv
  * DELETE /api/files/folders/:id - Deletar pasta
  */
 
-// Lista de pastas configuradas (armazenamento em memória por enquanto)
-const getDefaultConfiguredFolders = () => {
-    const userHome = process.env.USERPROFILE || process.env.HOME || require('os').homedir();
-
-    return [
-        {
-            id: '1',
-            name: 'Documentos Entrada',
-            path: path.join(userHome, 'Documents', 'Entrada'),
-            type: 'source',
-            format: 'any',
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: '2',
-            name: 'Documentos Processados',
-            path: path.join(userHome, 'Documents', 'Processados'),
-            type: 'target',
-            format: 'any',
-            createdAt: new Date().toISOString()
-        }
-    ];
-};
-
-let configuredFolders = getDefaultConfiguredFolders();
-
-// Lista de workflows configurados (armazenamento em memória por enquanto)
-let configuredWorkflows = [
-    {
-        id: '1',
-        name: 'Processamento Diário',
-        description: 'Processa documentos diariamente',
-        steps: [],
-        createdAt: new Date().toISOString(),
-        status: 'active'
-    },
-    {
-        id: '2',
-        name: 'Backup Semanal',
-        description: 'Realiza backup semanal dos arquivos',
-        steps: [],
-        createdAt: new Date().toISOString(),
-        status: 'active'
-    }
-];
-
-/**
- * GET /api/files/folders - Listar pastas configuradas
- */
 router.get('/folders', async (req, res) => {
-    const startTime = Date.now();
     try {
-        logger.startOperation('List Folders', {});
-        const result = configuredFolders;
-        const duration = Date.now() - startTime;
-        logger.endOperation('List Folders', duration, result);
-
-        res.json({
-            success: true,
-            data: result,
-            count: result.length,
-            timestamp: new Date().toISOString()
-        });
+        await folderManager.init();
+        const result = await folderManager.exportFolders();
+        return res.json({ success: true, data: result, count: result.length, timestamp: new Date().toISOString() });
     } catch (error) {
         logger.operationError('List Folders', error);
-        res.status(500).json({
-            error: {
-                message: 'Erro ao listar pastas',
-                details: error.message
-            }
-        });
+        return res.status(500).json({ error: { message: 'Erro ao listar pastas', details: error.message } });
     }
 });
 
-/**
- * POST /api/files/folders - Criar nova pasta
- */
 router.post('/folders', async (req, res) => {
-    const startTime = Date.now();
     try {
-        const { name, path, type = 'source', format = 'any' } = req.body;
-
-        // Validação básica
-        if (!name || !path) {
-            return res.status(400).json({
-                error: {
-                    message: 'Nome e caminho são obrigatórios',
-                    required: ['name', 'path']
-                }
-            });
+        const { name, path: folderPath, type = 'source', format = 'any', ...rest } = req.body || {};
+        if (!name || !folderPath) {
+            return res.status(400).json({ error: { message: 'Nome e caminho são obrigatórios', required: ['name', 'path'] } });
         }
-
-        // Criar ID único
-        const id = Date.now().toString();
-
-        const newFolder = {
-            id,
-            name,
-            path,
-            type,
-            format,
-            createdAt: new Date().toISOString()
-        };
-
-        // Adicionar à lista
-        configuredFolders.push(newFolder);
-
-        logger.startOperation('Create Folder', newFolder);
-        const duration = Date.now() - startTime;
-        logger.endOperation('Create Folder', duration, newFolder);
-
-        res.status(201).json({
-            success: true,
-            data: newFolder,
-            message: 'Pasta criada com sucesso',
-            timestamp: new Date().toISOString()
-        });
+        await folderManager.init();
+        const folder = await folderManager.addFolder({ name, path: folderPath, type, format, ...rest });
+        return res.status(201).json({ success: true, data: folder, message: 'Pasta criada com sucesso', timestamp: new Date().toISOString() });
     } catch (error) {
         logger.operationError('Create Folder', error);
-        res.status(500).json({
-            error: {
-                message: 'Erro ao criar pasta',
-                details: error.message
-            }
-        });
+        return res.status(500).json({ error: { message: 'Erro ao criar pasta', details: error.message } });
     }
 });
 
-/**
- * DELETE /api/files/folders/:id - Deletar pasta
- */
 router.delete('/folders/:id', async (req, res) => {
-    const startTime = Date.now();
     try {
-        const { id } = req.params;
-
-        const folderIndex = configuredFolders.findIndex(folder => folder.id === id);
-
-        if (folderIndex === -1) {
-            return res.status(404).json({
-                error: {
-                    message: 'Pasta não encontrada',
-                    id: id
-                }
-            });
-        }
-
-        const deletedFolder = configuredFolders.splice(folderIndex, 1)[0];
-
-        logger.startOperation('Delete Folder', { id });
-        const duration = Date.now() - startTime;
-        logger.endOperation('Delete Folder', duration, deletedFolder);
-
-        res.json({
-            success: true,
-            data: deletedFolder,
-            message: 'Pasta deletada com sucesso',
-            timestamp: new Date().toISOString()
-        });
+        await folderManager.init();
+        const deletedFolder = await folderManager.deleteFolder(req.params.id);
+        return res.json({ success: true, data: deletedFolder, message: 'Pasta removida com sucesso', timestamp: new Date().toISOString() });
     } catch (error) {
+        const statusCode = /não encontrada/i.test(error.message) ? 404 : 500;
         logger.operationError('Delete Folder', error);
-        res.status(500).json({
-            error: {
-                message: 'Erro ao deletar pasta',
-                details: error.message
-            }
-        });
+        return res.status(statusCode).json({ error: { message: 'Erro ao remover pasta', details: error.message } });
     }
 });
 
-/**
- * PUT /api/files/folders/:id - Editar pasta
- */
 router.put('/folders/:id', async (req, res) => {
-    const startTime = Date.now();
     try {
-        const { id } = req.params;
-        const { name, path: folderPath, type, format, description, enabled } = req.body;
-
-        const folderIndex = configuredFolders.findIndex(folder => folder.id === id);
-        if (folderIndex === -1) {
-            return res.status(404).json({
-                error: {
-                    message: 'Pasta não encontrada',
-                    id
-                }
-            });
-        }
-
-        const currentFolder = configuredFolders[folderIndex];
-        const updatedFolder = {
-            ...currentFolder,
+        const { name, path: folderPath, type, format, description, enabled, autoProcess, processing } = req.body || {};
+        await folderManager.init();
+        const folder = await folderManager.updateFolder(req.params.id, {
             ...(name !== undefined ? { name } : {}),
             ...(folderPath !== undefined ? { path: folderPath } : {}),
             ...(type !== undefined ? { type } : {}),
             ...(format !== undefined ? { format } : {}),
             ...(description !== undefined ? { description } : {}),
             ...(enabled !== undefined ? { enabled: Boolean(enabled) } : {}),
-            updatedAt: new Date().toISOString()
-        };
-
-        configuredFolders[folderIndex] = updatedFolder;
-
-        const duration = Date.now() - startTime;
-        logger.endOperation('Update Folder', duration, { id });
-
-        res.json({
-            success: true,
-            data: updatedFolder,
-            message: 'Pasta atualizada com sucesso',
-            timestamp: new Date().toISOString()
+            ...(autoProcess !== undefined ? { autoProcess: Boolean(autoProcess) } : {}),
+            ...(processing !== undefined ? { processing } : {})
         });
+        return res.json({ success: true, data: folder, message: 'Pasta atualizada com sucesso', timestamp: new Date().toISOString() });
     } catch (error) {
+        const statusCode = /não encontrada/i.test(error.message) ? 404 : 500;
         logger.operationError('Update Folder', error);
-        res.status(500).json({
-            error: {
-                message: 'Erro ao atualizar pasta',
-                details: error.message
-            }
-        });
+        return res.status(statusCode).json({ error: { message: 'Erro ao atualizar pasta', details: error.message } });
     }
 });
 
-/**
- * Gerenciamento de Workflows
- * GET /api/files/workflows - Listar workflows configurados
- * POST /api/files/workflows - Criar novo workflow
- * DELETE /api/files/workflows/:id - Deletar workflow
- */
-
-/**
- * GET /api/files/workflows - Listar workflows configurados
- */
 router.get('/workflows', async (req, res) => {
-    const startTime = Date.now();
     try {
-        logger.startOperation('List Workflows', {});
-        const result = configuredWorkflows;
-        const duration = Date.now() - startTime;
-        logger.endOperation('List Workflows', duration, result);
-
-        res.json({
-            success: true,
-            data: result,
-            count: result.length,
-            timestamp: new Date().toISOString()
-        });
+        const result = await workflowStore.list();
+        return res.json({ success: true, data: result, count: result.length, timestamp: new Date().toISOString() });
     } catch (error) {
         logger.operationError('List Workflows', error);
-        res.status(500).json({
-            error: {
-                message: 'Erro ao listar workflows',
-                details: error.message
-            }
-        });
+        return res.status(500).json({ error: { message: 'Erro ao listar workflows', details: error.message } });
     }
 });
 
-/**
- * POST /api/files/workflows - Criar novo workflow
- */
 router.post('/workflows', async (req, res) => {
-    const startTime = Date.now();
     try {
-        const { name, description, steps = [] } = req.body;
-
-        // Validação básica
+        const { name, description, steps = [] } = req.body || {};
         if (!name || !description) {
-            return res.status(400).json({
-                error: {
-                    message: 'Nome e descrição são obrigatórios',
-                    required: ['name', 'description']
-                }
-            });
+            return res.status(400).json({ error: { message: 'Nome e descrição são obrigatórios', required: ['name', 'description'] } });
         }
-
-        // Criar ID único
-        const id = Date.now().toString();
-
-        const newWorkflow = {
-            id,
-            name,
-            description,
-            steps,
-            createdAt: new Date().toISOString(),
-            status: 'active'
-        };
-
-        // Adicionar à lista
-        configuredWorkflows.push(newWorkflow);
-
-        logger.startOperation('Create Workflow', newWorkflow);
-        const duration = Date.now() - startTime;
-        logger.endOperation('Create Workflow', duration, newWorkflow);
-
-        res.status(201).json({
-            success: true,
-            data: newWorkflow,
-            message: 'Workflow criado com sucesso',
-            timestamp: new Date().toISOString()
-        });
+        const workflow = await workflowStore.create({ name, description, steps });
+        return res.status(201).json({ success: true, data: workflow, message: 'Workflow criado com sucesso', timestamp: new Date().toISOString() });
     } catch (error) {
         logger.operationError('Create Workflow', error);
-        res.status(500).json({
-            error: {
-                message: 'Erro ao criar workflow',
-                details: error.message
-            }
-        });
+        return res.status(500).json({ error: { message: 'Erro ao criar workflow', details: error.message } });
     }
 });
 
-/**
- * DELETE /api/files/workflows/:id - Deletar workflow
- */
 router.delete('/workflows/:id', async (req, res) => {
-    const startTime = Date.now();
     try {
-        const { id } = req.params;
-
-        const workflowIndex = configuredWorkflows.findIndex(workflow => workflow.id === id);
-
-        if (workflowIndex === -1) {
-            return res.status(404).json({
-                error: {
-                    message: 'Workflow não encontrado',
-                    id: id
-                }
-            });
-        }
-
-        const deletedWorkflow = configuredWorkflows.splice(workflowIndex, 1)[0];
-
-        logger.startOperation('Delete Workflow', { id });
-        const duration = Date.now() - startTime;
-        logger.endOperation('Delete Workflow', duration, deletedWorkflow);
-
-        res.json({
-            success: true,
-            data: deletedWorkflow,
-            message: 'Workflow deletado com sucesso',
-            timestamp: new Date().toISOString()
-        });
+        const workflow = await workflowStore.remove(req.params.id);
+        return res.json({ success: true, data: workflow, message: 'Workflow removido com sucesso', timestamp: new Date().toISOString() });
     } catch (error) {
+        const statusCode = /não encontrado/i.test(error.message) ? 404 : 500;
         logger.operationError('Delete Workflow', error);
-        res.status(500).json({
-            error: {
-                message: 'Erro ao deletar workflow',
-                details: error.message
-            }
-        });
+        return res.status(statusCode).json({ error: { message: 'Erro ao remover workflow', details: error.message } });
     }
 });
 
-/**
- * PUT /api/files/workflows/:id - Editar workflow
- */
 router.put('/workflows/:id', async (req, res) => {
-    const startTime = Date.now();
     try {
-        const { id } = req.params;
-        const { name, description, steps, status } = req.body;
-
-        const workflowIndex = configuredWorkflows.findIndex(workflow => workflow.id === id);
-        if (workflowIndex === -1) {
-            return res.status(404).json({
-                error: {
-                    message: 'Workflow não encontrado',
-                    id
-                }
-            });
-        }
-
-        const currentWorkflow = configuredWorkflows[workflowIndex];
-        const updatedWorkflow = {
-            ...currentWorkflow,
+        const { name, description, steps, status } = req.body || {};
+        const workflow = await workflowStore.update(req.params.id, {
             ...(name !== undefined ? { name } : {}),
             ...(description !== undefined ? { description } : {}),
             ...(steps !== undefined ? { steps } : {}),
-            ...(status !== undefined ? { status } : {}),
-            updatedAt: new Date().toISOString()
-        };
-
-        configuredWorkflows[workflowIndex] = updatedWorkflow;
-
-        const duration = Date.now() - startTime;
-        logger.endOperation('Update Workflow', duration, { id });
-
-        res.json({
-            success: true,
-            data: updatedWorkflow,
-            message: 'Workflow atualizado com sucesso',
-            timestamp: new Date().toISOString()
+            ...(status !== undefined ? { status } : {})
         });
+        return res.json({ success: true, data: workflow, message: 'Workflow atualizado com sucesso', timestamp: new Date().toISOString() });
     } catch (error) {
+        const statusCode = /não encontrado/i.test(error.message) ? 404 : 500;
         logger.operationError('Update Workflow', error);
-        res.status(500).json({
-            error: {
-                message: 'Erro ao atualizar workflow',
-                details: error.message
-            }
-        });
+        return res.status(statusCode).json({ error: { message: 'Erro ao atualizar workflow', details: error.message } });
     }
 });
 
@@ -562,8 +280,8 @@ router.post('/execute', normalRateLimiter, async (req, res) => {
         const duration = Date.now() - startTime;
         logger.endOperation('File Operation Execute', duration, result);
 
-        res.status(200).json({
-            success: true,
+        res.status(getFileOperationResultStatus(result)).json({
+            success: result?.success === true,
             data: result,
             timestamp: new Date().toISOString()
         });
@@ -581,7 +299,16 @@ router.post('/execute', normalRateLimiter, async (req, res) => {
             errorCode: error.code
         });
         
-        res.status(isPathValidationError(error) ? 400 : 500).json({
+        const statusCode = error.code === 'ENOENT'
+            ? 404
+            : error.code === 'TARGET_CONFLICT'
+                ? 409
+            : error.code === 'SHUTTING_DOWN'
+                ? 503
+                : isPathValidationError(error)
+                    ? 400
+                    : 500;
+        res.status(statusCode).json({
             error: {
                 message: 'Erro na execução da operação',
                 details: error.message,
@@ -1070,7 +797,9 @@ router.put('/backup-config', async (req, res) => {
 
         const config = {};
         if (typeof enabled === 'boolean') config.enabled = enabled;
-        if (backupDir) config.backupDir = backupDir;
+        if (backupDir) {
+            config.backupDir = await fileOperationsManager.validateSafePath(backupDir, 'write');
+        }
         if (retentionDays) config.retentionDays = retentionDays;
         if (typeof compressBackups === 'boolean') config.compressBackups = compressBackups;
 
@@ -1085,7 +814,8 @@ router.put('/backup-config', async (req, res) => {
 
     } catch (error) {
         logger.operationError('Backup Config Update', error);
-        res.status(500).json({
+        const statusCode = isPathValidationError(error) ? 400 : 500;
+        res.status(statusCode).json({
             error: {
                 message: 'Erro ao atualizar configuração de backup',
                 details: error.message
@@ -1211,7 +941,7 @@ router.post('/batch', async (req, res) => {
         });
 
         // Executar operação em lote
-        await fileOperationsManager.executeBatchOperation(
+        const result = await fileOperationsManager.executeBatchOperation(
             `batch_${Date.now()}`,
             action,
             sourceDir,
@@ -1226,21 +956,103 @@ router.post('/batch', async (req, res) => {
             targetDir
         });
 
-        res.status(200).json({
-            success: true,
-            message: `Operação em lote ${action} executada com sucesso`,
+        res.status(getFileOperationResultStatus(result)).json({
+            success: result?.success === true,
+            data: result,
+            message: result?.success === true
+                ? `Operação em lote ${action} executada com sucesso`
+                : `Operação em lote ${action} concluída com pendências`,
             duration,
             timestamp: new Date().toISOString()
         });
 
     } catch (error) {
         logger.operationError('File Batch Operation', error);
-        res.status(500).json({
+        const statusCode = error.code === 'TARGET_CONFLICT'
+            ? 409
+            : error.code === 'SHUTTING_DOWN'
+                ? 503
+                : isPathValidationError(error)
+                    ? 400
+                    : 500;
+        res.status(statusCode).json({
             error: {
                 message: 'Erro na operação em lote',
-                details: error.message
+                details: error.message,
+                code: error.code
             }
         });
+    }
+});
+
+router.get('/operations/:operationId', async (req, res) => {
+    try {
+        const state = await fileOperationsManager.getOperationState(req.params.operationId);
+        if (!state) {
+            return res.status(404).json({
+                success: false,
+                error: {
+                    message: 'Operação não encontrada',
+                    operationId: req.params.operationId
+                }
+            });
+        }
+        return res.status(200).json({ success: true, data: state });
+    } catch (error) {
+        logger.operationError('File Operation State', error);
+        return res.status(500).json({ success: false, error: { message: error.message } });
+    }
+});
+
+router.post('/operations/:operationId/cancel', strictRateLimiter, async (req, res) => {
+    try {
+        const cancelled = await fileOperationsManager.cancelFileOperation(req.params.operationId);
+        if (!cancelled) {
+            return res.status(404).json({
+                success: false,
+                error: { message: 'Operação não encontrada', operationId: req.params.operationId }
+            });
+        }
+        return res.status(202).json({
+            success: true,
+            operationId: req.params.operationId,
+            status: 'cancelling'
+        });
+    } catch (error) {
+        logger.operationError('File Operation Cancel', error);
+        return res.status(500).json({ success: false, error: { message: error.message } });
+    }
+});
+
+router.get('/recovery', async (req, res) => {
+    try {
+        const entries = await fileOperationsManager.listRecoveryEntries();
+        return res.status(200).json({
+            success: true,
+            data: entries,
+            count: entries.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        logger.operationError('Recovery List', error);
+        return res.status(500).json({ success: false, error: { message: error.message } });
+    }
+});
+
+router.post('/recovery/:entryId/restore', strictRateLimiter, async (req, res) => {
+    try {
+        const entry = await fileOperationsManager.restoreRecoveryEntry(req.params.entryId);
+        if (!entry) {
+            return res.status(404).json({
+                success: false,
+                error: { message: 'Item de recuperação não encontrado', entryId: req.params.entryId }
+            });
+        }
+        return res.status(200).json({ success: true, data: entry });
+    } catch (error) {
+        const statusCode = error.code === 'TARGET_CONFLICT' ? 409 : 500;
+        logger.operationError('Recovery Restore', error);
+        return res.status(statusCode).json({ success: false, error: { message: error.message, code: error.code } });
     }
 });
 
@@ -1395,12 +1207,12 @@ router.get('/templates/categories', async (req, res) => {
 router.get('/progress/:operationId', async (req, res) => {
     try {
         const { operationId } = req.params;
-        const progress = fileOperationsManager.getProgress(operationId);
+        const progress = await fileOperationsManager.getOperationState(operationId);
 
         if (!progress) {
             return res.status(404).json({
                 error: {
-                    message: 'Operação não encontrada ou já concluída',
+                    message: 'Operação não encontrada',
                     operationId
                 }
             });

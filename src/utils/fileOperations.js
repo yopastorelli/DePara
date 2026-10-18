@@ -11,14 +11,15 @@ const os = require('os');
 const path = require('path');
 
 const logger = require('./logger');
-const { getRuntimeBackupsDir, getRuntimeDataDir, getSourceRepoRoot } = require('./runtimePaths');
+const { getRuntimeBackupsDir, getRuntimeDataDir, getRuntimeRoot, getSourceRepoRoot } = require('./runtimePaths');
 const {
     recordMigrationStatus,
     getMigrationStatus
 } = require('./persistenceMigration');
-const { copyOrMoveNative } = require('./fileOps/permissions');
 const { countImagesRecursive, scanImagesRecursive } = require('./fileOps/imageScanner');
 const { ImageCatalogStore } = require('./fileOps/imageCatalogStore');
+const { TransactionalOperations } = require('./fileOps/transactionalOperations');
+const { writeJsonAtomic, readJsonWithRecovery } = require('./atomicStore');
 
 // Evitar redeclarações desnecessárias
 const fsSync = require('fs');
@@ -263,9 +264,16 @@ class FileOperationsManager {
             retentionDays: 30,
             compressBackups: true
         };
+        this.transactionalOperations = new TransactionalOperations({
+            dataDir: this.dataDir,
+            quarantineDir: path.join(getRuntimeRoot(), 'quarantine'),
+            logger,
+            maxRecursionDepth: this.maxRecursionDepth,
+            shouldIgnoreFile,
+            matchesFilters: (filename, filters, filePath) => this.matchesFilters(filename, filters, filePath)
+        });
         this.initialized = false;
         this.initializingPromise = null;
-        this.init();
     }
 
     async init() {
@@ -283,6 +291,7 @@ class FileOperationsManager {
 
                 // Inicializar diretório de backup
                 await this.ensureBackupDirectory();
+                await this.transactionalOperations.init();
 
                 // Carregar operações agendadas salvas
                 await this.loadScheduledOperations();
@@ -340,8 +349,10 @@ class FileOperationsManager {
             }
             
             // Ler arquivo de persistência
-            const data = await fs.readFile(this.persistenceFile, 'utf8');
-            const savedOperations = JSON.parse(data);
+            const savedOperations = await readJsonWithRecovery(this.persistenceFile, []);
+            if (!Array.isArray(savedOperations)) {
+                throw new Error('Persistência de operações agendadas deve ser um array');
+            }
             
             logger.info(`Carregando ${savedOperations.length} operações agendadas do arquivo de persistência`);
             
@@ -371,7 +382,11 @@ class FileOperationsManager {
                 continue;
             }
 
-            await fs.copyFile(legacyPath, this.persistenceFile);
+            const legacyData = JSON.parse(await fs.readFile(legacyPath, 'utf8'));
+            if (!Array.isArray(legacyData)) {
+                throw new Error('Persistência legada de operações agendadas deve ser um array');
+            }
+            await writeJsonAtomic(this.persistenceFile, legacyData);
             await recordMigrationStatus('scheduledOperations', {
                 migrated: true,
                 source: legacyPath,
@@ -407,13 +422,13 @@ class FileOperationsManager {
                 timestamp: new Date().toISOString()
             }));
             
-            // Salvar no arquivo
-            await fs.writeFile(this.persistenceFile, JSON.stringify(operationsArray, null, 2), 'utf8');
+            await writeJsonAtomic(this.persistenceFile, operationsArray);
             
             logger.info(`✅ ${operationsArray.length} operações agendadas salvas no arquivo de persistência`);
             
         } catch (error) {
             logger.error('Erro ao salvar operações agendadas:', error);
+            throw error;
         }
     }
 
@@ -522,409 +537,78 @@ class FileOperationsManager {
         logger.info(`Operação manual restaurada: ${operationId}`);
     }
 
-    /**
-     * Move arquivo com suporte a cross-device (copy + delete)
-     */
-    async moveFileCrossDevice(sourcePath, targetPath) {
-        await copyOrMoveNative(sourcePath, targetPath, 'move');
+    async moveFileCrossDevice(sourcePath, targetPath, options = {}) {
+        return this.moveFile(sourcePath, targetPath, options);
     }
 
-    /**
-     * Executa operação de mover arquivo
-     */
     async moveFile(sourcePath, targetPath, options = {}) {
-        const operationId = this.generateOperationId();
-        const startTime = Date.now();
-
-        // Definir variáveis para uso no bloco catch
-        let safeSourcePath = sourcePath;
-        let safeTargetPath = targetPath;
-
-        try {
-            // Validar caminhos antes de qualquer operação
-            safeSourcePath = await validateSafePath(sourcePath, 'read');
-            safeTargetPath = await validateSafePath(targetPath, 'write');
-
-            logger.startOperation('File Move', {
-                operationId,
-                sourcePath: safeSourcePath,
-                targetPath: safeTargetPath,
-                options
-            });
-
-            // Verificar se é um diretório para operação recursiva
-            const stats = await fs.stat(safeSourcePath);
-            const isDirectory = stats.isDirectory();
-            const fileSize = stats.size;
-
-            // Criar backup se solicitado
-            if (options.backupBeforeMove) {
-                await this.createBackup(safeSourcePath, 'move');
-            }
-
-            if (isDirectory && options.recursive !== false) {
-                // Operação recursiva em diretório
-                await this.moveDirectoryRecursive(safeSourcePath, safeTargetPath, options);
-            } else {
-                // Operação simples em arquivo
-                // Garantir que o diretório de destino existe
-                const targetDir = path.dirname(safeTargetPath);
-                await fs.mkdir(targetDir, { recursive: true });
-
-                // Mover o arquivo (com suporte a cross-device)
-                await this.moveFileCrossDevice(safeSourcePath, safeTargetPath);
-            }
-
-            // Verificar se moveu corretamente
-            const targetStats = await fs.stat(safeTargetPath);
-            
-            // Validação adicional: verificar se o arquivo é legível
-            await fs.access(safeTargetPath, fs.constants.R_OK);
-            
-            // Verificar se o arquivo original foi removido (para operações de move)
-            try {
-                await fs.access(safeSourcePath, fs.constants.F_OK);
-                // Se chegou aqui, o arquivo original ainda existe - isso é um problema para move
-                logger.warn(`⚠️ Arquivo original ainda existe após move: ${safeSourcePath}`);
-            } catch (notFoundError) {
-                // Arquivo original não existe mais - isso é correto para move
-                logger.info(`✅ Arquivo original removido com sucesso: ${safeSourcePath}`);
-            }
-
-            const duration = Date.now() - startTime;
-            logger.endOperation('File Move', duration, {
-                operationId,
-                success: true,
-                fileSize: targetStats.size,
-                targetPath: safeTargetPath,
-                preserveStructure: options.preserveStructure
-            });
-
-            return {
-                success: true,
-                operationId,
-                fileSize: targetStats.size,
-                duration,
-                preserveStructure: options.preserveStructure
-            };
-
-        } catch (error) {
-            logger.operationError('File Move', error, {
-                operationId,
-                sourcePath: safeSourcePath,
-                targetPath: safeTargetPath
-            });
-            throw error;
+        const safeSourcePath = await validateSafePath(sourcePath, 'read');
+        const safeTargetPath = await validateSafePath(targetPath, 'write');
+        const operationId = options.operationId || this.generateOperationId();
+        if (options.backupBeforeMove) {
+            await this.createBackup(safeSourcePath, 'move');
         }
+        const result = await this.transactionalOperations.execute('move', safeSourcePath, safeTargetPath, {
+            ...options,
+            operationId
+        });
+        logger.endOperation('File Move', result.duration || 0, result);
+        return result;
     }
 
-    /**
-     * Move diretório recursivamente com todas as subpastas
-     */
     async moveDirectoryRecursive(sourceDir, targetDir, options = {}) {
-        logger.info(`Iniciando movimento recursivo: ${sourceDir} -> ${targetDir}`);
-
-        // Garantir que o diretório de destino existe
-        await fs.mkdir(targetDir, { recursive: true });
-
-        // Ler conteúdo do diretório
-        const entries = await fs.readdir(sourceDir, { withFileTypes: true });
-
-        for (const entry of entries) {
-            const sourcePath = path.join(sourceDir, entry.name);
-            const targetPath = path.join(targetDir, entry.name);
-
-            if (entry.isDirectory()) {
-                if (shouldIgnoreFile(entry.name)) {
-                    continue;
-                }
-                // Recursão para subdiretórios
-                await this.moveDirectoryRecursive(sourcePath, targetPath, options);
-            } else {
-                // Verificar se arquivo deve ser ignorado
-                if (shouldIgnoreFile(entry.name)) {
-                    logger.info(`Pulando arquivo ignorado: ${sourcePath}`);
-                    continue;
-                }
-
-                // Filtrar por extensões se especificado
-                if (options.extensions && options.extensions.length > 0) {
-                    const ext = path.extname(entry.name).toLowerCase();
-                    if (!options.extensions.includes(ext)) {
-                        logger.info(`Pulando arquivo (extensão não permitida): ${sourcePath}`);
-                        continue; // Pular arquivo se extensão não estiver na lista
-                    }
-                }
-
-                // Mover arquivo (com suporte a cross-device)
-                await this.moveFileCrossDevice(sourcePath, targetPath);
-                logger.info(`Arquivo movido: ${sourcePath} -> ${targetPath}`);
-            }
-        }
-
-        // Remover diretório vazio
-        await fs.rmdir(sourceDir);
-        logger.info(`Diretório movido: ${sourceDir} -> ${targetDir}`);
+        return this.moveFile(sourceDir, targetDir, options);
     }
 
-    /**
-     * Executa operação de copiar arquivo
-     */
     async copyFile(sourcePath, targetPath, options = {}) {
-        const operationId = this.generateOperationId();
-        const startTime = Date.now();
-
-        // Definir variáveis para uso no bloco catch
-        let safeSourcePath = sourcePath;
-        let safeTargetPath = targetPath;
-
-        try {
-            // Validar caminhos antes de qualquer operação
-            safeSourcePath = await validateSafePath(sourcePath, 'read');
-            safeTargetPath = await validateSafePath(targetPath, 'write');
-
-            logger.startOperation('File Copy', {
-                operationId,
-                sourcePath: safeSourcePath,
-                targetPath: safeTargetPath,
-                options
-            });
-
-            // Verificar se é um diretório para operação recursiva
-            const stats = await fs.stat(safeSourcePath);
-            const isDirectory = stats.isDirectory();
-
-            if (isDirectory && options.recursive !== false) {
-                // Operação recursiva em diretório
-                await this.copyDirectoryRecursive(safeSourcePath, safeTargetPath, options);
-            } else {
-                // Operação simples em arquivo
-                // Garantir que o diretório de destino existe
-                const targetDir = path.dirname(safeTargetPath);
-                await fs.mkdir(targetDir, { recursive: true });
-                
-                await copyOrMoveNative(safeSourcePath, safeTargetPath, 'copy');
-            }
-
-            // Verificar se copiou corretamente
-            const targetStats = await fs.stat(safeTargetPath);
-
-            const duration = Date.now() - startTime;
-            logger.endOperation('File Copy', duration, {
-                operationId,
-                success: true,
-                fileSize: targetStats.size,
-                targetPath: safeTargetPath,
-                preserveStructure: options.preserveStructure
-            });
-
-            return {
-                success: true,
-                operationId,
-                fileSize: targetStats.size,
-                duration,
-                preserveStructure: options.preserveStructure
-            };
-
-        } catch (error) {
-            logger.operationError('File Copy', error, {
-                operationId,
-                sourcePath: safeSourcePath,
-                targetPath: safeTargetPath
-            });
-            throw error;
-        }
+        const safeSourcePath = await validateSafePath(sourcePath, 'read');
+        const safeTargetPath = await validateSafePath(targetPath, 'write');
+        const operationId = options.operationId || this.generateOperationId();
+        const result = await this.transactionalOperations.execute('copy', safeSourcePath, safeTargetPath, {
+            ...options,
+            operationId
+        });
+        logger.endOperation('File Copy', result.duration || 0, result);
+        return result;
     }
 
-    /**
-     * Copia diretório recursivamente com todas as subpastas
-     */
     async copyDirectoryRecursive(sourceDir, targetDir, options = {}) {
-        logger.info(`Iniciando cópia recursiva: ${sourceDir} -> ${targetDir}`);
-
-        // Garantir que o diretório de destino existe
-        await fs.mkdir(targetDir, { recursive: true });
-        
-        // Ler conteúdo do diretório
-        const entries = await fs.readdir(sourceDir, { withFileTypes: true });
-
-        for (const entry of entries) {
-            const sourcePath = path.join(sourceDir, entry.name);
-            const targetPath = path.join(targetDir, entry.name);
-
-            if (entry.isDirectory()) {
-                if (shouldIgnoreFile(entry.name)) {
-                    continue;
-                }
-                // Recursão para subdiretórios
-                await this.copyDirectoryRecursive(sourcePath, targetPath, options);
-            } else {
-                // Verificar se arquivo deve ser ignorado
-                if (shouldIgnoreFile(entry.name)) {
-                    logger.info(`Pulando arquivo ignorado: ${sourcePath}`);
-                    continue;
-                }
-
-                // Filtrar por extensões se especificado
-                if (options.extensions && options.extensions.length > 0) {
-                    const ext = path.extname(entry.name).toLowerCase();
-                    if (!options.extensions.includes(ext)) {
-                        logger.info(`Pulando arquivo (extensão não permitida): ${sourcePath}`);
-                        continue; // Pular arquivo se extensão não estiver na lista
-                    }
-                }
-
-                await copyOrMoveNative(sourcePath, targetPath, 'copy');
-                
-                logger.info(`Arquivo copiado: ${sourcePath} -> ${targetPath}`);
-            }
-        }
-
-        logger.info(`Diretório copiado: ${sourceDir} -> ${targetDir}`);
+        return this.copyFile(sourceDir, targetDir, options);
     }
 
-    /**
-     * Executa operação de apagar arquivo com backup
-     */
     async deleteFile(filePath, options = {}) {
-        const operationId = this.generateOperationId();
-        const startTime = Date.now();
-
-        // Definir variável para uso no bloco catch
-        let safeFilePath = filePath;
-
-        try {
-            // Validar caminho antes de qualquer operação
-            safeFilePath = await validateSafePath(filePath, 'read');
-
-            logger.startOperation('File Delete', {
-                operationId,
-                filePath: safeFilePath,
-                options
-            });
-
-            // Criar backup antes de apagar
-            if (this.backupConfig.enabled || options.forceBackup) {
-                await this.createBackup(safeFilePath, 'delete');
-            }
-
-            // Obter informações do arquivo/diretório antes de apagar
-            const stats = await fs.stat(safeFilePath);
-            const isDirectory = stats.isDirectory();
-
-            if (isDirectory && options.recursive !== false) {
-                // Operação recursiva em diretório
-                await this.deleteDirectoryRecursive(safeFilePath, options);
-            } else {
-                // Operação simples em arquivo
-                // Apagar o arquivo
-                await fs.unlink(safeFilePath);
-            }
-
-            const duration = Date.now() - startTime;
-            logger.endOperation('File Delete', duration, {
-                operationId,
-                success: true,
-                fileSize: stats.size,
-                backupCreated: this.backupConfig.enabled || options.forceBackup
-            });
-
-            return {
-                success: true,
-                operationId,
-                fileSize: stats.size,
-                backupCreated: this.backupConfig.enabled || options.forceBackup,
-                duration
-            };
-
-        } catch (error) {
-            logger.operationError('File Delete', error, {
-                operationId,
-                filePath: safeFilePath
-            });
-            throw error;
-        }
+        const safeFilePath = await validateSafePath(filePath, 'read');
+        const operationId = options.operationId || this.generateOperationId();
+        const result = await this.transactionalOperations.execute('delete', safeFilePath, null, {
+            ...options,
+            operationId
+        });
+        logger.endOperation('File Delete', result.duration || 0, result);
+        return {
+            ...result,
+            backupCreated: true,
+            recoveryAvailable: result.recoverable
+        };
     }
 
-    /**
-     * Apaga diretório recursivamente com todas as subpastas
-     */
     async deleteDirectoryRecursive(dirPath, options = {}) {
-        logger.info(`Iniciando exclusão recursiva: ${dirPath}`);
-
-        // Ler conteúdo do diretório
-        const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
-        for (const entry of entries) {
-            const fullPath = path.join(dirPath, entry.name);
-
-            if (entry.isDirectory()) {
-                if (shouldIgnoreFile(entry.name)) {
-                    continue;
-                }
-                // Recursão para subdiretórios
-                await this.deleteDirectoryRecursive(fullPath, options);
-            } else {
-                // Verificar se arquivo deve ser ignorado
-                if (shouldIgnoreFile(entry.name)) {
-                    logger.info(`Pulando arquivo ignorado: ${fullPath}`);
-                    continue;
-                }
-
-                // Filtrar por extensões se especificado
-                if (options.extensions && options.extensions.length > 0) {
-                    const ext = path.extname(entry.name).toLowerCase();
-                    if (!options.extensions.includes(ext)) {
-                        logger.info(`Pulando arquivo (extensão não permitida): ${fullPath}`);
-                        continue; // Pular arquivo se extensão não estiver na lista
-                    }
-                }
-
-                // Criar backup se solicitado
-                if (this.backupConfig.enabled || options.forceBackup) {
-                    await this.createBackup(fullPath, 'delete');
-                }
-
-                // Apagar arquivo
-                await fs.unlink(fullPath);
-                logger.info(`Arquivo excluído: ${fullPath}`);
-            }
-        }
-
-        // Apagar diretório vazio
-        await fs.rmdir(dirPath);
-        logger.info(`Diretório excluído: ${dirPath}`);
+        return this.deleteFile(dirPath, options);
     }
 
-    /**
-     * Cria backup de arquivo antes de operação
-     */
     async createBackup(filePath, operation) {
-        try {
-            const fileName = path.basename(filePath);
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const backupFileName = `${fileName}.${operation}.${timestamp}`;
-
-            const backupPath = path.join(this.backupConfig.backupDir, backupFileName);
-
-            await fs.copyFile(filePath, backupPath);
-            
-            logger.info(`Backup criado: ${backupPath}`);
-
-            // Limpar backups antigos se necessário
-            await this.cleanupOldBackups();
-
-            return backupPath;
-
-        } catch (error) {
-            logger.error(`Erro ao criar backup de ${filePath}:`, error);
-            throw error;
+        const fileName = path.basename(filePath);
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const backupPath = path.join(this.backupConfig.backupDir, `${fileName}.${operation}.${timestamp}`);
+        const result = await this.transactionalOperations.execute('copy', filePath, backupPath, {
+            operationId: `backup_${Date.now()}_${process.pid}`,
+            preserveStructure: true
+        });
+        if (!result.success) {
+            throw new Error(result.message || 'Backup não concluído');
         }
+        return backupPath;
     }
 
-    /**
-     * Limpa backups antigos baseado na configuração de retenção
-     */
     async cleanupOldBackups() {
         try {
             const files = await fs.readdir(this.backupConfig.backupDir);
@@ -935,7 +619,7 @@ class FileOperationsManager {
                 const filePath = path.join(this.backupConfig.backupDir, file);
                 const stats = await fs.stat(filePath);
 
-                if (now - stats.mtime.getTime() > retentionMs) {
+                if (stats.isFile() && now - stats.mtime.getTime() > retentionMs) {
                     await fs.unlink(filePath);
                     logger.info(`Backup antigo removido: ${file}`);
                 }
@@ -1019,16 +703,17 @@ class FileOperationsManager {
             const stats = await fs.stat(sourcePath);
             logger.info(`📁 Tipo de operação: ${stats.isDirectory() ? 'diretório' : 'arquivo'}`, { sourcePath });
             
+            let result;
             if (options.batch && stats.isDirectory()) {
                 logger.info(`📦 Executando operação em lote: ${sourcePath} -> ${targetPath}`);
-                await this.executeBatchOperation(operationId, action, sourcePath, targetPath, options);
+                result = await this.executeBatchOperation(operationId, action, sourcePath, targetPath, options);
             } else {
                 logger.info(`📄 Executando operação em arquivo único: ${sourcePath} -> ${targetPath}`);
-                await this.executeSingleOperation(operationId, action, sourcePath, targetPath, options);
+                result = await this.executeSingleOperation(operationId, action, sourcePath, targetPath, options);
             }
             
             logger.info(`✅ Execução agendada concluída: ${operationId}`);
-            return { status: 'completed' };
+            return result || { status: 'completed' };
         } catch (error) {
             logger.error(`❌ Erro na execução agendada ${operationId}:`, error);
             throw error; // Re-throw para que o erro seja propagado
@@ -1053,115 +738,45 @@ class FileOperationsManager {
     /**
      * Executa operação em lote (todos os arquivos de uma pasta)
      */
-    async executeBatchOperation(operationId, action, sourceDir, targetDir, options) {
-        try {
-            const requestedTotal = Number(options.totalFiles);
-            const totalFiles = options.countBeforeProcessing === true && Number.isFinite(requestedTotal)
-                ? Math.max(0, requestedTotal)
-                : null;
-            let processed = 0;
-            let errors = 0;
-            let skipped = 0;
-            let scanned = 0;
-            let batch = [];
-            const batchSize = this.maxConcurrentOperations;
-
-            // Emitir progresso inicial
-            this.emitProgress(operationId, 0, totalFiles || 0, 'Iniciando operação...');
-
-            const processBatch = async (files) => {
-                const batchResults = await Promise.all(files.map(async (filePath, indexInBatch) => {
-                    try {
-                        const globalIndex = scanned + indexInBatch;
-                        const progress = totalFiles === null
-                            ? 0
-                            : Math.round(((globalIndex + 1) / totalFiles) * 100);
-                        this.emitProgress(operationId, progress, totalFiles, `Processando ${path.basename(filePath)}...`);
-
-                        const fileName = path.basename(filePath);
-                        if (!this.matchesFilters(fileName, options.filters, filePath)) {
-                            return { status: 'skipped', reason: 'filter mismatch' };
-                        }
-
-                        let targetPath;
-                        if (action !== 'delete') {
-                            const relativePath = options.preserveStructure
-                                ? path.relative(sourceDir, filePath)
-                                : fileName;
-                            targetPath = path.join(targetDir, relativePath);
-                        }
-
-                        switch (action) {
-                            case 'move':
-                                await this.moveFile(filePath, targetPath, options);
-                                break;
-                            case 'copy':
-                                await this.copyFile(filePath, targetPath, options);
-                                break;
-                            case 'delete':
-                                await this.deleteFile(filePath, options);
-                                break;
-                            default:
-                                throw new Error(`Ação não suportada: ${action}`);
-                        }
-
-                        return { status: 'processed' };
-                    } catch (error) {
-                        logger.error(`Erro ao processar arquivo ${filePath}:`, { error: error.message });
-                        return { status: 'error', error: error.message };
-                    }
-                }));
-
-                scanned += files.length;
-                for (const result of batchResults) {
-                    if (result.status === 'processed') {
-                        processed++;
-                    } else if (result.status === 'error') {
-                        errors++;
-                    } else {
-                        skipped++;
-                    }
-                }
-            };
-
-            for await (const filePath of this.iterateFiles(sourceDir)) {
-                batch.push(filePath);
-                if (batch.length >= batchSize) {
-                    await processBatch(batch);
-                    batch = [];
-                }
+    async executeBatchOperation(operationId, action, sourceDir, targetDir, options = {}) {
+        const safeSourceDir = await validateSafePath(sourceDir, 'read');
+        const safeTargetDir = targetDir ? await validateSafePath(targetDir, 'write') : null;
+        const result = await this.transactionalOperations.execute(action, safeSourceDir, safeTargetDir, {
+            ...options,
+            operationId,
+            onProgress: (progress) => {
+                this.emitProgress(
+                    operationId,
+                    progress.percentage,
+                    progress.total,
+                    progress.message,
+                    progress.status,
+                    progress.counts
+                );
             }
-
-            if (batch.length > 0) {
-                await processBatch(batch);
-            }
-
-            // Emitir progresso final
-            this.emitProgress(
-                operationId,
-                100,
-                totalFiles ?? scanned,
-                `Concluído: ${processed} processados, ${skipped} ignorados, ${errors} erros`
-            );
-
-            logger.info(`Operação em lote concluída: ${processed} processados, ${skipped} ignorados, ${errors} erros`);
-
-        } catch (error) {
-            // Emitir erro de progresso
-            this.emitProgress(operationId, -1, 0, `Erro: ${error.message}`);
-            logger.error(`Erro na operação em lote ${operationId}:`, error);
-        }
+        });
+        this.emitProgress(
+            operationId,
+            result.status === 'completed' ? 100 : result.percentage || 100,
+            result.counts.total,
+            result.message,
+            result.status,
+            result.counts
+        );
+        return result;
     }
 
     /**
      * Emite progresso da operação
      */
-    emitProgress(operationId, percentage, total, message) {
+    emitProgress(operationId, percentage, total, message, status = 'running', counts = undefined) {
         const progressData = {
             operationId,
             percentage,
             total,
             message,
+            status,
+            counts,
             timestamp: new Date().toISOString()
         };
 
@@ -1187,13 +802,43 @@ class FileOperationsManager {
         return this.progressStore?.get(operationId) || null;
     }
 
+    async getOperationState(operationId) {
+        const durableProgress = await this.transactionalOperations.getOperationProgress(operationId);
+        return durableProgress || this.getProgress(operationId);
+    }
+
+    async listOperationStates() {
+        return this.transactionalOperations.listOperationStates();
+    }
+
+    async cancelFileOperation(operationId) {
+        return this.transactionalOperations.cancel(operationId);
+    }
+
+    async listRecoveryEntries() {
+        return this.transactionalOperations.listRecovery();
+    }
+
+    async restoreRecoveryEntry(entryId) {
+        return this.transactionalOperations.restoreRecovery(entryId);
+    }
+
+    async beginShutdown(timeoutMs = 30000) {
+        this.stopAllScheduledOperations();
+        return this.transactionalOperations.beginDrain(timeoutMs);
+    }
+
+    endShutdown() {
+        this.transactionalOperations.endDrain();
+    }
+
     /**
      * Lista todas as operações em andamento
      */
     getActiveOperations() {
         const active = [];
         for (const [id, progress] of this.progressStore || []) {
-            if (progress.percentage >= 0 && progress.percentage < 100) {
+            if (progress.status === 'running' || (progress.percentage >= 0 && progress.percentage < 100)) {
                 active.push(progress);
             }
         }
@@ -1243,28 +888,16 @@ class FileOperationsManager {
      * Executa operação em arquivo único
      */
     async executeSingleOperation(operationId, action, sourcePath, targetPath, options) {
-        try {
-            // Verificar se arquivo existe
-            await fs.access(sourcePath);
-
-            switch (action) {
-                case 'move':
-                    await this.moveFile(sourcePath, targetPath, options);
-                    break;
-                case 'copy':
-                    await this.copyFile(sourcePath, targetPath, options);
-                    break;
-                case 'delete':
-                    await this.deleteFile(sourcePath, options);
-                    break;
-            }
-
-        } catch (error) {
-            if (error.code === 'ENOENT') {
-                logger.warn(`Arquivo não encontrado para operação ${operationId}: ${sourcePath}`);
-            } else {
-                throw error;
-            }
+        await fs.access(sourcePath);
+        switch (action) {
+            case 'move':
+                return this.moveFile(sourcePath, targetPath, { ...options, operationId });
+            case 'copy':
+                return this.copyFile(sourcePath, targetPath, { ...options, operationId });
+            case 'delete':
+                return this.deleteFile(sourcePath, { ...options, operationId });
+            default:
+                throw new Error(`Ação não suportada: ${action}`);
         }
     }
 
@@ -1500,8 +1133,6 @@ class FileOperationsManager {
             clearInterval(intervalId);
         }
         this.schedules.clear();
-        this.runningScheduledOperations.clear();
-        this.operations.clear();
         logger.info('Todas as operações agendadas foram paradas');
     }
 

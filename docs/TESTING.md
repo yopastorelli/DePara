@@ -66,6 +66,7 @@ O conjunto deve cobrir:
 - health, status, recursos e conectividade;
 - persistência e import/export de configuração;
 - copy, move, delete e proteção de caminhos;
+- journal transacional, destino sem overwrite, arquivo parcial, cancelamento, retomada e restauração de quarentena;
 - pastas, workflows e agendamentos;
 - paginação de imagens, catálogo temporário e `countOnly`;
 - proteção contra traversal e symlink;
@@ -79,6 +80,8 @@ O conjunto deve cobrir:
 `tests/e2e/slideshow.ux.spec.js` usa PNGs grandes em retrato, paisagem e panorama, não apenas imagens de um pixel. Cobre seis viewports de `320 × 480` a `1366 × 768`, teclado, foco, hover estável, pausa, cursor, ausência de overflow nas abas principais, fullscreen nativo e fallback.
 
 A UI deve funcionar sem requisições externas e sem aguardar o monitoramento de recursos. A fonte de ícones local deve carregar com sucesso. O teste mantém uma requisição de monitoramento pendente para garantir que ela não prenda a inicialização.
+
+`tests/fileSafety.test.js` é a regressão mínima de segurança de mutações. Ela deve permanecer isolada em um runtime temporário e provar, no mínimo, que uma falha de destino não apaga a origem, que exclusão de diretório não tenta tratar a pasta como arquivo, que cópias não deixam `.depara-partial-*` e que uma exclusão concluída ainda oferece restauração.
 
 O Playwright usa um único worker: as suítes compartilham a API isolada de testes e não podem disputar sua configuração. Isso também contém o consumo de RAM durante a validação.
 
