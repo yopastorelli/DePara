@@ -6,6 +6,8 @@ DETAILED_DOC_ENTRYPOINT=docs/README.md
 
 DePara é uma aplicação local-first de automação de arquivos e slideshow, exclusiva para Windows. A interface web local é servida por uma API Express e usa o filesystem da máquina somente dentro das regras de segurança do projeto.
 
+Sincronização local e backup versionado: contrato em `docs/LOCAL-SYNC.md`. Destino NTFS, execução inicialmente manual, preview e histórico no HD de backup. O recurso não é ativado automaticamente na instalação.
+
 ## Instalação reproduzível em máquina nova
 
 Requisitos: Windows 10/11 x64, Node.js `>=18.15.0`, npm `>=9.0.0`, Git for Windows e `tar` no `PATH`.

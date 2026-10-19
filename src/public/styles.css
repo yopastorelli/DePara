@@ -3268,6 +3268,23 @@ body.slideshow-active-fullscreen #dashboard-fullscreen-controls {
 
 /* Scheduled Operations */
 .scheduled-operations,
+.sync-job, .sync-result {
+    padding: 12px;
+    margin-block: 8px;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    overflow-wrap: anywhere;
+}
+
+#sync-panel input, #sync-panel select, #sync-history-path {
+    max-width: 100%;
+    min-width: 0;
+}
+
+[hidden] {
+    display: none !important;
+}
+
 .backups-section {
     margin-bottom: 30px;
 }

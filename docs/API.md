@@ -44,6 +44,8 @@ Default access is loopback-only: `http://127.0.0.1:3000`. The API has no user au
 
 ## Config and backup
 
+Sincronização local: `LOCAL-SYNC.md` descreve `/api/sync`, preview, estados e versões. Backup operacional exportado usa formato 2 com `syncJobs`; formato 1 continua aceito. Jobs importados ficam pausados.
+
 | Method | Path | Contract |
 |---|---|---|
 | GET | `/api/config` | read product config |
@@ -60,6 +62,7 @@ Exported backup includes:
 - `sourceRuntime`
 - `config`
 - `scheduledOperations`
+- `syncJobs` (formato 2; importação pausada)
 - `folders`
 - `workflows`
 

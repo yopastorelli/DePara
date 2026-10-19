@@ -5,6 +5,8 @@ PLATFORM_CONTRACT=Windows_only
 
 ## Processo e limites
 
+Sincronização local: seguir `LOCAL-SYNC.md`. Histórico fica no HD de destino; nunca removê-lo em limpeza do runtime. Jobs não são criados automaticamente nem ativados por importação.
+
 - Plataforma: Windows 10/11 x64.
 - Processo oficial: `scripts/start-windows-coexistence.ps1`.
 - Host padrão: `127.0.0.1`.

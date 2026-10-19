@@ -5,7 +5,7 @@ AUDIT_PLATFORM=Windows_only
 DOC_AUDIENCE=AI_development_agents
 AUDIT_SCOPE=application_code_runtime_installation_documentation_memory_security
 AUDIT_SCOPE_EXTENSION=file_mutation_integrity_interruption_recovery
-AUDIT_STATUS=validated_for_publication
+AUDIT_STATUS=local_sync_implemented_pending_two_drive_pilot
 AUDIT_VALIDATED_APPLICATION_REVISION=working-tree-after-tests
 
 ## Escopo
@@ -19,9 +19,9 @@ Esta rodada valida a revisão do código no checkout após as alterações de se
 O produto fica reduzido a cinco superfícies explícitas e sem sobreposição:
 
 1. `Dashboard`: saúde do runtime e acesso ao slideshow;
-2. `Operações de Arquivos`: um único draft para origem, ação, destino, execução imediata ou agendamento;
+2. `Operações de Arquivos`: draft de operação única e modo de sincronização local com preview e jobs próprios;
 3. `Operações Agendadas`: lista, busca, pausa, edição, duplicação, execução e progresso;
-4. `Backup e Recuperação`: backup operacional, importação transacional e quarentena restaurável;
+4. `Backup e Recuperação`: backup operacional formato 2, importação transacional, quarentena e versões de sincronização;
 5. `Configurações`: configuração do runtime e do screensaver.
 
 Workflows, templates, conversão, mapeamento, drag-and-drop e ações de operação duplicadas não fazem parte da nova jornada visível. Rotas e helpers de compatibilidade ainda existentes são limites para dados/clientes antigos; agentes não devem criar novos consumidores deles.
@@ -37,6 +37,10 @@ Critérios funcionais aplicados:
 - a UI não solicita permissão de notificação nem carrega templates, gráficos ou catálogos no bootstrap.
 
 ## Decisões aplicadas
+
+Extensão de sincronização: contrato `LOCAL-SYNC.md`; fila compartilhada, SHA-256 streaming, destino NTFS com publicação exclusiva, atual mais 1/3/5 anteriores, recuperação por journal e comparação incremental. Jobs importados ficam pausados. O teste sintético de arquivo de 1 GiB terminou com pico de RSS de 127,2 MiB; preview de 5.000 arquivos atingiu 66,8 MiB. Esses números não certificam dois HDs físicos, latência p95 com carga real ou a máquina definitiva. Ativação e piloto permanecem gates distintos da implementação.
+
+Validação da extensão: regressão Jest completa com 16 suítes/100 testes aprovados; revisão focada de segurança/configuração/smoke com 47 testes; rodada final de sincronização com 22 testes. Playwright completo: 22 aprovados; os seis fluxos afetados foram repetidos isoladamente e passaram. Lint e auditoria de dependências passaram, sem vulnerabilidades. Houve timeouts de validadores quando executados junto do benchmark de 50.000 arquivos; as repetições isoladas passaram, sem alterar limites do produto. Preview de 50.000 entradas teve pico de 79,1 MiB. O ciclo sintético com helper Win32 real também passou. Somente C: está disponível como volume NTFS gravável no host inspecionado; não montar, formatar ou modificar outros discos para fabricar um piloto. Commit, publicação e ativação do release não fazem parte desta evidência.
 
 - A plataforma suportada é Windows 10/11 x64. Linux, macOS, Raspberry Pi, PM2, systemd, Docker, Python e integrações `.desktop` estão fora do contrato.
 - `AGENTS.md` é a entrada normativa para agentes de desenvolvimento com IA; `docs/README.md` é o índice detalhado. Não existe tutorial operacional humano como segunda fonte de verdade.
@@ -58,10 +62,10 @@ Critérios funcionais aplicados:
 |---|---|---|
 | Sintaxe | PASS | `node --check` para UI, servidor e bootstrap; parser PowerShell para scripts de instalação e operação |
 | Lint | PASS | `npm run lint` |
-| Unitários | PASS | 15 suítes, 78 testes; `npm run test:unit` |
+| Unitários/backend | PASS | 16 suítes, 100 testes; `npm run test:unit -- --testTimeout=60000`; rodadas focadas finais também aprovadas |
 | Segurança de arquivos | PASS | 9 cenários em `tests/fileSafety.test.js`: atomicidade, conflito, overwrite protegido, restauração, diretório, lote parcial, `recursive=false`, concorrência e retomada |
 | Smoke | PASS | 1 suíte, 8 testes; `npm run test:smoke -- --testTimeout=60000` |
-| E2E | PASS | 21 testes Playwright com um worker; `npm run test:e2e` |
+| E2E | PASS | 22 testes Playwright com um worker; seis fluxos afetados repetidos isoladamente com sucesso |
 | Encerramento | PASS | startup isolado, token local e shutdown gracioso autenticado; sem tocar no processo produtivo |
 | Agregado | PASS | `npm run test:all` |
 | Dependências | PASS | `npm audit --audit-level=high`: 0 vulnerabilidades |

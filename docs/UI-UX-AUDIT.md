@@ -7,7 +7,9 @@ DOC_AUDIENCE=AI_development_agents
 
 ## Decisão de produto
 
-O agente deve tratar a UI como uma jornada desktop local, não como um painel genérico. O Dashboard mostra apenas saúde e o acesso ao slideshow; operações têm um único draft; agendamentos concentram o ciclo de vida; backup e recuperação concentram retenção e restauração. Workflows, templates, conversão, mapeamento e drag-and-drop não devem voltar à interface sem uma decisão de produto e uma medição de custo.
+O agente deve tratar a UI como uma jornada desktop local, não como um painel genérico. O Dashboard mostra saúde e slideshow; operações únicas têm um draft; sincronização local tem modo próprio em fileops, carregado sob demanda; agendamentos genéricos mantêm seu ciclo de vida; backup e recuperação concentram retenção e restauração. Workflows, templates, conversão, mapeamento e drag-and-drop não devem voltar à interface sem uma decisão de produto e medição de custo.
+
+Sincronização não carrega jobs nem faz polling no bootstrap. Preview, execução e verificação têm resultado paginado e progresso enquanto a aba estiver visível. Destino editado exige resolução; retenção e comparação incremental ficam explícitas. Ver `LOCAL-SYNC.md` e `tests/e2e/local-sync.spec.js`.
 
 O cabeçalho principal usa perfil compacto para reduzir pintura e preservar área útil. O slideshow mantém uma barra única no topo, com controles de foto, reprodução e fechamento no mesmo contexto. A barra pode quebrar em telas estreitas, mas não pode deslocar a área da imagem nem cortar a foto.
 

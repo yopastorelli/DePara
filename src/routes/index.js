@@ -9,6 +9,7 @@ const trayRoutes = require('./tray');
 const updateRoutes = require('./update');
 const logsRoutes = require('./logs');
 const configRoutes = require('./config');
+const syncRoutes = require('./fileSync');
 
 const router = express.Router();
 const appMetadata = getAppMetadata();
@@ -57,6 +58,14 @@ router.get('/docs', (req, res) => {
         EXPORT: '/api/config/export',
         IMPORT: '/api/config/import'
       },
+      sync: {
+        JOBS: '/api/sync/jobs',
+        PREVIEW: '/api/sync/jobs/:id/preview',
+        RUN: '/api/sync/jobs/:id/run',
+        VERIFY: '/api/sync/jobs/:id/verify',
+        RUN_STATUS: '/api/sync/runs/:id',
+        HISTORY: '/api/sync/jobs/:id/history'
+      },
       files: {
         GET_FOLDERS: '/api/files/folders',
         POST_FOLDER: '/api/files/folders',
@@ -102,6 +111,7 @@ router.use('/tray', trayRoutes);
 router.use('/update', updateRoutes);
 router.use('/logs', logsRoutes);
 router.use('/config', configRoutes);
+router.use('/sync', syncRoutes);
 
 router.get('/', (req, res) => {
   res.json({

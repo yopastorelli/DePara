@@ -15,6 +15,7 @@ const updateOrchestrator = require('./services/updateOrchestrator');
 const configStore = require('./utils/configStore');
 const folderManager = require('./config/folders');
 const fileOperationsManager = require('./utils/fileOperations');
+const localSyncManager = require('./utils/fileSync/localSyncManager');
 const { recoverPendingOperationalImport } = require('./utils/operationalBackup');
 const errorHandler = require('./middleware/errorHandler');
 const { readRateLimiter } = require('./middleware/rateLimiter');
@@ -250,6 +251,7 @@ async function startServer(options = {}) {
   await fileOperationsManager.init();
   await folderManager.init();
   await recoverPendingOperationalImport();
+  await localSyncManager.init();
 
   server = await new Promise((resolve, reject) => {
     const createdServer = app.listen(port, HOST, () => resolve(createdServer));
@@ -266,6 +268,8 @@ async function startServer(options = {}) {
 async function stopServer() {
   const activeServer = server;
   server = null;
+
+  await localSyncManager.stop();
 
   if (fileOperationsManager && typeof fileOperationsManager.beginShutdown === 'function') {
     await fileOperationsManager.beginShutdown(30000);

@@ -265,6 +265,16 @@
                     </div>
                 </div>
 
+                <section class="recovery-panel" aria-labelledby="sync-history-title">
+                    <h3 id="sync-history-title">Versões de sincronização</h3>
+                    <div class="config-form">
+                        <div class="form-group"><label for="sync-history-job">Sincronização</label><select id="sync-history-job"></select></div>
+                        <div class="form-group"><label for="sync-history-path">Caminho relativo do arquivo</label><input id="sync-history-path" placeholder="Fotos\viagem.jpg"></div>
+                        <button id="sync-history-load" class="btn btn-secondary" type="button">Consultar versões</button>
+                        <button id="sync-history-review" class="btn btn-secondary" type="button">Revisar destino para recuperação</button>
+                    </div>
+                    <p id="sync-history-message" role="status"></p><div id="sync-history-list"></div>
+                </section>
                 <section class="recovery-panel" aria-labelledby="recovery-title">
                     <div class="section-header">
                         <div>
@@ -292,6 +302,25 @@
         <div id="fileops" class="tab-content">
             <div class="fileops-container">
                 <h2>Operações de Arquivos</h2>
+                <div class="form-actions" role="group" aria-label="Modo de operação">
+                    <button id="single-mode" class="btn btn-primary" type="button" aria-pressed="true">Operação única</button>
+                    <button id="sync-mode" class="btn btn-secondary" type="button" aria-pressed="false">Sincronização local</button>
+                </div>
+                <section id="sync-panel" hidden aria-labelledby="sync-title">
+                    <h3 id="sync-title">Sincronização local</h3>
+                    <p>Copie entre dois HDs. O destino precisa usar NTFS. Arquivos extras são preservados e o histórico fica no HD de backup.</p>
+                    <form id="sync-create" class="config-form">
+                        <div class="form-group"><label for="sync-name">Nome</label><input id="sync-name" required maxlength="120"></div>
+                        <div class="form-group"><label for="sync-source">Pasta de origem existente</label><input id="sync-source" required placeholder="D:\Fotos"></div>
+                        <div class="form-group"><label for="sync-target">Pasta de destino existente</label><input id="sync-target" required placeholder="E:\Backup"></div>
+                        <div class="form-group"><label for="sync-policy">Modo</label><select id="sync-policy"><option value="versioned">Backup versionado</option><option value="new-only">Copiar somente novos</option></select></div>
+                        <div class="form-group"><label for="sync-retention">Versões anteriores, além da atual</label><select id="sync-retention"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option></select><small>A retenção autoriza remover versões excedentes após confirmar a nova cópia.</small></div>
+                        <button class="btn btn-primary" type="submit">Salvar sincronização manual</button>
+                    </form>
+                    <p id="sync-message" role="status" aria-live="polite"></p>
+                    <div id="sync-jobs" class="operations-list"></div>
+                    <section aria-label="Resultado da sincronização"><h3>Último resultado selecionado</h3><p id="sync-progress" role="status"></p><div id="sync-results"></div><button id="sync-more" class="btn btn-secondary" type="button" hidden>Próxima página</button></section>
+                </section>
 
                 <!-- Configuração de operação segura -->
                 <div id="operation-config-zone" class="operation-config-zone">
@@ -1014,6 +1043,7 @@
     <script src="modules/runtime-status.js"></script>
     <script src="modules/update-runtime-ui.js"></script>
     <script src="app.js"></script>
+    <script src="modules/local-sync-ui.js"></script>
 
 </body>
 </html>

@@ -24,6 +24,7 @@ Este diretório contém os contratos detalhados para agentes. `AGENTS.md` é a e
 - Memória: preserve `MAX_CONCURRENT_OPERATIONS=1`, paginação, catálogo em disco e `DEPARA_SLIDESHOW_PRELOAD=false` no perfil de coexistência.
 - Segurança: todo caminho recebido de usuário passa por `validateSafePath`; não use shell para copiar, mover, apagar ou alterar permissões.
 - Dados mutáveis pertencem ao runtime `%USERPROFILE%\.depara`, nunca ao release ou ao repositório.
+- Exceção de sincronização: arquivos atuais, versões e metadados recuperáveis pertencem ao HD de destino selecionado; jobs e resultados ficam no runtime. Contrato: `LOCAL-SYNC.md`.
 - Não registre, imprima, versione ou peça credenciais, tokens, chaves ou conteúdo privado.
 
 ## Ordem de leitura do agente

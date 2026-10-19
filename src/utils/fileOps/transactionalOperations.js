@@ -435,6 +435,18 @@ class TransactionalOperations {
     }
   }
 
+  async withExclusiveWork(operationId, work) {
+    if (this.draining) throw Object.assign(new Error('Encerramento em andamento'), { statusCode: 503 });
+    const execution = this.operationQueue.catch(() => {}).then(work);
+    this.operationQueue = execution.catch(() => {});
+    this.activeOperations.set(operationId, execution);
+    try {
+      return await execution;
+    } finally {
+      this.activeOperations.delete(operationId);
+    }
+  }
+
   async runOperation(operationId, action, sourcePath, targetPath, options) {
     let state = await this.getState(operationId);
     if (state && TERMINAL_STATUSES.has(state.status)) {
@@ -653,26 +665,32 @@ class TransactionalOperations {
       }
       const sourceChanged = finalSourceStats.size !== sourceStats.size
         || finalSourceStats.mtimeMs !== sourceStats.mtimeMs;
+      const fingerprint = hash.digest('hex');
+      if (sourceChanged || (options.expectedFingerprint && fingerprint !== options.expectedFingerprint)) {
+        const error = new Error(`Origem mudou durante a cópia: ${sourcePath}`);
+        error.code = 'SOURCE_CHANGED';
+        throw error;
+      }
       if (await this.pathExists(destination)) {
         if (!options.overwrite) {
           throw new OperationConflictError(`Destino criado durante a operação: ${destination}`);
         }
         await this.quarantineExistingTarget(operationId, destination, `replaced-${relativePath}`);
       }
-      await fs.rename(tempPath, destination);
+      if (options.exclusivePublish) {
+        await fs.link(tempPath, destination);
+        await fs.rm(tempPath, { force: true });
+      } else {
+        await fs.rename(tempPath, destination);
+      }
       await this.appendProgress(operationId, {
         type: 'published',
         relativePath,
         tempPath,
-        fingerprint: hash.digest('hex'),
+        fingerprint,
         size: targetStats.size,
         sourceChanged
       });
-      if (sourceChanged) {
-        const error = new Error(`Origem mudou durante a cópia: ${sourcePath}`);
-        error.code = 'SOURCE_CHANGED';
-        throw error;
-      }
       return { sourceChanged };
     } catch (error) {
       await fs.rm(tempPath, { force: true });

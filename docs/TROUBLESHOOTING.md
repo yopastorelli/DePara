@@ -5,6 +5,8 @@ PLATFORM_CONTRACT=Windows_only
 
 ## Porta e processo
 
+Para sincronização, seguir `LOCAL-SYNC.md`: disco ausente pausa; identidade divergente exige revisão explícita; CONFIG_CORRUPT desabilita somente esse recurso. Não remover journals nem a pasta `.depara-sync`. Após interrupção, executar o mesmo job para reconciliar. Testes com muitos fsync devem rodar separados do auditor de 50.000 arquivos; a concorrência desses validadores pode exceder timeouts em HD lento.
+
 - `3000` é a porta padrão.
 - O processo correto é iniciado por `npm run start:windows`.
 - PM2, systemd e launchers Linux não são caminhos de diagnóstico.

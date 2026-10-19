@@ -29,6 +29,7 @@ const fsSync = require('fs');
  * Inclui arquivos do sistema, temporários e de sincronização
  */
 const IGNORED_FILES = [
+  '.depara-sync',
   // Arquivos do Resilio Sync
   '.sync',
   '!sync',
@@ -835,7 +836,10 @@ class FileOperationsManager {
     }
 
     async restoreRecoveryEntry(entryId) {
-        return this.transactionalOperations.restoreRecovery(entryId);
+        return this.transactionalOperations.withExclusiveWork(
+            this.generateOperationId(),
+            () => this.transactionalOperations.restoreRecovery(entryId)
+        );
     }
 
     async beginShutdown(timeoutMs = 30000) {

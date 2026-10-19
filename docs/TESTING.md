@@ -61,6 +61,8 @@ Nenhum teste pode usar `%USERPROFILE%\.depara`, pastas reais do usuário, porta 
 
 ## Cobertura mínima
 
+`tests/localSync.test.js` cobre preview, execução incremental, retenção 1/3/5, conflitos, publicação interrompida, recursos, restauração e fila compartilhada. Contrato: `LOCAL-SYNC.md`.
+
 O conjunto deve cobrir:
 
 - health, status, recursos e conectividade;

@@ -19,6 +19,7 @@ O agente deve tratar `AGENTS.md` e `docs/README.md` como contratos normativos. T
 - Use `scripts/start-windows-coexistence.ps1`, nunca `npm start`, `start-server.bat` ou um processo Node manual para validar a instalação de produção.
 - Preserve `MAX_CONCURRENT_OPERATIONS=1`, `DEPARA_RESOURCE_PROFILE=codex-coexistence`, `DEPARA_SLIDESHOW_PRELOAD=false`, logs HTTP desligados e prioridade `BelowNormal`.
 - Considere `%USERPROFILE%\.depara` como estado mutável. Não escreva dados, logs, backups ou configuração funcional no release imutável ou no Git.
+- Sincronização local: definições e execuções ficam no runtime; conteúdo, histórico e journal de substituição ficam na pasta `.depara-sync` do destino escolhido. Essa é a exceção explícita para armazenamento de backup fora do runtime. Leia `docs/LOCAL-SYNC.md` antes de modificar esse domínio.
 - Operações `copy`, `move` e `delete` devem usar o journal transacional; não faça `copyFile`, `rename`, `unlink` ou `rm` direto em caminhos recebidos da API.
 - Não sobrescreva destinos por padrão. Exclusões devem ir para `%USERPROFILE%\.depara\quarantine` e permanecer restauráveis até uma limpeza explícita e auditada.
 - Não imprima, solicite, versione ou copie credenciais, tokens, chaves, fotos pessoais ou logs sensíveis.

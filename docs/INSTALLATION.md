@@ -5,6 +5,8 @@ CANONICAL_INSTALLER=install.ps1
 
 ## Pré-requisitos
 
+Sincronização local não exige dependências adicionais. Após instalar, configurar manualmente pastas existentes e revisar as bases em `DEPARA_ALLOWED_PATHS`. Não copiar jobs ativos de outra máquina; importar pausados e seguir `LOCAL-SYNC.md`.
+
 | Requisito | Mínimo | Motivo |
 |---|---:|---|
 | Windows | 10/11 x64 | plataforma suportada |

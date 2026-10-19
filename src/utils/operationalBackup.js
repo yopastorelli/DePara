@@ -7,8 +7,9 @@ const folderManager = require('../config/folders');
 const workflowStore = require('./workflowStore');
 const { getRuntimeDataDir, getRuntimeRoot } = require('./runtimePaths');
 const { readJsonWithRecovery, writeJsonAtomic } = require('./atomicStore');
+const localSyncManager = require('./fileSync/localSyncManager');
 
-const OPERATIONAL_BACKUP_VERSION = 1;
+const OPERATIONAL_BACKUP_VERSION = 2;
 const IMPORT_JOURNAL_VERSION = 1;
 
 function getImportJournalPath() {
@@ -20,7 +21,7 @@ function validateBackupPayload(payload) {
     throw new Error('Backup operacional invalido');
   }
 
-  if (payload.version !== OPERATIONAL_BACKUP_VERSION) {
+  if (![1, OPERATIONAL_BACKUP_VERSION].includes(payload.version)) {
     throw new Error(`Versao de backup nao suportada: ${payload.version}`);
   }
 
@@ -38,6 +39,7 @@ function validateBackupPayload(payload) {
   if (payload.workflows !== undefined && !Array.isArray(payload.workflows)) {
     throw new Error('workflows deve ser um array');
   }
+  if (payload.version === 2 && !Array.isArray(payload.syncJobs)) throw new Error('syncJobs deve ser um array');
 }
 
 async function exportOperationalBackup() {
@@ -51,11 +53,12 @@ async function exportOperationalBackup() {
     config: await configStore.getConfig(),
     scheduledOperations: await fileOperationsManager.exportScheduledOperations(),
     folders: await folderManager.exportFolders(),
-    workflows: await workflowStore.list()
+    workflows: await workflowStore.list(),
+    syncJobs: await localSyncManager.list()
   };
 }
 
-async function applyOperationalPayload(payload) {
+async function applyOperationalPayload(payload, imported = true) {
   await folderManager.init();
   await workflowStore.init();
 
@@ -63,8 +66,9 @@ async function applyOperationalPayload(payload) {
   const scheduledOperations = await fileOperationsManager.replaceScheduledOperations(payload.scheduledOperations);
   const folders = await folderManager.importFolders(payload.folders);
   const workflows = await workflowStore.replace(payload.workflows || []);
+  const syncJobs = await localSyncManager.replaceJobs(payload.syncJobs || [], imported);
 
-  return { config, scheduledOperations, folders, workflows };
+  return { config, scheduledOperations, folders, workflows, syncJobs };
 }
 
 async function writeImportJournal(journal) {
@@ -84,7 +88,7 @@ async function recoverPendingOperationalImport() {
 
   validateBackupPayload(journal.previous);
   try {
-    await applyOperationalPayload(journal.previous);
+    await applyOperationalPayload(journal.previous, false);
     await writeImportJournal({
       ...journal,
       status: 'rolled_back',
@@ -106,6 +110,19 @@ async function recoverPendingOperationalImport() {
 
 async function importOperationalBackup(payload) {
   validateBackupPayload(payload);
+  await localSyncManager.init();
+  if (localSyncManager.active.size || localSyncManager.importing) throw new Error('Aguarde a sincronização ou importação terminar');
+  localSyncManager.importing = true;
+  try {
+    await fileOperationsManager.init();
+    return await fileOperationsManager.transactionalOperations.withExclusiveWork(
+      `config-import-${Date.now()}-${process.pid}`,
+      () => performOperationalImport(payload)
+    );
+  } finally { localSyncManager.importing = false; }
+}
+
+async function performOperationalImport(payload) {
 
   await folderManager.init();
   await workflowStore.init();
@@ -133,7 +150,7 @@ async function importOperationalBackup(payload) {
     applied = await applyOperationalPayload(payload);
   } catch (error) {
     try {
-      await applyOperationalPayload(previous);
+      await applyOperationalPayload(previous, false);
       await writeImportJournal({
         transactionId,
         status: 'rolled_back',

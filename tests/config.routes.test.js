@@ -163,7 +163,8 @@ describe('Config Routes', () => {
     const response = await request(app).get('/api/config/export').expect(200);
 
     expect(response.body.success).toBe(true);
-    expect(response.body.data.version).toBe(1);
+    expect(response.body.data.version).toBe(2);
+    expect(response.body.data.syncJobs).toEqual([]);
     expect(response.body.data.config.slideshowSelectedPath).toBe('/backup/slideshow');
     expect(response.body.data.scheduledOperations).toHaveLength(1);
     expect(response.body.data.folders).toHaveLength(1);

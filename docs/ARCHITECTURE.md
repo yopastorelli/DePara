@@ -34,7 +34,7 @@ Windows browser UI / Playwright
 
 ## Canonical product surface
 
-The visible UI has five tabs: `dashboard`, `fileops`, `scheduled`, `backups` and `settings`. `fileops` owns one operation draft and is the only entry point for immediate file mutations or opening a schedule from that draft. Workflows, templates, conversion and drag-and-drop remain compatibility-only backend/helpers and are not startup dependencies or new UI entry points.
+The visible UI has five tabs: `dashboard`, `fileops`, `scheduled`, `backups` and `settings`. `fileops` owns one single-operation draft and a separate local-sync mode. Sync definitions have their own schedules; generic-operation schedules remain unchanged. Backup and Recovery includes sync versions separately from quarantine. Workflows, templates, conversion and drag-and-drop remain compatibility-only backend/helpers and are not startup dependencies or new UI entry points.
 
 ## Startup sequence
 
@@ -116,6 +116,8 @@ Security invariant:
 - Shell execution for `chmod`, `cp`, `mv` or similar file operations is disallowed.
 
 ## Transaction and interruption model
+
+Local synchronization has a separate planner and version repository sharing the transaction engine's exclusive mutation queue. See `LOCAL-SYNC.md`. Definitions and paginated results live in runtime data; recoverable content and per-file metadata live in destination `.depara-sync`. Each execution has a new UUID; existing copy/move/delete payloads remain unchanged.
 
 The mutation path is intentionally sequential (`MAX_CONCURRENT_OPERATIONS=1`) and follows this order:
 
