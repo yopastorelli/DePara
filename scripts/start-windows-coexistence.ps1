@@ -58,8 +58,6 @@ $env:LOG_LEVEL = 'warn'
 $env:LOG_TO_CONSOLE = 'false'
 $env:MAX_PAYLOAD = '8mb'
 $env:NODE_OPTIONS = '--max-old-space-size=128'
-$env:DEPARA_DISABLE_UPDATE_SCHEDULER = 'true'
-$env:DEPARA_DISABLE_UPDATE_SIDE_EFFECTS = 'true'
 
 if ($Port -gt 0) {
     $env:PORT = [string]$Port

@@ -57,6 +57,32 @@ npm run doctor:windows
 
 O auto-update é opt-in e o scheduler fica desativado por padrão. O Windows não deve chamar PM2, systemd ou comandos Linux. Rotas antigas de update respondem `410 Gone`.
 
+### Atualização automática autorizada
+
+Após autorização do usuário, definir em `%USERPROFILE%\.depara\config.env`:
+
+```dotenv
+DEPARA_ENABLE_UPDATE_SCHEDULER=true
+DEPARA_DISABLE_UPDATE_SCHEDULER=false
+DEPARA_DISABLE_UPDATE_SIDE_EFFECTS=false
+DEPARA_UPDATE_SOURCE_ROOT=C:\DePara
+```
+
+Reiniciar pelo launcher canônico e configurar:
+
+```powershell
+$body = @{ enabled = $true; autoApply = $true; checkIntervalMinutes = 60 } | ConvertTo-Json
+Invoke-RestMethod http://127.0.0.1:3000/api/update/auto/config -Method Put -ContentType application/json -Body $body
+Invoke-RestMethod http://127.0.0.1:3000/api/update/auto/trigger -Method Post
+Invoke-RestMethod http://127.0.0.1:3000/api/update/auto/status
+```
+
+Confirmar `config.enabled`, `config.autoApply`, `runtime.scheduler.running` e `environmentEnabled`. O timer só existe enquanto o DePara estiver aberto; não liga a máquina nem funciona com o aplicativo encerrado. A primeira consulta ocorre no intervalo configurado; o trigger acima antecipa a validação. Requer rede, Git/npm/tar e acesso a `origin/main`, sem prompts interativos. Não criar tarefa agendada do Windows ou mudar credenciais automaticamente.
+
+O checkout não é atualizado nem mesclado; commits remotos são exportados em releases separados. Alterações rastreadas locais bloqueiam aplicação. Falha de `npm ci` preserva o release ativo, sem fallback que altere o lockfile. Com operações de arquivos ativas, a troca é adiada para outro ciclo. O helper transitório usa encerramento autenticado sem parada forçada, espera o PID antigo sair, troca o release, inicia pelo launcher e valida `/health.releaseCommit`. Se a inicialização falhar, tenta restaurar o release anterior; se um processo não puder parar seguramente, registra bloqueio em vez de iniciar outra instância. Histórico em `data/update-history.log`, handoff em `data/update-handoff.json` e lock próprio em `data/update-handoff.lock`; não remover um lock cujo PID ainda esteja vivo.
+
+Uma revisão rejeitada por rollback não é repetida automaticamente; publicar uma correção com novo commit ou investigar antes de limpar `state.rejectedCommit`. Durante testes, usar runtime/porta temporários e manter efeitos desativados fora do ensaio isolado. O consumo do helper e de npm/PowerShell é transitório e não está incluído no RSS do servidor.
+
 ## Recursos e coexistência com o Codex
 
 | Estado | Comportamento |

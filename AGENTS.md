@@ -105,7 +105,7 @@ npm run start:windows
 npm run doctor:windows
 ```
 
-Não faça `git push`, commit ou mudança de conta sem autorização da tarefa. O processo em execução não muda de release apenas porque o checkout mudou: confira `current/release.json`, reinicie manualmente e valide `/health`.
+Não faça `git push`, commit ou mudança de conta sem autorização da tarefa. O processo em execução não muda de release apenas porque o checkout mudou: na publicação manual, confira `current/release.json`, reinicie e valide `/health.releaseCommit`. Auto-update é opt-in, conforme `docs/WINDOWS-OPS.md`; não habilitá-lo sem autorização.
 
 ## Diagnóstico e recuperação
 

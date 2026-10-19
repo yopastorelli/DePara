@@ -6538,6 +6538,8 @@ setupEventListeners() {
                 statusText.textContent = 'Alerta: rollback automático em andamento';
             } else if (release.activationState === 'staging' || release.activationState === 'activating' || release.activationState === 'restarting') {
                 statusText.textContent = `Atualização em andamento: ${release.activationState}`;
+            } else if (config.enabled && scheduler.running === false) {
+                statusText.textContent = 'Atualização automática bloqueada no ambiente; consulte a configuração Windows';
             } else if (scheduler.stale) {
                 statusText.textContent = 'Alerta: scheduler de auto-update está sem ciclos recentes';
             } else if (runtime.autoUpdateOperationallyReady === false) {
@@ -6611,9 +6613,11 @@ setupEventListeners() {
             } else if (release.activationState === 'activating' && release.target) {
                 updateMessage.textContent = `Ativando release ${release.target} com preservação automática dos dados do usuário.`;
             } else if (release.activationState === 'restarting' && release.target) {
-                updateMessage.textContent = `Release ${release.target} publicada. Aguardando reinício e validação de saúde.`;
+                updateMessage.textContent = `Release ${release.target} preparada. Aguardando reinício automático e validação.`;
             } else if ((release.activationState === 'rollback' || release.activationState === 'rollback_restart') && release.previous) {
                 updateMessage.textContent = `Rollback automático para a release ${release.previous} em andamento.`;
+            } else if (config.enabled && scheduler.running === false) {
+                updateMessage.textContent = 'O agendamento não está ativo neste processo. Revise o opt-in no config.env e reinicie pelo launcher Windows.';
             } else if (scheduler.stale) {
                 updateMessage.textContent = 'Scheduler sem ciclos recentes. Verifique o processo Windows e a persistência.';
             } else {
@@ -6711,7 +6715,7 @@ setupEventListeners() {
                 throw new Error(result.error?.message || 'Falha ao iniciar ciclo');
             }
 
-            showToast('Ciclo preparado. Reinicie manualmente o processo Windows após a conclusão.', 'success');
+            showToast('Ciclo iniciado. Se a aplicação automática estiver habilitada, o reinício ocorrerá quando não houver operações de arquivos.', 'success');
             setTimeout(() => this.checkForUpdates(true), 1000);
         } catch (error) {
             logger.error('Erro ao disparar ciclo de update:', error);
@@ -6733,7 +6737,7 @@ setupEventListeners() {
                 restartBtn.innerHTML = '<span class="material-icons">info</span> Reinício manual';
             }
 
-            showToast('Reinicie manualmente com Ctrl+C e npm run start:windows.', 'info');
+            showToast('Para reinício manual, use npm run stop:windows e npm run start:windows. Atualizações automáticas habilitadas não exigem esse passo.', 'info');
         } catch (error) {
             logger.error('Erro ao reiniciar aplicação:', error);
             showToast(error.message || 'Erro ao reiniciar aplicação', 'error');

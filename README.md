@@ -52,7 +52,7 @@ npm run doctor:windows
 - Configuração de ambiente: `%USERPROFILE%\.depara\config.env`
 - Release ativo: `%USERPROFILE%\.depara\current`
 
-O host padrão é `127.0.0.1`. Não defina `HOST=0.0.0.0` sem uma decisão explícita de rede e firewall. O auto-update fica desativado por padrão e exige reinício manual.
+O host padrão é `127.0.0.1`. Não defina `HOST=0.0.0.0` sem uma decisão explícita de rede e firewall. O auto-update fica desativado por padrão; quando autorizado e configurado, prepara o release e reinicia automaticamente em uma janela sem operações de arquivos. Contrato: `docs/WINDOWS-OPS.md`.
 
 ## Documentação normativa para agentes
 

@@ -139,6 +139,14 @@ function configureApp() {
       return res.status(401).json({ success: false, error: 'Não autorizado' });
     }
 
+    if (req.get('X-DePara-Update') === 'true') {
+      const engine = fileOperationsManager.transactionalOperations;
+      if (engine.activeOperations.size || localSyncManager.active.size || localSyncManager.importing) {
+        return res.status(409).json({ success: false, error: 'Operações em andamento; atualização adiada' });
+      }
+      engine.draining = true;
+    }
+
     res.status(202).json({ success: true, status: 'shutting_down' });
     if (typeof shutdownRequest === 'function') {
       setImmediate(() => shutdownRequest());
@@ -152,7 +160,8 @@ function configureApp() {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: NODE_ENV,
-      version: appMetadata.version
+      version: appMetadata.version,
+      releaseCommit: process.env.DEPARA_RELEASE_COMMIT || null
     });
   });
 
@@ -253,6 +262,11 @@ async function startServer(options = {}) {
   await recoverPendingOperationalImport();
   await localSyncManager.init();
 
+  if (registerHandlers && process.env.DEPARA_ENABLE_UPDATE_SCHEDULER === 'true') {
+    try { await updateOrchestrator.init(); }
+    catch (error) { logger.warn('Falha ao iniciar atualização automática', { error: error.message }); }
+  }
+
   server = await new Promise((resolve, reject) => {
     const createdServer = app.listen(port, HOST, () => resolve(createdServer));
     createdServer.on('error', reject);
@@ -261,6 +275,7 @@ async function startServer(options = {}) {
   logger.info(`Servidor ${appMetadata.displayName} iniciado na porta ${port}`);
   logger.info(`API disponivel em: http://${HOST}:${port}`);
   logger.info(`Interface web disponivel em: http://${HOST}:${port}/ui`);
+
 
   return server;
 }

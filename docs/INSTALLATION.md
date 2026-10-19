@@ -120,7 +120,7 @@ npm run start:windows
 npm run doctor:windows
 ```
 
-O scheduler de atualização permanece desativado. Rotas de update preexistentes respondem `410 Gone`; não use fluxos antigos.
+O scheduler de atualização permanece desativado por padrão. Para habilitá-lo com autorização, seguir `WINDOWS-OPS.md`; exige opt-in no ambiente e configuração funcional. Rotas antigas de update respondem `410 Gone`; não use fluxos antigos.
 
 ## Máquina com poucos recursos
 

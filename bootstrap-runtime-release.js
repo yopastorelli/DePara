@@ -62,7 +62,9 @@ const fs = require('fs');
 const path = require('path');
 
 const metaPath = path.join(__dirname, '..', 'release.json');
-const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+let meta;
+try { meta = JSON.parse(fs.readFileSync(metaPath, 'utf8')); }
+catch { meta = JSON.parse(fs.readFileSync(metaPath + '.previous', 'utf8')); }
 
 if (!meta.activePath) {
   throw new Error('Active release path missing in ' + metaPath);
@@ -72,6 +74,7 @@ const dotenvPath = path.join(meta.activePath, 'node_modules', 'dotenv');
 const dotenv = require(dotenvPath);
 
 process.env.DEPARA_APP_ROOT = meta.activePath;
+process.env.DEPARA_RELEASE_COMMIT = meta.activeCommit;
 const configPath = process.env.DEPARA_CONFIG_ENV_PATH
   || path.join(process.env.DEPARA_RUNTIME_ROOT || path.join(require('os').homedir(), '.depara'), 'config.env');
 

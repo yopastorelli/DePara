@@ -108,12 +108,12 @@ describe('UpdateOrchestrator persistence layout', () => {
     const supervisor = await orchestrator.detectSupervisorStatus();
 
     expect(supervisor.supervisor).toBe('windows-process');
-    expect(supervisor.operationallyReady).toBe(true);
+    expect(supervisor.operationallyReady).toBe(process.platform === 'win32' && process.env.DEPARA_DISABLE_UPDATE_SIDE_EFFECTS !== 'true');
   });
 
-  it('exige reinicio manual no Windows em vez de chamar supervisores legados', async () => {
+  it('recusa reinício sem um release preparado', async () => {
     await expect(orchestrator.requestRestart()).rejects.toMatchObject({
-      stage: 'windows_restart_required'
+      stage: 'restart_target_missing'
     });
   });
 

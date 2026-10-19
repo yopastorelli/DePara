@@ -6,7 +6,7 @@ PLATFORM_CONTRACT=Windows_only
 CANONICAL_ENTRYPOINT=AGENTS.md
 DOCUMENTATION_ENTRYPOINT=docs/README.md
 LAST_AUDIT_SCOPE=full_application_installation_runtime_documentation_file_integrity_recovery
-LAST_AUDIT_DATE=2026-10-18
+LAST_AUDIT_DATE=2026-10-19
 
 ## Missão
 
@@ -20,7 +20,7 @@ Este diretório contém os contratos detalhados para agentes. `AGENTS.md` é a e
 - Runtime: Node.js `>=18.15.0`, npm `>=9.0.0`, Git for Windows e `tar` disponível no `PATH`.
 - Rede: `HOST=127.0.0.1` por padrão; não habilite LAN sem uma decisão explícita de rede.
 - Processo: use o launcher `npm run start:windows`; ele é independente do terminal/Codex.
-- Atualizações: release imutável, reinício manual e scheduler desativado por padrão.
+- Atualizações: release imutável e scheduler desativado por padrão; opt-in permite reinício automático seguro conforme `WINDOWS-OPS.md`.
 - Memória: preserve `MAX_CONCURRENT_OPERATIONS=1`, paginação, catálogo em disco e `DEPARA_SLIDESHOW_PRELOAD=false` no perfil de coexistência.
 - Segurança: todo caminho recebido de usuário passa por `validateSafePath`; não use shell para copiar, mover, apagar ou alterar permissões.
 - Dados mutáveis pertencem ao runtime `%USERPROFILE%\.depara`, nunca ao release ou ao repositório.

@@ -45,6 +45,32 @@ describe('bootstrap runtime release', () => {
     expect(content).toContain(`DEPARA_RUNTIME_ROOT=${runtimeRoot}`);
   });
 
+  it('loads the previous release metadata after an interrupted atomic pointer write', () => {
+    const metadata = { activeCommit: 'a'.repeat(40), activePath: path.join(runtimeRoot, 'release') };
+    const startServer = jest.fn().mockResolvedValue(undefined);
+    const environment = {};
+    const fakeFs = {
+      readFileSync: jest.fn((filePath) => {
+        if (!filePath.endsWith('.previous')) throw Object.assign(new Error('missing pointer'), { code: 'ENOENT' });
+        return JSON.stringify(metadata);
+      }),
+      existsSync: () => false
+    };
+    const dependencies = (name) => {
+      if (name === 'fs') return fakeFs;
+      if (name === 'path') return path;
+      if (name === 'os') return os;
+      if (name.endsWith('dotenv')) return { config: jest.fn() };
+      return { startServer };
+    };
+    require('vm').runInNewContext(bootstrapModule.getCurrentWrapperContent(), {
+      __dirname: path.join(runtimeRoot, 'current', 'src'), require: dependencies,
+      process: { env: environment }, module: { exports: {} }, console
+    });
+    expect(environment.DEPARA_RELEASE_COMMIT).toBe(metadata.activeCommit);
+    expect(startServer).toHaveBeenCalledWith({ registerHandlers: true });
+  });
+
   it('includes the source checkout when creating a new runtime config', async () => {
     const sourceRoot = path.join(runtimeRoot, 'source');
     const createdPath = await bootstrapModule.ensureRuntimeConfigFile(runtimeRoot, sourceRoot);

@@ -1,13 +1,13 @@
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
-const http = require('http');
-const { exec } = require('child_process');
+const { exec, fork } = require('child_process');
 const logger = require('../utils/logger');
 const { readJsonWithRecovery, writeJsonAtomic } = require('../utils/atomicStore');
 const configStore = require('../utils/configStore');
 const fileOperationsManager = require('../utils/fileOperations');
 const folderManager = require('../config/folders');
+const { getResourceStatus } = require('../utils/resourceGuard');
 const {
   getRuntimeRoot,
   getRuntimeDataDir,
@@ -20,7 +20,7 @@ const {
 
 function execCommand(command, options = {}) {
   return new Promise((resolve, reject) => {
-    exec(command, options, (error, stdout, stderr) => {
+    exec(command, { timeout: 120000, windowsHide: true, ...options, env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never' } }, (error, stdout, stderr) => {
       if (error) {
         const err = new Error(stderr || error.message || `Command failed: ${command}`);
         err.command = command;
@@ -50,14 +50,11 @@ class UpdateOrchestrator {
     this.currentReleaseMetaPath = getRuntimeCurrentReleaseMetaPath();
 
     this.installCommand = 'npm ci --omit=dev';
-    this.fallbackInstallCommand = 'npm install --production';
     this.lockStaleMs = 30 * 60 * 1000;
 
     this.config = null;
     this.state = null;
     this.timer = null;
-    this.restartExitTimer = null;
-    this.postRestartValidationTimer = null;
     this.isInitialized = false;
     this.isRunning = false;
     this.lockOwnerRunId = null;
@@ -133,19 +130,10 @@ class UpdateOrchestrator {
     this.setupScheduler();
     this.isInitialized = true;
 
-    if (this.state.status === 'restarting' || this.state.status === 'validating') {
-      this.postRestartValidationTimer = setTimeout(() => {
-        this.validateAfterRestart().catch((error) => {
-          logger.error('Falha na validação pós-restart', { error: error.message });
-        });
-      }, 5000);
-      if (typeof this.postRestartValidationTimer.unref === 'function') {
-        this.postRestartValidationTimer.unref();
-      }
-    }
   }
 
   async attemptPassiveRecoveryOnInit() {
+    if (['restarting', 'validating'].includes(this.state.status)) return;
     const shouldAttemptRecovery =
       !this.config.enabled ||
       this.state.status === 'critical' ||
@@ -275,7 +263,9 @@ class UpdateOrchestrator {
     const intervalMs = Math.max(1, Number(this.config.checkIntervalMinutes) || 60) * 60 * 1000;
 
     this.timer = setInterval(() => {
-      this.startUpdateCycle({ reason: 'scheduler' });
+      this.startUpdateCycle({ reason: 'scheduler' }).catch((error) => {
+        logger.warn('Falha no agendamento de atualização', { error: error.message });
+      });
     }, intervalMs);
     if (typeof this.timer.unref === 'function') {
       this.timer.unref();
@@ -399,20 +389,20 @@ const path = require('path');
 const metaPath = path.join(__dirname, '..', 'release.json');
 
 function loadActiveRelease() {
-  if (!fs.existsSync(metaPath)) {
-    throw new Error('Release metadata not found at ' + metaPath);
-  }
-
-  const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+  let meta;
+  try { meta = JSON.parse(fs.readFileSync(metaPath, 'utf8')); }
+  catch { meta = JSON.parse(fs.readFileSync(metaPath + '.previous', 'utf8')); }
   if (!meta.activePath) {
     throw new Error('Active release path missing in ' + metaPath);
   }
 
-  return meta.activePath;
+  return meta;
 }
 
-const activeReleasePath = loadActiveRelease();
+const meta = loadActiveRelease();
+const activeReleasePath = meta.activePath;
 process.env.DEPARA_APP_ROOT = activeReleasePath;
+process.env.DEPARA_RELEASE_COMMIT = meta.activeCommit;
 
 module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
 `;
@@ -475,6 +465,9 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
 
     return {
       enabled: Boolean(this.config?.enabled),
+      running: Boolean(this.timer),
+      environmentEnabled: process.env.DEPARA_ENABLE_UPDATE_SCHEDULER === 'true'
+        && process.env.DEPARA_DISABLE_UPDATE_SCHEDULER !== 'true',
       intervalMinutes,
       lastCycleAt,
       ageMs,
@@ -486,8 +479,8 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
   async detectSupervisorStatus() {
     return {
       supervisor: 'windows-process',
-      operationallyReady: true,
-      reasons: []
+      operationallyReady: process.platform === 'win32' && !this.isSideEffectsDisabled(),
+      reasons: this.isSideEffectsDisabled() ? ['side_effects_disabled'] : []
     };
   }
 
@@ -600,6 +593,7 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
 
   async getStatus() {
     await this.init();
+    if (!this.isRunning) await this.refreshPersistedState();
     const runtime = await this.getRuntimeStatus();
     return {
       config: this.config,
@@ -610,6 +604,7 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
 
   async getDiagnostics() {
     await this.init();
+    if (!this.isRunning) await this.refreshPersistedState();
     const recentHistory = await this.getHistory(10);
     const runtime = await this.getRuntimeStatus();
     return {
@@ -715,27 +710,8 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
   }
 
   async installReleaseDependencies(runId, releasePath) {
-    try {
-      await this.runCommandForStage(
-        this.installCommand,
-        { cwd: releasePath },
-        'npm_ci',
-        'Falha ao instalar dependencias do release com npm ci'
-      );
-    } catch (installError) {
-      await this.appendHistory({
-        runId,
-        event: 'install_fallback',
-        stage: installError.stage || 'npm_ci',
-        error: installError.message
-      });
-      await this.runCommandForStage(
-        this.fallbackInstallCommand,
-        { cwd: releasePath },
-        'npm_install_fallback',
-        'Falha ao instalar dependencias do release com fallback'
-      );
-    }
+    await this.runCommandForStage(this.installCommand, { cwd: releasePath, timeout: 600000 },
+      'npm_ci', 'Falha ao instalar dependências pelo lockfile; release ativo preservado');
   }
 
   async prepareRelease(runId, targetCommit) {
@@ -757,40 +733,6 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
       releasePath,
       commit: targetCommit
     };
-  }
-
-  async activateRelease(release) {
-    const activeRelease = await this.readCurrentReleaseMeta();
-    await this.writeCurrentReleaseMeta({
-      activeRelease: release.releaseId,
-      activeCommit: release.commit,
-      activePath: release.releasePath,
-      previousRelease: activeRelease.activeRelease || null,
-      previousCommit: activeRelease.activeCommit || null,
-      updatedAt: new Date().toISOString()
-    });
-  }
-
-  async restorePreviousRelease() {
-    const activeRelease = await this.readCurrentReleaseMeta();
-    if (!activeRelease.previousRelease || !activeRelease.previousCommit) {
-      return false;
-    }
-
-    const previousPath = this.getReleasePath(activeRelease.previousRelease);
-    if (!fsSync.existsSync(previousPath)) {
-      return false;
-    }
-
-    await this.writeCurrentReleaseMeta({
-      activeRelease: activeRelease.previousRelease,
-      activeCommit: activeRelease.previousCommit,
-      activePath: previousPath,
-      previousRelease: activeRelease.activeRelease || null,
-      previousCommit: activeRelease.activeCommit || null,
-      updatedAt: new Date().toISOString()
-    });
-    return true;
   }
 
   async checkForUpdatesInternal(params = {}) {
@@ -845,7 +787,17 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
 
   async startUpdateCycle({ reason = 'manual' } = {}) {
     await this.init();
+    const handoffLock = path.join(this.dataDir, 'update-handoff.lock');
+    try {
+      const pid = Number(await fs.readFile(handoffLock, 'utf8'));
+      if (this.isProcessAlive(pid)) return { started: false, reason: 'running' };
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    if (!this.isRunning) await this.refreshPersistedState();
     const requestedAt = new Date().toISOString();
+
+    if (reason === 'scheduler' && this.state.status === 'critical') return { started: false, reason: 'critical' };
 
     if (!this.config.enabled && reason === 'scheduler') {
       return { started: false, reason: 'disabled' };
@@ -936,6 +888,19 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
         return;
       }
 
+      if (this.state.rejectedCommit === check.targetCommit) {
+        await this.setState('idle', {}, 'rejected_release_skipped');
+        return;
+      }
+
+      await this.ensureCleanTrackedWorktree();
+      await this.runCommandForStage(`git merge-base --is-ancestor ${check.currentCommit} ${check.targetCommit}`,
+        { cwd: this.repoRoot }, 'git_ancestry', 'Histórico remoto divergente; aplicação automática bloqueada');
+      if (fileOperationsManager.transactionalOperations.activeOperations.size || !getResourceStatus().canStartWork) {
+        await this.setState('idle', {}, 'update_deferred_busy');
+        await this.appendHistory({ runId, event: 'update_deferred_busy' });
+        return;
+      }
       await this.applyUpdate(runId, check);
     } catch (error) {
       await this.markFailure(runId, error, false);
@@ -973,13 +938,10 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
       targetRelease: release.releaseId,
       activationState: 'activating'
     }, 'installing');
-    await this.activateRelease(release);
 
     await this.setState('restarting', {
       restartRequestedAt: new Date().toISOString(),
       lastSupervisor: 'windows-process',
-      currentCommit: release.commit,
-      currentRelease: release.releaseId,
       targetRelease: release.releaseId,
       activationState: 'restarting'
     }, 'restart_requested');
@@ -990,104 +952,7 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
       releaseId: release.releaseId,
       targetCommit: release.commit
     });
-    await this.requestRestart();
-  }
-
-  async validateAfterRestart() {
-    await this.init();
-    await this.setState('validating', {}, 'validating');
-
-    const health = await this.runHealthCheck();
-    await this.setState('validating', {
-      lastHealthCheckAt: new Date().toISOString()
-    }, 'health_checked');
-    await this.appendHistory({
-      event: 'health_check',
-      ok: health.ok,
-      attempts: health.attempts,
-      durationMs: health.durationMs,
-      path: this.config.healthPath
-    });
-
-    if (health.ok) {
-      const activeRelease = await this.readCurrentReleaseMeta();
-      await this.setState('idle', {
-        currentCommit: activeRelease.activeCommit || await this.getCurrentCommitSafe(),
-        currentRelease: activeRelease.activeRelease || null,
-        previousCommit: activeRelease.previousCommit || this.state.previousCommit,
-        previousRelease: activeRelease.previousRelease || this.state.previousRelease,
-        lastSuccessAt: new Date().toISOString(),
-        lastError: null,
-        lastFailureStage: null,
-        targetRelease: null,
-        stagingRelease: null,
-        activationState: 'active',
-        rollbackPerformed: false,
-        consecutiveFailures: 0
-      }, 'validation_success');
-      await this.appendHistory({
-        event: 'validation_success',
-        currentCommit: this.state.currentCommit
-      });
-      return;
-    }
-
-    if (this.state.rollbackPerformed) {
-      await this.markFailure(
-        this.state.lastRunId || 'validation',
-        new Error('Health check falhou após rollback'),
-        true
-      );
-      return;
-    }
-
-    await this.rollbackAndRestart(new Error('Health check falhou após atualização'));
-  }
-
-  async rollbackAndRestart(cause) {
-    if (!this.state.previousCommit) {
-      await this.markFailure('rollback', cause, true);
-      return;
-    }
-
-    await this.setState('rollback', {
-      rollbackPerformed: true,
-      lastError: cause.message,
-      activationState: 'rollback'
-    }, 'rollback_started');
-    await this.appendHistory({
-      event: 'rollback_started',
-      previousCommit: this.state.previousCommit,
-      previousRelease: this.state.previousRelease,
-      error: cause.message
-    });
-
-    try {
-      const restored = await this.restorePreviousRelease();
-      if (!restored) {
-        throw this.createStageError(
-          'release_restore',
-          'Falha ao restaurar release anterior durante rollback'
-        );
-      }
-
-      await this.setState('restarting', {
-        restartRequestedAt: new Date().toISOString(),
-        currentCommit: this.state.previousCommit,
-        currentRelease: this.state.previousRelease,
-        targetRelease: null,
-        stagingRelease: null,
-        activationState: 'rollback_restart'
-      }, 'rollback_restart_requested');
-      await this.appendHistory({
-        event: 'rollback_restart_requested',
-        previousCommit: this.state.previousCommit,
-        previousRelease: this.state.previousRelease
-      });
-      await this.requestRestart();
-    } catch (error) {
-      await this.markFailure('rollback', error, true);
-    }
+    await this.requestRestart(release);
   }
 
   async markFailure(runId, error, critical) {
@@ -1122,73 +987,42 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
     });
   }
 
-  async requestRestart() {
+  async requestRestart(release) {
     if (this.isSideEffectsDisabled()) {
       logger.info('Reinicio suprimido por configuracao de teste');
       return;
     }
 
-    throw this.createStageError(
-      'windows_restart_required',
-      'Atualizações automáticas exigem reinício manual do processo Windows'
-    );
-  }
-
-  scheduleProcessExit() {
-    if (this.isSideEffectsDisabled()) {
-      logger.info('Process exit suprimido por configuracao de teste');
-      return;
-    }
-
-    this.restartExitTimer = setTimeout(() => process.exit(0), 1000);
-    if (typeof this.restartExitTimer.unref === 'function') {
-      this.restartExitTimer.unref();
-    }
-  }
-
-  async runHealthCheck() {
-    const retries = Math.max(1, Number(this.config.healthRetries) || 5);
-    const timeoutMs = Math.max(500, Number(this.config.healthTimeoutMs) || 3000);
-    const port = process.env.PORT || 3000;
-    const startAt = Date.now();
-
-    for (let attempt = 1; attempt <= retries; attempt += 1) {
-      const ok = await new Promise((resolve) => {
-        const req = http.request(
-          {
-            hostname: '127.0.0.1',
-            port,
-            path: this.config.healthPath || '/health',
-            method: 'GET',
-            timeout: timeoutMs
-          },
-          (res) => resolve(res.statusCode >= 200 && res.statusCode < 300)
-        );
-
-        req.on('error', () => resolve(false));
-        req.on('timeout', () => {
-          req.destroy();
-          resolve(false);
-        });
-        req.end();
+    if (!release) throw this.createStageError('restart_target_missing', 'Release de destino obrigatório');
+    const requestPath = path.join(this.dataDir, 'update-handoff.json');
+    await writeJsonAtomic(requestPath, {
+      runtimeRoot: this.runtimeRoot, parentPid: process.pid,
+      current: await this.readCurrentReleaseMeta(), release,
+      launcher: path.resolve(__dirname, '../../scripts/start-windows-coexistence.ps1')
+    });
+    await new Promise((resolve, reject) => {
+      const child = fork(path.resolve(__dirname, '../../scripts/update-handoff.js'), [requestPath], {
+        detached: true, windowsHide: true, stdio: ['ignore', 'ignore', 'ignore', 'ipc']
       });
-
-      if (ok) {
-        return {
-          ok: true,
-          attempts: attempt,
-          durationMs: Date.now() - startAt
-        };
-      }
-
-      await new Promise((r) => setTimeout(r, 1500));
-    }
-
-    return {
-      ok: false,
-      attempts: retries,
-      durationMs: Date.now() - startAt
-    };
+      const timeout = setTimeout(() => {
+        if (child.connected) child.disconnect();
+        reject(new Error('Helper de atualização não respondeu'));
+      }, 15000);
+      child.once('error', (error) => { clearTimeout(timeout); reject(error); });
+      child.once('exit', () => { clearTimeout(timeout); reject(new Error('Helper encerrou antes da confirmação')); });
+      child.once('message', (message) => {
+        clearTimeout(timeout);
+        if (message !== 'ready') {
+          if (child.connected) child.disconnect();
+          reject(new Error('Helper de atualização indisponível'));
+          return;
+        }
+        child.send('go');
+        child.disconnect();
+        child.unref();
+        resolve();
+      });
+    });
   }
 
   async getCurrentCommitSafe() {
@@ -1205,20 +1039,22 @@ module.exports = require(path.join(activeReleasePath, 'src', 'main.js'));
     }
   }
 
+  async refreshPersistedState() {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        this.state = this.normalizeState(JSON.parse(await fs.readFile(this.statePath, 'utf8')));
+        return;
+      } catch (error) {
+        if (error.code !== 'ENOENT' && !(error instanceof SyntaxError)) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+    }
+  }
+
   async shutdown() {
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
-    }
-
-    if (this.restartExitTimer) {
-      clearTimeout(this.restartExitTimer);
-      this.restartExitTimer = null;
-    }
-
-    if (this.postRestartValidationTimer) {
-      clearTimeout(this.postRestartValidationTimer);
-      this.postRestartValidationTimer = null;
     }
 
     this.isRunning = false;

@@ -27,7 +27,7 @@ Windows browser UI / Playwright
 | Config | `src/routes/config.js`, `src/utils/configStore.js` | persisted product configuration and backup import/export |
 | Runtime paths | `src/utils/runtimePaths.js` | derive data/log/temp/release/current directories |
 | Runtime env | `src/utils/runtimeConfig.js` | load `config.env` into `process.env` without overriding explicit env |
-| Update | `src/routes/update.js`, `src/services/updateOrchestrator.js` | optional immutable release preparation with manual Windows restart |
+| Update | `src/routes/update.js`, `src/services/updateOrchestrator.js`, `scripts/update-handoff.js` | opt-in immutable release staging and guarded Windows restart |
 | Status/health | `src/routes/status.js`, `src/routes/health.js` | readiness and operational diagnostics |
 | Tray/browser | `src/routes/tray.js` | open dedicated Windows browser windows and screensaver state |
 | Audit | `scripts/performance-audit.js` | controlled latency and memory measurements |
@@ -167,8 +167,9 @@ Legacy endpoints must remain available only to return `410 Gone` with migration 
 
 Update invariant:
 
-- The orchestrator prepares a clean immutable release, flips active release and validates health; restarting the Windows process is an explicit manual step.
+- The opt-in orchestrator starts with the server, fetches origin/main without merging the checkout, and stages an immutable release using npm ci only. A transient detached helper requests authenticated idle-only shutdown, waits for the old PID to exit, switches release metadata, invokes the canonical Windows launcher and checks the commit loaded by /health. Busy work defers activation without force-killing processes. The helper exits after the handoff; no permanent watcher is added.
 - On failed health validation, rollback must restore the previous release.
+- A rollback rejects that commit for subsequent automatic cycles; a newer remote commit can be tried. A process that cannot stop safely blocks rollback rather than starting a duplicate instance. Status reads persisted helper results instead of reporting stale in-process state.
 
 ## Fragile zones
 

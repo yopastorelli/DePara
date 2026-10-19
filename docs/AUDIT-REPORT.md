@@ -1,6 +1,6 @@
 # Relatório de auditoria geral para agentes de IA
 
-AUDIT_DATE=2026-10-18
+AUDIT_DATE=2026-10-19
 AUDIT_PLATFORM=Windows_only
 DOC_AUDIENCE=AI_development_agents
 AUDIT_SCOPE=application_code_runtime_installation_documentation_memory_security
@@ -37,6 +37,10 @@ Critérios funcionais aplicados:
 - a UI não solicita permissão de notificação nem carrega templates, gráficos ou catálogos no bootstrap.
 
 ## Decisões aplicadas
+
+Auditoria de auto-update em 2026-10-19: a instalação examinada estava com `enabled=false`/`autoApply=false`, o launcher forçava bloqueio do scheduler e dos efeitos, o orquestrador não iniciava com o servidor e o reinício automático lançava erro. Corrigidos o opt-in do launcher, inicialização no boot, status real do timer, proteção de worktree/recursos, instalação exclusiva pelo lockfile e handoff transitório com encerramento autenticado somente quando ocioso. O helper valida a revisão carregada e tenta rollback de falha de startup, sem iniciar instância duplicada quando uma parada segura é recusada. Ensaios com processos reais em runtime/porta descartáveis confirmaram adiamento por ocupação, ativação e rollback de release propositalmente quebrado. Ativação no runtime real é um gate separado e exige opt-in autorizado; não inferi-la dos testes.
+
+Evidência desta correção: regressão completa com 19 suítes/111 testes, smoke com oito testes e Playwright com 22 testes aprovados; após ajustes finais, sete suítes/33 testes focados de atualização/bootstrap também aprovados, incluindo recuperação do ponteiro `.previous`. Lint, `git diff --check` e auditoria de dependências aprovados, sem vulnerabilidades. O runtime real permaneceu em `d110b28`, saudável e com atualização automática desabilitada durante os ensaios; publicação/ativação desta correção permanece uma etapa separada.
 
 Extensão de sincronização: contrato `LOCAL-SYNC.md`; fila compartilhada, SHA-256 streaming, destino NTFS com publicação exclusiva, atual mais 1/3/5 anteriores, recuperação por journal e comparação incremental. Jobs importados ficam pausados. O teste sintético de arquivo de 1 GiB terminou com pico de RSS de 127,2 MiB; preview de 5.000 arquivos atingiu 66,8 MiB. Esses números não certificam dois HDs físicos, latência p95 com carga real ou a máquina definitiva. Ativação e piloto permanecem gates distintos da implementação.
 
