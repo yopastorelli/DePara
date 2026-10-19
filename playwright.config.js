@@ -111,6 +111,8 @@ module.exports = defineConfig({
     env: {
       PORT: '3100',
       NODE_ENV: 'test',
+      DEPARA_RUNTIME_ROOT: runtimeRoot,
+      DEPARA_CONFIG_ENV_PATH: path.join(runtimeRoot, 'config.env'),
       LOG_FILE: path.join(logsDir, 'app.log'),
       DEPARA_DATA_DIR: dataDir,
       DEPARA_CONFIG_FILE: path.join(dataDir, 'depara-config.json'),

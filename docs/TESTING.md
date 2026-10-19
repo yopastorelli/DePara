@@ -3,6 +3,8 @@
 DOC_AUDIENCE=AI_development_agents
 
 Atualização automática: `tests/updateHandoff.test.js` cobre adiamento, troca, rollback e bloqueio sem instância duplicada. `tests/updateHandoff.windows.test.js` cria runtime e porta descartáveis, inicia processos de fixture pelo launcher canônico e confirma reinício real e revisão carregada. Nunca usa a porta 3000 ou o runtime de produção. Regressão do orquestrador e rotas: `tests/updateOrchestrator.*.test.js` e `tests/update.routes.test.js`.
+
+Playwright deve definir explicitamente `DEPARA_RUNTIME_ROOT` e `DEPARA_CONFIG_ENV_PATH` temporários, além de data/logs/backups. Isolar somente `DEPARA_DATA_DIR` não isola o arquivo `control/shutdown.json` nem os metadados de release e pode invalidar o encerramento autenticado da instalação real. Confirmar que o arquivo de controle de produção permanece inalterado após o ensaio.
 PLATFORM_CONTRACT=Windows_only
 
 ## Gates canônicos
